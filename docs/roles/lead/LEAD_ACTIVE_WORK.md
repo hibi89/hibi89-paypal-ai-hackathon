@@ -1,5 +1,7 @@
 # PayPal LEAD ACTIVE WORK — PPL-D15
 <!-- resume: day_id=PPL-D15; percent=20; est_h=5; safe_h=10 -->
+> **심사/제출 증빙 자동 검수 추가 — 2026-10-24:** `src/submission_evidence_gate.mjs` + `npm run preflight:submission` (외부 호출 **0**, 누락 증거 시 예상 exit **2**), 신규 8개 tests; [영어 재현 안내](docs/JUDGE_REPRODUCTION_EN.md)의 루트 MIT LICENSE 완료 사실과 Windows/Linux 실행 지침 보정. [Actions #40088755056](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40088755056) @ `b3f150c6b0e8`: **Node 259/259, localhost Chromium, 18-day MASTER PASS**. 실제 PayPal Sandbox·AI·운영 인증·영상·Devpost 영수증 전부 **NOT_TESTED / NOT_SUBMITTED**. D03 0% BLOCKED, D04 80%, D15 20%, D16–D18 0% 유지.
+
 > **P0 단발 실계정 검증 도구 준비 (2026-10-24):** [단발 OAuth/AI 사용·안전 조건](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/lead/paypal/docs/technical/PPL_P0_OWNER_ONE_SHOT_REAL_API_PROBE_20261024.md) · `src/p0_one_shot_probe.mjs` / `scripts/p0_one_shot_probe.mjs` / 11 신규 회귀검증. [Actions #40087887623](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40087887623) @ `efeb9a9e587c`: **Node 251/251 + 로컬 Chromium + 일정표 PASS**. 기본 네트워크 차단, 별도 소유자 승인 없이는 진짜 OAuth/AI 호출하지 않음. 실제 Provider 영수증 0·Sandbox/AI/Free tier NOT_TESTED. **D03 0% BLOCKED, D04 80% PARTIAL, D15 20% PARTIAL**, 잔여 D15 기본 5h/안전 10h(계획·미계측).
 
 > **최신 P0 우선순위 반영 — 2026-10-24:** 통합 총괄 [ACTIVE 19:12 지시](docs/FROM_HACKATHON_COMMAND.md) 수용. 실제 PayPal Business/Personal Sandbox + 무료 AI 실증이 출품 최우선 차단. [계정별 안전 설정 안내](docs/technical/PPL_P0_REAL_PROVIDER_UNBLOCK_20261024.md) + `npm run preflight:p0`(로컬 환경변수 이름만 확인·값 미노출·외부호출 0·exit 2) 구현. [GitHub Actions #40086442379](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40086442379) @ `491183ca51f0`: Node **240/240**, 로컬 Chromium 및 일정 검사 PASS. 실제 Provider OAuth/Orders/AI/D1/배포는 **NOT_TESTED**. D03 0% BLOCKED / D04 80% PARTIAL / D15 20% PARTIAL(남은 기본 5h, 안전 10h) 유지.
@@ -17,12 +19,12 @@
 
 **다음 기술작업:** 사용자 승인 전까지 사설 session/merchant 권한 계약과 OAuth 안전 경계만 오프라인 점검. 실제 PayPal Business/Personal Sandbox 및 무료 AI 확보가 P0 차단; 추가 모의 테스트를 실 API 성공으로 기록하지 않음.
 
-## READY — chief P0 priority / next `ㄱ`
-1. 매 시작 시 `docs/FROM_HACKATHON_COMMAND.md` [ACTIVE]를 최신 원격으로 재확인. 실제 Sandbox Business/Personal + AI의 작동 증빙을 **최상위 병목**으로 유지.
-2. **완료된 사전 코딩:** `src/p0_one_shot_probe.mjs` (실 Sandbox OAuth POST 또는 Gemini 2.5 Flash-Lite generateContent 1회만), `scripts/p0_one_shot_probe.mjs` (기본 no-network), `tests/p0_one_shot_probe.test.mjs` (11 tests), [실행 지침](../../technical/PPL_P0_OWNER_ONE_SHOT_REAL_API_PROBE_20261024.md). CI #40087887623: Node 251/251, local Chromium PASS.
-3. **진짜 호출 전 필수 사용자 측 확인:** PayPal Developer Sandbox REST app·Business merchant·Personal buyer 보유/관리 및 실 호출 허용 범위, Gemini AI Studio 프로젝트 Free Tier/모델·무료 잔여량. 비밀번호·API 키를 채팅이나 GitHub로 받지 않음. 코드 배포, 결제, Paid, Live 불허.
-4. 사용자가 별도 명확한 승인 없이 `--execute --owner-authorized` 또는 `--free-tier-confirmed` 조합으로 외부 API를 실행하지 않는다. 아래 테스트는 **작성되어 있을 뿐 실제 호출 0건**. 승인시 PayPal OAuth 1회부터 조사, 이후 Gemini 실제 무료 응답, Sandbox buyer/merchant Orders 승인/캡처+GET 별개 실증. 실제 영수증 없는 동안 D03 0 BLOCKED/D04 80 PARTIAL 유지.
-5. 승인/계정 접속이 없으면 P0 차단을 명시하고 **기존 코드 보안·심사위원 안내의 독립적 검증**을 처리한다. Cloudflare/D1 추가 모의 확대는 후순위. 모의 결과로 개발완료율을 높이지 않는다.
-6. D15 계획 20%/기본 잔여5h/안전총량10h/실투입 NOT_MEASURED. 전체 DONE12/PARTIAL2/BLOCKED1/NOT_STARTED3. GitHub 원장·MASTER·STATUS/HANDOFF/상위 보고·CI 동기화.
+## READY — 다음 모바일 `ㄱ` 실행 방향
+1. `docs/FROM_HACKATHON_COMMAND.md` [ACTIVE]를 최신 원격에서 우선 확인하고 P0 진짜 Sandbox+무료 AI 동작을 출품 최우선 병목으로 유지.
+2. `npm run preflight:submission`은 **서류·현재 18일 원장**을 읽는 비공개/로컬 정적 검수만 하며 의도적 exit 2. 신규 8개 테스트 / Actions #40088755056 Node 259/259 + Chromium PASS. D16–18 영수증 0·미착수 그대로.
+3. [영어 Reviewer 가이드](../../JUDGE_REPRODUCTION_EN.md) 및 root MIT LICENSE의 정확한 상태 보존. 영상 스토리보드가 실제 공개 영상이 아니며 샌드박스·AI 모의 결과가 출품 실증이 아님을 명시.
+4. User mobile/no PC: 허가 전 PayPal OAuth/Gemini API/개인 계정·비밀키·Cloudflare/공개 배포/Devpost 제출 **실행 금지**. 접근 불가능한 항목은 BLOCKED 기록 후 GitHub에서 가능한 안정성·심사 재현성 검수 지속.
+5. 계정 확인/명시적 별도 실 호출 승인 시 `docs/technical/PPL_P0_OWNER_ONE_SHOT_REAL_API_PROBE_20261024.md`를 통해 좁은 OAuth/AI 1회 실증부터 검토; 비밀키 채팅·GitHub 제출 금지. 실 Merchant/Buyer 승인·Order/Capture GET 및 AI 견적 UI도 별도 검증 필요.
+6. 원장 D03 **0% BLOCKED**, D04 **80% PARTIAL**, D15 **20% PARTIAL** (기본 5h/안전 10h, 실측 null), D16–18 0%. DONE12/PARTIAL2/BLOCKED1/NOT_STARTED3. 작업 종료에 원장·인수인계·상위 보고·Actions SHA 동기화.
 
 **필수 규약:** `docs/RESUME_SYNC_CONTRACT.md`; 원격 원자적 커밋, CI, `MASTER_PROGRESS.md` 재생성, `STATUS.md`·`HANDOFF.md`·상위 답신 동기화. 사용자 지시 [페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈] 또는 `ㄱ`으로 재개.

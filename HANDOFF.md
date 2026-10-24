@@ -1,5 +1,7 @@
 # PayPal HANDOFF — D15 exact resume, 2026-10-24 KST
 <!-- resume: day_id=PPL-D15; percent=20; est_h=5; safe_h=10 -->
+> **심사/제출 증빙 자동 검수 추가 — 2026-10-24:** `src/submission_evidence_gate.mjs` + `npm run preflight:submission` (외부 호출 **0**, 누락 증거 시 예상 exit **2**), 신규 8개 tests; [영어 재현 안내](docs/JUDGE_REPRODUCTION_EN.md)의 루트 MIT LICENSE 완료 사실과 Windows/Linux 실행 지침 보정. [Actions #40088755056](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40088755056) @ `b3f150c6b0e8`: **Node 259/259, localhost Chromium, 18-day MASTER PASS**. 실제 PayPal Sandbox·AI·운영 인증·영상·Devpost 영수증 전부 **NOT_TESTED / NOT_SUBMITTED**. D03 0% BLOCKED, D04 80%, D15 20%, D16–D18 0% 유지.
+
 > **P0 단발 실계정 검증 도구 준비 (2026-10-24):** [단발 OAuth/AI 사용·안전 조건](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/lead/paypal/docs/technical/PPL_P0_OWNER_ONE_SHOT_REAL_API_PROBE_20261024.md) · `src/p0_one_shot_probe.mjs` / `scripts/p0_one_shot_probe.mjs` / 11 신규 회귀검증. [Actions #40087887623](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40087887623) @ `efeb9a9e587c`: **Node 251/251 + 로컬 Chromium + 일정표 PASS**. 기본 네트워크 차단, 별도 소유자 승인 없이는 진짜 OAuth/AI 호출하지 않음. 실제 Provider 영수증 0·Sandbox/AI/Free tier NOT_TESTED. **D03 0% BLOCKED, D04 80% PARTIAL, D15 20% PARTIAL**, 잔여 D15 기본 5h/안전 10h(계획·미계측).
 
 > **최신 P0 우선순위 반영 — 2026-10-24:** 통합 총괄 [ACTIVE 19:12 지시](docs/FROM_HACKATHON_COMMAND.md) 수용. 실제 PayPal Business/Personal Sandbox + 무료 AI 실증이 출품 최우선 차단. [계정별 안전 설정 안내](docs/technical/PPL_P0_REAL_PROVIDER_UNBLOCK_20261024.md) + `npm run preflight:p0`(로컬 환경변수 이름만 확인·값 미노출·외부호출 0·exit 2) 구현. [GitHub Actions #40086442379](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40086442379) @ `491183ca51f0`: Node **240/240**, 로컬 Chromium 및 일정 검사 PASS. 실제 Provider OAuth/Orders/AI/D1/배포는 **NOT_TESTED**. D03 0% BLOCKED / D04 80% PARTIAL / D15 20% PARTIAL(남은 기본 5h, 안전 10h) 유지.
@@ -61,3 +63,9 @@ Cloudflare 계정/무료 한도/서비스 URL, 실 D1 마이그레이션/세션/
 - [Actions #40087887623](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40087887623) @ `efeb9a9e587cb6eddae52dfeeb045acaf05c1571`: Node 251/251, local Chromium, MASTER 18일 PASS. **실 API 호출 0회, 실증 자격 변동 없음.**
 - 실제 OAuth/Business/Personal 및 Gemini Free Tier/모델/실 생성 응답 NOT_VERIFIED. P0 D03 **0% BLOCKED**, D04 **80% PARTIAL**; D15 **20% PARTIAL** (기본 잔여 5h, 안전 10h; 실측 null). 전체 DONE12/PARTIAL2/BLOCKED1/NOT_STARTED3.
 - 다음 READY는 **소유자 계정/무료 등급 확인 및 명시적 단발 네트워크 승인 후** 실제 영수증 확인. 계정 미확보 시 STOP/BLOCKED·오프라인 문서/보안 검수. `docs/FROM_HACKATHON_COMMAND.md` 최신 지시 우선.
+
+## 2026-10-24 Mobile-only GitHub handoff — reviewer integrity preflight
+- **수행:** `src/submission_evidence_gate.mjs`, `scripts/check_submission_evidence.mjs`, `tests/submission_evidence_gate.test.mjs` (8 cases), `package.json`에 `preflight:submission` 추가; `docs/JUDGE_REPRODUCTION_EN.md`에서 존재하는 MIT LICENSE를 더는 누락으로 표시하지 않고 Node22+/Windows/Linux 실행, 합성 Reviewer와 실제 계정 증빙을 엄격히 구분.
+- **검증:** [Actions #40088755056](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40088755056) @ `b3f150c6b0e84056eb85534fccd586c08c99fcaa`: Node **259/259**, local Chromium E2E, 18일 MASTER PASS. 명령 `npm run preflight:submission`는 누락된 실 Provider/영상/Devpost 영수증 때문에 **의도적 exit 2**, 이 명령 자체는 API 0회.
+- **증거 경계:** D03 실제 PayPal 0 BLOCKED, D04 실 AI 20점 부족, D15 호스팅 20 PARTIAL, D16–D18 NOT_STARTED. Video 스토리보드 ≠ 촬영 영상, 정적 README ≠ 심사위원 접근, 로컬 CI ≠ 실 Sandbox/AI.
+- **다음 READY:** 상위 총괄 [ACTIVE] P0 실제 PayPal+무료 AI를 계속 최우선으로 유지. 사용자가 모바일이라 PC/계정 조작 불가한 동안 GitHub의 보안·문서·실 제출 위험 감소 작업만 수행; 외부 API/계정/배포/제출은 별도 명시적 승인과 실제 접근 확보 전 BLOCKED.

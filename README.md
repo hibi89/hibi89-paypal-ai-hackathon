@@ -34,3 +34,6 @@ D03 실 Business/Personal Sandbox+실 무료 AI 계정 BLOCKED; D04 실 AI 부�
 
 ## P0 owner-only single-call real provider evidence probe (prepared, NOT executed)
 [Safe execution and limitations](docs/technical/PPL_P0_OWNER_ONE_SHOT_REAL_API_PROBE_20261024.md) · `src/p0_one_shot_probe.mjs` · `scripts/p0_one_shot_probe.mjs`. By default this exits 2 with zero network. Optional owner-authorized sandbox OAuth or one free-confirmed Gemini synthetic text call requires explicit CLI flags and private environment variables; **neither was run**. [GitHub CI #40087887623](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40087887623) 251 Node pass and local Chromium pass (fixture only). D03 0% BLOCKED, D04 80% PARTIAL, D15 20% PARTIAL until real receipts.
+
+## Reviewer/source-release preflight (2026-10-24)
+[Corrected English reproduction guide](docs/JUDGE_REPRODUCTION_EN.md) · [static submission evidence auditor](src/submission_evidence_gate.mjs) · `npm run preflight:submission` (intentionally exits **2** because real Sandbox/AI/browser/video/Devpost evidence is missing; zero external API calls). [GitHub Actions #40088755056](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40088755056) — **259/259 Node tests**, localhost Chromium and 18-day schedule PASS. Root MIT LICENSE already exists. This is **not** official release or submission acceptance.

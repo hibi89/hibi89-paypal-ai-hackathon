@@ -1043,7 +1043,9 @@
       "advance_note": null,
       "status": "NOT_STARTED",
       "actual_elapsed_note": "NOT_STARTED/NOT_MEASURED",
-      "carryover": [],
+      "carryover": [
+        "Submission preflight implemented 2026-10-24 (src/submission_evidence_gate.mjs, scripts/check_submission_evidence.mjs, 8 local tests). Reviewer guide corrected and runnable; production browser/auth and real Sandbox+AI NOT_TESTED. This is independent advance preparation, not D16 completion."
+      ],
       "limitations": [
         "Not implemented or tested yet; no real provider or production completion claimed"
       ],
@@ -1095,7 +1097,9 @@
       "advance_note": null,
       "status": "NOT_STARTED",
       "actual_elapsed_note": "NOT_STARTED/NOT_MEASURED",
-      "carryover": [],
+      "carryover": [
+        "English video storyboard exists but footage/owner-approved public link does not. Submission preflight explicitly distinguishes DRAFT_ONLY from a submitted video."
+      ],
       "limitations": [
         "Not implemented or tested yet; no real provider or production completion claimed"
       ],
@@ -1147,7 +1151,9 @@
       "advance_note": null,
       "status": "NOT_STARTED",
       "actual_elapsed_note": "NOT_STARTED/NOT_MEASURED",
-      "carryover": [],
+      "carryover": [
+        "Devpost submission/receipt NOT_SUBMITTED; offline code and documentation cannot authorize official submission. Owner approval and genuine link/receipt required."
+      ],
       "limitations": [
         "Not implemented or tested yet; no real provider or production completion claimed"
       ],
