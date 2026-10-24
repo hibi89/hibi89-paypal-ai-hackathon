@@ -1,3 +1,5 @@
+> **새 채팅 단문 복원:** `[해커톤총괄 깃헙 레포지토리 확인하고 작업하셈]` → [PayPal CHAT_BOOTSTRAP.md](CHAT_BOOTSTRAP.md) (`lead/paypal`). 최신 HEAD·`LEAD_ACTIVE_WORK.md`부터 직접 실행. 작업자 채팅/구형 ACTIVE_TASK 이력은 실행 지시가 아님.
+
 # PayPal AI Hackathon — Freelancer Payment Agent
 
 > **현행 규칙(2026-10-24): PayPal 총괄 채팅 하나가 설계·코딩·테스트·검수·통합·Devpost 제출까지 직접 맡는다. 별도 작업자 채팅과 작업자 라우팅은 폐지했다.**

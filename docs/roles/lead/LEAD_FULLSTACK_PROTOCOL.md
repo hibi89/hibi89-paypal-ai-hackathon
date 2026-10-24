@@ -12,3 +12,7 @@ Final submission must prove actual PayPal and AI relevance with functioning demo
 
 ## Alternative evaluation
 A (chosen): single lead implementation branch and direct work, manual evidence-based import from the former quote branch. B (retired): rotating worker feature branch + dispatcher + second-chat reporting. A reduces context switching/collisions and simplifies CI/rollbacks; preserves legacy artifacts and gate checks.
+
+## New-chat single phrase
+- `[해커톤총괄 깃헙 레포지토리 확인하고 작업하셈]` → `lead/paypal/CHAT_BOOTSTRAP.md`, current HEAD, `LEAD_ACTIVE_WORK.md`, test/source evidence, next direct development task.
+- On important work completion or chat transfer, synchronize active work, STATUS, HANDOFF, upper lead report in the same real GitHub commit; remote SHA verify. Stable bootstrap changes only if path/policy changes. Never claim background updates or Sandbox success without test evidence.

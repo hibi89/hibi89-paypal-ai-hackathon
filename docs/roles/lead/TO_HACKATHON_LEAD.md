@@ -13,3 +13,8 @@
 - `lead/paypal@226c896f1c6f53c82d6372a55be8f86a1877c7a2`: 25개 파일 변경(기능 3파일 이관 + 운영 문서/오프라인 CI), 원본 source/tests blob SHA 일치. GitHub Actions [40061487185](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40061487185) `completed/success`, `npm test` step PASS. 독립 Node 테스트 11 PASS/0 FAIL.
 - KIC `lead/kic@ea811b8` 및 UGREEN `lead/ugreen@ef8e2fc`에서 각각 총괄+개발 역할 통합 커밋 존재만 읽기 검증. 다른 두 대회 문서·테스트 내용은 PayPal 총괄이 검증/변경하지 않음.
 - PayPal Sandbox/AI 실 API·E2E/배포/Devpost 제출 여전히 NOT_TESTED/미완료. 본 상태 보고 커밋 후 원격 SHA·CI는 별도 확인.
+
+## 2026-10-24 KST — 사용자 한 문장 복원·상시 인수인계 공시
+- `[해커톤총괄 깃헙 레포지토리 확인하고 작업하셈]`가 새 PayPal 총괄 채팅에서 입력되면 `lead/paypal/CHAT_BOOTSTRAP.md` → 실제 원격 HEAD와 `LEAD_ACTIVE_WORK.md`, 소스·테스트·미완료 과제 확인 → 총괄이 직접 다음 승인 실작업 실행.
+- 중요한 개발/검수/상태·차단/제출 변화 및 새 채팅 이관 전 `LEAD_ACTIVE_WORK.md`·유효 `STATUS/HANDOFF`·`TO_HACKATHON_LEAD.md`·코드/테스트 기록을 같은 작업에서 갱신하고 원격 커밋 SHA를 확인한다. 부트스트랩 진입 문서는 규칙/경로 변경이 있을 때만 수정.
+- PPL-001 독립 코드/테스트/병합 및 실제 Sandbox·Production·Devpost 검증은 별개. 이 커밋은 진입 문서 작업만; 백그라운드 자동 동기화는 아님.
