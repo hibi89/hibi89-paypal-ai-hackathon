@@ -22,3 +22,9 @@
 
 ## 자동화 아님
 사용자가 메시지를 보내거나 다른 허용 자동 실행이 없는 동안 작업은 진행되지 않는다. 이 규약은 **한 메시지에서 시작할 때 즉시 최신 정보를 읽어 작업할 수 있게 하는 GitHub 체크포인트**다.
+
+
+## 전체 일정 단일 정본 (2026-10-24 KST 추가)
+- [MASTER_PROGRESS.md](MASTER_PROGRESS.md)에서 **18일 전체 계획·DONE/PARTIAL/BLOCKED/NOT_STARTED·예정일/실제완료일·증거·잔여시간·차단 회수조건**을 확인한다.
+- `data/paypal_daily_progress.json`이 전체 날짜의 유일한 상태 원장. 기존 날짜별 MD/JSON은 이력·세부 증거다. 새 작업을 마치면 먼저 원장 변경, `python render_master_progress.py --write` 실행 후 동일 커밋, CI `--check` 통과를 의무화한다. `MASTER_PROGRESS.md`를 수동 편집하지 않는다.
+- **선행 작업은 원래 날짜가 지나기 전에도 DONE 처리할 수 있지만** 실제 수행일과 증거를 기록하고, 외부 API·실 SDK·제출/접수 차단을 자동 해제하지 않는다.

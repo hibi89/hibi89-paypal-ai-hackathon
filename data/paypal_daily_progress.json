@@ -48,7 +48,19 @@
           "state": "VERIFIED",
           "evidence": "GitHub Actions run 40063789450 completed success, npm test success; 23 new and 11 existing offline cases"
         }
-      ]
+      ],
+      "progress_state": "DONE",
+      "evidence": [
+        "src/quote_api.mjs @ 9fa2084e27995ec7d77e5907c2390246f13f4150; tests/quote_api.test.mjs",
+        "src/quote_api.mjs @ 9fa2084e27995ec7d77e5907c2390246f13f4150; tests/quote_api.test.mjs",
+        "src/quote_api.mjs @ 9fa2084e27995ec7d77e5907c2390246f13f4150; no PayPal HTTP",
+        "GitHub Actions run 40063789450 completed success, npm test success; 23 new and 11 existing offline cases"
+      ],
+      "verified_sha": null,
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": "예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도."
     },
     {
       "day_id": "PPL-D02",
@@ -102,7 +114,20 @@
           "state": "VERIFIED",
           "evidence": "GitHub Actions run 40064652611 completed/success on 0c07306bb9633183358f0a1c86a8a3d28653d15e; docs/technical/PPL_002_DAY2_SQLITE_LEDGER.md and current STATUS/HANDOFF"
         }
-      ]
+      ],
+      "progress_state": "DONE",
+      "evidence": [
+        "src/sqlite_ledger.mjs & tests/sqlite_ledger.test.mjs @ 0c07306bb9633183358f0a1c86a8a3d28653d15e; SQLite file persists close/open; UNIQUE quote/remote IDs",
+        "src/sqlite_ledger.mjs @ 0c07306bb9633183358f0a1c86a8a3d28653d15e; BEGIN IMMEDIATE transaction/conditional UPDATE; two-connection conflict tests",
+        "src/sqlite_ledger.mjs @ 0c07306bb9633183358f0a1c86a8a3d28653d15e; stable create/capture request ids, UNIQUE quote/merchant/version/operation, UNKNOWN GET-first, synthetic proof guards",
+        "tests/sqlite_ledger.test.mjs @ 0c07306bb9633183358f0a1c86a8a3d28653d15e; 19 tests include two handles, DB reopen, interrupted operation recovery",
+        "GitHub Actions run 40064652611 completed/success on 0c07306bb9633183358f0a1c86a8a3d28653d15e; docs/technical/PPL_002_DAY2_SQLITE_LEDGER.md and current STATUS/HANDOFF"
+      ],
+      "verified_sha": null,
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": "예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도."
     },
     {
       "day_id": "PPL-D03",
@@ -149,7 +174,14 @@
           "state": "BLOCKED",
           "evidence": null
         }
-      ]
+      ],
+      "progress_state": "BLOCKED",
+      "evidence": [],
+      "verified_sha": null,
+      "blocker": "실 PayPal Sandbox Business/Personal·무료 AI 계정 접근 불가",
+      "recovery_date_kst": null,
+      "recovery_condition": "실 Developer 앱과 buyer 계정 접근 확보 시 D03 재검토",
+      "advance_note": null
     },
     {
       "day_id": "PPL-D04",
@@ -203,7 +235,19 @@
           "state": "BLOCKED",
           "evidence": null
         }
-      ]
+      ],
+      "progress_state": "PARTIAL",
+      "evidence": [
+        "src/quote_draft.mjs; src/quote_api.mjs @ ee0427e8a6c4ef22904e671f70cfa59120c009dc; synthetic tests",
+        "src/sqlite_ledger.mjs + tests/quote_draft.test.mjs @ ee0427e8a6c4ef22904e671f70cfa59120c009dc; old approval reset, edits blocked after payment claim",
+        "web/offline_demo.html, web/demo_client.js, src/offline_demo_server.mjs; tests/offline_demo_server.test.mjs @ 3765bf20ce627031ec097c2f95c85de5a8eda361",
+        "GitHub Actions 40065235436 success; 40065142461 first failed due to Host test then corrected"
+      ],
+      "verified_sha": null,
+      "blocker": "실 무료 AI 프로바이더 실행 검증이 누락됨",
+      "recovery_date_kst": null,
+      "recovery_condition": "무료 AI 실 API 이용 가능할 때 D04 잔여20% 검증",
+      "advance_note": "예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도."
     },
     {
       "day_id": "PPL-D05",
@@ -262,7 +306,20 @@
           "state": "VERIFIED",
           "evidence": "src/payment_orchestrator.mjs & tests/payment_orchestrator.test.mjs @ bfd7f641183d150a685ccb11a30b3b796af6414a; create→persist→GET reconcile→capture once→GET proof→PAID; GitHub Actions 40065874692 95/95 PASS (mock)"
         }
-      ]
+      ],
+      "progress_state": "DONE",
+      "evidence": [
+        "src/paypal_sandbox_transport.mjs @ 7e1b7ee8de5a6cdfee7f21560ff97f0d3c6760b2; cannot select live URL; mock OAuth auth",
+        "tests/paypal_sandbox_transport.test.mjs @ 7e1b7ee8de5a6cdfee7f21560ff97f0d3c6760b2; request ID, amount; no calls without injected claim",
+        "tests/paypal_sandbox_transport.test.mjs; amount/reference mismatch and non-Sandbox approval link rejected",
+        "tests/paypal_sandbox_transport.test.mjs; payer approved by GET, distinct capture request ID; timeout unknown, no blind retry",
+        "src/payment_orchestrator.mjs & tests/payment_orchestrator.test.mjs @ bfd7f641183d150a685ccb11a30b3b796af6414a; create→persist→GET reconcile→capture once→GET proof→PAID; GitHub Actions 40065874692 95/95 PASS (mock)"
+      ],
+      "verified_sha": null,
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": "예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도."
     },
     {
       "day_id": "PPL-D06",
@@ -318,7 +375,20 @@
           "state": "VERIFIED",
           "evidence": "Node npm test 102/102 PASS + Python real Chromium 127.0.0.1 UI E2E PASS in GitHub Actions 40066792213; docs/technical/PPL_D06_BROWSER_E2E_20261024.md; prior VM suite run 40066459542 failed before harness correction 40066534103 passed"
         }
-      ]
+      ],
+      "progress_state": "DONE",
+      "evidence": [
+        "tests/browser_offline_e2e.py & .github/workflows/test.yml @ 04c57a4c39767835940ed9dc3a42ca2793b47643; GitHub CI 40066792213 browser Chromium PASS with local UI draft, approval, quote revision",
+        "web/demo_client.js, tests/demo_client.test.mjs, tests/browser_offline_e2e.py; CI 40066792213 GET-only F5/refresh; one POST on synchronized double-submit, persisted approval after reload",
+        "tests/quote_api.test.mjs ownership 401/404/CSRF and origin; tests/offline_demo_server.test.mjs forged Host/origin forbidden; GitHub CI 40066792213 PASS. Synthetic demo session only, no production login.",
+        "tests/browser_offline_e2e.py payment status sends GET and no /orders POST; tests/offline_demo_server.test.mjs /orders 503; CI 40066792213 PASS",
+        "Node npm test 102/102 PASS + Python real Chromium 127.0.0.1 UI E2E PASS in GitHub Actions 40066792213; docs/technical/PPL_D06_BROWSER_E2E_20261024.md; prior VM suite run 40066459542 failed before harness correction 40066534103 passed"
+      ],
+      "verified_sha": null,
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": "예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도."
     },
     {
       "day_id": "PPL-D07",
@@ -375,7 +445,20 @@
           "state": "VERIFIED",
           "evidence": "GitHub Actions 40069063023 completed/success for e682d6dd: 121/121 Node PASS + local real Chromium offline UI PASS; STATUS/HANDOFF/ACTIVE/BOOTSTRAP/lead report sync commit follows"
         }
-      ]
+      ],
+      "progress_state": "DONE",
+      "evidence": [
+        "src/contract_milestones.mjs + src/sqlite_ledger.mjs; tests/contract_milestones.test.mjs (D07 CI 40069063023, SHA e682d6dd): schema, FK, snapshot sum, strict ordering, legacy migration",
+        "src/contract_milestones.mjs; role-bound PENDING→SUBMITTED→ACCEPTED/REJECTED, paymentState read only; 121 Node tests in CI 40069063023",
+        "tests/contract_milestones.test.mjs; trusted principal fields, version CAS, wrong actor/merchant, duplicate create, revision blocked after contract; CI 40069063023",
+        "DB triggers forbid UPDATE/DELETE to contract_events; composite contract/milestone FK, unique event/version; restart/race/negative cases; CI 40069063023",
+        "GitHub Actions 40069063023 completed/success for e682d6dd: 121/121 Node PASS + local real Chromium offline UI PASS; STATUS/HANDOFF/ACTIVE/BOOTSTRAP/lead report sync commit follows"
+      ],
+      "verified_sha": null,
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": "예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도."
     },
     {
       "day_id": "PPL-D08",
@@ -433,7 +516,20 @@
           "state": "VERIFIED",
           "evidence": "GitHub Actions 40070199115 success @ 17b804eb: npm test 131/131 PASS and local Chromium existing quote UI E2E PASS; all progress/handoff documents synchronized in subsequent atomic commit"
         }
-      ]
+      ],
+      "progress_state": "DONE",
+      "evidence": [
+        "src/contract_api.mjs creates/reads contract and events via trusted session context; Node actual 127.0.0.1 API test, CI 40070199115 @ 17b804e",
+        "src/contract_api.mjs POST /api/contracts/:id/milestones/:mid/submit, expectedState+version CAS and evidence note; tests/contract_api.test.mjs, CI 40070199115",
+        "src/contract_api.mjs accept/reject with reviewer role only; injected verified session negative/positive cases in tests/contract_api.test.mjs, CI 40070199115",
+        "src/quote_api.mjs shares bounded JSON/no-store helper; contract API uses verified actor+merchant from resolver, CSRF/Origin, ID/body size, replay conflict; payment POST remains 503; CI 40070199115",
+        "GitHub Actions 40070199115 success @ 17b804eb: npm test 131/131 PASS and local Chromium existing quote UI E2E PASS; all progress/handoff documents synchronized in subsequent atomic commit"
+      ],
+      "verified_sha": null,
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": "예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도."
     },
     {
       "day_id": "PPL-D09",
@@ -492,7 +588,20 @@
           "state": "VERIFIED",
           "evidence": "GitHub Actions 40071015803 completed/success @ 9e3ee79a: Node 133/133 PASS, Chromium D09 browser E2E PASS; documentation/JSON same-checkpoint sync CI separately checked"
         }
-      ]
+      ],
+      "progress_state": "DONE",
+      "evidence": [
+        "web/offline_demo.html and web/contract_client.js: contract creation from approved quote, read-only GET quote/contract, D09 Chromium real loopback E2E in CI 40071015803 @ 9e3ee79a",
+        "web/contract_client.js plus src/offline_demo_server.mjs reviewer test-session resolver; Chromium owner submit, reviewer reject, owner resubmit, reviewer accept in CI 40071015803",
+        "Separate #contract-payment NOT_CAPTURED and #contract-fulfillment state, never auto-pay on delivery; Chromium assert ACCEPTED while NOT_CAPTURED, CI 40071015803",
+        "tests/browser_offline_e2e.py verifies explicit POST only, refresh/F5 no POST, duplicate form submit once, server-bound reviewer, payment POST zero; tests/offline_demo_server.test.mjs forgery/owner denial/review audit; CI 40071015803",
+        "GitHub Actions 40071015803 completed/success @ 9e3ee79a: Node 133/133 PASS, Chromium D09 browser E2E PASS; documentation/JSON same-checkpoint sync CI separately checked"
+      ],
+      "verified_sha": null,
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": "예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도."
     },
     {
       "day_id": "PPL-D10",
@@ -552,7 +661,20 @@
           "state": "VERIFIED",
           "evidence": "GitHub Actions 40072332710 completed/success at 1c852b75: Node 146/146 PASS, Chromium offline E2E PASS. D10 JSON/handoff sync new CI checked separately."
         }
-      ]
+      ],
+      "progress_state": "DONE",
+      "evidence": [
+        "Official PayPal https://developer.paypal.com/api/subscriptions/v1, /api/subscriptions/v1/definitions/subscription/, /subscriptions/webhooks/ and /reference/country-codes researched 2026-10-24; region account eligibility NOT_TESTED; docs/technical/PPL_D10_SUBSCRIPTIONS_FEASIBILITY_20261024.md",
+        "Official PayPal https://developer.paypal.com/api/rest/webhooks/rest/ CRC32 decimal original-body self verification or /v1/notifications/verify-webhook-signature, app webhook ID, HTTPS listener/retries; research document; no actual signature verified",
+        "src/subscription_contract.mjs pure planTrustedSubscriptionEvent and tests/subscription_contract.test.mjs; approved/active/suspend/resume/cancel/expire and duplicate/out-of-order/unknown/payment separation; CI 40072332710",
+        "Official sandbox accounts/testing and Korean fees docs cited in research; no live calls/charges/account eligibility claims; D03 and real KR merchant checks remain BLOCKED/NOT_TESTED",
+        "GitHub Actions 40072332710 completed/success at 1c852b75: Node 146/146 PASS, Chromium offline E2E PASS. D10 JSON/handoff sync new CI checked separately."
+      ],
+      "verified_sha": null,
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": "예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도."
     },
     {
       "day_id": "PPL-D11",
@@ -605,7 +727,381 @@
           "state": "PENDING",
           "evidence": null
         }
+      ],
+      "progress_state": "NOT_STARTED",
+      "evidence": [],
+      "verified_sha": null,
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": null
+    },
+    {
+      "day_id": "PPL-D12",
+      "scheduled_date_kst": "2026-11-05",
+      "scope": "구독 UI 및 실패·취소·복구 시나리오",
+      "acceptance": "3기능 UI 결합, 실패 시 유료/Live 우회 없음",
+      "estimated_total_hours": 5,
+      "safe_total_hours": 4,
+      "estimated_remaining_hours": 5,
+      "safe_remaining_hours": 4,
+      "progress_state": "NOT_STARTED",
+      "percent_complete": 0,
+      "executed_date_kst": null,
+      "actual_elapsed_hours": null,
+      "evidence": [],
+      "verified_sha": null,
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": null,
+      "status": "NOT_STARTED",
+      "actual_elapsed_note": "NOT_STARTED/NOT_MEASURED",
+      "carryover": [],
+      "limitations": [
+        "Not implemented or tested yet; no real provider or production completion claimed"
+      ],
+      "checklist": [
+        {
+          "id": "REQUIREMENTS_AND_DESIGN",
+          "weight_pct": 20,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "IMPLEMENTATION",
+          "weight_pct": 40,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "AUTOMATED_VERIFICATION",
+          "weight_pct": 30,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "CI_HANDOFF",
+          "weight_pct": 10,
+          "state": "PENDING",
+          "evidence": null
+        }
+      ]
+    },
+    {
+      "day_id": "PPL-D13",
+      "scheduled_date_kst": "2026-11-06",
+      "scope": "전체 기능 통합 회귀·주요 결함 수정",
+      "acceptance": "자동테스트·보안·기능 동결 후보, 실패 시 동결 보류",
+      "estimated_total_hours": 6,
+      "safe_total_hours": 5,
+      "estimated_remaining_hours": 6,
+      "safe_remaining_hours": 5,
+      "progress_state": "NOT_STARTED",
+      "percent_complete": 0,
+      "executed_date_kst": null,
+      "actual_elapsed_hours": null,
+      "evidence": [],
+      "verified_sha": null,
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": null,
+      "status": "NOT_STARTED",
+      "actual_elapsed_note": "NOT_STARTED/NOT_MEASURED",
+      "carryover": [],
+      "limitations": [
+        "Not implemented or tested yet; no real provider or production completion claimed"
+      ],
+      "checklist": [
+        {
+          "id": "REQUIREMENTS_AND_DESIGN",
+          "weight_pct": 20,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "IMPLEMENTATION",
+          "weight_pct": 40,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "AUTOMATED_VERIFICATION",
+          "weight_pct": 30,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "CI_HANDOFF",
+          "weight_pct": 10,
+          "state": "PENDING",
+          "evidence": null
+        }
+      ]
+    },
+    {
+      "day_id": "PPL-D14",
+      "scheduled_date_kst": "2026-11-07",
+      "scope": "보안/권한/Rate 제한·LICENSE·영문 자료 초안",
+      "acceptance": "공개 비밀 0건, 심사 재현/영상 시나리오 초안",
+      "estimated_total_hours": 4,
+      "safe_total_hours": 6,
+      "estimated_remaining_hours": 4,
+      "safe_remaining_hours": 6,
+      "progress_state": "NOT_STARTED",
+      "percent_complete": 0,
+      "executed_date_kst": null,
+      "actual_elapsed_hours": null,
+      "evidence": [],
+      "verified_sha": null,
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": null,
+      "status": "NOT_STARTED",
+      "actual_elapsed_note": "NOT_STARTED/NOT_MEASURED",
+      "carryover": [],
+      "limitations": [
+        "Not implemented or tested yet; no real provider or production completion claimed"
+      ],
+      "checklist": [
+        {
+          "id": "REQUIREMENTS_AND_DESIGN",
+          "weight_pct": 20,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "IMPLEMENTATION",
+          "weight_pct": 40,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "AUTOMATED_VERIFICATION",
+          "weight_pct": 30,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "CI_HANDOFF",
+          "weight_pct": 10,
+          "state": "PENDING",
+          "evidence": null
+        }
+      ]
+    },
+    {
+      "day_id": "PPL-D15",
+      "scheduled_date_kst": "2026-11-08",
+      "scope": "무료 호스팅·D1·실제 데모 배포/복구",
+      "acceptance": "Production URL HTTP·React·API/권한·무료 한도 확인",
+      "estimated_total_hours": 6,
+      "safe_total_hours": 6,
+      "estimated_remaining_hours": 6,
+      "safe_remaining_hours": 6,
+      "progress_state": "NOT_STARTED",
+      "percent_complete": 0,
+      "executed_date_kst": null,
+      "actual_elapsed_hours": null,
+      "evidence": [],
+      "verified_sha": null,
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": null,
+      "status": "NOT_STARTED",
+      "actual_elapsed_note": "NOT_STARTED/NOT_MEASURED",
+      "carryover": [],
+      "limitations": [
+        "Not implemented or tested yet; no real provider or production completion claimed"
+      ],
+      "checklist": [
+        {
+          "id": "REQUIREMENTS_AND_DESIGN",
+          "weight_pct": 20,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "IMPLEMENTATION",
+          "weight_pct": 40,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "AUTOMATED_VERIFICATION",
+          "weight_pct": 30,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "CI_HANDOFF",
+          "weight_pct": 10,
+          "state": "PENDING",
+          "evidence": null
+        }
+      ]
+    },
+    {
+      "day_id": "PPL-D16",
+      "scheduled_date_kst": "2026-11-09",
+      "scope": "실제 브라우저 E2E·심사위원 접근 검수",
+      "acceptance": "작동·오류 로그·Sandbox/Mock 차이를 명시",
+      "estimated_total_hours": 5,
+      "safe_total_hours": 5,
+      "estimated_remaining_hours": 5,
+      "safe_remaining_hours": 5,
+      "progress_state": "NOT_STARTED",
+      "percent_complete": 0,
+      "executed_date_kst": null,
+      "actual_elapsed_hours": null,
+      "evidence": [],
+      "verified_sha": null,
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": null,
+      "status": "NOT_STARTED",
+      "actual_elapsed_note": "NOT_STARTED/NOT_MEASURED",
+      "carryover": [],
+      "limitations": [
+        "Not implemented or tested yet; no real provider or production completion claimed"
+      ],
+      "checklist": [
+        {
+          "id": "REQUIREMENTS_AND_DESIGN",
+          "weight_pct": 20,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "IMPLEMENTATION",
+          "weight_pct": 40,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "AUTOMATED_VERIFICATION",
+          "weight_pct": 30,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "CI_HANDOFF",
+          "weight_pct": 10,
+          "state": "PENDING",
+          "evidence": null
+        }
+      ]
+    },
+    {
+      "day_id": "PPL-D17",
+      "scheduled_date_kst": "2026-11-10",
+      "scope": "영문 Devpost 안내·3분 미만 영상 촬영/편집",
+      "acceptance": "공개 영상 URL·README·실제 시연 흐름 검증",
+      "estimated_total_hours": 6,
+      "safe_total_hours": 5,
+      "estimated_remaining_hours": 6,
+      "safe_remaining_hours": 5,
+      "progress_state": "NOT_STARTED",
+      "percent_complete": 0,
+      "executed_date_kst": null,
+      "actual_elapsed_hours": null,
+      "evidence": [],
+      "verified_sha": null,
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": null,
+      "status": "NOT_STARTED",
+      "actual_elapsed_note": "NOT_STARTED/NOT_MEASURED",
+      "carryover": [],
+      "limitations": [
+        "Not implemented or tested yet; no real provider or production completion claimed"
+      ],
+      "checklist": [
+        {
+          "id": "REQUIREMENTS_AND_DESIGN",
+          "weight_pct": 20,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "IMPLEMENTATION",
+          "weight_pct": 40,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "AUTOMATED_VERIFICATION",
+          "weight_pct": 30,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "CI_HANDOFF",
+          "weight_pct": 10,
+          "state": "PENDING",
+          "evidence": null
+        }
+      ]
+    },
+    {
+      "day_id": "PPL-D18",
+      "scheduled_date_kst": "2026-11-11",
+      "scope": "Devpost 제출·링크/권한·접수증 검수",
+      "acceptance": "제출 완료 증거 확보, 미완료면 즉시 차단 보고",
+      "estimated_total_hours": 3,
+      "safe_total_hours": 4,
+      "estimated_remaining_hours": 3,
+      "safe_remaining_hours": 4,
+      "progress_state": "NOT_STARTED",
+      "percent_complete": 0,
+      "executed_date_kst": null,
+      "actual_elapsed_hours": null,
+      "evidence": [],
+      "verified_sha": null,
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": null,
+      "status": "NOT_STARTED",
+      "actual_elapsed_note": "NOT_STARTED/NOT_MEASURED",
+      "carryover": [],
+      "limitations": [
+        "Not implemented or tested yet; no real provider or production completion claimed"
+      ],
+      "checklist": [
+        {
+          "id": "REQUIREMENTS_AND_DESIGN",
+          "weight_pct": 20,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "IMPLEMENTATION",
+          "weight_pct": 40,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "AUTOMATED_VERIFICATION",
+          "weight_pct": 30,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "CI_HANDOFF",
+          "weight_pct": 10,
+          "state": "PENDING",
+          "evidence": null
+        }
       ]
     }
-  ]
+  ],
+  "project_name": "PayPal AI Hackathon",
+  "expected_days": 18,
+  "original_plan": "docs/DAILY_CAPACITY_PLAN_20261024.md"
 }
