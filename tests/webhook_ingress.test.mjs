@@ -44,7 +44,7 @@ function makeReq(body,overrides={}){
     method:'POST',headers,body:overrides.rawBody||raw
   });
 }
-const read=async response=>({status:response.status,...await response.json()});
+const read=async response=>({...await response.json(),httpStatus:response.status});
 const withEnv=run=>async()=>{
  const e=env();
  try{await run(e)}finally{e.cleanup()}
@@ -70,7 +70,7 @@ test('handler refuses production mode, hostile cert URLs, missing RSA public key
 test('cryptographically signed local fixture advances subscription; does not claim paid',withEnv(async e=>{
  const handle=e.makeHandler();
  const result=await read(await handle(makeReq(event())));
- assert.equal(result.status,200);assert.equal(result.code,'APPLY_VERIFIED_LIFECYCLE');
+ assert.equal(result.httpStatus,200);assert.equal(result.code,'APPLY_VERIFIED_LIFECYCLE');
  assert.equal(e.db.getSubscription('I-SUBTEST').status,'APPROVAL_PENDING');
  assert.equal(e.db.getSubscription('I-SUBTEST').paymentEvidence,'NOT_VERIFIED');
  assert.equal(e.db.listEvents().length,1);
@@ -121,14 +121,14 @@ test('oversize body and declared oversize length rejected before DB writes',with
 test('invalid signed JSON is rejected (no false 2xx)',withEnv(async e=>{
  const handle=e.makeHandler();
  const r=await read(await handle(makeReq(Buffer.from('{NOT JSON'))));
- assert.equal(r.status,400);assert.equal(r.code,'INVALID_WEBHOOK_JSON');
+ assert.equal(r.httpStatus,400);assert.equal(r.code,'INVALID_WEBHOOK_JSON');
  assert.equal(e.db.listEvents().length,0);
 }));
 test('real signing over prettified raw JSON works; reserialized equivalent body fails',withEnv(async e=>{
  const handle=e.makeHandler();
  const raw=Buffer.from(JSON.stringify(event(),null,2));
  const result=await read(await handle(makeReq(raw)));
- assert.equal(result.status,200);
+ assert.equal(result.httpStatus,200);
  const mutated=makeReq(raw,{transmission:'T-RESERIALIZED',rawBody:Buffer.from(JSON.stringify(event()))});
  assert.equal((await handle(mutated)).status,401);
  assert.equal(e.db.listEvents().length,1);
@@ -165,11 +165,11 @@ test('out-of-order and same-timestamp events recorded for GET-first reconciliati
  assert.equal((await handle(makeReq(active))).status,200);
  const created=event('WH-OLDER','BILLING.SUBSCRIPTION.CREATED','2026-10-24T08:59:59Z');
  const old=await read(await handle(makeReq(created,{transmission:'T-OLDER-456'})));
- assert.equal(old.status,202);assert.equal(old.code,'RECONCILE_GET_FIRST');
+ assert.equal(old.httpStatus,202);assert.equal(old.code,'RECONCILE_GET_FIRST');
  const same=await read(await handle(makeReq(
    event('WH-SAME','BILLING.SUBSCRIPTION.SUSPENDED','2026-10-24T09:00:00Z'),
    {transmission:'T-SAME-456'})));
- assert.equal(same.status,202);
+ assert.equal(same.httpStatus,202);
  assert.equal(e.db.getSubscription('I-SUBTEST').status,'ACTIVE');
  assert.equal(e.db.listReconciliations().length,2);
  assert.equal(e.db.listEvents().length,3);
@@ -182,7 +182,7 @@ test('payment sale and payment failed events never mark capture nor change lifec
      'BILLING.SUBSCRIPTION.PAYMENT.FAILED','PAYMENT.SALE.REVERSED'].entries()){
    const r=await read(await handle(makeReq(event('WH-PAY-'+i,type),
      {transmission:'T-PAY-'+String(i).padStart(10,'0')})));
-   assert.equal(r.status,202);assert.equal(r.code,'RECONCILE_GET_FIRST');
+   assert.equal(r.httpStatus,202);assert.equal(r.code,'RECONCILE_GET_FIRST');
  }
  const state=e.db.getSubscription('I-SUBTEST');
  assert.equal(state.paymentEvidence,'NOT_VERIFIED');
@@ -195,7 +195,7 @@ test('terminal CANCELLED blocks reactivation, queues GET reconciliation',withEnv
    '2026-10-24T09:00:00Z')));
  const r=await read(await handle(makeReq(event('WH-REACT','BILLING.SUBSCRIPTION.ACTIVATED',
    '2026-10-24T09:01:00Z'),{transmission:'T-REACT-456'})));
- assert.equal(r.status,202);
+ assert.equal(r.httpStatus,202);
  assert.equal(e.db.getSubscription('I-SUBTEST').status,'CANCELLED');
  assert.equal(e.db.listReconciliations()[0].reason,'ILLEGAL_OR_TERMINAL_TRANSITION');
 }));
