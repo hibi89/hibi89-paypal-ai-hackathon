@@ -1,3 +1,5 @@
+> **[통합 총괄 공식 대회정보 공시 연동 — 2026-10-24]** 사용자의 직접 요청으로 [PayPal 2026 공식 대회정보·제출요건·심사·마감·교육/개발 링크](https://github.com/hibi89/hackathon-command-center-2026/blob/main/docs/contests/PAYPAL_2026_OFFICIAL_REQUIREMENTS.md)를 `hibi89/hackathon-command-center-2026@main`에 게시(검수 기준 중앙 커밋 `25c877616ede`). **상위 총괄의 `README/START_HERE/CHAT_BOOTSTRAP/HANDOFF/projects/PAYPAL`에서 이 문서를 우선 열도록 공시함.** 필수 실 PayPal+AI, 공개 루트 MIT+작동 데모, 공개 YouTube 3분 미만 영상, 최종 Devpost Submitted 증빙 및 11/13 05:00 KST 마감. 실제 Provider OAuth/Orders·AI 호출·배포·영상·최종 접수는 여전히 미검증/미제출. 기존 D03 0% BLOCKED·D04 80%·D15 20% 유지. 통합 총괄은 자신의 새 채팅에서 GitHub를 읽을 때 확인 가능하나, 자동 메시지/실시간 알림은 아님.
+
 # PayPal AI Hackathon — Official Devpost links and six-screenshot verification
 Date: 2026-10-24 KST · Source: user-provided public Devpost screenshots, verified against public official resources · Reviewer: PayPal lead
 

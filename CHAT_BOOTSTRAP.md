@@ -1,3 +1,5 @@
+> **[통합 총괄 공식 대회정보 공시 연동 — 2026-10-24]** 사용자의 직접 요청으로 [PayPal 2026 공식 대회정보·제출요건·심사·마감·교육/개발 링크](https://github.com/hibi89/hackathon-command-center-2026/blob/main/docs/contests/PAYPAL_2026_OFFICIAL_REQUIREMENTS.md)를 `hibi89/hackathon-command-center-2026@main`에 게시(검수 기준 중앙 커밋 `25c877616ede`). **상위 총괄의 `README/START_HERE/CHAT_BOOTSTRAP/HANDOFF/projects/PAYPAL`에서 이 문서를 우선 열도록 공시함.** 필수 실 PayPal+AI, 공개 루트 MIT+작동 데모, 공개 YouTube 3분 미만 영상, 최종 Devpost Submitted 증빙 및 11/13 05:00 KST 마감. 실제 Provider OAuth/Orders·AI 호출·배포·영상·최종 접수는 여전히 미검증/미제출. 기존 D03 0% BLOCKED·D04 80%·D15 20% 유지. 통합 총괄은 자신의 새 채팅에서 GitHub를 읽을 때 확인 가능하나, 자동 메시지/실시간 알림은 아님.
+
 > **2026-10-24 19:12 KST 통합 총괄 최신 전달문 — 매 작업 시작 전 필독:** [docs/FROM_HACKATHON_COMMAND.md](docs/FROM_HACKATHON_COMMAND.md)의 **[ACTIVE]** 지시가 이전 감독 이력보다 우선한다. **P0 실제 PayPal Sandbox + 실제 AI 연결 증빙**을 최우선 외부 게이트로 관리하고, 기존 독립 선행 개발은 계속하되 대회 실증과 합성 테스트를 혼동하지 말라. 각 조치·차단·사용자 필요사항·테스트/원격 SHA를 `docs/roles/lead/TO_HACKATHON_LEAD.md`에 답신. 현행 정본 JSON·최신 HEAD/CI에서 진도 재확인, 무단 계정변경·비용·공식 제출 금지.
 
 # PayPal — one-command resume
