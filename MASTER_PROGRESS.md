@@ -4,7 +4,7 @@
 > 예정일과 실제 수행일은 별개. DONE은 **그날 정한 검증 범위만** 완료했음을 의미하며 실제 외부 API/운영/제출 성공과 다릅니다.
 > 시간은 예상 작업·별도 안전 예비의 **미사용 작업 배정량**입니다. 외부 승인 대기 및 미계측 실투입시간은 포함하지 않습니다.
 
-**전체 18일 / 완료 8 / 부분 1 / 차단 1 / 미착수 8**
+**전체 18일 / 완료 8 / 부분 2 / 차단 1 / 미착수 7**
 
 **다음 실행 포인터: `PPL-D11`** · 원래 일정: `docs/DAILY_CAPACITY_PLAN_20261024.md`
 
@@ -20,7 +20,7 @@
 | PPL-D08 | 2026-11-01 | Authenticated server API for contract, milestones, delivery submission and reviewer acceptance/rejection | DONE | 100% | 0h | 0h | 2026-10-24 | src/contract_api.mjs creates/reads contract and events via trusted session context; Node actual 127.0.0.1 API test, CI 40070199115 @ 17b804e | — | — |
 | PPL-D09 | 2026-11-02 | Contract/delivery UI and separated payment status local E2E; real PayPal Sandbox dependent tests remain D03 external blocked | DONE | 100% | 0h | 0h | 2026-10-24 | web/offline_demo.html and web/contract_client.js: contract creation from approved quote, read-only GET quote/contract, D09 Chromium real loopback E2E in CI 40071015803 @ 9e3ee79a | — | — |
 | PPL-D10 | 2026-11-03 | Official PayPal Subscriptions and Webhooks support/region/cost feasibility; offline subscription state-machine contract | DONE | 100% | 0h | 0h | 2026-10-24 | Official PayPal https://developer.paypal.com/api/subscriptions/v1, /api/subscriptions/v1/definitions/subscription/, /subscriptions/webhooks/ and /reference/country-codes researched 2026-10-24; region account eligibility NOT_TESTED; docs/technical/PPL_D10_SUBSCRIPTIONS_FEASIBILITY_20261024.md | — | — |
-| PPL-D11 | 2026-11-04 | Offline webhook ingress, signature verification boundary, SQLite event-id idempotency and out-of-order fail closed with synthetic signature tests; real PayPal Sandbox remains blocked | NOT_STARTED | 0% | 5h | 5h | — | — | — | — |
+| PPL-D11 | 2026-11-04 | Offline webhook ingress, signature verification boundary, SQLite event-id idempotency and out-of-order fail closed with synthetic signature tests; real PayPal Sandbox remains blocked | PARTIAL | 90% | 0.5h | 0.5h | 2026-10-24 | src/webhook_ingress.mjs @ 8e4d6503: original raw body CRC32(decimal), pinned sandbox cert URL, off-line-only RSA-SHA256 Fetch handler, no automatic service wiring; 17 fixture tests @ 6f5cc754 | — | — |
 | PPL-D12 | 2026-11-05 | 구독 UI 및 실패·취소·복구 시나리오 | NOT_STARTED | 0% | 5h | 4h | — | — | — | — |
 | PPL-D13 | 2026-11-06 | 전체 기능 통합 회귀·주요 결함 수정 | NOT_STARTED | 0% | 6h | 5h | — | — | — | — |
 | PPL-D14 | 2026-11-07 | 보안/권한/Rate 제한·LICENSE·영문 자료 초안 | NOT_STARTED | 0% | 4h | 6h | — | — | — | — |

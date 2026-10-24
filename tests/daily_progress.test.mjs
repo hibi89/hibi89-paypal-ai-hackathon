@@ -93,10 +93,11 @@ test('D06-D10 tracked offline acceptance and D11 webhook guard READY',()=>{
   assert.equal(d10.safe_remaining_hours,0);
   const d11=ledger.days.find(d=>d.day_id==='PPL-D11');
   assert.ok(d11);
-  assert.equal(d11.percent_complete,0);
-  assert.equal(d11.status,'NOT_STARTED');
-  assert.equal(d11.estimated_remaining_hours,5);
-  assert.equal(d11.safe_remaining_hours,10);
+  assert.equal(d11.percent_complete,90);
+  assert.equal(d11.status,'IMPLEMENTED_OFFLINE_AWAITING_CI');
+  assert.equal(d11.estimated_remaining_hours,0.5);
+  assert.equal(d11.safe_remaining_hours,1);
+  assert.equal(d11.checklist.at(-1).state,'PENDING');
   assert.equal(ledger.active_day_id,d11.day_id);
   assert.equal(ledger.days.length,18);
   assert.equal(ledger.days.at(-1).day_id,'PPL-D18');
