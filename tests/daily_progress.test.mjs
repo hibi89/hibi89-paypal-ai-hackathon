@@ -41,7 +41,7 @@ test('day2 SQLite criteria are all verified, and next day remains blocked at zer
   assert.equal(d3.percent_complete,0);
   assert.equal(d3.estimated_remaining_hours,3);
   assert.equal(d3.safe_remaining_hours,8);
-  assert.equal(ledger.active_day_id,'PPL-D07');
+  assert.equal(ledger.active_day_id,ledger.days.at(-1).day_id);
 });
 test('accelerated mock days preserve unmet AI and actual provider criteria',()=>{
   const d4=ledger.days.find(d=>d.day_id==='PPL-D04');
@@ -63,15 +63,22 @@ test('day5 completion does not disguise the blocked external gate or next-day wo
   assert.equal(d6.percent_complete,100);
   assert.equal(d6.estimated_remaining_hours,0);
   assert.equal(d6.safe_remaining_hours,0);
-  assert.equal(ledger.active_day_id,'PPL-D07');
+  assert.equal(ledger.active_day_id,ledger.days.at(-1).day_id);
 });
-test('actual Chromium day6 verified and future contract day7 is still unstarted',()=>{
+test('Chromium D06 and contract D07 completed offline; server API D08 remains READY',()=>{
   const d6=ledger.days.find(d=>d.day_id==='PPL-D06');
   const d7=ledger.days.find(d=>d.day_id==='PPL-D07');
   assert.equal(d6.percent_complete,100);
   assert.ok(d6.checklist.every(x=>x.state==='VERIFIED'));
-  assert.equal(d7.percent_complete,0);
-  assert.equal(d7.estimated_remaining_hours,4);
-  assert.equal(d7.safe_remaining_hours,8);
-  assert.equal(ledger.active_day_id,'PPL-D07');
+  assert.equal(d7.percent_complete,100);
+  assert.ok(d7.checklist.every(x=>x.state==='VERIFIED'));
+  assert.equal(d7.estimated_remaining_hours,0);
+  assert.equal(d7.safe_remaining_hours,0);
+  const d8=ledger.days.find(d=>d.day_id==='PPL-D08');
+  assert.ok(d8);
+  assert.equal(d8.status,'NOT_STARTED');
+  assert.equal(d8.percent_complete,0);
+  assert.equal(d8.estimated_remaining_hours,4);
+  assert.equal(d8.safe_remaining_hours,8);
+  assert.equal(ledger.active_day_id,d8.day_id);
 });

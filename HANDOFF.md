@@ -41,3 +41,7 @@ AI 프리랜서 견적(사람 승인 필수) → PayPal **Sandbox-only** 주문/
 
 ## 10. 확인일시 및 검증 범위
 - 기록일: **2026-10-24 KST**. 실제 확인: GitHub 원격 `lead/paypal`, D07 Actions 40069063023 Node+Chromium. 실제 작업 소요시간 **NOT_MEASURED**. 문서 기준은 이 핸드오프를 포함하는 다음 원격 문서 커밋, 코드 기능 증거 SHA는 `e682d6dd`로 분리. 새 세션은 HEAD/CI를 먼저 읽을 것.
+
+## 2026-10-24 D07→D08 문서 CI 회귀 수정 이력
+- [Actions 40069270325](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40069270325) **FAIL**: `tests/daily_progress.test.mjs`가 과거 활성 D07 0%를 고정값으로 단언해 새 D08 포인터·D07 100% 원장과 충돌 (118 PASS / 3 FAIL). 기능 DB 코드 오류는 검출되지 않았지만 해당 HEAD CI는 실패다.
+- 일별 기준값은 과거 사실 그대로 검증하되 활성 day 포인터는 마지막 원장 항목 기준으로, D07 완료/D08 준비 검증으로 업데이트. 수정 커밋 CI는 별도 조회하고 PASS 전에는 새 HEAD를 PASS로 표시하지 않는다.
