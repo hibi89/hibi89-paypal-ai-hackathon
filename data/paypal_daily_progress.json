@@ -2,7 +2,7 @@
   "schema_version": 1,
   "updated_kst": "2026-10-24",
   "scope": "Per-day verified acceptance; NOT entire PayPal hackathon project percent",
-  "active_day_id": "PPL-D02",
+  "active_day_id": "PPL-D03",
   "reporting_mode": "mandatory_after_each_actual_work_session",
   "days": [
     {
@@ -53,49 +53,100 @@
     {
       "day_id": "PPL-D02",
       "scheduled_date_kst": "2026-10-26",
-      "executed_date_kst": null,
+      "executed_date_kst": "2026-10-24",
       "scope": "Durable DB and unique/atomic payment operation claims",
-      "status": "NOT_STARTED",
+      "status": "DAY2_SQLITE_OFFLINE_ACCEPTED",
       "estimated_total_hours": 5,
       "safe_total_hours": 9,
-      "percent_complete": 0,
-      "estimated_remaining_hours": 5,
-      "safe_remaining_hours": 9,
+      "percent_complete": 100,
+      "estimated_remaining_hours": 0,
+      "safe_remaining_hours": 0,
       "actual_elapsed_hours": null,
-      "actual_elapsed_note": "NOT_STARTED",
+      "actual_elapsed_note": "NOT_MEASURED; budget 5h/9h was not measured execution time",
       "carryover": [],
       "limitations": [
-        "No durable ledger, no real PayPal Sandbox authentication"
+        "Durable local Node SQLite only; no D1 adapter or production persistence test",
+        "Two SQLite connections tested; separate physical processes and actual provider traffic not tested",
+        "recordApprovedOrderFromGet and recordCaptureFromGet accept synthetic trusted-backend-provided evidence; no actual PayPal GET adapter",
+        "All HTTP payment routes still fail closed; no actual PayPal Sandbox OAuth/Orders",
+        "First implementation CI 40064603053 failed (SQL placeholders); corrected CI 40064652611 succeeded"
       ],
       "checklist": [
         {
           "id": "DURABLE_SCHEMA",
           "weight_pct": 20,
-          "state": "PENDING",
-          "evidence": null
+          "state": "VERIFIED",
+          "evidence": "src/sqlite_ledger.mjs & tests/sqlite_ledger.test.mjs @ 0c07306bb9633183358f0a1c86a8a3d28653d15e; SQLite file persists close/open; UNIQUE quote/remote IDs"
         },
         {
           "id": "APPROVAL_CAS",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "src/sqlite_ledger.mjs @ 0c07306bb9633183358f0a1c86a8a3d28653d15e; BEGIN IMMEDIATE transaction/conditional UPDATE; two-connection conflict tests"
+        },
+        {
+          "id": "PAYMENT_ATTEMPT_LEDGER",
+          "weight_pct": 25,
+          "state": "VERIFIED",
+          "evidence": "src/sqlite_ledger.mjs @ 0c07306bb9633183358f0a1c86a8a3d28653d15e; stable create/capture request ids, UNIQUE quote/merchant/version/operation, UNKNOWN GET-first, synthetic proof guards"
+        },
+        {
+          "id": "CONCURRENCY_RESTART",
+          "weight_pct": 25,
+          "state": "VERIFIED",
+          "evidence": "tests/sqlite_ledger.test.mjs @ 0c07306bb9633183358f0a1c86a8a3d28653d15e; 19 tests include two handles, DB reopen, interrupted operation recovery"
+        },
+        {
+          "id": "CI_HANDOFF",
+          "weight_pct": 10,
+          "state": "VERIFIED",
+          "evidence": "GitHub Actions run 40064652611 completed/success on 0c07306bb9633183358f0a1c86a8a3d28653d15e; docs/technical/PPL_002_DAY2_SQLITE_LEDGER.md and current STATUS/HANDOFF"
+        }
+      ]
+    },
+    {
+      "day_id": "PPL-D03",
+      "scheduled_date_kst": "2026-10-27",
+      "executed_date_kst": null,
+      "scope": "Access feasibility: actual PayPal Sandbox and free AI external API (no credential disclosure)",
+      "status": "NOT_STARTED_DEPENDENCY_BLOCKED",
+      "estimated_total_hours": 3,
+      "safe_total_hours": 8,
+      "percent_complete": 0,
+      "estimated_remaining_hours": 3,
+      "safe_remaining_hours": 8,
+      "actual_elapsed_hours": null,
+      "actual_elapsed_note": "NOT_STARTED. External account approval may add unbounded waiting time.",
+      "carryover": [],
+      "limitations": [
+        "Sandbox developer app, Business merchant and Personal buyer private session access NOT_AVAILABLE",
+        "No free AI API key/model billing-limit access; cannot validate real call",
+        "3h/8h planned hands-on effort EXCLUDES unknown third-party access wait",
+        "User must handle permitted private account login; no credentials in chat or public repo"
+      ],
+      "checklist": [
+        {
+          "id": "PAYPAL_ACCOUNT_PRECHECK",
           "weight_pct": 20,
           "state": "PENDING",
           "evidence": null
         },
         {
-          "id": "PAYMENT_ATTEMPT_LEDGER",
+          "id": "SANDBOX_OAUTH_ACTUAL",
           "weight_pct": 25,
-          "state": "PENDING",
+          "state": "BLOCKED",
           "evidence": null
         },
         {
-          "id": "CONCURRENCY_RESTART",
-          "weight_pct": 25,
-          "state": "PENDING",
+          "id": "SANDBOX_ORDER_BUYER_FLOW",
+          "weight_pct": 35,
+          "state": "BLOCKED",
           "evidence": null
         },
         {
-          "id": "CI_HANDOFF",
-          "weight_pct": 10,
-          "state": "PENDING",
+          "id": "FREE_AI_ACTUAL_CALL",
+          "weight_pct": 20,
+          "state": "BLOCKED",
           "evidence": null
         }
       ]

@@ -31,3 +31,15 @@ test('time estimates are separate from measured elapsed and cannot be negative',
     if (d.status === 'NOT_STARTED') { assert.equal(d.percent_complete, 0); assert.equal(d.estimated_remaining_hours,d.estimated_total_hours); assert.equal(d.safe_remaining_hours,d.safe_total_hours); }
   }
 });
+test('day2 SQLite criteria are all verified, and next day remains blocked at zero', () => {
+  const d2 = ledger.days.find(d => d.day_id === 'PPL-D02');
+  const d3 = ledger.days.find(d => d.day_id === 'PPL-D03');
+  assert.ok(d2 && d3);
+  assert.equal(d2.percent_complete,100);
+  assert.ok(d2.checklist.every(c => c.state === 'VERIFIED'));
+  assert.equal(d2.estimated_remaining_hours,0);
+  assert.equal(d3.percent_complete,0);
+  assert.equal(d3.estimated_remaining_hours,3);
+  assert.equal(d3.safe_remaining_hours,8);
+  assert.equal(ledger.active_day_id,'PPL-D03');
+});

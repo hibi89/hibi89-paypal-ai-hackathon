@@ -46,3 +46,10 @@
 - [일일 진척/잔여시간 정책](../../DAILY_PROGRESS_REPORTING.md) / [검증 근거 JSON 원장](../../../data/paypal_daily_progress.json). **앞으로 매 실제 작업 종료 보고에 '그날 X%/100%, 남은 예상 Y시간, 남은 안전 확보 Z시간, 실측 여부, 완료·미완료·이월' 필수**. 분모는 당일 인수 기준만; 프로젝트 전체와 다름.
 - 1일차(10/25 작업을 10/24 조기 실행) **100%/100%, 잔여 예상 0시간·안전 잔여 0시간** (오프라인 quote API 부분 범위만). 2일차(10/26 계획) **0%/100%, 잔여 예상 5시간·안전 잔여 9시간** (현재 NOT_STARTED). 실제 경과시간 NOT_MEASURED.
 - 퍼센트는 근거 확인된 항목의 가중치 합계로 계산한다. 예상보다 오래 걸려도 시간을 쓴 것만으로 완료% 상승하지 않는다. 새 회귀 검증 테스트를 추가했다. PayPal 실 Sandbox·AI·Production·Devpost 제출 미검증 유지.
+
+## 2026-10-24 KST — PPL-D02 오프라인 영속 DB 완료/다음 외부 API 게이트
+- **2일차 진행률 100% / 100%**, 남은 예상 **0시간**, 남은 안전 확보 **0시간** (해당 일차 로컬 SQLite 범위에 한정). 새 [Node SQLite 레저](../../technical/PPL_002_DAY2_SQLITE_LEDGER.md) `src/sqlite_ledger.mjs`, 19개 테스트; 영속 파일, 승인 CAS/UNIQUE, 결제 시도 단일 점유, `UNKNOWN` 복구와 두 커넥션/재시작 합성 검증.
+- 최초 코드 커밋 `99a2a8b` CI run 40064603053 **실패**, SQL INSERT placeholder 수정 커밋 `0c07306bb9633183358f0a1c86a8a3d28653d15e`의 [GitHub Actions 40064652611](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40064652611) **completed/success** (Node22 `npm test` 단계 성공; 소스 test() 56건). 실패 이력 숨기지 않음.
+- **다음 3일차 PPL-D03 진행률 0% / 100%, 남은 예상 작업 3시간·안전 확보 8시간.** Sandbox Business/Personal·무료 AI 계정 접근 `BLOCKED_BY_ACCESS`, 외부 계정 승인 대기시간 UNKNOWN, 3/8시간은 계정 접근 후 예상 인력 작업시간.
+- **주의:** Node 로컬 SQLite만 확인, D1/Production 이식·실 PayPal/AI·브라우저/E2E·Devpost **NOT_TESTED**. 서버 신원 검증 및 PayPal GET 출처 증빙은 아직 외부 게이트. `POST /orders`는 여전히 503; 실금전 요청 없음. Day2 실측 소요시간 `NOT_MEASURED`, 계획 5h/9h를 실제 작업시간으로 주장하지 않음.
+- [일일 100% 진행률 정본](../../../data/paypal_daily_progress.json), 18일 원예산 82h/164h 계획은 실측 없이 자동 감산하지 않음.
