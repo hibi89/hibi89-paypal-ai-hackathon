@@ -1,23 +1,21 @@
-# PayPal → 해커톤 통합 총괄 최신 보고 (2026-10-24)
-<!-- resume: day_id=PPL-D12; percent=0; est_h=5; safe_h=9 -->
+# PayPal → 3-hackathon chief — 2026-10-24
+<!-- resume: day_id=PPL-D13; percent=0; est_h=6; safe_h=11 -->
 
-**재개 문장:** `[페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈]` · `ㄱ` · `r`. 최신 GitHub `hibi89/hibi89-paypal-ai-hackathon`의 **`lead/paypal`** HEAD 확인 → `CHAT_BOOTSTRAP.md` → `docs/roles/lead/LEAD_ACTIVE_WORK.md` → `data/paypal_daily_progress.json` → 실제 구현·CI·커밋. 과거 `main`, feature/* 및 별도 작업자 역할은 실행 지시가 아니다.
+**호출:** `[페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈]` · `ㄱ` · `r`. 이 저장소는 `hibi89/hibi89-paypal-ai-hackathon`의 `lead/paypal` 단일 개발·총괄 브랜치가 정본이다. 매 새 대화에서 최신 GitHub HEAD → `CHAT_BOOTSTRAP.md` → `docs/roles/lead/LEAD_ACTIVE_WORK.md` → `data/paypal_daily_progress.json` 순서로 복원한다.
 
-### D11 완료 — 오프라인 Webhook 보안·중복 원장
-- 공식 예정 2026-11-04, 실제 선행 2026-10-24. **100%/100%, 남은 기본 0h/안전 0h, 실측 NOT_MEASURED.**
-- `src/webhook_ingress.mjs`: 원본 JSON 바이트의 decimal CRC32→등록 앱 Webhook ID·timestamp·transmission ID 조합 SHA256withRSA 암호 확인(오프라인), **고정된 sandbox 인증서 URL/로컬 설정 PEM만 수락**, 사용자 임의 URL 다운로드 금지·본문 64KiB 제한. `offlineOnly:true`가 없으면 생성 불가. 배포 서비스에 연결하지 않음.
-- `src/webhook_inbox.mjs`: 파일 기반 Node SQLite BEGIN IMMEDIATE, UNIQUE(event ID, transmission ID), 수신 재시도·역순·동일 timestamp·금전 이벤트 GET-first, event audit immutable, 영속 reconciliation queue. 등록된 구독 ID가 아니면 2xx 반환하지 않음. 결제 성공 추정 없음.
-- `tests/webhook_ingress.test.mjs` **합성 RSA/SQLite 신규 17건**, [GitHub Actions 40075690681](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40075690681) SHA `1fbbb56357b3243c2ff45c19f549d49780491ada` **Node 163/163 PASS, 기존 Chromium 브라우저 E2E PASS, 전체 18일 JSON/MD 생성 일치 PASS**. 증거 [D11 기술메모](docs/technical/PPL_D11_WEBHOOK_INGRESS_20261024.md).
-- **실제 PayPal Webhook 서버가 보낸 암호서명/등록 Webhook ID/국가별 한국 merchant 구독 가능성/HTTPS 수신/외부 실접속은 NOT_TESTED.** 로컬 fixture 서명 검증을 PayPal 인증으로 오인 금지.
+## D12 완료 — 2026-11-05 예정분을 10/24에 선행
+- **D12 100%/100%, 잔여 기본 0h / 안전 확보 0h**, 실제 작업 소요시간 `NOT_MEASURED`.
+- 화면은 1개 로컬 demo HTML에서 **모의 AI 견적+사람 승인 / 계약·납품·검수 / 구독 모의 시나리오**를 통합. 구독 `NOT_STARTED→ACTIVE→RECOVERY_REQUIRED→ACTIVE→CANCELLED`를 승인된 로컬 owner 버튼 클릭으로만 실행. `CANCELLED`에서 다시 활성화/복구 금지. 실제 공급자 GET은 호출되지 않으며 복구는 `SYNTHETIC_GET_FIXTURE_ONLY_NOT_PAYPAL`로 표기. 구독 결제정보는 항상 `NOT_VERIFIED`, 계약 결제는 `NOT_CAPTURED`.
+- `src/subscription_demo_store.mjs`: 디스크 SQLite + 트랜잭션/고유 이벤트·버전 CAS·immutable audit. `src/subscription_demo_api.mjs`: Trusted synthetic session, owner/merchant binding, JSON 필드 제한·CSRF·Origin, loopback-only. `web/subscription_client.js`: F5·refresh GET만, 명시 클릭 때만 POST, 이중 클릭 잠금.
+- 기능 CI `80bb6c8442e02bde8247980537cc1efbc05e6698` [run 40077024670](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40077024670) **Node 171/171 PASS + 실제 localhost Chromium E2E PASS + 18일 master progress PASS**. 최초 `e489b737` 테스트에서 견적 미승인 PayPal 게이트는 409인데 503을 기대한 fixture 오류 → `80bb6c84` 수정 후 전체 통과. `docs/technical/PPL_D12_SUBSCRIPTION_UI_20261024.md` 참조.
+- **진짜 PayPal 구독/AI/merchant 국가 권한/Buyer OAuth/Provider GET/Live 결제/실 PayPal webhook/Cloudflare D1/공개 로그인/실 배포/Devpost NOT_TESTED.** 합성 검증 PASS를 실제 provider 성공으로 표기 금지. PayPal payment POST 503 보호 유지(미승인 견적 요청은 409에서 먼저 거부).
 
-### NEXT READY — D12
-- 예정 2026-11-05, 지금 선행 가능. **D12 0%/100%, 예상 잔여 5h / 안전 확보 총량 9h, 실측 NOT_MEASURED**.
-- `구독 UI 및 실패·취소·복구 시나리오`를 로컬 합성 데이터에만 붙인다. PayPal Orders/Subscriptions 실 API, 실제 Webhook 공개 배포, 한국 merchant 구독 권한 확인 전 실결제 버튼·Live 전송 금지. 세 기능 화면 구분하고 취소 후 재활성 불가/상태가 엇갈릴 때 GET-first 복구 표기·명시적 사용자 승인 유지.
-- 원장 D12 체크리스트 20% `REQUIREMENTS_AND_DESIGN`, 40% `IMPLEMENTATION`, 30% `AUTOMATED_VERIFICATION`, 10% `CI_HANDOFF`. 각 항목 증거에 따라 VERIFIED로 변경. 다음 `ㄱ`부터 실제 개발.
-- **미해결 D03 0% (실 Sandbox/무료 AI 차단, 3h/안전8h + 대기 미정)**, **D04 80% (실 AI 나머지20%, 2h/안전4h)**, 실제 고객/실 Webhook/운영 배포/Devpost `NOT_TESTED`. PayPal 결제 POST **503** 유지.
-- 공식 제출 2026-11-13 05:00 KST / 내부 11/11, 0원 신규 지출·실키/PII·승인 없는 계정연결·force-push 금지.
+## NEXT READY — D13 (원래 11/06, 선행 가능)
+- **D13 0%/100%, 기본 예상 잔여 6h / 안전 확보 총량 11h, 미계측.** `전체 기능 통합 회귀·주요 결함 수정`: 3기능 end-to-end synthetic data contract, 위험한 상태전이/role·merchant spoof/CSRF/민감값·업그레이드/재시작 통합, log/audit·fallback, 중대 결함 → freeze candidate를 실제 코드/테스트 통과할 때만 DONE 판정. CI+문서/원장 완료 기준에 맞춰 배점 명세 등록 또는 원장 기존 체크리스트 확인.
+- D03 **0% BLOCKED** PayPal Sandbox Business/Personal·무료 AI 실계정 승인, 남은 3h/8h + 외부 접근 대기 UNKNOWN. D04 **80%**, 실 AI API 20% 미완료, 남은 2h/4h. 이 둘을 offline fixture PASS로 우회 완료 처리 금지. 실 Sandbox 계정 연결·시크릿·새 지출은 사용자 승인 필요.
+- 전체 18일 정본 `data/paypal_daily_progress.json`, 사람이 보는 `MASTER_PROGRESS.md` 자동 생성. 당일 100%는 해당 날짜 local acceptance만; 출품·공개 배포 준비 수준이 아님. 내부 11/11, 공식 2026-11-13 05:00 KST, 비용 ₩0.
 
-### 인수인계 필수 규칙
-`data/paypal_daily_progress.json` **전체 18일 단일 정본** → `python3 render_master_progress.py --write` → `python3 render_master_progress.py --check` → `MASTER_PROGRESS.md` 자동생성표 갱신 → 6개 운영 문서 동일 `resume:` 포인터 → `npm test` 및 GitHub Actions Chromium PASS/FAIL 기록 → `expected_sha` fast-forward 커밋. <https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/lead/paypal/docs/RESUME_SYNC_CONTRACT.md> (URL은 경로 안내; 실제 문서 정본은 저장소에 있음). 매 새 채팅은 과거 텍스트보다 GitHub 최신 HEAD 기준.
+## 반복 작업 종료 계약
+작업 코드→Node+Chromium 실제 CI→`data/paypal_daily_progress.json` 100점 evidence/남은 기본·안전·차단·실제 완료일 업데이트→`python render_master_progress.py --write`→동일 `MASTER_PROGRESS.md`→운영 6파일 `resume:` 주석 일치→GitHub commit fast-forward→새 Actions 성공까지 검수. 직접 측정하지 않은 작업시간은 `NOT_MEASURED`. 승인 없는 Live·유료·개인키 업로드·Production 공개 금지.
 
-**총괄 판정:** D11 합성 서명·SQLite Webhook local gate 100%, D12 예정 11/05 선행 0%. 세 대회 관리표/일별 %는 동일 날짜 분모이며 대회 전체 진척이 아님. 실제 공식 PayPal Sandbox·KR 판매자 subscriptions·원격 HTTPS webhook 미검증.
+**총괄 주의:** D12의 100%는 synthetic/local/Chrome 범위다. 실제 결제·실 구독·공개 URL 접속 미검증이며 D03+D04 차단 그대로다. 다음 D13 통합·동결 후보, D15 deploy 계획과 혼동 금지.

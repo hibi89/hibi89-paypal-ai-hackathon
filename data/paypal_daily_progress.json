@@ -2,7 +2,7 @@
   "schema_version": 1,
   "updated_kst": "2026-10-24",
   "scope": "Per-day verified acceptance; NOT entire PayPal hackathon project percent",
-  "active_day_id": "PPL-D12",
+  "active_day_id": "PPL-D13",
   "reporting_mode": "mandatory_after_each_actual_work_session",
   "days": [
     {
@@ -754,48 +754,60 @@
       "acceptance": "3기능 UI 결합, 실패 시 유료/Live 우회 없음",
       "estimated_total_hours": 5,
       "safe_total_hours": 9,
-      "estimated_remaining_hours": 5,
-      "safe_remaining_hours": 9,
-      "progress_state": "NOT_STARTED",
-      "percent_complete": 0,
-      "executed_date_kst": null,
+      "estimated_remaining_hours": 0,
+      "safe_remaining_hours": 0,
+      "progress_state": "DONE",
+      "percent_complete": 100,
+      "executed_date_kst": "2026-10-24",
       "actual_elapsed_hours": null,
-      "evidence": [],
-      "verified_sha": null,
+      "evidence": [
+        "D12 design/guards: src/subscription_demo_store.mjs + src/subscription_demo_api.mjs; synthetic-only lifecycle with NOT_VERIFIED payment, version CAS/CSRF/trusted owner and forbidden CANCELLED recovery",
+        "D12 implementation: web/subscription_client.js + web/offline_demo.html + src/offline_demo_server.mjs; single local quote/contract/subscription UI; isolated owner-only POST actions, no provider GET/POST; GitHub @ e4836412",
+        "D12 tests: tests/subscription_demo.test.mjs adds 8 Node cases incl SQLite persistence/role isolation, tests/browser_offline_e2e.py full start→fail→recover→cancel/F5/no-payment. CI 40077024670 @ 80bb6c84: Node 171/171 PASS and Chromium real local browser PASS",
+        "D12 final evidence: GitHub Actions 40077024670 completed/success @ 80bb6c8442e02bde8247980537cc1efbc05e6698; Node 171/171, Chromium PASS, master schedule check PASS; JSON/MD same-commit sync validation is separately repeated"
+      ],
+      "verified_sha": "80bb6c8442e02bde8247980537cc1efbc05e6698",
       "blocker": null,
       "recovery_date_kst": null,
       "recovery_condition": null,
-      "advance_note": null,
-      "status": "NOT_STARTED",
-      "actual_elapsed_note": "NOT_STARTED/NOT_MEASURED",
-      "carryover": [],
+      "advance_note": "2026-10-24 선행: 구독 모의 UI(활성·실패·복구·취소) SQLite·권한/CSRF 및 실제 로컬 Chromium 171 Node CI PASS. 실제 PayPal 구독/거래/GET 미검증.",
+      "status": "DAY12_OFFLINE_SUBSCRIPTION_BROWSER_E2E_ACCEPTED",
+      "actual_elapsed_note": "NOT_MEASURED; 5h estimate/9h safe budget not actual measured execution",
+      "carryover": [
+        "Real subscription API/merchant eligibility and live webhook signature evidence remain blocked with D03; D12 mock acceptance must never be re-labeled real",
+        "D13 cross-feature integration regression, freeze candidate, security and remaining failure scenarios"
+      ],
       "limitations": [
-        "Not implemented or tested yet; no real provider or production completion claimed"
+        "Synthetic local browser transitions only. No merchant/buyer PayPal Sandbox, subscription plan, actual provider GET, charge, subscription purchase or webhook delivered",
+        "Recovery is SYNTHETIC_GET_FIXTURE_ONLY_NOT_PAYPAL and subscription paymentEvidence remains NOT_VERIFIED even if UI state ACTIVE",
+        "CANCELLED state is terminal in this synthetic scenario, invalid/stale/forged role or CSRF requests rejected",
+        "Mock local SQLite is ephemeral per launched demo instance and not production D1; server bound to 127.0.0.1; real account authentication absent",
+        "No real AI provider, merchant KR eligibility, D1 public deployment, Devpost, external reviewer access"
       ],
       "checklist": [
         {
           "id": "REQUIREMENTS_AND_DESIGN",
           "weight_pct": 20,
-          "state": "PENDING",
-          "evidence": null
+          "state": "VERIFIED",
+          "evidence": "D12 design/guards: src/subscription_demo_store.mjs + src/subscription_demo_api.mjs; synthetic-only lifecycle with NOT_VERIFIED payment, version CAS/CSRF/trusted owner and forbidden CANCELLED recovery"
         },
         {
           "id": "IMPLEMENTATION",
           "weight_pct": 40,
-          "state": "PENDING",
-          "evidence": null
+          "state": "VERIFIED",
+          "evidence": "D12 implementation: web/subscription_client.js + web/offline_demo.html + src/offline_demo_server.mjs; single local quote/contract/subscription UI; isolated owner-only POST actions, no provider GET/POST; GitHub @ e4836412"
         },
         {
           "id": "AUTOMATED_VERIFICATION",
           "weight_pct": 30,
-          "state": "PENDING",
-          "evidence": null
+          "state": "VERIFIED",
+          "evidence": "D12 tests: tests/subscription_demo.test.mjs adds 8 Node cases incl SQLite persistence/role isolation, tests/browser_offline_e2e.py full start→fail→recover→cancel/F5/no-payment. CI 40077024670 @ 80bb6c84: Node 171/171 PASS and Chromium real local browser PASS"
         },
         {
           "id": "CI_HANDOFF",
           "weight_pct": 10,
-          "state": "PENDING",
-          "evidence": null
+          "state": "VERIFIED",
+          "evidence": "D12 final evidence: GitHub Actions 40077024670 completed/success @ 80bb6c8442e02bde8247980537cc1efbc05e6698; Node 171/171, Chromium PASS, master schedule check PASS; JSON/MD same-commit sync validation is separately repeated"
         }
       ]
     },
