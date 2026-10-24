@@ -86,6 +86,9 @@ export function createSandboxTransport(options={}) {
       ? 'application/x-www-form-urlencoded':'application/json';
     if (path==='/v1/oauth2/token')
       headers.authorization='Basic '+Buffer.from(clientId+':'+clientSecret).toString('base64');
+    // Even HTTP 5xx or unreadable success bodies can follow a committed POST.
+    // Never signal that a retry is safe; durable caller must GET-first.
+    const paymentPost=method==='POST' && path.startsWith('/v2/checkout/orders');
     let response;
     try {
       response=await fetchImpl(url,{
@@ -94,14 +97,17 @@ export function createSandboxTransport(options={}) {
         ...(method==='POST'?{body:body??'{}'}:{}),
       });
     }catch {
-      // No blind retry after any ambiguous POST. Caller must reconcile via GET.
-      throw new SandboxTransportError(method==='POST'?
-        'SANDBOX_POST_OUTCOME_UNKNOWN':'SANDBOX_GET_NETWORK_ERROR');
+      throw new SandboxTransportError(paymentPost?
+        'SANDBOX_POST_OUTCOME_UNKNOWN':
+        method==='POST'?'SANDBOX_OAUTH_NETWORK_ERROR':'SANDBOX_GET_NETWORK_ERROR');
     }
-    reject(!response || typeof response.status!=='number' ||
-      response.status<200 || response.status>=300,'SANDBOX_HTTP_FAILURE');
+    if(!response || typeof response.status!=='number' ||
+        response.status<200 || response.status>=300)
+      throw new SandboxTransportError(paymentPost?
+        'SANDBOX_POST_OUTCOME_UNKNOWN':'SANDBOX_HTTP_FAILURE');
     try { return await response.json(); }
-    catch { throw new SandboxTransportError('SANDBOX_MALFORMED_JSON'); }
+    catch { throw new SandboxTransportError(paymentPost?
+      'SANDBOX_POST_OUTCOME_UNKNOWN':'SANDBOX_MALFORMED_JSON'); }
   }
   async function accessToken() {
     const data=await fetchJson('/v1/oauth2/token',{

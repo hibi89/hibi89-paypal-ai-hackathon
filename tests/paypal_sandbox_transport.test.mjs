@@ -9,7 +9,7 @@ const claim=operation=>({action:'FIRST_CLAIM_ONLY_NO_PROVIDER_CALL',attempt:{
   requestId:requestKey(q,operation),
   amountMinor:1500,currency:'USD',state:'IN_FLIGHT'}});
 function stub({getStatus='CREATED',value='15.00',linkHost='www.sandbox.paypal.com',
-  failAt=null,getOverride=null,approvalHref=null,createStatus='CREATED'}={}) {
+  failAt=null,failHttpAt=null,malformedJsonAt=null,getOverride=null,approvalHref=null,createStatus='CREATED'}={}) {
   const calls=[];
   const transport=createSandboxTransport({
     clientId:'SYNTHETIC_TEST_ID',clientSecret:'SYNTHETIC_TEST_SECRET',
@@ -17,6 +17,10 @@ function stub({getStatus='CREATED',value='15.00',linkHost='www.sandbox.paypal.co
       calls.push({url,method:options.method,headers:options.headers,body:options.body,
         signal:options.signal});
       if(failAt&&url.endsWith(failAt))throw Error('network reset');
+      if(options.method==='POST'&&failHttpAt&&url.endsWith(failHttpAt))
+        return {status:503,json:async()=>({name:'SERVICE_UNAVAILABLE'})};
+      if(options.method==='POST'&&malformedJsonAt&&url.endsWith(malformedJsonAt))
+        return {status:201,json:async()=>{throw new SyntaxError('truncated body')}};
       if(url.endsWith('/v1/oauth2/token'))
         return {status:200,json:async()=>({access_token:'SYNTHETIC_TOKEN',token_type:'Bearer'})};
       if(options.method==='POST'&&url.endsWith('/v2/checkout/orders'))
@@ -226,4 +230,25 @@ test('unknown provider order status is not silently treated as buyer approval',a
  await assert.rejects(transport.createOrderOnce(q,claim('create')),
   {code:'SANDBOX_ORDER_MISMATCH'});
  assert.equal(calls.filter(c=>c.url.endsWith('/capture')).length,0);
+});
+
+test('Orders create/capture POST 503 or invalid 201 body is UNKNOWN, never a safe retry',async()=>{
+ for(const suffix of ['/v2/checkout/orders','/capture']){
+  for(const kind of ['failHttpAt','malformedJsonAt']){
+   const {transport,calls}=stub({getStatus:'APPROVED',[kind]:suffix});
+   if(suffix==='/capture')
+    await assert.rejects(transport.captureOnce(q,claim('capture'),'ORDER0001'),
+      {code:'SANDBOX_POST_OUTCOME_UNKNOWN'});
+   else
+    await assert.rejects(transport.createOrderOnce(q,claim('create')),
+      {code:'SANDBOX_POST_OUTCOME_UNKNOWN'});
+   assert.equal(calls.filter(x=>x.method==='POST'&&x.url.endsWith(suffix)).length,1);
+  }
+ }
+});
+test('OAuth token failure is distinguishable from uncertain payment POST',async()=>{
+ const {transport,calls}=stub({failAt:'/v1/oauth2/token'});
+ await assert.rejects(transport.createOrderOnce(q,claim('create')),
+   {code:'SANDBOX_OAUTH_NETWORK_ERROR'});
+ assert.equal(calls.filter(x=>x.method==='POST'&&x.url.endsWith('/v2/checkout/orders')).length,0);
 });
