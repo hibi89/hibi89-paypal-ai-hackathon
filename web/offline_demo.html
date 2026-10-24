@@ -98,10 +98,22 @@ strong{font-weight:700}.meta{color:#485972;font-size:.9rem}
 </div>
 <p id="subscription-message" role="status" aria-live="polite"></p>
 </section>
+<section class="panel" id="integration-panel" aria-labelledby="integration-heading">
+<h2 id="integration-heading">6. Cross-feature readiness — synthetic only</h2>
+<p class="meta">This read-only local projection checks quote/contract/subscription consistency. A local demo candidate is NEVER a real PayPal integration, charge, production deployment or submitted entry.</p>
+<div class="contract-grid">
+<div><p>Local demo integration</p><p class="delivery-status" id="integration-state">CHECKING</p></div>
+<div><p>Real PayPal provider</p><p class="delivery-status" id="integration-paypal">NOT_TESTED</p></div>
+</div>
+<p id="integration-detail" role="status" aria-live="polite">Loading synthetic consistency…</p>
+<button type="button" id="integration-refresh">Review integration (GET only)</button>
+<p id="integration-message" role="status" aria-live="polite"></p>
+</section>
 <p id="message" role="status" aria-live="polite"></p>
 </main>
 <script src="/demo/client.js" defer></script>
 <script src="/demo/contract.js" defer></script>
 <script src="/demo/subscription.js" defer></script>
+<script src="/demo/integration.js" defer></script>
 </body>
 </html>

@@ -11,6 +11,7 @@ import { createContractApi } from './contract_api.mjs';
 import { createOfflineMockDraftProvider } from './quote_draft.mjs';
 import { createSubscriptionScenarioStore } from './subscription_demo_store.mjs';
 import { createSubscriptionDemoApi } from './subscription_demo_api.mjs';
+import { evaluateLocalIntegration } from './local_integration_readiness.mjs';
 
 const html = readFileSync(new URL('../web/offline_demo.html', import.meta.url), 'utf8');
 const onlyLoopback = address => address === '127.0.0.1' ||
@@ -81,11 +82,12 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false } 
         res.end(html);
         return;
       }
-      if (req.method === 'GET' && (path === '/demo/client.js' || path === '/demo/contract.js' || path === '/demo/subscription.js')) {
+      if (req.method === 'GET' && (path === '/demo/client.js' || path === '/demo/contract.js' || path === '/demo/subscription.js' || path === '/demo/integration.js')) {
         const js = readFileSync(new URL(
           path === '/demo/client.js' ? '../web/demo_client.js' :
           path === '/demo/contract.js' ? '../web/contract_client.js' :
-          '../web/subscription_client.js', import.meta.url));
+          path === '/demo/subscription.js' ? '../web/subscription_client.js' :
+          '../web/integration_client.js', import.meta.url));
         res.writeHead(200, {
           'content-type': 'text/javascript; charset=utf-8',
           'cache-control': 'no-store', 'x-content-type-options': 'nosniff',
@@ -102,6 +104,37 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false } 
         res.end(JSON.stringify({ csrfToken, quoteId, mode: 'OFFLINE_MOCK',
           role,contractId:'demo-contract',milestoneId:'demo-milestone',reviewerId,
           subscriptionId }));
+        return;
+      }
+      // Read-only same-origin integration projection. Never route to PayPal.
+      if (path === '/api/demo/integration') {
+        if (req.method !== 'GET') {
+          res.writeHead(405,{'cache-control':'no-store',
+            'content-type':'application/json','allow':'GET'});
+          res.end(JSON.stringify({error:'METHOD_NOT_ALLOWED'}));
+          return;
+        }
+        const session=await resolveSession(
+          new Request('http://127.0.0.1:'+listenPort+'/api/demo/integration',
+            {headers:req.headers}));
+        if(!session || session.verified!==true ||
+          session.actorId!==actorId ||
+          session.merchantId!=='synthetic-merchant') {
+          res.writeHead(404,{'cache-control':'no-store','content-type':'application/json'});
+          res.end(JSON.stringify({error:'INTEGRATION_NOT_FOUND'}));
+          return;
+        }
+        const quote=await ledger.get(quoteId);
+        let contract=null;
+        try {contract=await ledger.getContract({contractId:'demo-contract',
+          actorId:session.actorId,merchantId:session.merchantId});}
+        catch(e){if(e?.code!=='CONTRACT_NOT_FOUND')throw e;}
+        const subscription=subscriptionStore.get({
+          subscriptionId,actorId:session.actorId,merchantId:session.merchantId});
+        const result=evaluateLocalIntegration({quote,contract,subscription});
+        res.writeHead(200,{'cache-control':'no-store',
+          'content-type':'application/json','x-content-type-options':'nosniff'});
+        res.end(JSON.stringify(result));
         return;
       }
       if (!path.startsWith('/api/')) {

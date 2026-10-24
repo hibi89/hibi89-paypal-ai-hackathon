@@ -169,7 +169,16 @@ try:
             assert not any(method=="POST" and "/v1/billing" in url for method,url in requests)
             assert not any(method=="POST" and "/orders" in url for method,url in requests)
             expect(page.locator("#contract-payment")).to_have_text("NOT_CAPTURED")
-            print("CHROMIUM_BROWSER_E2E_PASS: quote+contract+subscription synthetic failure/recover/cancel, no provider or payment POST")
+            expect(page.locator("#integration-paypal")).to_have_text("NOT_TESTED")
+            expect(page.locator("#integration-state")).to_have_text("LOCAL_DEMO_INCOMPLETE")
+            before_integration=sum(method=="POST" for method,_ in requests)
+            page.locator("#integration-refresh").click()
+            expect(page.locator("#integration-message")).to_contain_text("GET-only local integration")
+            assert sum(method=="POST" for method,_ in requests)==before_integration
+            page.reload()
+            expect(page.locator("#integration-state")).to_have_text("LOCAL_DEMO_INCOMPLETE")
+            assert sum(method=="POST" for method,_ in requests)==before_integration
+            print("CHROMIUM_BROWSER_E2E_PASS: quote+contract+subscription+integration read-only local gate, no provider or payment POST")
         finally:
             browser.close()
 finally:
