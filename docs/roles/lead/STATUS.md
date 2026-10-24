@@ -36,3 +36,8 @@
 - **최신 단독 실행계획:** [`docs/PAYPAL_EXECUTION_PLAN_20261024.md`](../../PAYPAL_EXECUTION_PLAN_20261024.md), **비용/무료 한도·차단 계약:** [`docs/ZERO_COST_STACK_AND_GUARDRAILS.md`](../../ZERO_COST_STACK_AND_GUARDRAILS.md). 상대 경로는 저장소 루트 기준이다.
 - Gate: **10/27 실 PayPal Sandbox 결제 POC 및 무료 AI 호출**, **11/02 첫 E2E**, **11/06 기능 동결**, **11/09 제출 후보**, **11/11 조기 제출**, 공식 마감 **11/13 05:00 KST**.
 - **미완료/미검증:** 사용자 PayPal Developer/Sandbox·Cloudflare·Gemini 무료 계정 접근, 3 담당 AI 채팅 실제 배정, 기능 코드·API 호출·CI·배포·영상·Devpost 제출은 아직 검증되지 않음. 계획 승인≠구현/제출 완료.
+
+## 2026-10-24 KST — 최종 운영 변경: PayPal 기능 담당 1명 순차 활성
+- **최신 사용자 결정 우선 적용:** PayPal 3명 병렬 중단, **PayPal 당 단일 활성 feature 작업자**. KIC·UGREEN도 각각 1명씩 동시에 작업 가능하다는 전체 원칙. PayPal의 quote-payment→delivery→subscriptions 순차 작업.
+- 최신 [실행계획 v4.0](../../PAYPAL_EXECUTION_PLAN_20261024.md). 작업자 슬롯 미배정/채팅 미확인. 실 코드·API·CI·서비스·제출 성과 **0건/미검증**.
+- 0원 하드캡·11/11 조기 제출·11/13 05:00 KST 공식 마감 유지.
