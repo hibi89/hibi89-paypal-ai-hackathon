@@ -1,3 +1,5 @@
+> **2026-10-24 P0 전송 계층 제한시간 보강:** Sandbox-only OAuth/Orders/GET/Capture의 주입형 `fetch`에 요청별 고정 10초 `AbortSignal` 적용. POST 제한시간·네트워크 오류는 기존 `UNKNOWN`/재POST 금지 계약 유지. 테스트 1개 추가(`tests/paypal_sandbox_transport.test.mjs`); **실 PayPal/AI 요청 0회**, 신규 커밋 CI는 **PENDING**(직전 `70f0d5b` Actions #40089857353 PASS, Node 259/259 + Chromium). D03 0% BLOCKED / D04 80% / D15 20%, D15 잔여 5h·안전 10h, 실측 NULL 유지. 기본 `main`이 작업 `lead/paypal`과 183 ahead/5 behind로 분기됨; 릴리스 승인 전 자동 병합 금지.
+
 # PayPal STATUS — D15 active, 2026-10-24 KST
 <!-- resume: day_id=PPL-D15; percent=20; est_h=5; safe_h=10 -->
 > **심사/제출 증빙 자동 검수 추가 — 2026-10-24:** `src/submission_evidence_gate.mjs` + `npm run preflight:submission` (외부 호출 **0**, 누락 증거 시 예상 exit **2**), 신규 8개 tests; [영어 재현 안내](docs/JUDGE_REPRODUCTION_EN.md)의 루트 MIT LICENSE 완료 사실과 Windows/Linux 실행 지침 보정. [Actions #40088755056](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40088755056) @ `b3f150c6b0e8`: **Node 259/259, localhost Chromium, 18-day MASTER PASS**. 실제 PayPal Sandbox·AI·운영 인증·영상·Devpost 영수증 전부 **NOT_TESTED / NOT_SUBMITTED**. D03 0% BLOCKED, D04 80%, D15 20%, D16–D18 0% 유지.

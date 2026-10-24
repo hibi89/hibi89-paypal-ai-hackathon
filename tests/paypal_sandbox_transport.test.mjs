@@ -13,7 +13,8 @@ function stub({getStatus='CREATED',value='15.00',linkHost='www.sandbox.paypal.co
   const transport=createSandboxTransport({
     clientId:'SYNTHETIC_TEST_ID',clientSecret:'SYNTHETIC_TEST_SECRET',
     async fetchImpl(url,options) {
-      calls.push({url,method:options.method,headers:options.headers,body:options.body});
+      calls.push({url,method:options.method,headers:options.headers,body:options.body,
+        signal:options.signal});
       if(failAt&&url.endsWith(failAt))throw Error('network reset');
       if(url.endsWith('/v1/oauth2/token'))
         return {status:200,json:async()=>({access_token:'SYNTHETIC_TOKEN',token_type:'Bearer'})};
@@ -108,4 +109,12 @@ test('invalid order ID cannot cause arbitrary URL request',async()=>{
   await assert.rejects(transport.getOrder(q,'../../v1/oauth2/token'),
     {code:'INVALID_ORDER_ID'});
   assert.equal(calls.length,0);
+});
+
+test('every Sandbox OAuth, create, GET and capture request uses a bounded AbortSignal',async()=>{
+  const {transport,calls}=stub({getStatus:'APPROVED'});
+  await transport.createOrderOnce(q,claim('create'));
+  await transport.captureOnce(q,claim('capture'),'ORDER0001');
+  assert.ok(calls.length>=7);
+  assert.ok(calls.every(item=>item.signal instanceof AbortSignal && !item.signal.aborted));
 });

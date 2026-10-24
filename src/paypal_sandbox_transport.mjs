@@ -5,6 +5,8 @@
 import { planOrder, planCapture, requestKey, approvedAmount } from './payment_contract.mjs';
 
 const BASE = 'https://api-m.sandbox.paypal.com';
+// Bound every OAuth, order and capture request. POST timeout is UNKNOWN, never retried.
+const REQUEST_TIMEOUT_MS = 10_000;
 const ORDER_ID = /^[a-zA-Z0-9_-]{1,64}$/;
 export class SandboxTransportError extends Error {
   constructor(code) { super(code); this.name='SandboxTransportError'; this.code=code; }
@@ -75,6 +77,7 @@ export function createSandboxTransport(options={}) {
     try {
       response=await fetchImpl(url,{
         method, headers, redirect:'error',
+        signal:AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         ...(method==='POST'?{body:body??'{}'}:{}),
       });
     }catch {

@@ -1,3 +1,5 @@
+> **2026-10-24 P0 전송 계층 제한시간 보강:** Sandbox-only OAuth/Orders/GET/Capture의 주입형 `fetch`에 요청별 고정 10초 `AbortSignal` 적용. POST 제한시간·네트워크 오류는 기존 `UNKNOWN`/재POST 금지 계약 유지. 테스트 1개 추가(`tests/paypal_sandbox_transport.test.mjs`); **실 PayPal/AI 요청 0회**, 신규 커밋 CI는 **PENDING**(직전 `70f0d5b` Actions #40089857353 PASS, Node 259/259 + Chromium). D03 0% BLOCKED / D04 80% / D15 20%, D15 잔여 5h·안전 10h, 실측 NULL 유지. 기본 `main`이 작업 `lead/paypal`과 183 ahead/5 behind로 분기됨; 릴리스 승인 전 자동 병합 금지.
+
 > **[통합 총괄 공식 대회정보 공시 연동 — 2026-10-24]** 사용자의 직접 요청으로 [PayPal 2026 공식 대회정보·제출요건·심사·마감·교육/개발 링크](https://github.com/hibi89/hackathon-command-center-2026/blob/main/docs/contests/PAYPAL_2026_OFFICIAL_REQUIREMENTS.md)를 `hibi89/hackathon-command-center-2026@main`에 게시(검수 기준 중앙 커밋 `25c877616ede`). **상위 총괄의 `README/START_HERE/CHAT_BOOTSTRAP/HANDOFF/projects/PAYPAL`에서 이 문서를 우선 열도록 공시함.** 필수 실 PayPal+AI, 공개 루트 MIT+작동 데모, 공개 YouTube 3분 미만 영상, 최종 Devpost Submitted 증빙 및 11/13 05:00 KST 마감. 실제 Provider OAuth/Orders·AI 호출·배포·영상·최종 접수는 여전히 미검증/미제출. 기존 D03 0% BLOCKED·D04 80%·D15 20% 유지. 통합 총괄은 자신의 새 채팅에서 GitHub를 읽을 때 확인 가능하나, 자동 메시지/실시간 알림은 아님.
 
 # PayPal LEAD ACTIVE WORK — PPL-D15
