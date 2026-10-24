@@ -1,3 +1,5 @@
+> **2026-10-25 actual provider success, owner-operated:** PayPal Sandbox OAuth HTTP 200 and Gemini gemini-3.5-flash-lite generation HTTP 200, one call each. D03=65% PARTIAL (Orders/approval/capture 35% outstanding); D04=80% PARTIAL (real AI quote integration not yet verified); D15=20%. 18-day DONE12/PARTIAL3/BLOCKED0/NOT_STARTED3. No secrets or real payments; rerun one-shot disallowed; checkout needs separately scoped consent. [Proof](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/lead/paypal/docs/technical/PPL_P0_REAL_PROVIDER_FIRST_SUCCESS_20261025.md).
+
 # PayPal AI Hackathon — Freelancer Payment Agent
 
 **새 채팅 한 문장:** [페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈]. 기준 lead/paypal → [CHAT_BOOTSTRAP](CHAT_BOOTSTRAP.md), [HANDOFF](HANDOFF.md), [STATUS](STATUS.md), [CURRENT TASK](docs/roles/lead/LEAD_ACTIVE_WORK.md), [18일 JSON](data/paypal_daily_progress.json).

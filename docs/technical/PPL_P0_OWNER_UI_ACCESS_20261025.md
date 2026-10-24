@@ -1,3 +1,5 @@
+> **2026-10-25 update:** The preceding content documented historical owner **account UI access only**. The owner subsequently performed one actual PayPal Sandbox OAuth HTTP 200 and one actual Gemini generateContent HTTP 200; see [the later, narrow provider proof](PPL_P0_REAL_PROVIDER_FIRST_SUCCESS_20261025.md). The old NOT_TESTED statements below describe the state **before** these two tests and are not the current state. Orders/approval/capture still NOT_TESTED.
+
 # P0 — Owner-reported dashboard access, not real API proof (2026-10-25 KST)
 
 ## Confirmed via user-supplied screenshots and explicit user statement

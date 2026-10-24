@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_kst": "2026-10-24",
+  "updated_kst": "2026-10-25",
   "scope": "Per-day verified acceptance; NOT entire PayPal hackathon project percent",
   "active_day_id": "PPL-D15",
   "reporting_mode": "mandatory_after_each_actual_work_session",
@@ -132,40 +132,39 @@
     {
       "day_id": "PPL-D03",
       "scheduled_date_kst": "2026-10-27",
-      "executed_date_kst": null,
+      "executed_date_kst": "2026-10-25",
       "scope": "Access feasibility: actual PayPal Sandbox and free AI external API (no credential disclosure)",
-      "status": "NOT_STARTED_DEPENDENCY_BLOCKED",
+      "status": "OWNER_REAL_PROVIDER_PROBES_PASS_CHECKOUT_NOT_TESTED",
       "estimated_total_hours": 3,
       "safe_total_hours": 8,
-      "percent_complete": 0,
-      "estimated_remaining_hours": 3,
-      "safe_remaining_hours": 8,
+      "percent_complete": 65,
+      "estimated_remaining_hours": 2,
+      "safe_remaining_hours": 5,
       "actual_elapsed_hours": null,
-      "actual_elapsed_note": "NOT_STARTED. External account approval may add unbounded waiting time.",
+      "actual_elapsed_note": "NOT_MEASURED; owner-observed Sandbox OAuth and Gemini one-shot actual calls 2026-10-25",
       "carryover": [
-        "Confirm private PayPal Developer Sandbox business merchant, personal buyer, REST app and approved Sandbox OAuth permission; owner must keep secrets private. Run npm run preflight:p0 for local-name-only status.",
-        "Owner-gated one-shot probe exists: no-network by default. Sandbox OAuth or Gemini one fixed synthetic text generation requires owner-side explicit execution flags and secured local credentials; this does not grant provider call authorization."
+        "Authorize and execute one safe Sandbox Orders v2 CREATE -> buyer approval -> remote GET -> one CAPTURE -> proof GET; ensure merchant link and trusted HTTPS callback/session before enablement.",
+        "Confirm Gemini separate key actually belongs to eligible Free-tier project; recorded model response does not attest billing or quote-flow integration."
       ],
       "limitations": [
-        "Sandbox developer app, Business merchant and Personal buyer private session access NOT_AVAILABLE",
-        "No free AI API key/model billing-limit access; cannot validate real call",
-        "3h/8h planned hands-on effort EXCLUDES unknown third-party access wait",
-        "User must handle permitted private account login; no credentials in chat or public repo",
-        "P0 8 readiness tests and written account steps are documentation/software validation, NOT PayPal Dashboard access or real OAuth evidence.",
-        "CI 251 synthetic tests validate the probe's opt-in gates and request shapes; no PayPal Business/Personal, Gemini project Free tier, OAuth, order or AI model was accessed."
+        "Actual owner CLI output: PayPal sandbox OAuth 200 status SANDBOX_OAUTH_REACHED, one call; OAuth does not prove seller/payee or checkout.",
+        "Actual owner CLI output: gemini-3.5-flash-lite generateContent 200 status GEMINI_TEXT_GENERATED, one synthetic sentence; not quote workflow or zero-cost billing receipt.",
+        "Owner screenshots show Sandbox REST app plus Business and Personal accounts, Gemini project Free tier; secret values intentionally absent.",
+        "Actual Orders CREATE/GET, buyer approval, CAPTURE/GET, HTTPS verified callback, production and Devpost NOT_TESTED.",
+        "One-shot markers persist in owner's home; never retry or remove marker after ambiguous error without manual review."
       ],
       "checklist": [
         {
           "id": "PAYPAL_ACCOUNT_PRECHECK",
           "weight_pct": 20,
-          "state": "PENDING",
-          "evidence": null
+          "state": "VERIFIED",
+          "evidence": "Owner screenshots show Sandbox REST app and Business+Personal test accounts 2026-10-25; docs/technical/PPL_P0_OWNER_UI_ACCESS_20261025.md"
         },
         {
           "id": "SANDBOX_OAUTH_ACTUAL",
           "weight_pct": 25,
-          "state": "BLOCKED",
-          "evidence": null
+          "state": "VERIFIED",
+          "evidence": "Owner-operated single Sandbox OAuth call HTTP 200, SANDBOX_OAUTH_REACHED 2026-10-25; sanitized output; no order or capture"
         },
         {
           "id": "SANDBOX_ORDER_BUYER_FLOW",
@@ -176,20 +175,21 @@
         {
           "id": "FREE_AI_ACTUAL_CALL",
           "weight_pct": 20,
-          "state": "BLOCKED",
-          "evidence": null
+          "state": "VERIFIED",
+          "evidence": "Owner-operated one gemini-3.5-flash-lite text generation HTTP 200 GEMINI_TEXT_GENERATED 2026-10-25; owner confirmed Free tier flag; no independent billing attestation"
         }
       ],
-      "progress_state": "BLOCKED",
+      "progress_state": "PARTIAL",
       "evidence": [
+        "User-supplied sanitized PowerShell output 2026-10-25: PayPal sandbox OAuth /v1/oauth2/token status=SANDBOX_OAUTH_REACHED httpStatus=200 networkCalls=1 externalEvidence=true; Gemini generateContent gemini-3.5-flash-lite status=GEMINI_TEXT_GENERATED httpStatus=200 networkCalls=1 externalEvidence=true; private credential values not disclosed. docs/technical/PPL_P0_REAL_PROVIDER_FIRST_SUCCESS_20261025.md",
         "P0 owner-gated one-shot probe PREPARED ONLY: src/p0_one_shot_probe.mjs; scripts/p0_one_shot_probe.mjs; tests/p0_one_shot_probe.test.mjs; docs/technical/PPL_P0_OWNER_ONE_SHOT_REAL_API_PROBE_20261024.md. CI 40087887623 @ efeb9a9e587cb6eddae52dfeeb045acaf05c1571: Node 251/251 + local Chromium PASS. Provider calls 0; PayPal/Gemini real responses, free-tier and Sandbox accounts NOT_TESTED.",
         "2026-10-24 P0 account-unblock prep: docs/technical/PPL_P0_REAL_PROVIDER_UNBLOCK_20261024.md; src/p0_provider_readiness.mjs; scripts/check_p0_provider_readiness.mjs; tests/p0_provider_readiness.test.mjs. Actions #40086442379 @ 491183ca51f06bb3f71206bbbe44b7e7684fa330: 240/240 Node + local Chromium PASS. Presence-only NO network/credential output; actual PayPal Sandbox/AI NOT_TESTED."
       ],
       "verified_sha": null,
-      "blocker": "실 PayPal Sandbox Business/Personal·무료 AI 계정 접근 불가",
+      "blocker": "Sandbox Order CREATE → 구매자 승인 → GET/캡처 영수증 미실증. 실제 무료 요금 청구 여부·AI 견적 UI 통합 별도 미검증.",
       "recovery_date_kst": null,
-      "recovery_condition": "실 Developer 앱과 buyer 계정 접근 확보 시 D03 재검토",
-      "advance_note": null
+      "recovery_condition": "실 Sandbox buyer flow 결제 승인/GET 및 one-shot CAPTURE를 별도 범위 승인·검증 후 D03 100 재평가",
+      "advance_note": "2026-10-25 사용자 로컬에서 PayPal Sandbox OAuth HTTP 200 및 Gemini 실제 생성 HTTP 200, 각 1회. 실 주문/캡처·견적 UI/무료 청구 보증 아님."
     },
     {
       "day_id": "PPL-D04",
@@ -205,14 +205,13 @@
       "actual_elapsed_hours": null,
       "actual_elapsed_note": "NOT_MEASURED. Remaining hands-on time only after a validated free AI account; waiting UNKNOWN.",
       "carryover": [
-        "Actual free AI generation & accuracy/limits test when D03 access is available",
-        "Check Gemini AI Studio project Free tier/eligible model privately (NO billing upgrade); real text generation remains BLOCKED until authorized key access and actual provider response.",
-        "One-shot Gemini generateContent tester prepared (gemini-2.5-flash-lite, fixed synthetic prompt). NO REAL GENERATION RAN. User must privately verify genuine Free tier and explicitly authorize use; otherwise criterion stays BLOCKED."
+        "Owner's actual Gemini one-shot text generated HTTP 200 (separate non-quote prompt), but actual Gemini-generated quote draft + human approval UI needs real-provider integration and response evaluation.",
+        "Confirm separate key/project model quota and Free tier in owner dashboard; no paid fallback."
       ],
       "limitations": [
-        "Provider is OFFLINE_MOCK deterministic estimator, not AI",
-        "Local loopback browser UI only, no production auth/host",
-        "Actual free AI account/access/real API testing unavailable"
+        "Local quote UI and human approval tests use offline mock; real Gemini-generated quote data were not pushed into approved quote UI.",
+        "Actual Gemini API text generation HTTP 200 confirmed by owner 2026-10-25, but it was a single synthetic one-sentence prompt, not quote integration or billing attestation.",
+        "Production authenticated host/callback not verified."
       ],
       "checklist": [
         {
@@ -243,20 +242,21 @@
           "id": "REAL_FREE_AI_PROVIDER",
           "weight_pct": 20,
           "state": "BLOCKED",
-          "evidence": null
+          "evidence": "One real Gemini text response HTTP 200, but quote-specific generation/accuracy/bounds and integration with human-approved quote UI remain NOT_TESTED (see 2026-10-25 real-provider note)."
         }
       ],
       "progress_state": "PARTIAL",
       "evidence": [
+        "Owner real Gemini one-shot 2026-10-25: gemini-3.5-flash-lite HTTP 200 GEMINI_TEXT_GENERATED, synthetic landing-page sentence only; NOT actual AI quote workflow.",
         "src/quote_draft.mjs; src/quote_api.mjs @ ee0427e8a6c4ef22904e671f70cfa59120c009dc; synthetic tests",
         "src/sqlite_ledger.mjs + tests/quote_draft.test.mjs @ ee0427e8a6c4ef22904e671f70cfa59120c009dc; old approval reset, edits blocked after payment claim",
         "web/offline_demo.html, web/demo_client.js, src/offline_demo_server.mjs; tests/offline_demo_server.test.mjs @ 3765bf20ce627031ec097c2f95c85de5a8eda361",
         "GitHub Actions 40065235436 success; 40065142461 first failed due to Host test then corrected"
       ],
       "verified_sha": null,
-      "blocker": "실 무료 AI 프로바이더 실행 검증이 누락됨",
+      "blocker": "실 AI 단발 생성 200 확인; 실제 견적 입력·AI 응답·인간 승인 통합 및 이용한도 검증은 미완료",
       "recovery_date_kst": null,
-      "recovery_condition": "무료 AI 실 API 이용 가능할 때 D04 잔여20% 검증",
+      "recovery_condition": "실 Gemini 견적 generation + 검증 + 승인 UI 통합 테스트 후 D04 잔여20 재평가",
       "advance_note": "예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도."
     },
     {
