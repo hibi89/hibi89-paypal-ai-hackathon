@@ -1,12 +1,12 @@
-# Open-source license — pending owner approval (D14)
+# License decision — approved and implemented (2026-10-24 KST)
 
-The public repository currently has **no root LICENSE**. Public visibility alone grants no open-source reuse rights and does not meet the stated submission requirement.
+The repository owner explicitly approved the **MIT License** in the active PayPal hackathon conversation. No new money, remote account, security policy, or deployment action was authorized by that grant.
 
-| Candidate | Cost | Advantage | Constraint |
-|---|---|---|---|
-| MIT | Free | Short, familiar, easy for portfolio/freelance reuse | No explicit patent license |
-| Apache-2.0 | Free | Explicit patent grant and contributor protection | Longer notice/compliance conditions |
+- **Scope:** GitHub repository `hibi89/hibi89-paypal-ai-hackathon` source code and associated documentation owned/controlled by the licensing contributor. Third-party works retain their own licenses.
+- **Root text:** [LICENSE](../LICENSE), standard MIT terms with `Copyright (c) 2026 hibi89` (GitHub owner handle).
+- **SPDX:** `MIT` in `package.json`; `private:true` remains to avoid accidental npm publish.
+- **Verification:** `tests/license.test.mjs` ensures the required grant, attribution, disclaimer, and matching package field. A succeeding GitHub Actions run for the applicable source commit must be checked before D14 is finalized.
+- **Limitations:** this does **not** grant use of PayPal trademarks, third-party brands, or anything not owned by the license holder. Existing public repository remains public.
+- **Remaining external gates:** actual Sandbox buyer/merchant flow, real AI provider, reviewer access, video, Devpost receipt remain NOT_TESTED. A license grant does not resolve them.
 
-**Recommended:** MIT for this small solo demonstration, **subject to user approval**. Adding either license is a legal grant. No LICENSE is written and no licensing approval is assumed in this change.
-
-Required user decision: choose MIT, Apache-2.0, or provide a different approved OSI license. After approval, write the exact root LICENSE, include copyright attribution as instructed by the owner, validate the final text, and recheck official contest requirements. Until then, D14 may not be 100% and final submission remains blocked.
+The decision was reached after comparing MIT against Apache-2.0 in the preceding version of this document; the former was expressly selected by the user.
