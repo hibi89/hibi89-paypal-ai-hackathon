@@ -27,9 +27,9 @@
 | 실제 작업 경과시간 | 측정 수치 또는 NOT_MEASURED |
 | 외부 검증 | Sandbox/AI/Browser/Production/Devpost 별도 |
 
-## 현재 확인된 기준 기록
-- **1일차(10/25 슬롯, 10/24 조기 실행): 100% / 100%, 잔여 예상 0시간·안전 잔여 0시간.** 오프라인 quote API 골격에 한정. 23개 신규 + 11개 기존 합성 테스트; GitHub Actions 40063789450 PASS. 실측 시간은 NOT_MEASURED.
-- **2일차(10/26 슬롯): 0% / 100%, 잔여 예상 5시간·안전 잔여 9시간.** 영속 DB·UNIQUE/CAS·시도 저널·동시/재시작 테스트 미착수. 실측 시간 NOT_MEASURED.
+## 최신값은 JSON 원장에서 직접 계산
+- 지금 상태가 문서에 남긴 예시와 달라졌을 수 있으므로, **현재 활성 일차와 진척 수치는 [data/paypal_daily_progress.json](../data/paypal_daily_progress.json)에서 항상 읽는다.** 고정된 예시를 최신 상태로 주장하지 않는다.
+- 최신 시작 및 인수인계 경로: [CHAT_BOOTSTRAP](../CHAT_BOOTSTRAP.md) → [ACTIVE_WORK](roles/lead/LEAD_ACTIVE_WORK.md) → [인수인계 계약](RESUME_SYNC_CONTRACT.md).
 
 ## 업데이트 책임 및 새 채팅 복원
 - 실제 작업 종료 시 이 원장과 STATUS.md, HANDOFF.md, docs/roles/lead/LEAD_ACTIVE_WORK.md, docs/roles/lead/TO_HACKATHON_LEAD.md를 소스·실증과 함께 같은 GitHub 커밋으로 최신화하고 원격 HEAD/CI를 확인한다.
