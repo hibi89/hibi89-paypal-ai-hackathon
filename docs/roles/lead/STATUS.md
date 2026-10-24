@@ -59,3 +59,8 @@
 - GitHub 실제 HEAD: lead `b8d1225`, quote `e5b70e0`, delivery `77dc532`, subscriptions `9d77f90`. 세 기능 메시지함 모두 초기 기록만. 전체 파일 트리 문서형(lead 21 blobs; features 각각 12 blobs). 코드/테스트/CI/서비스 0건.
 - 공식 규정에서 **11/13 05:00 KST** 마감, 공개 LICENSE·영어 자료·3분 미만 공개 YouTube·동작 가능한 심사 경로 확인. https://paypalaihackathon.devpost.com/rules
 - 위험: 무료 호스팅/심사 접근과 비밀 보안의 동시 달성 방식은 미결. 실 Sandbox·AI·무료 계정/브라우저/제출 미검증. 기존 ACTIVE_TASK 수정·선행 기능 시작 금지.
+
+## 2026-10-24 KST — PPL-001 실제 착수 반영
+- 견적·결제 브랜치 `621612bd906d191c3f68cf708b9940315cb18894` 메시지함에 `PPL-001 — STARTED`, 12:58 KST 확인. 총괄 상태는 `IN_PROGRESS`로 전환.
+- 단 1개 feature 작업자 활성, `PPL-002` 미발행. 납품·구독 브랜치 변동 없음.
+- 작업자 커밋은 착수 보고 문서 1개 수정, 코드 구현/테스트/API/CI 성공 없음. Sandbox 자격증명 현재 세션 미접근. 검수 대기 아님(요청 NO).

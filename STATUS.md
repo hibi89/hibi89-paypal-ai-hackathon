@@ -45,3 +45,8 @@
 - 공식 Devpost 확인: 2026-11-12 12:00 PST = **11-13 05:00 KST**; 공개 코드/루트 LICENSE, 영어 제출/영어 번역, 3분 미만 공개 YouTube 시연, 심사위원의 실동작 접근 요구. https://paypalaihackathon.devpost.com/rules
 - 신규 위험: 공개 저장소·Sandbox 비밀 보호와 심사위원의 무료 기능 접근을 동시에 충족하는 데모/테스트 계정 전략 미정. 보안 우회나 공개 비밀키 없이 PPL-001 기술 검토 및 추후 제출 설계에서 결정.
 - 이번 작업은 운영 검수·공식 규정 확인 및 총괄 기록 갱신만 수행. Sandbox/AI/Cloudflare 계정·실 API 호출·제품 테스트/Production/Devpost 실제 제출 없음. 추가 현금 지출 없음.
+
+## 2026-10-24 KST — PPL-001 작업자 STARTED 확인 및 공식 상태 전환
+- `feature/quote-payment` 원격 `621612bd906d191c3f68cf708b9940315cb18894`에서 `TO_PAYPAL_LEAD.md`의 `PPL-001 STARTED`, 12:58 KST 보고 검수. 같은 작업자 단일 활성 유지.
+- `lead/paypal:docs/dispatch/ACTIVE_TASK.md` 상태를 `IN_PROGRESS`로 변경. PPL-001 범위/target 유지; PPL-002는 QUEUED. delivery `77dc5327b69432d3f64a320dea8a1ae0c2f427ce`, subscriptions `9d77f9029d9dfb571f14f5d10289f97015ba6f4f` 대기.
+- 실제 코드/테스트·Sandbox/AI API 인증·호출/배포·Devpost 제출 결과 없음. 시작 증거는 제품 실행 성공이 아님. 테스트 0 PASS / 0 FAIL / 실행 NOT_TESTED.

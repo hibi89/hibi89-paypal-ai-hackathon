@@ -63,3 +63,8 @@
 8. 데이터/보안: 원격 원본 보존, Public 저장소에 비밀·개인 데이터 없음(검토한 운영 파일 범위). 외부 계정 인증정보 수집 안 함.
 9. 다음: 작업자 채팅에서 현 `ACTIVE_TASK` 한 개 실행/보고→총괄 인수 후 다음 작업 발행. Live·유료·범위 변경은 명시적 승인 필요.
 10. 확인 시점: 2026-10-24 KST, GitHub 원격 구조·문서 및 공식 Devpost 규정 검증 범위. 실제 API/CI/제품 동작 미검증.
+
+## 2026-10-24 KST — 작업자 STARTED 후 총괄 운용 변경
+- 현 `ACTIVE_TASK`: `PPL-001 IN_PROGRESS / feature/quote-payment`. 작업자 STARTED 근거 `621612bd906d191c3f68cf708b9940315cb18894`, 12:58 KST. 기존 lead `340ce0bdc2c427f1a8cee247ea78bcad7f9c7ebc`에서 상태만 맞춤.
+- 코드·실 API·CI/브라우저·배포 검증 없음, 작업자 STARTED가 완료 아님. PPL-001 결과/최종 검수 요청 도착 전 다른 작업 발행하지 않는다.
+- 근거: 원격 보고함·commit diff/원격 트리 확인. 비용 0원/Sandbox only/한 작업자·한 브랜치 유지. 변경 전 HEAD는 복구 지점으로 보존.

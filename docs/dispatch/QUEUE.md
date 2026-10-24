@@ -4,7 +4,7 @@
 
 | 순서 | Task ID | 역할/타깃 브랜치 | 예정 구간(KST) | 목표 | 현재 상태 |
 |---|---|---|---|---|---|
-| 1 | **PPL-001** | quote-payment | 10/24~26 | Sandbox 무료 접근/구현안 A/B/공통 계약 v0 및 검증 준비 | **ACTIVE: READY** |
+| 1 | **PPL-001** | quote-payment | 10/24~26 | Sandbox 무료 접근/구현안 A/B/공통 계약 v0 및 검증 준비 | **ACTIVE: IN_PROGRESS** |
 | 2 | PPL-002 | quote-payment | 10/26~30 | AI 견적→사람 승인→실 Sandbox Orders create/approve/capture 및 멱등·오류/테스트 | **QUEUED, 승인·발행 전 실행 불가** |
 | 3 | PPL-003 | delivery | 10/31~11/02 | 계약/납품/검수 CRUD·DB 영속화 및 결제 상태 연동, E2E | **QUEUED** |
 | 4 | PPL-004 | subscriptions | 11/03~06 | Subscriptions/Webhooks 접근 검증·실패/취소/중복 이벤트 안전 처리 | **QUEUED** |

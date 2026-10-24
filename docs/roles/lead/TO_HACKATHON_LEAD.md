@@ -74,3 +74,9 @@
 - **공식 일정 확인:** 11/12 12:00 PST = 11/13 05:00 KST. 11/11 조기 제출 목표 유지. https://paypalaihackathon.devpost.com/rules
 - **중요 리스크:** 심사 기간의 무료 실행/심사위원 접근 요구와 공개 repo 인증정보 비노출을 함께 만족하는 안전한 재현/데모 경로 미정. 공개 LICENSE 및 영어 자료·3분 미만 공개 YouTube는 향후 준비 필수. 사용자 승인 없는 유료/Live 변경 금지.
 - **다음 행동:** 기존 PPL-001 담당자가 두 기술안·Sandbox/API 접근성·Quote/Payment/Approval 계약과 증거를 자기 브랜치에 제출하면 총괄이 검수. 현 단계 새 지시 발행 없음. 상위 다른 해커톤 소스 변경 없음.
+
+## 2026-10-24 KST — PPL-001 착수 보고 및 통합 상태 갱신
+- **상태 변화:** 작업자 1개 채팅이 `feature/quote-payment`의 `PPL-001` 착수 보고를 GitHub로 제출했다. 원격 HEAD `621612bd906d191c3f68cf708b9940315cb18894`; 보고 시간 12:58 KST. 총괄 `ACTIVE_TASK` 상태 `READY`→`IN_PROGRESS`로 갱신, 여전히 1개 작업만 활성.
+- **증거/한계:** 작업자 diff는 보고서 1개 파일, 제품 코드/기술 설계/테스트/CI/실 Sandbox·AI API·Production/Devpost 제출 전부 미완료/미검증. 검수 요청 NO. 새 기능 PPL-002 발행 금지.
+- **위험:** 작업자 세션에 Sandbox 자격증명 없음, 실 OAuth/Orders POC는 미검증. 공개 저장소로 인증정보 노출 금지, 0원 정책 유지.
+- **브랜치 기준:** quote `621612bd906d191c3f68cf708b9940315cb18894`, delivery `77dc5327b69432d3f64a320dea8a1ae0c2f427ce`, subscriptions `9d77f9029d9dfb571f14f5d10289f97015ba6f4f`. 총괄 최신 HEAD는 본 기록이 포함된 커밋 확인 기준.

@@ -5,14 +5,14 @@
 | Key | Value |
 |---|---|
 | `task_id` | **PPL-001** |
-| `status` | **READY** |
+| `status` | **IN_PROGRESS** |
 | `owner` | PayPal 총괄 `lead/paypal` |
 | `worker_chat_count` | **1개** (기능 전환 때도 같은 채팅 재사용) |
 | `target_repo` | **`hibi89/hibi89-paypal-ai-hackathon`** |
 | `target_branch` | **`feature/quote-payment`** |
 | `role` | 견적·PayPal Sandbox 결제 (첫 담당 역할) |
 | `other_feature_branches` | `feature/delivery`, `feature/subscriptions` — **대기, 수정 금지** |
-| `started` | **아직 시작 확인 없음** |
+| `started` | **2026-10-24 12:58 KST — 원격 STARTED 보고 검증** (`feature/quote-payment` HEAD `621612bd906d191c3f68cf708b9940315cb18894`) |
 | `target_window` | 2026-10-24~10-26 KST (내부 목표) |
 | `next_candidate` | PPL-002 — 총괄 검수 후에만 별도 발행 |
 
@@ -45,4 +45,9 @@
 - [ ] `TO_PAYPAL_LEAD.md`, STATUS/HANDOFF 최신, 테스트 PASS/FAIL/NOT_TESTED·원격 SHA 검증.
 - [ ] 총괄이 인수 승인하고 필요 공통 코드를 PR 통합한 후에만 다음 작업 지시 발행.
 
-**현재 상태 = READY, 아직 개발자 실행/성공 확인 전.**
+**현재 상태 = IN_PROGRESS.** 작업자 `STARTED` 커밋 `621612bd906d191c3f68cf708b9940315cb18894` 확인, 개발 산출물/테스트/실 API 성공 보고는 아직 없음. **동일 PPL-001 계속 수행, 총괄 검수 전 PPL-002 발행 금지.**
+
+## 2026-10-24 KST — 실제 작업 착수 확인 후 총괄 상태 변경
+- 작업자 원격 변경: `feature/quote-payment` `621612bd906d191c3f68cf708b9940315cb18894`, 메시지함 `PPL-001 — STARTED (12:58 KST)` 확인.
+- 변경 내용은 `TO_PAYPAL_LEAD.md` 착수 기록 1파일뿐. 기능 소스/설계 문서/실 API 로그/자동 테스트 결과 없음. 작업자 검수 요청 `NO`.
+- 총괄 공식 상태를 `READY` → `IN_PROGRESS`로 동기화. target/task ID/범위·비용 0원/승계 금지 조건 불변.

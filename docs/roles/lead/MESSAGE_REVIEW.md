@@ -71,3 +71,12 @@
 - 총괄 현재 ACTIVE_TASK `PPL-001 / READY / feature/quote-payment` 확인. 다음 작업 발행 조건 불충족; **기존 ACTIVE_TASK와 feature 브랜치 불변**.
 - 확인 범위: 각 보고 파일/전체 트리/운영 라우터. 앱 소스·실 API·테스트·배포는 부재 또는 미검증.
 - 제출 규정 추가 점검: 심사위원 테스트 경로·공개 LICENSE·영어 텍스트/자막/실행 안내·공개 YouTube 3분 미만 및 Sandbox 비밀키 비노출 방안 추후 확정 필요.
+
+## 2026-10-24 KST — PPL-001 STARTED 보고 실수신
+| 기능 | 원격 HEAD | 보고 내용 | 총괄 판단 |
+|---|---|---|---|
+| quote-payment | `621612bd906d191c3f68cf708b9940315cb18894` | `PPL-001 — STARTED` (12:58 KST), 검수 요청 NO; 실 Sandbox/AI·제품 테스트 `NOT_TESTED` | `ACTIVE_TASK` IN_PROGRESS 전환. 완료 불승인, 같은 작업 계속 |
+| delivery | `77dc5327b69432d3f64a320dea8a1ae0c2f427ce` | 초기 안내, 신규 기술 보고 없음 | 대기 |
+| subscriptions | `9d77f9029d9dfb571f14f5d10289f97015ba6f4f` | 초기 안내, 신규 기술 보고 없음 | 대기 |
+- 작업자 commit diff: `docs/roles/quote-payment/TO_PAYPAL_LEAD.md` 착수 기록만 변경. quote 트리 12 blobs로 코드/설계 산출물/CI 아직 없음. CI combined statuses 0건(성공 아님).
+- 현재 사용자에게 새 실행 권한/범위 변경을 요청하지 않으며, 기존 PPL-001 허가 내에서 작업 지속. 다음 작업 발행 미충족.
