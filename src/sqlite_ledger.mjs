@@ -148,7 +148,8 @@ export function createSqliteLedger({ filename } = {}) {
       reject(typeof scope !== 'string' || scope.length < 8 || scope.length > 500,
         'INVALID_SCOPE');
       reject(!Number.isSafeInteger(suggestedMinor) || suggestedMinor < 100 ||
-        suggestedMinor > 1000000 || suggestionSource !== 'OFFLINE_MOCK',
+        suggestedMinor > 1000000 ||
+        !['OFFLINE_MOCK','GEMINI_API'].includes(suggestionSource),
       'INVALID_DRAFT');
       return transaction(() => {
         const row = getRow(id);
