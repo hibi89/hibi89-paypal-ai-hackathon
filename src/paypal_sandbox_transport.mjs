@@ -13,6 +13,11 @@ export class SandboxTransportError extends Error {
 }
 const reject=(bad,code)=>{if(bad)throw new SandboxTransportError(code);};
 const safeText=(x)=>typeof x==='string' && x.length>0 && x.length<256;
+const merchantBound=(quote)=>{
+  reject(typeof quote?.merchantId!=='string' ||
+    !/^[A-Za-z0-9_-]{1,128}$/.test(quote.merchantId),
+    'SANDBOX_MERCHANT_BINDING_REQUIRED');
+};
 function approvalLink(links) {
   reject(!Array.isArray(links),'APPROVAL_LINK_MISSING');
   const match=links.find(x=>x?.rel==='payer-action'||x?.rel==='approve');
@@ -27,11 +32,14 @@ function approvalLink(links) {
   return url.href;
 }
 function claimValidated(quote, claim, operation) {
+  // Validate seller identity before even acquiring an OAuth token or issuing POST.
+  merchantBound(quote);
   const cents=approvedAmount(quote);
   reject(claim?.action!=='FIRST_CLAIM_ONLY_NO_PROVIDER_CALL' ||
     claim?.attempt?.operation!==operation ||
     claim?.attempt?.quoteId!==quote.id ||
     claim?.attempt?.quoteVersion!==quote.version ||
+    claim?.attempt?.merchantId!==quote.merchantId ||
     claim?.attempt?.requestId!==requestKey(quote,operation) ||
     claim?.attempt?.amountMinor!==cents ||
     claim?.attempt?.currency!==quote.currency ||
@@ -42,11 +50,11 @@ function verifiedOrder(quote, data, id) {
   const cents=approvedAmount(quote);
   const units=data?.purchase_units;
   reject(!data || data.id!==id ||
-    (data.intent && data.intent!=='CAPTURE') ||
+    data.intent!=='CAPTURE' ||
     !['CREATED','APPROVED','COMPLETED'].includes(data.status) ||
     !Array.isArray(units) || units.length!==1 ||
     units[0]?.reference_id!==quote.id ||
-    (quote.merchantId && units[0]?.payee?.merchant_id!==quote.merchantId) ||
+    units[0]?.payee?.merchant_id!==quote.merchantId ||
     units[0]?.amount?.currency_code!=='USD' ||
     units[0]?.amount?.value!==(cents/100).toFixed(2),
   'SANDBOX_ORDER_MISMATCH');
@@ -101,6 +109,7 @@ export function createSandboxTransport(options={}) {
   async function getOrder(quote,id) {
     reject(!ORDER_ID.test(id),'INVALID_ORDER_ID');
     approvedAmount(quote);
+    merchantBound(quote);
     const token=await accessToken();
     const data=await fetchJson('/v2/checkout/orders/'+encodeURIComponent(id),{token});
     return verifiedOrder(quote,data,id);
@@ -118,6 +127,8 @@ export function createSandboxTransport(options={}) {
     const payerUrl=approvalLink(created.links);
     // Mandatory server GET to validate reference/amount before returning approval URL.
     const checked=await getOrder(quote,created.id);
+    reject(!['CREATED','APPROVED'].includes(checked.status),
+      'SANDBOX_CREATE_GET_STATUS_CONFLICT');
     return {orderId:created.id,payerUrl,orderStatus:checked.status,
       paymentState:'NOT_PAID',source:'SANDBOX_TRANSPORT'};
   }
@@ -148,7 +159,7 @@ export function createSandboxTransport(options={}) {
     const merchant=order.purchase_units[0]?.payee?.merchant_id;
     reject(quote.merchantId && merchant!==quote.merchantId,
       'SANDBOX_MERCHANT_MISMATCH');
-    reject(!ORDER_ID.test(c?.id) ||
+    reject(!ORDER_ID.test(c?.id) || c.status!=='COMPLETED' ||
       c.amount?.currency_code!==quote.currency ||
       c.amount?.value!==(approvedAmount(quote)/100).toFixed(2),
     'SANDBOX_CAPTURE_PROOF_MISMATCH');
