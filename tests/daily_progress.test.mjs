@@ -31,16 +31,20 @@ test('time estimates are separate from measured elapsed and cannot be negative',
     if (d.status === 'NOT_STARTED') { assert.equal(d.percent_complete, 0); assert.equal(d.estimated_remaining_hours,d.estimated_total_hours); assert.equal(d.safe_remaining_hours,d.safe_total_hours); }
   }
 });
-test('day2 SQLite criteria are all verified, and next day remains blocked at zero', () => {
+test('day2 SQLite verified and day3 actual provider probes do not imply buyer checkout', () => {
   const d2 = ledger.days.find(d => d.day_id === 'PPL-D02');
   const d3 = ledger.days.find(d => d.day_id === 'PPL-D03');
   assert.ok(d2 && d3);
   assert.equal(d2.percent_complete,100);
   assert.ok(d2.checklist.every(c => c.state === 'VERIFIED'));
   assert.equal(d2.estimated_remaining_hours,0);
-  assert.equal(d3.percent_complete,0);
-  assert.equal(d3.estimated_remaining_hours,3);
-  assert.equal(d3.safe_remaining_hours,8);
+  assert.equal(d3.percent_complete,65);
+  assert.equal(d3.progress_state,'PARTIAL');
+  assert.equal(d3.estimated_remaining_hours,2);
+  assert.equal(d3.safe_remaining_hours,5);
+  for(const name of ['PAYPAL_ACCOUNT_PRECHECK','SANDBOX_OAUTH_ACTUAL','FREE_AI_ACTUAL_CALL'])
+    assert.equal(d3.checklist.find(c=>c.id===name).state,'VERIFIED',name);
+  assert.equal(d3.checklist.find(c=>c.id==='SANDBOX_ORDER_BUYER_FLOW').state,'BLOCKED');
   assert.ok(ledger.days.some(d=>d.day_id===ledger.active_day_id));
 });
 test('accelerated mock days preserve unmet AI and actual provider criteria',()=>{
@@ -55,11 +59,13 @@ test('accelerated mock days preserve unmet AI and actual provider criteria',()=>
   assert.equal(d5.safe_remaining_hours,0);
   assert.equal(d5.checklist.find(c=>c.id==='END_TO_END_LEDGER_RECONCILIATION').state,'VERIFIED');
 });
-test('day5 completion does not disguise the blocked external gate or next-day work',()=>{
+test('day5 offline completion does not disguise day3 unfinished real buyer flow',()=>{
   const d3=ledger.days.find(d=>d.day_id==='PPL-D03');
   const d6=ledger.days.find(d=>d.day_id==='PPL-D06');
-  assert.equal(d3.percent_complete,0);
-  assert.ok(d3.checklist.some(x=>x.state==='BLOCKED'));
+  assert.equal(d3.percent_complete,65);
+  assert.equal(d3.progress_state,'PARTIAL');
+  assert.equal(d3.checklist.find(x=>x.id==='SANDBOX_ORDER_BUYER_FLOW').state,'BLOCKED');
+  assert.ok(d3.checklist.filter(x=>x.state==='VERIFIED').reduce((n,x)=>n+x.weight_pct,0) < 100);
   assert.equal(d6.percent_complete,100);
   assert.equal(d6.estimated_remaining_hours,0);
   assert.equal(d6.safe_remaining_hours,0);
