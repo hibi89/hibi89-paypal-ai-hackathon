@@ -148,3 +148,39 @@ test('GET contract and history are strictly read-only',env(async ({db})=>{
  assert.equal((await db.listContractEvents(read())).length,1);
  assert.equal((await db.getContract(read())).version,1);
 }));
+
+test('migration from pre-D04 Day2 SQLite preserves original rows and adds contract tables',()=>{
+ const dir=mkdtempSync(join(tmpdir(),'paypal-legacy-')),filename=join(dir,'old.db');
+ let sqlite, db;
+ try {
+  sqlite=new DatabaseSync(filename);
+  sqlite.exec(`CREATE TABLE quotes (
+   id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, merchant_id TEXT NOT NULL,
+   version INTEGER NOT NULL, currency TEXT NOT NULL, status TEXT NOT NULL,
+   ai_suggested_minor INTEGER, approval_actor TEXT, approval_version INTEGER,
+   approval_amount_minor INTEGER);
+   CREATE TABLE payment_attempts (
+   request_id TEXT PRIMARY KEY, quote_id TEXT NOT NULL REFERENCES quotes(id),
+   quote_version INTEGER NOT NULL,merchant_id TEXT NOT NULL,
+   operation TEXT NOT NULL,state TEXT NOT NULL,remote_id TEXT UNIQUE,
+   amount_minor INTEGER NOT NULL,currency TEXT NOT NULL,
+   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,observed_at TEXT,
+   UNIQUE(merchant_id,quote_id,quote_version,operation));`);
+  sqlite.prepare(`INSERT INTO quotes
+    (id,owner_id,merchant_id,version,currency,status,approval_actor,approval_version,approval_amount_minor)
+    VALUES(?,?,?,?,?,?,?,?,?)`)
+    .run('legacy','seller','merchant',3,'USD','APPROVED','seller',3,1500);
+  sqlite.close();sqlite=null;
+  db=createSqliteLedger({filename});
+  return Promise.resolve().then(async()=>{
+   assert.equal((await db.get('legacy')).approval.amountMinor,1500);
+   const contract=await db.createContract({
+    id:'ct-old',quoteId:'legacy',actorId:'seller',merchantId:'merchant',
+    reviewerId:'buyer',expectedVersion:3,eventId:'created-old',
+    milestones:[{id:'ms-old',step:1,amountMinor:1500}]});
+   assert.equal(contract.version,1);
+   assert.equal(contract.paymentState,'NOT_CAPTURED');
+   assert.equal(contract.milestones[0].state,'PENDING');
+  }).finally(()=>{db?.close();rmSync(dir,{recursive:true,force:true});});
+ } catch(e) {sqlite?.close();db?.close();rmSync(dir,{recursive:true,force:true});throw e;}
+});

@@ -29,12 +29,13 @@ const statements = [
     seq INTEGER PRIMARY KEY AUTOINCREMENT,
     event_id TEXT NOT NULL UNIQUE,
     contract_id TEXT NOT NULL REFERENCES contracts(id) ON DELETE RESTRICT,
-    milestone_id TEXT REFERENCES contract_milestones(id) ON DELETE RESTRICT,
+    milestone_id TEXT,
     actor_id TEXT NOT NULL, event_type TEXT NOT NULL,
     from_state TEXT, to_state TEXT NOT NULL,
     contract_version INTEGER NOT NULL CHECK(contract_version >= 1),
     detail TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(contract_id,contract_version)
+    UNIQUE(contract_id,contract_version),
+    FOREIGN KEY(contract_id,milestone_id) REFERENCES contract_milestones(contract_id,id) ON DELETE RESTRICT
   )`,
   "CREATE INDEX IF NOT EXISTS idx_contract_events_order ON contract_events(contract_id,seq)",
   `CREATE TRIGGER IF NOT EXISTS contract_events_no_update
