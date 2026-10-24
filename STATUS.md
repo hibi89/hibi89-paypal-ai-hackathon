@@ -18,8 +18,8 @@
 
 **18일 상태:** DONE12 / PARTIAL2 / BLOCKED1 / NOT_STARTED3. 완료: D01–D02, D05–D14. D03 Sandbox/AI 실접근 0% BLOCKED; D04 실 AI 20% 잔여(총 80% PARTIAL); D15 PARTIAL, D16–D18 미착수.
 
-**D15 사전 판단:** 원래 일차 0% / 기본 6h + 추가 예비 6h(안전 총량 12h). Cloudflare Workers/D1 실제 계정/무료 한도·호스팅/신뢰 인증/기존 Node SQLite 호환성 확인 전 공개 배포 금지. 로컬 재현과 실제 인터넷 서비스의 증거 수준을 분리.
+**D15 현재:** 20% PARTIAL / 남은 기본 5h + 추가 예비 5h(안전 총량 10h). Cloudflare Workers/D1 실제 계정/무료 한도·호스팅/신뢰 인증/기존 Node SQLite 호환성 확인 전 공개 배포 금지. 로컬 재현과 실제 인터넷 서비스의 증거 수준을 분리.
 
-**현재 CI:** https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40079691820 (Node 180/180, Chromium local, MASTER 18 PASS). 문서 갱신 HEAD는 새 Actions 확인 전 PENDING.
+**검증 이력:** D14 완료 CI #40079691820(Node 180/180); D15 D1 오프라인 코드·설계 CI #40081717845(Node 193/193 + 로컬 Chromium PASS). 최신 진도 동기화 HEAD #40081866786(Node 193/193, Chromium, 마스터 일정 PASS). 실 D1/실 PayPal/AI/Production 불변 미검증.
 
 **원장:** [MASTER_PROGRESS](MASTER_PROGRESS.md), [JSON](data/paypal_daily_progress.json). **배포:** Production URL 없음, Vercel 미적용, 실 Sandbox/AI·Devpost 전부 NOT_TESTED.
