@@ -48,3 +48,8 @@
 - 현재 발행 작업 **PPL-001 / READY / `feature/quote-payment`**: 실 Sandbox+무료 모델 가용성 및 견적·결제 구현안 2개/데이터 계약 검토. 추후 `PPL-002`는 큐에만 있으며 **착수 금지**.
 - 핵심 보호: 추가 지출 0원, Sandbox only, 코드/테스트 PASS 실증 필요, 역할별 보고는 선택된 feature `TO_PAYPAL_LEAD.md`, 총괄 메시지는 `lead/paypal`. 자동 실행·GitHub 웹훅·작업자 연락/알림 없음.
 - 작업자 채팅은 **아직 실제 생성·착수 검증 전**, 실 Sandbox 인증/호출, 앱/CI/배포/Devpost 제출 성과는 그대로 미완료·미검증. 이번 변경은 운영 체계 설정 및 다음 작업 지시 발행.
+
+## 2026-10-24 KST — 단일 순환 작업자 3개 브랜치 연결 실검증
+- **운영 구성 작업 완료(문서 기반)**: lead 전용 `WORKER_START_HERE.md`, `docs/dispatch/{ACTIVE_TASK,QUEUE,PROTOCOL,WORKER_CHAT_PROMPT}.md` 등록·확인. 현 작업 **PPL-001 READY** `feature/quote-payment`. ChatGPT 채팅이 자율 실행되는 자동화가 아니라 **사용자가 채팅에서 호출할 때 GitHub를 조회하는 방식**이다.
+- 3개 feature 브랜치 각각 README/AGENTS에 lead 지시 우선 라우터 공시를 **원격 검증**. `quote-payment` HEAD `e5b70e0376628dc9e6237d69234f56648c849ca8`; `delivery` HEAD `77dc5327b69432d3f64a320dea8a1ae0c2f427ce`; `subscriptions` HEAD `9d77f9029d9dfb571f14f5d10289f97015ba6f4f`.
+- **총괄 1개+개발자 채팅 1개/한 번에 하나의 작업·한 브랜치**로 변경. 기능 3개/브랜치 3개/0원/마감 유지. 기능 코드/실 API/배포/CI/제출은 **미착수·미검증**.
