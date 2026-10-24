@@ -13,3 +13,8 @@ Official reference: https://developer.paypal.com/api/rest/webhooks/rest/ (2026-0
 
 ## Future live gate
 After private approved Sandbox Business/Personal app+registered Webhook ID and genuinely trusted PayPal certificate/verification method: implement configured HTTPS public receiver, cert chain and signature validation against actual PayPal source, persistent cross-instance D1 inbox/reconciliation worker, rate/age checks, real delivery/retry testing. Separate new gate, never claim it from this fixture-only D11 milestone.
+
+## Verified CI closeout
+- Final code SHA `1fbbb56357b3243c2ff45c19f549d49780491ada`, [run 40075690681](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40075690681) **completed/success, Node 163/163 PASS, Chromium offline UI E2E PASS, 18-day generated master check PASS**.
+- Earlier tests failed because client helper merged response JSON `status` (APPROVAL_PENDING/ACTIVE) over HTTP status 200/202; fixed comparison to separate `httpStatus` field. Original failed runs retained in Actions. This was a test assertion bug, not evidence of genuine PayPal signing.
+- D11 finished **offline acceptance only**, D12 subscriptions UI work ready; actual provider cryptographic source, HTTPS endpoint and D1/production still untested.

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "updated_kst": "2026-10-24",
   "scope": "Per-day verified acceptance; NOT entire PayPal hackathon project percent",
-  "active_day_id": "PPL-D11",
+  "active_day_id": "PPL-D12",
   "reporting_mode": "mandatory_after_each_actual_work_session",
   "days": [
     {
@@ -681,17 +681,17 @@
       "scheduled_date_kst": "2026-11-04",
       "executed_date_kst": "2026-10-24",
       "scope": "Offline webhook ingress, signature verification boundary, SQLite event-id idempotency and out-of-order fail closed with synthetic signature tests; real PayPal Sandbox remains blocked",
-      "status": "IMPLEMENTED_OFFLINE_AWAITING_CI",
+      "status": "DAY11_OFFLINE_SIGNATURE_SQLITE_ACCEPTED",
       "estimated_total_hours": 5,
       "safe_total_hours": 10,
-      "estimated_remaining_hours": 0.5,
-      "safe_remaining_hours": 1,
-      "percent_complete": 90,
+      "estimated_remaining_hours": 0,
+      "safe_remaining_hours": 0,
+      "percent_complete": 100,
       "actual_elapsed_hours": null,
-      "actual_elapsed_note": "NOT_MEASURED. CODE/TEST COMMITTED; CI waiting to confirm.",
+      "actual_elapsed_note": "NOT_MEASURED; CI 40075690681 success (actual human/developer elapsed unknown).",
       "carryover": [
-        "D11 GitHub Actions on 17 synthetic signature/SQLite tests pending, CI must pass before 100%",
-        "D12 UI only once D11 has passed and handoff is synchronized"
+        "Actual PayPal app Webhook ID, PayPal-signed Sandbox events/certificate trust and external HTTPS callback NOT_TESTED; real provider deployment remains separate gate",
+        "Local Node SQLite repository is not production D1; review persistence and customer identity binding before any public deployment"
       ],
       "limitations": [
         "No real PayPal merchant/app credential, app registered webhookId, PayPal certificate or listener deployed; real PayPal signature verification NOT_TESTED",
@@ -729,22 +729,23 @@
         {
           "id": "CI_DOCS_HANDOFF",
           "weight_pct": 10,
-          "state": "PENDING",
-          "evidence": null
+          "state": "VERIFIED",
+          "evidence": "GitHub Actions 40075690681 completed/success @ 1fbbb56357b3243c2ff45c19f549d49780491ada; Node 163/163 PASS, Chromium quote/contract journey PASS, Python master JSON/MD integrity PASS"
         }
       ],
-      "progress_state": "PARTIAL",
+      "progress_state": "DONE",
       "evidence": [
         "src/webhook_ingress.mjs @ 8e4d6503: original raw body CRC32(decimal), pinned sandbox cert URL, off-line-only RSA-SHA256 Fetch handler, no automatic service wiring; 17 fixture tests @ 6f5cc754",
         "src/webhook_ingress.mjs @ 8e4d6503 and tests/webhook_ingress.test.mjs @ 6f5cc754: forged signature/raw body/webhook ID/URL/headers/oversize fail closed, synthetic RSA fixtures only",
         "src/webhook_inbox.mjs @ 8e4d6503 and tests/webhook_ingress.test.mjs @ 6f5cc754: local Node SQLite BEGIN IMMEDIATE, unique event/transmission IDs, immutable event log, reopen and replay fixture tests",
-        "src/subscription_contract.mjs + src/webhook_inbox.mjs: old/same-time lifecycle, failed payment/sale, terminal-state contradictions -> queued GET_FIRST; 17 new offline assertions @ 6f5cc754"
+        "src/subscription_contract.mjs + src/webhook_inbox.mjs: old/same-time lifecycle, failed payment/sale, terminal-state contradictions -> queued GET_FIRST; 17 new offline assertions @ 6f5cc754",
+        "GitHub Actions 40075690681 completed/success @ 1fbbb56357b3243c2ff45c19f549d49780491ada; Node 163/163 PASS, Chromium quote/contract journey PASS, Python master JSON/MD integrity PASS"
       ],
-      "verified_sha": null,
+      "verified_sha": "1fbbb56357b3243c2ff45c19f549d49780491ada",
       "blocker": null,
       "recovery_date_kst": null,
       "recovery_condition": null,
-      "advance_note": "Off-line synthetic webhook ingestion and SQLite are preliminary until remote CI confirms. No real PayPal webhook signature tested."
+      "advance_note": "2026-10-24 선행: 오프라인 합성 RSA Webhook·SQLite 중복 원장·재전송/GET-first 17개 신규 테스트 및 전체 163/163 Node, Chromium CI PASS. 실제 PayPal 서명·HTTPS 수신 NOT_TESTED."
     },
     {
       "day_id": "PPL-D12",
