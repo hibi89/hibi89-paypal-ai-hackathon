@@ -18,3 +18,8 @@ Windows/macOS/Linux: \`npm run preflight:reviewer\`, \`npm test\`, \`npm run dem
 
 ## Limits
 No actual PayPal Sandbox OAuth/Orders/capture/GET, Gemini Free Tier/generated output, Cloudflare, real secure browser identity, public demo or Devpost submission is verified. D03 0% BLOCKED, D04 80% PARTIAL, D15 20% PARTIAL; D15 remaining estimated 5h/base and 10h/safe, actual elapsed null. D16-D18 NOT_STARTED. No user-side PC interaction required for this GitHub work.
+
+## Source verification and CI acceptance
+- Implemented source SHA `73156b4eb234f7a412bcf070b25da0180d91117b`; [GitHub Actions #40096829564](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40096829564) completed SUCCESS, Node 292/292 tests PASS, Chromium localhost E2E PASS, 18-day progress validation PASS.
+- The new Node regression test launches the reviewer smoke CLI as a subprocess, proves its exit 0, four GET requests, zero provider/payment POST calls and no private key exposure. The unchanged submission-gate regression still proves expected exit 2 when official evidence is absent.
+- Synthetic preflight is not real PayPal/AI proof and does not make the entry eligible. No external calls or user interaction in CI.
