@@ -52,7 +52,7 @@ async function captured({raw,db}){
 function harness(db,order=sample(),resolveTrustedSession=async()=>principal){
  return createOfflineSandboxD1ReadHarness({db,resolveTrustedSession,orders:{ORDER01:order}});
 }
-const state=(raw,op='create')=>raw.prepare('SELECT state,remote_id FROM payment_attempts WHERE operation=?').get(op);
+const state=(raw,op='create')=>{const row=raw.prepare('SELECT state,remote_id FROM payment_attempts WHERE operation=?').get(op);return row?{state:row.state,remote_id:row.remote_id}:null;};
 
 test('real Sandbox transport is composed with zero external requests and zero payment POST',within(async f=>{
  const a=await claimed(f);
