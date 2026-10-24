@@ -74,3 +74,63 @@ test('loopback demo rejects forged Host header and invalid origin',async()=>{
     assert.equal(denied.status,403);
   }finally{await app.close();}
 });
+
+test('D09 reviewer cookie is server generated, query/header role cannot promote',async()=>{
+  const app=await startOfflineDemo({testReviewSessions:true});
+  try {
+    assert.match(app.testReviewerCookie,/^paypal_test_review=[a-f0-9]{64}$/);
+    const owner=await (await fetch(app.url+'/demo/session?role=reviewer',
+      {headers:{'x-demo-role':'reviewer'}})).json();
+    assert.equal(owner.role,'owner');
+    assert.equal((await fetch(app.url+'/demo/session',{
+      headers:{cookie:'paypal_test_review='+ 'f'.repeat(64)}})).status,401);
+    assert.equal((await fetch(app.url+'/api/contracts/demo-contract',{
+      headers:{cookie:'paypal_test_review=forged'}})).status,401);
+    const reviewer=await (await fetch(app.url+'/demo/session',{
+      headers:{cookie:app.testReviewerCookie}})).json();
+    assert.equal(reviewer.role,'reviewer');
+    assert.ok(!JSON.stringify(reviewer).includes('paypal_test_review'));
+    assert.equal((await fetch(app.url+'/demo/contract.js')).status,200);
+  } finally {await app.close();}
+});
+test('D09 local reviewer may reject then accept without any payment attempt',async()=>{
+  const app=await startOfflineDemo({testReviewSessions:true});
+  try {
+    const session=await (await fetch(app.url+'/demo/session')).json();
+    const jsonPost=(url,data,cookie)=>fetch(url,{method:'POST',headers:{
+      'content-type':'application/json','x-csrf-token':session.csrfToken,
+      ...(cookie?{cookie}:{}),
+    },body:JSON.stringify(data)});
+    const quotes=app.url+'/api/quotes/'+session.quoteId;
+    assert.equal((await jsonPost(quotes+'/approve',{
+      confirmed:true,expectedVersion:1,amountMinor:1500})).status,200);
+    const ct=app.url+'/api/contracts';
+    assert.equal((await jsonPost(ct,{
+      id:'demo-contract',quoteId:session.quoteId,reviewerId:session.reviewerId,
+      expectedVersion:1,eventId:'createdD09',
+      milestones:[{id:'demo-milestone',step:1,amountMinor:1500}]})).status,201);
+    const path=ct+'/demo-contract/milestones/demo-milestone/';
+    assert.equal((await jsonPost(path+'submit',{
+      expectedVersion:1,expectedState:'PENDING',eventId:'submitD09',
+      detail:'Synthetic delivery evidence'})).status,200);
+    assert.equal((await jsonPost(path+'accept',{
+      expectedVersion:2,eventId:'forgedAccept',actorId:'synthetic-reviewer'})).status,400);
+    assert.equal((await jsonPost(path+'accept',{
+      expectedVersion:2,eventId:'ownerCannotReview'})).status,403);
+    assert.equal((await jsonPost(path+'reject',{
+      expectedVersion:2,eventId:'rejectD09',detail:'Missing source assets'},
+      app.testReviewerCookie)).status,200);
+    assert.equal((await jsonPost(path+'submit',{
+      expectedVersion:3,expectedState:'REJECTED',eventId:'resubmitD09',
+      detail:'All revised source assets'})).status,200);
+    assert.equal((await jsonPost(path+'accept',{
+      expectedVersion:4,eventId:'acceptD09'},app.testReviewerCookie)).status,200);
+    const contract=await (await fetch(ct+'/demo-contract')).json();
+    assert.equal(contract.contract.milestones[0].state,'ACCEPTED');
+    assert.equal(contract.contract.paymentState,'NOT_CAPTURED');
+    const events=await (await fetch(ct+'/demo-contract/events')).json();
+    assert.deepEqual(events.events.map(e=>e.eventType),
+      ['CREATED','SUBMITTED','REJECTED','SUBMITTED','ACCEPTED']);
+    assert.equal((await jsonPost(quotes+'/orders',{})).status,503);
+  }finally{await app.close();}
+});

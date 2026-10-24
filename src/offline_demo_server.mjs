@@ -82,10 +82,10 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false } 
         return;
       }
       if (req.method === 'GET' && path === '/demo/session') {
-        res.writeHead(200, { 'content-type': 'application/json',
-          'cache-control': 'no-store' });
         const reqSession=await resolveSession(new Request('http://127.0.0.1:'+listenPort+'/demo/session',{headers:req.headers}));
         if(!reqSession){res.writeHead(401,{'cache-control':'no-store'});res.end('UNAUTHORIZED');return;}
+        res.writeHead(200, { 'content-type': 'application/json',
+          'cache-control': 'no-store' });
         const role=reqSession.actorId===reviewerId?'reviewer':'owner';
         res.end(JSON.stringify({ csrfToken, quoteId, mode: 'OFFLINE_MOCK',
           role,contractId:'demo-contract',milestoneId:'demo-milestone',reviewerId }));
