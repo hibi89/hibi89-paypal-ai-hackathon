@@ -1,6 +1,7 @@
 // PPL-002 Day2: local Node/SQLite durable offline ledger. PayPal outbound calls DISABLED.
 // Node >=22 with --experimental-sqlite. Not a Cloudflare D1 adapter, not an auth provider.
 import { DatabaseSync } from 'node:sqlite';
+import { createContractMilestoneStore } from './contract_milestones.mjs';
 import { approvedAmount, requestKey, reconcileCapture } from './payment_contract.mjs';
 import { QuoteApiError } from './quote_api.mjs';
 
@@ -99,7 +100,9 @@ export function createSqliteLedger({ filename } = {}) {
     catch { throw new QuoteApiError('HUMAN_APPROVAL_REQUIRED',409); }
     return {quote,cents};
   }
+  const contractStore = createContractMilestoneStore({db,transaction,lockedApprovedQuote,reject});
   const api = {
+    ...contractStore,
     async get(id) { return convertQuote(getRow(id)); },
     async insertQuote({id,ownerId,merchantId,version=1,currency='USD',
       aiSuggestedMinor=null,status='PROPOSED'}={}) {
@@ -152,6 +155,8 @@ export function createSqliteLedger({ filename } = {}) {
         reject(!row || row.owner_id !== actorId, 'QUOTE_NOT_FOUND', 404);
         reject(row.version !== expectedVersion, 'STALE_QUOTE_VERSION', 409);
         reject(row.version >= Number.MAX_SAFE_INTEGER, 'QUOTE_VERSION_EXHAUSTED', 409);
+        reject(!!stmt('SELECT 1 FROM contracts WHERE quote_id=? LIMIT 1').get(id),
+          'CONTRACT_EXISTS',409);
         reject(!!stmt('SELECT 1 AS found FROM payment_attempts WHERE quote_id=? LIMIT 1')
           .get(id), 'PAYMENT_ATTEMPT_EXISTS', 409);
         const done = stmt('UPDATE quotes SET version=version+1, status=\'PROPOSED\',' +
