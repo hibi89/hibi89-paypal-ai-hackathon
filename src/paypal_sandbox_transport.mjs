@@ -56,7 +56,7 @@ function verifiedOrder(quote, data, id) {
   const units=data?.purchase_units;
   reject(!data || data.id!==id ||
     data.intent!=='CAPTURE' ||
-    !['CREATED','APPROVED','COMPLETED'].includes(data.status) ||
+    !['CREATED','PAYER_ACTION_REQUIRED','APPROVED','COMPLETED'].includes(data.status) ||
     !Array.isArray(units) || units.length!==1 ||
     units[0]?.reference_id!==quote.id ||
     units[0]?.payee?.merchant_id!==quote.merchantId ||
@@ -127,12 +127,12 @@ export function createSandboxTransport(options={}) {
       method:'POST',token,body:JSON.stringify(planned.body),requestId:planned.requestId,
     });
     reject(!ORDER_ID.test(created?.id) ||
-      !['CREATED','APPROVED'].includes(created.status),
+      !['CREATED','PAYER_ACTION_REQUIRED','APPROVED'].includes(created.status),
     'SANDBOX_CREATE_UNVERIFIED');
     const payerUrl=approvalLink(created.links,created.id);
     // Mandatory server GET to validate reference/amount before returning approval URL.
     const checked=await getOrder(quote,created.id);
-    reject(!['CREATED','APPROVED'].includes(checked.status),
+    reject(!['CREATED','PAYER_ACTION_REQUIRED','APPROVED'].includes(checked.status),
       'SANDBOX_CREATE_GET_STATUS_CONFLICT');
     return {orderId:created.id,payerUrl,orderStatus:checked.status,
       paymentState:'NOT_PAID',source:'SANDBOX_TRANSPORT'};

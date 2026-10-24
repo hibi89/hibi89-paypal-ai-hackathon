@@ -285,7 +285,7 @@ export function createSqliteLedger({ filename } = {}) {
       return transaction(() => {
         const {quote,cents}=lockedApprovedQuote(quoteId,actorId,merchantId);
         verifiedGetOrderUnit({quote,cents,merchantId,order,
-          statuses:['CREATED','APPROVED']});
+          statuses:['CREATED','PAYER_ACTION_REQUIRED','APPROVED']});
         const rid=requestKey(quote,'create');
         const prior=attemptRow(rid);
         reject(!prior || prior.merchant_id!==merchantId ||

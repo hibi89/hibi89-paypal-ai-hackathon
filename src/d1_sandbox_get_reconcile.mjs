@@ -47,7 +47,7 @@ function checkOrder(q,expectedRemote,order) {
   const unit=Array.isArray(u)&&u.length===1?u[0]:null;
   fail(!orderId(expectedRemote)||order?.id!==expectedRemote||
     order.intent!=='CAPTURE'||
-    !['CREATED','APPROVED','COMPLETED'].includes(order.status)||
+    !['CREATED','PAYER_ACTION_REQUIRED','APPROVED','COMPLETED'].includes(order.status)||
     !unit||unit.reference_id!==q.id||
     unit.payee?.merchant_id!==q.merchant_id||
     unit.amount?.currency_code!=='USD'||
@@ -117,7 +117,7 @@ export function createD1SandboxGetReconciler({db,resolveSession,transport}={}) {
       try{data=await transport.getOrder(c.quote,create.remote_id);}
       catch{throw new D1GetReconcileError('SANDBOX_GET_FAILED');}
       checkOrder(c.q,create.remote_id,data);
-      if(data.status==='CREATED')
+      if(data.status==='CREATED'||data.status==='PAYER_ACTION_REQUIRED')
         return response('BUYER_APPROVAL_PENDING_NO_POST',create.state);
       if(data.status==='COMPLETED')
         return response('CAPTURE_RECONCILIATION_REQUIRED',create.state);
