@@ -1,19 +1,14 @@
-# PayPal 단일 총괄 — CURRENT ACTIVE WORK (2026-10-24 KST)
-<!-- resume: day_id=PPL-D11; percent=0; est_h=5; safe_h=10 -->
+# PayPal — sole lead active work / D11 CI pending
+<!-- resume: day_id=PPL-D11; percent=90; est_h=0.5; safe_h=1 -->
 
-> 정확한 시작 `[페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈]`, `ㄱ` 또는 `r`. 정본 GitHub `lead/paypal`. [CHAT_BOOTSTRAP](../../../CHAT_BOOTSTRAP.md) → [진척 JSON](../../../data/paypal_daily_progress.json) → 본 지시. 과거 worker 디스패처 사용 금지.
+**단일 명령:** `[페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈]` / `ㄱ` / `r`. `hibi89/hibi89-paypal-ai-hackathon` 최신 **`lead/paypal`** SHA를 재조회한 뒤 직접 다음 작업 진행. `main`/옛 dispatch 사용 금지.
 
-## D11 READY — 공식 2026-11-04 예정, 10/24 선행
-- **0%/100%, 잔여 예상 5h, 안전 확보 10h; 실제 소요 시간 NOT_MEASURED.**
-- 목표: 실제 PayPal Webhook 형태에 대한 *오프라인* HTTP ingress, raw original bytes 보존, cryptographic signature verification 경계/부적절 cert_url SSRF 차단, SQLite UNIQUE eventId+transmissionId dedup, 역순·동일 timestamp·재전송/미등록 resource GET-first, 감사 trail. **서명 검증 전 2xx 승인/처리 금지**, 미검증 webhook으로 결제 상태 수정/PayPal POST 호출 금지.
-- 공식 소스 우선: [PayPal REST Webhooks](https://developer.paypal.com/api/rest/webhooks/rest/)에 raw original body CRC32 *decimal*, 등록 webhook ID·PayPal certificate/verify-webhook-signature POST; simulator postback 불가·mock special WEBHOOK_ID. `src/subscription_contract.mjs` pure planner는 유효 event/중복 상태 계획만, 보안 경계/원장 아님. [공식 연구](../../technical/PPL_D10_SUBSCRIPTIONS_FEASIBILITY_20261024.md).
-- 100점 체크리스트: `AUTHENTIC_WEBHOOK_BOUNDARY_AND_PARSER` 25, `SIGNATURE_VALIDATION_NEGATIVE_TESTS` 25, `DURABLE_EVENT_ID_DEDUP_ATOMICITY` 25, `ORDERING_REPLAY_AND_GET_FIRST_GUARDS` 15, `CI_DOCS_HANDOFF` 10.
-- **중요:** developer Sandbox webhookId/실 cert/한국 merchant 구독 entitlement/HTTPS public listener는 계정이 없어 `NOT_TESTED`. 실제 PayPal API 서명 검증을 성공했다고 주장하지 말고 synthetic key/cert 서명은 offline-only로 보고. 실 계정 연결·지출·외부 공개 권한 변경에는 사용자 승인이 필요. PayPal 결제 HTTP POST 503 그대로.
+**현재 PPL-D11 (예정 2026-11-04 선행, 실제 2026-10-24) 90%/100%, 잔여 기본 0.5h/안전 총량 1h, 실제 경과시간 NOT_MEASURED.** 오프라인 RSA 서명검사+원본 바이트 CRC32+SQLite 이벤트 원장/재전송+GET-first 로직 구현; GitHub CI **최종 미확인**. 새로운 CI가 PASS한 뒤 D11을 100%로 닫고 D12로 활성 포인터 이동. CI가 실패하면 실패 로그를 근거로 수정한다. `MASTER_PROGRESS.md`는 JSON에서 자동 생성, 직접 편집 금지.
 
-## 지난 D10 완료 / 차단
-- D10 연구 및 상태 계약 **100%**: REST subscriptions/products/plans 존재, 웹훅 이벤트·상태·검증·KR 일반 REST 코드 등재 확인. 사용자 KR merchant 구독 권한은 미검증. 코드 `src/subscription_contract.mjs`와 13 테스트. [Actions 40072332710](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40072332710): **Node 146/146 PASS, 기존 Chromium PASS**, 근거 SHA `1c852b75b6841eeee0cd2968c234d69fedaa9e0a`.
-- D03 실제 PayPal/무료 AI **0% BLOCKED**, 잔여 3h/8h+외부 대기 UNKNOWN. D04 80% 실 AI 20% BLOCKED, 잔여 2h/4h. D01/D02/D05~D09 오프라인/합성 각각 100%.
-- Production/Cloudflare D1/실 PayPal OAuth/Live·Orders/Subscriptions·실 AI/Devpost는 NOT_TESTED.
+**작업 코드:** `src/webhook_ingress.mjs`, `src/webhook_inbox.mjs`, `tests/webhook_ingress.test.mjs`. 최초 구현 commit `8e4d6503846eaa8a2cab6e20e1ceef76d5944db8`, 신규 fixture tests commit `6f5cc7549a3e0d5fe3efae97a80451ed5d41609c`. 실제 PayPal Sandbox/Webhook app/cert/merchant, 한국 구독 권한, 실 AI, D1/Production, Devpost **NOT_TESTED**. 모든 전자결제 POST 503 fail-closed, Live/카드/금전/토큰 공개 금지.
 
-## 다음 채팅 종료 계약
-직접 개발·테스트→Actions 확인→JSON 100점/시간/차단 보존→`CHAT_BOOTSTRAP.md`, `AGENTS.md`, `STATUS.md`, `HANDOFF.md`, 본 파일, `TO_HACKATHON_LEAD.md` 동일 resume 마커/원장으로 같은 커밋→CI/원격 HEAD 검증. [RESUME_SYNC_CONTRACT](../../RESUME_SYNC_CONTRACT.md).
+**계속 차단:** D03 0% Sandbox Business/Personal·무료 AI 계정 접근(잔여 3h/8h + 외부 대기 UNKNOWN). D04 80% 실 AI 20% 미완료(2h/4h). D01/D02/D05~D10은 각자 승인한 오프라인 범위만 100%. `PPL-D12` 구독 UI는 아직 0% (예상 5h/안전 9h). 제출 내부 11/11, 공식 11/13 05:00 KST.
+
+**GitHub 종료 계약:** 개발+테스트→실제 Actions→`data/paypal_daily_progress.json` 업데이트→`python3 render_master_progress.py --write`→CI `--check`→`CHAT_BOOTSTRAP.md`·`AGENTS.md`·`STATUS.md`·`HANDOFF.md`·`docs/roles/lead/LEAD_ACTIVE_WORK.md`·`docs/roles/lead/TO_HACKATHON_LEAD.md` 동일 resume 주석→GitHub expected_sha fast-forward→최신 CI 확인. 상세 [RESUME_SYNC_CONTRACT](docs/RESUME_SYNC_CONTRACT.md) 및 [전체 18일](MASTER_PROGRESS.md).
+
+**현재 READY:** 실제 GitHub Actions Node 전체 테스트 + Chromium이 D11 소스 및 테스트 커밋을 통과하는지 확인. 실패 시 수정. PASS 후 D11 100%, 다음 D12(11/05 구독 UI/실패·취소·복구) 0%로 전환. 외부 실계정 승인 불가 작업은 D03/D04 BLOCKED 유지.

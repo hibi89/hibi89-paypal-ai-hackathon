@@ -1,14 +1,14 @@
-# PayPal 단일 총괄·개발자 행동 규칙 — CURRENT
+# PayPal Lead / Developer Safety and Resume Instructions
+<!-- resume: day_id=PPL-D11; percent=90; est_h=0.5; safe_h=1 -->
 
-<!-- resume: day_id=PPL-D11; percent=0; est_h=5; safe_h=10 -->
+**단일 명령:** `[페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈]` / `ㄱ` / `r`. `hibi89/hibi89-paypal-ai-hackathon` 최신 **`lead/paypal`** SHA를 재조회한 뒤 직접 다음 작업 진행. `main`/옛 dispatch 사용 금지.
 
-**정확한 사용자 시작 명령:** `[페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈]` → [CHAT_BOOTSTRAP.md](CHAT_BOOTSTRAP.md) → `lead/paypal` 최신 원격 HEAD → [ACTIVE_WORK](docs/roles/lead/LEAD_ACTIVE_WORK.md)·[진척 원장](data/paypal_daily_progress.json) → **다음 실제 작업 직접 코딩·테스트·커밋**.
+**현재 PPL-D11 (예정 2026-11-04 선행, 실제 2026-10-24) 90%/100%, 잔여 기본 0.5h/안전 총량 1h, 실제 경과시간 NOT_MEASURED.** 오프라인 RSA 서명검사+원본 바이트 CRC32+SQLite 이벤트 원장/재전송+GET-first 로직 구현; GitHub CI **최종 미확인**. 새로운 CI가 PASS한 뒤 D11을 100%로 닫고 D12로 활성 포인터 이동. CI가 실패하면 실패 로그를 근거로 수정한다. `MASTER_PROGRESS.md`는 JSON에서 자동 생성, 직접 편집 금지.
 
-1. PayPal 총괄=개발=테스트=검수=문서화 채팅 **하나**. 별도 worker 채팅·구 dispatcher 금지. `lead/paypal`은 개발 정본, `main` 릴리스만, `feature/*` 과거 자료 보존.
-2. 사용자가 `ㄱ`라고 해도 동일. 날짜순 강제보다 독립 READY 선행개발 우선(사용자 승인); 단 blocked Sandbox/무료 AI의 실제 검증은 절대로 mock 테스트로 대체하지 않는다.
-3. 소스 원본/고유 ID·결제 계약 유지, GET/F5 읽기 전용, 사람 명시적 승인과 서버 owner/merchant/version/금액/통화 재검증. DB UNIQUE/CAS/멱등, UNKNOWN은 원격 GET 후 확인, 중복 캡처 금지. 실 provider 권한 없으면 결제 HTTP POST 503 유지.
-4. 추가 현금 **₩0**, PayPal Live 금지. 유료 API/카드 등록·계정 설정·권한/공개 변경·실사용자 PII/비밀키 공개/실 고객 외부 전송은 사용자 사전 승인 없이는 안 됨.
-5. 브라우저 local OFFLINE_MOCK/Node CI/실 Sandbox/실 AI/운영 배포/Devpost 접수는 완전히 다른 검증 단계. `NOT_TESTED`를 성공으로 주장하지 않는다. 동일 접근 2회 실패면 원인·대안·유예.
-6. **모든 실제 작업 종료 후** [RESUME_SYNC_CONTRACT](docs/RESUME_SYNC_CONTRACT.md)에 따라 원장+시작/현작업/STATUS/HANDOFF/상위 보고를 **같은 커밋으로 최신화**하고 원격 SHA·CI를 확인. 체크포인트가 일치하지 않으면 `npm test` 실패하도록 [resume 계약 검사](tests/resume_contract.test.mjs) 상시 유지.
-7. 다음 직접 작업: **D11 0%/100%, 예상 5h/안전 10h**, Webhook 수신·실제 cryptographic verification 경계·SQLite 이벤트 중복·역순/재전송 OFFLINE 검증. D10 공식 PayPal API 조사+pure state planner 100% (Actions 40072332710, 146 Node+Chromium PASS). D03 Sandbox/AI 실증 0%, D04 실 AI 20% BLOCKED 보존. [원장](data/paypal_daily_progress.json) 정본.
-8. 내부 마감 11/11, 공식 11/13 05:00 KST. 전체 플랜 82h/164h 고위험, 실 작업시간 NOT_MEASURED. 무인 백그라운드 자동 작업 아님.
+**작업 코드:** `src/webhook_ingress.mjs`, `src/webhook_inbox.mjs`, `tests/webhook_ingress.test.mjs`. 최초 구현 commit `8e4d6503846eaa8a2cab6e20e1ceef76d5944db8`, 신규 fixture tests commit `6f5cc7549a3e0d5fe3efae97a80451ed5d41609c`. 실제 PayPal Sandbox/Webhook app/cert/merchant, 한국 구독 권한, 실 AI, D1/Production, Devpost **NOT_TESTED**. 모든 전자결제 POST 503 fail-closed, Live/카드/금전/토큰 공개 금지.
+
+**계속 차단:** D03 0% Sandbox Business/Personal·무료 AI 계정 접근(잔여 3h/8h + 외부 대기 UNKNOWN). D04 80% 실 AI 20% 미완료(2h/4h). D01/D02/D05~D10은 각자 승인한 오프라인 범위만 100%. `PPL-D12` 구독 UI는 아직 0% (예상 5h/안전 9h). 제출 내부 11/11, 공식 11/13 05:00 KST.
+
+**GitHub 종료 계약:** 개발+테스트→실제 Actions→`data/paypal_daily_progress.json` 업데이트→`python3 render_master_progress.py --write`→CI `--check`→`CHAT_BOOTSTRAP.md`·`AGENTS.md`·`STATUS.md`·`HANDOFF.md`·`docs/roles/lead/LEAD_ACTIVE_WORK.md`·`docs/roles/lead/TO_HACKATHON_LEAD.md` 동일 resume 주석→GitHub expected_sha fast-forward→최신 CI 확인. 상세 [RESUME_SYNC_CONTRACT](docs/RESUME_SYNC_CONTRACT.md) 및 [전체 18일](MASTER_PROGRESS.md).
+
+**암호화 주의:** 합성 서명/로컬 테스트 통과를 PayPal 서버의 실제 인증 성공으로 오인하지 말 것. 재전송·역순·실제 Sandbox는 별도 증거 필요.

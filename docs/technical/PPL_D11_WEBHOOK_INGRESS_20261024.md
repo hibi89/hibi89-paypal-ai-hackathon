@@ -1,0 +1,15 @@
+# PPL-D11 — Synthetic Signed Webhook Ingress + Durable SQLite Inbox
+2026-10-24 KST · **OFFLINE / NOT real PayPal verified**
+
+## Design / evidence
+Official reference: https://developer.paypal.com/api/rest/webhooks/rest/ (2026-06-18 revision); form `transmissionId|timestamp|registeredWebhookId|raw-body-CRC32-decimal`. SHA256/RSA signed cryptographic self-verification; actual app webhook ID configured on trusted server, NEVER read from event. Requires HTTPS:443 listener for real PayPal and app-registered webhook/certificate. Simulated PayPal webhook event postback cannot verify by official postback endpoint.
+
+- `src/webhook_ingress.mjs`: Fetch-style **offline-only handler**, not routed to production. Rejects missing/unsupported content type, method, invalid header, body >65536 bytes, non-matching configured HTTPS `api.sandbox.paypal.com` certificate path, arbitrary cert URLs (SSRF protection), wrong RSA signature/raw byte/webhook ID. Original Buffer CRC32 decimal computed before JSON parse. No network access or credential fetch.
+- Constructor requires `offlineOnly:true`, configured `pinnedPublicKeyPem` and `certUrl`. Test local RSA key **does NOT certify PayPal identity**. This is intentionally fail-closed for public deployment until account-owned PayPal cert chain validation / fixed certificate trust policy and actual Sandbox evidence are available.
+- `src/webhook_inbox.mjs`: independent disk-backed Node SQLite, BEGIN IMMEDIATE + UNIQUE event ID and transmission ID; separate delivery receipts; immutable event audit (SQL triggers); registered subscription bound by merchantId and planId using internal method; no public bind route. Event replay with matching hash no lifecycle side effect; different raw bytes with same event ID => 409; reused transmission for another event => 409. Restart and second SQLite connection exercise persistence in offline tests.
+- Advisory, unknown, old/same-timestamp or forbidden terminal event => `202 RECONCILE_GET_FIRST` and durable reconciliation queue **only for locally bound subscription**. Mismatched/unbound subscription => non-2xx; no guessed merchant. No provider GET performed. `PAYMENT.SALE.COMPLETED` never sets paid; `paymentEvidence='NOT_VERIFIED'`. Existing PayPal payment POST remains 503.
+- `tests/webhook_ingress.test.mjs`: 17 synthetic RSA and SQLite negative/idempotency/ordering tests, not PayPal-provided keys/events. D10 pure 13 tests remain.
+- D11 source/test commits `8e4d6503`, `6f5cc754`. CI evidence must be updated when remote job finishes; until then D11 CI acceptance 10 points stays PENDING. Real PayPal Subscriptions/KR merchant, HTTPS callback, cert-chain authenticity, production/D1, AI and Devpost NOT_TESTED.
+
+## Future live gate
+After private approved Sandbox Business/Personal app+registered Webhook ID and genuinely trusted PayPal certificate/verification method: implement configured HTTPS public receiver, cert chain and signature validation against actual PayPal source, persistent cross-instance D1 inbox/reconciliation worker, rate/age checks, real delivery/retry testing. Separate new gate, never claim it from this fixture-only D11 milestone.

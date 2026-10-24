@@ -679,47 +679,52 @@
     {
       "day_id": "PPL-D11",
       "scheduled_date_kst": "2026-11-04",
-      "executed_date_kst": null,
+      "executed_date_kst": "2026-10-24",
       "scope": "Offline webhook ingress, signature verification boundary, SQLite event-id idempotency and out-of-order fail closed with synthetic signature tests; real PayPal Sandbox remains blocked",
-      "status": "NOT_STARTED",
+      "status": "IMPLEMENTED_OFFLINE_AWAITING_CI",
       "estimated_total_hours": 5,
       "safe_total_hours": 10,
-      "estimated_remaining_hours": 5,
-      "safe_remaining_hours": 10,
-      "percent_complete": 0,
+      "estimated_remaining_hours": 0.5,
+      "safe_remaining_hours": 1,
+      "percent_complete": 90,
       "actual_elapsed_hours": null,
-      "actual_elapsed_note": "NOT_STARTED. Estimates exclude unknown external access approval.",
-      "carryover": [],
+      "actual_elapsed_note": "NOT_MEASURED. CODE/TEST COMMITTED; CI waiting to confirm.",
+      "carryover": [
+        "D11 GitHub Actions on 17 synthetic signature/SQLite tests pending, CI must pass before 100%",
+        "D12 UI only once D11 has passed and handoff is synchronized"
+      ],
       "limitations": [
-        "Actual PayPal app webhook ID/cert and HTTPS public delivery cannot be validated without account/hosting; preserve NOT_TESTED",
-        "PayPal self-verification CRC32 decimal requires original raw bytes and controlled PayPal cert URL to prevent SSRF",
-        "No sample/mock verification may be called real PayPal verified signature",
-        "No paid API/Live/card/money, and existing payment HTTP POST 503 remains unchanged"
+        "No real PayPal merchant/app credential, app registered webhookId, PayPal certificate or listener deployed; real PayPal signature verification NOT_TESTED",
+        "RSA public key and certificate URL are configured locally, *not* fetched from untrusted headers; passes only with synthetic fixture signatures",
+        "Local SQLite on disk, NOT Cloudflare D1; no public HTTP endpoint and no outgoing PayPal provider API calls",
+        "Subscription activated event NEVER proves payment; payment evidence is NOT_VERIFIED",
+        "Unmatched subscription event returns non-2xx fail-closed rather than acknowledging or routing to guessed merchant; durable GET reconciliation only for bound subscriptions",
+        "In-memory pure planner 200-event cap is bounded by SQLite unbounded unique IDs (recent 199), but live multi-process concurrency not proved"
       ],
       "checklist": [
         {
           "id": "AUTHENTIC_WEBHOOK_BOUNDARY_AND_PARSER",
           "weight_pct": 25,
-          "state": "PENDING",
-          "evidence": null
+          "state": "VERIFIED",
+          "evidence": "src/webhook_ingress.mjs @ 8e4d6503: original raw body CRC32(decimal), pinned sandbox cert URL, off-line-only RSA-SHA256 Fetch handler, no automatic service wiring; 17 fixture tests @ 6f5cc754"
         },
         {
           "id": "SIGNATURE_VALIDATION_NEGATIVE_TESTS",
           "weight_pct": 25,
-          "state": "PENDING",
-          "evidence": null
+          "state": "VERIFIED",
+          "evidence": "src/webhook_ingress.mjs @ 8e4d6503 and tests/webhook_ingress.test.mjs @ 6f5cc754: forged signature/raw body/webhook ID/URL/headers/oversize fail closed, synthetic RSA fixtures only"
         },
         {
           "id": "DURABLE_EVENT_ID_DEDUP_ATOMICITY",
           "weight_pct": 25,
-          "state": "PENDING",
-          "evidence": null
+          "state": "VERIFIED",
+          "evidence": "src/webhook_inbox.mjs @ 8e4d6503 and tests/webhook_ingress.test.mjs @ 6f5cc754: local Node SQLite BEGIN IMMEDIATE, unique event/transmission IDs, immutable event log, reopen and replay fixture tests"
         },
         {
           "id": "ORDERING_REPLAY_AND_GET_FIRST_GUARDS",
           "weight_pct": 15,
-          "state": "PENDING",
-          "evidence": null
+          "state": "VERIFIED",
+          "evidence": "src/subscription_contract.mjs + src/webhook_inbox.mjs: old/same-time lifecycle, failed payment/sale, terminal-state contradictions -> queued GET_FIRST; 17 new offline assertions @ 6f5cc754"
         },
         {
           "id": "CI_DOCS_HANDOFF",
@@ -728,13 +733,18 @@
           "evidence": null
         }
       ],
-      "progress_state": "NOT_STARTED",
-      "evidence": [],
+      "progress_state": "PARTIAL",
+      "evidence": [
+        "src/webhook_ingress.mjs @ 8e4d6503: original raw body CRC32(decimal), pinned sandbox cert URL, off-line-only RSA-SHA256 Fetch handler, no automatic service wiring; 17 fixture tests @ 6f5cc754",
+        "src/webhook_ingress.mjs @ 8e4d6503 and tests/webhook_ingress.test.mjs @ 6f5cc754: forged signature/raw body/webhook ID/URL/headers/oversize fail closed, synthetic RSA fixtures only",
+        "src/webhook_inbox.mjs @ 8e4d6503 and tests/webhook_ingress.test.mjs @ 6f5cc754: local Node SQLite BEGIN IMMEDIATE, unique event/transmission IDs, immutable event log, reopen and replay fixture tests",
+        "src/subscription_contract.mjs + src/webhook_inbox.mjs: old/same-time lifecycle, failed payment/sale, terminal-state contradictions -> queued GET_FIRST; 17 new offline assertions @ 6f5cc754"
+      ],
       "verified_sha": null,
       "blocker": null,
       "recovery_date_kst": null,
       "recovery_condition": null,
-      "advance_note": null
+      "advance_note": "Off-line synthetic webhook ingestion and SQLite are preliminary until remote CI confirms. No real PayPal webhook signature tested."
     },
     {
       "day_id": "PPL-D12",
