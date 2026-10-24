@@ -4,6 +4,7 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createGeminiQuoteDraftProvider} from '../src/gemini_quote_provider.mjs';
+import {GEMINI_P0_MODEL,GEMINI_P0_ENDPOINT} from '../src/gemini_p0_model.mjs';
 import {createSqliteLedger} from '../src/sqlite_ledger.mjs';
 import {createQuoteApi} from '../src/quote_api.mjs';
 
@@ -28,7 +29,7 @@ test('single fixed Gemini JSON-schema request; no arbitrary endpoint or output l
    calls.push({url,o});return good();}});
  const r=await fn({scope,currency:'USD'});
  assert.equal(calls.length,1);
- assert.equal(calls[0].url,'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent');
+ assert.equal(calls[0].url,'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent');
  assert.equal(calls[0].o.method,'POST');assert.equal(calls[0].o.redirect,'error');
  assert.ok(calls[0].o.signal instanceof AbortSignal);
  const payload=JSON.parse(calls[0].o.body);
@@ -108,4 +109,24 @@ test('remote failure is safe 503 with no quote revision or sensitive text',async
   assert.equal(JSON.stringify(b).includes('PRIVATE_'),false);
   assert.equal((await db.get('q1')).version,2);
  });
+});
+
+test('new-project candidate stays pinned even with arbitrary model and endpoint options',async()=>{
+ assert.equal(GEMINI_P0_MODEL,'gemini-3.5-flash-lite');
+ assert.equal(GEMINI_P0_ENDPOINT,'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent');
+ let attempts=0;
+ const f=createGeminiQuoteDraftProvider({...opts,model:'gemini-4-argon',
+  endpoint:'https://unknown.test',fetchImpl:async url=>{
+   attempts++;assert.equal(url,GEMINI_P0_ENDPOINT);return good();
+  }});
+ await f({scope,currency:'USD'});
+ assert.equal(attempts,1);
+});
+test('model-denied requests stop without paid or old-model fallback',async()=>{
+ const requests=[];
+ const f=createGeminiQuoteDraftProvider({...opts,fetchImpl:async url=>{
+  requests.push(url);return {status:404};
+ }});
+ await assert.rejects(f({scope,currency:'USD'}),{message:'AI_HTTP_FAILED'});
+ assert.deepEqual(requests,[GEMINI_P0_ENDPOINT]);
 });

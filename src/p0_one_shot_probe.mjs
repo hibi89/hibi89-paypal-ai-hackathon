@@ -3,7 +3,7 @@
 // Only Sandbox OAuth POST or one synthetic Gemini free-project generateContent POST.
 // Zero provider calls, Live, checkout create/capture, secret printing, log bodies, or retries.
 const PAYPAL_URL='https://api-m.sandbox.paypal.com/v1/oauth2/token';
-const GEMINI_URL='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent';
+import {GEMINI_P0_MODEL,GEMINI_P0_ENDPOINT} from './gemini_p0_model.mjs';
 const PROMPT='Write one short sentence about a fictional website landing page design task.';
 const has=x=>typeof x==='string'&&x.trim().length>0;
 const ok=(provider,status,other={})=>Object.freeze({provider,status,networkCalls:0,
@@ -34,7 +34,7 @@ export async function runP0OneShotProbe({
     ?'PROBE_ALREADY_CLAIMED_NO_RETRY':'PROBE_RESERVATION_UNAVAILABLE');
  }
  // No retry, no redirects, fixed allowlisted endpoint, no arbitrary payload/model.
- const url=provider==='paypal'?PAYPAL_URL:GEMINI_URL;
+ const url=provider==='paypal'?PAYPAL_URL:GEMINI_P0_ENDPOINT;
  const options=provider==='paypal'?{
   method:'POST',redirect:'error',signal:AbortSignal.timeout(10000),
   headers:{
@@ -82,7 +82,7 @@ export async function runP0OneShotProbe({
  // No generated text, token counts, request IDs, or private quota/billing IDs.
  return ok(provider,'GEMINI_TEXT_GENERATED',{networkCalls:1,httpStatus,
   externalEvidence:true,evidenceKind:'SINGLE_SYNTHETIC_TEXT_RESPONSE',
-  model:'gemini-2.5-flash-lite',
+  model:GEMINI_P0_MODEL,
   accountFreeTierVerified:false
  });
 }

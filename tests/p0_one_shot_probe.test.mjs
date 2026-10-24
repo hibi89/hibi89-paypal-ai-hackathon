@@ -7,6 +7,7 @@ import {join} from 'node:path';
 import {claimOwnerProbeOnce} from '../src/owner_probe_reservation.mjs';
 import {fileURLToPath} from 'node:url';
 import {parseP0ProbeArgs,runP0OneShotProbe} from '../src/p0_one_shot_probe.mjs';
+import {GEMINI_P0_MODEL,GEMINI_P0_ENDPOINT} from '../src/gemini_p0_model.mjs';
 const env={PAYPAL_SANDBOX_CLIENT_ID:'test_local_id',
  PAYPAL_SANDBOX_CLIENT_SECRET:['synthetic','private','secret'].join('_'),
  GEMINI_API_KEY:'synthetic_ai_key'};
@@ -68,7 +69,7 @@ test('Gemini one real-request contract has static synthetic prompt and fixed mod
   freeTierConfirmed:true,
   fetchImpl:async(url,request)=>{calls.push({url,request});return fakeResponse(goodAI)}});
  assert.equal(calls.length,1);
- assert.equal(calls[0].url,'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent');
+ assert.equal(calls[0].url,'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent');
  assert.equal(calls[0].request.redirect,'error');
  assert.equal(calls[0].request.headers['x-goog-api-key'],env.GEMINI_API_KEY);
  const req=JSON.parse(calls[0].request.body);
@@ -77,6 +78,8 @@ test('Gemini one real-request contract has static synthetic prompt and fixed mod
  assert.equal(report.externalEvidence,true);
  assert.equal(report.accountFreeTierVerified,false);
  assert.equal(report.status,'GEMINI_TEXT_GENERATED');
+ assert.equal(report.model,GEMINI_P0_MODEL);
+ assert.equal(calls[0].url,GEMINI_P0_ENDPOINT);
  const encoded=JSON.stringify(report);
  assert.equal(encoded.includes('A simple page.'),false);
  assert.equal(encoded.includes(env.GEMINI_API_KEY),false);
@@ -201,4 +204,15 @@ test('reservation failure cannot leak paths or access the external transport',as
  assert.equal(result.status,'PROBE_RESERVATION_UNAVAILABLE');
  assert.equal(result.networkCalls,0);assert.equal(calls,0);
  assert.equal(JSON.stringify(result).includes(marker),false);
+});
+
+test('owner probe 404 cannot silently retry with paid or old-model endpoint',async()=>{
+ const called=[];
+ const r=await runP0OneShotProbe({provider:'gemini',...opts,freeTierConfirmed:true,
+  fetchImpl:async url=>{called.push(url);return fakeResponse({error:'MODEL_UNAVAILABLE'},404);}});
+ assert.equal(r.status,'REMOTE_HTTP_NOT_SUCCESS');
+ assert.equal(r.externalEvidence,false);
+ assert.equal(r.networkCalls,1);
+ assert.deepEqual(called,[GEMINI_P0_ENDPOINT]);
+ assert.equal(JSON.stringify(r).includes('MODEL_UNAVAILABLE'),false);
 });

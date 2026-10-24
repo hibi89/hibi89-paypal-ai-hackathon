@@ -37,3 +37,6 @@ D03 실 Business/Personal Sandbox+실 무료 AI 계정 BLOCKED; D04 실 AI 부�
 
 ## Reviewer/source-release preflight (2026-10-24)
 [Corrected English reproduction guide](docs/JUDGE_REPRODUCTION_EN.md) · [static submission evidence auditor](src/submission_evidence_gate.mjs) · `npm run preflight:submission` (intentionally exits **2** because real Sandbox/AI/browser/video/Devpost evidence is missing; zero external API calls). [GitHub Actions #40088755056](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40088755056) — **259/259 Node tests**, localhost Chromium and 18-day schedule PASS. Root MIT LICENSE already exists. This is **not** official release or submission acceptance.
+
+### P0 Gemini new-project model availability (2026-10-24)
+The two protected private Gemini adapters now pin `gemini-3.5-flash-lite` via `src/gemini_p0_model.mjs` because Google restricts legacy 2.5 access for new projects. A public Free Tier price listing is **not** owner account proof. Real provider calls, paid fallback and deployment remain forbidden without separate approval. [Audit](docs/technical/PPL_P0_GEMINI_NEW_PROJECT_MODEL_20261024.md).
