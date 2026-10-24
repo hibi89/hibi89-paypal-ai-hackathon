@@ -4,6 +4,7 @@
 // Never store/log OAuth access tokens or credentials. No Live PayPal capability.
 import { planOrder, planCapture, requestKey, approvedAmount, paypalRequestHeaderId } from './payment_contract.mjs';
 import { planOwnerSandboxPilotCheckout } from './sandbox_pilot_checkout_plan.mjs';
+import {boundServerSessionFromStoredProof} from './pilot_checkout_session_store.mjs';
 
 const BASE = 'https://api-m.sandbox.paypal.com';
 // Bound every OAuth, order and capture request. POST timeout is UNKNOWN, never retried.
@@ -148,10 +149,11 @@ export function createSandboxTransport(options={}) {
     claimValidated(quote,claim,'create');
     return createFromPlan(quote,planOrder(quote));
   }
-  async function createOwnerPilotOrderOnce(quote,claim,{publicOrigin,serverSession}={}) {
-    // Fail closed before OAuth, provider POST or payment-token exposure.
-    // Approval to CALL the remote provider remains separate and not implied.
-    // Only a trusted server can attest session ownership and HTTPS hosting.
+  async function createOwnerPilotOrderOnce(quote,claim,{publicOrigin,sessionProof}={}) {
+    // A caller-supplied {verified:true} JSON is NEVER adequate payment authority.
+    // Resolve an opaque, DB-backed branded proof; expiration/revocation are
+    // rechecked before any token fetch or Orders POST.
+    const serverSession=boundServerSessionFromStoredProof(sessionProof,quote);
     claimValidated(quote,claim,'create');
     const plan=planOwnerSandboxPilotCheckout({quote,publicOrigin,serverSession});
     return createFromPlan(quote,plan);

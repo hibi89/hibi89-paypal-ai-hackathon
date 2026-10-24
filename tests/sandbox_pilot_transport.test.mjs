@@ -1,4 +1,8 @@
-import test from 'node:test';
+import test,{after} from 'node:test';
+import {mkdtempSync,rmSync} from 'node:fs';
+import {join} from 'node:path';
+import {tmpdir} from 'node:os';
+import {createPilotCheckoutSessionStore} from '../src/pilot_checkout_session_store.mjs';
 import assert from 'node:assert/strict';
 import {createSandboxTransport} from '../src/paypal_sandbox_transport.mjs';
 import {requestKey, paypalRequestHeaderId} from '../src/payment_contract.mjs';
@@ -8,8 +12,13 @@ import {requestKey, paypalRequestHeaderId} from '../src/payment_contract.mjs';
 const q={id:'quote-pilot',ownerId:'owner',merchantId:'A1B2C3D4E5F6G',
   version:2,currency:'USD',status:'APPROVED',
   approval:{decision:'APPROVED',actorId:'owner',quoteVersion:2,amountMinor:150}};
-const ctx={publicOrigin:'https://checkout.example.org',serverSession:{
-  verified:true,actorId:'owner',merchantId:q.merchantId,checkoutSessionId:'b'.repeat(64)}};
+const tmp=mkdtempSync(join(tmpdir(),'pilot-transport-session-'));
+const sessionStore=createPilotCheckoutSessionStore({filename:join(tmp,'session.sqlite')});
+const principal={verified:true,actorId:q.ownerId,merchantId:q.merchantId};
+const {token}=sessionStore.issue({quote:q,principal});
+const sessionProof=sessionStore.verify({token,quote:q,principal});
+const ctx={publicOrigin:'https://checkout.example.org',sessionProof};
+after(()=>{sessionStore.close();rmSync(tmp,{recursive:true,force:true})});
 const claim=(quote=q)=>({action:'FIRST_CLAIM_ONLY_NO_PROVIDER_CALL',attempt:{
   operation:'create',quoteId:quote.id,quoteVersion:quote.version,
   merchantId:quote.merchantId,requestId:requestKey(quote,'create'),
@@ -66,7 +75,7 @@ test('explicit pilot method sends one capped PayPal wallet payload then verifies
    paypalRequestHeaderId(requestKey(q,'create')));
  assert.equal(Buffer.byteLength(create.headers['PayPal-Request-Id'],'utf8'),38);
  assert.ok(!JSON.stringify(x).includes('OFFLINE_TOKEN'));
- assert.ok(!JSON.stringify(x).includes(ctx.serverSession.checkoutSessionId));
+ assert.ok(!JSON.stringify(x).includes(token));
 });
 
 test('pilot rejects missing claim before any provider OAuth',async()=>{
@@ -78,10 +87,10 @@ test('pilot rejects missing claim before any provider OAuth',async()=>{
 
 test('pilot rejects fake merchant, extra amount, forged session or HTTP callback pre-network',async()=>{
  const variations=[
-  [{...q,merchantId:'sandbox_merchant'},ctx,'PILOT_REAL_SANDBOX_MERCHANT_ID_REQUIRED'],
-  [{...q,approval:{...q.approval,amountMinor:300}},ctx,'PILOT_AMOUNT_LIMIT_EXCEEDED'],
-  [q,{...ctx,serverSession:{...ctx.serverSession,verified:false}},'VERIFIED_CHECKOUT_SESSION_REQUIRED'],
-  [q,{...ctx,serverSession:{...ctx.serverSession,actorId:'attacker'}},'VERIFIED_CHECKOUT_SESSION_REQUIRED'],
+  [{...q,merchantId:'sandbox_merchant'},ctx,'PILOT_SESSION_NOT_VERIFIED'],
+  [{...q,approval:{...q.approval,amountMinor:300}},ctx,'PILOT_SESSION_NOT_VERIFIED'],
+  [q,{...ctx,sessionProof:{verified:true}},'PILOT_SESSION_NOT_VERIFIED'],
+  [q,{...ctx,sessionProof:{...sessionProof}},'PILOT_SESSION_NOT_VERIFIED'],
   [q,{...ctx,publicOrigin:'http://localhost:3000'},'PUBLIC_HTTPS_ORIGIN_REQUIRED']
  ];
  for(const [quote,config,code] of variations){
