@@ -9,6 +9,8 @@ import { createSqliteLedger } from './sqlite_ledger.mjs';
 import { createQuoteApi } from './quote_api.mjs';
 import { createContractApi } from './contract_api.mjs';
 import { createOfflineMockDraftProvider } from './quote_draft.mjs';
+import { createSubscriptionScenarioStore } from './subscription_demo_store.mjs';
+import { createSubscriptionDemoApi } from './subscription_demo_api.mjs';
 
 const html = readFileSync(new URL('../web/offline_demo.html', import.meta.url), 'utf8');
 const onlyLoopback = address => address === '127.0.0.1' ||
@@ -18,6 +20,10 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false } 
     throw new TypeError('INVALID_LOCAL_PORT');
   const folder = mkdtempSync(join(tmpdir(), 'paypal-local-demo-'));
   const ledger = createSqliteLedger({ filename: join(folder, 'demo.sqlite') });
+  const subscriptionStore=createSubscriptionScenarioStore({
+    filename:join(folder,'subscription_scenarios.sqlite')
+  });
+  const subscriptionId='synthetic-subscription';
   const quoteId = 'sample-project';
   const actorId = 'synthetic-owner';
   const reviewerId = 'synthetic-reviewer';
@@ -51,6 +57,10 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false } 
     resolveSession,
   });
   const contractApi = createContractApi({repository:ledger,resolveSession});
+  subscriptionStore.seed({subscriptionId,ownerId:actorId,merchantId:'synthetic-merchant'});
+  const subscriptionApi=createSubscriptionDemoApi({
+    subscriptionId,store:subscriptionStore,resolveSession,offlineOnly:true
+  });
   let server;
   server = createServer(async (req, res) => {
     try {
@@ -71,9 +81,11 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false } 
         res.end(html);
         return;
       }
-      if (req.method === 'GET' && (path === '/demo/client.js' || path === '/demo/contract.js')) {
-        const js = readFileSync(new URL(path === '/demo/client.js' ?
-          '../web/demo_client.js' : '../web/contract_client.js', import.meta.url));
+      if (req.method === 'GET' && (path === '/demo/client.js' || path === '/demo/contract.js' || path === '/demo/subscription.js')) {
+        const js = readFileSync(new URL(
+          path === '/demo/client.js' ? '../web/demo_client.js' :
+          path === '/demo/contract.js' ? '../web/contract_client.js' :
+          '../web/subscription_client.js', import.meta.url));
         res.writeHead(200, {
           'content-type': 'text/javascript; charset=utf-8',
           'cache-control': 'no-store', 'x-content-type-options': 'nosniff',
@@ -88,7 +100,8 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false } 
           'cache-control': 'no-store' });
         const role=reqSession.actorId===reviewerId?'reviewer':'owner';
         res.end(JSON.stringify({ csrfToken, quoteId, mode: 'OFFLINE_MOCK',
-          role,contractId:'demo-contract',milestoneId:'demo-milestone',reviewerId }));
+          role,contractId:'demo-contract',milestoneId:'demo-milestone',reviewerId,
+          subscriptionId }));
         return;
       }
       if (!path.startsWith('/api/')) {
@@ -113,8 +126,11 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false } 
       const options={method:req.method,headers:new Headers(req.headers)};
       if (req.method !== 'GET' && req.method !== 'HEAD')
         options.body=Buffer.concat(chunks);
-      const reply=await (path==='/api/contracts'||path.startsWith('/api/contracts/')
-        ? contractApi : api)(new Request(url,options));
+      const handler=path==='/api/contracts'||path.startsWith('/api/contracts/')
+        ? contractApi : path==='/api/demo/subscription'||
+          path.startsWith('/api/demo/subscription/')
+          ? subscriptionApi : api;
+      const reply=await handler(new Request(url,options));
       res.writeHead(reply.status, Object.fromEntries(reply.headers));
       res.end(await reply.text());
     } catch {
@@ -128,6 +144,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false } 
       server.listen(port,'127.0.0.1',resolve);
     });
   } catch(e) {
+    subscriptionStore.close();
     ledger.close();
     rmSync(folder,{recursive:true,force:true});
     throw e;
@@ -138,6 +155,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false } 
     ...(testReviewSessions ? {testReviewerCookie:reviewerCookie}:{}),
     async close() {
       await new Promise((resolve,reject)=>server.close(e=>e?reject(e):resolve()));
+      subscriptionStore.close();
       ledger.close();
       rmSync(folder,{recursive:true,force:true});
     },

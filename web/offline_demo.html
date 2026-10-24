@@ -81,9 +81,27 @@ strong{font-weight:700}.meta{color:#485972;font-size:.9rem}
 </div>
 <p id="contract-message" role="status" aria-live="polite"></p>
 </section>
+<section class="panel" id="subscription-panel" aria-labelledby="subscription-heading">
+<h2 id="subscription-heading">5. Subscription recovery — OFFLINE SYNTHETIC ONLY</h2>
+<p class="meta">No PayPal plans, subscriptions, billing, charges, webhooks or provider GETs are invoked. Each transition is a local training scenario. Cancellation is terminal for this synthetic subscription.</p>
+<div class="contract-grid">
+<div><p>Subscription lifecycle</p><p class="delivery-status" id="subscription-state">NOT_STARTED</p></div>
+<div><p>Payment evidence</p><p class="delivery-status" id="subscription-payment">NOT_VERIFIED</p></div>
+</div>
+<p id="subscription-details" role="status" aria-live="polite">Local subscription loading…</p>
+<div class="contract-actions">
+<button type="button" id="subscription-start">Simulate activation</button>
+<button type="button" id="subscription-fail">Simulate renewal failure</button>
+<button type="button" id="subscription-recover">Simulate GET-first recovery</button>
+<button type="button" id="subscription-cancel">Simulate cancellation</button>
+<button type="button" id="subscription-refresh">Read state (GET only)</button>
+</div>
+<p id="subscription-message" role="status" aria-live="polite"></p>
+</section>
 <p id="message" role="status" aria-live="polite"></p>
 </main>
 <script src="/demo/client.js" defer></script>
 <script src="/demo/contract.js" defer></script>
+<script src="/demo/subscription.js" defer></script>
 </body>
 </html>
