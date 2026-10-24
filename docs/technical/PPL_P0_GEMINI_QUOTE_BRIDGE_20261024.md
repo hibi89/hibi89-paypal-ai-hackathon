@@ -17,3 +17,8 @@
 Only fixture-injected Node tests and GitHub Actions can validate the adapter in this change. Real Gemini, Free Tier, PayPal Sandbox, secure public access and Devpost evidence remain NOT_TESTED. D03 0% BLOCKED; D04 80% PARTIAL; D15 20% PARTIAL; D16-D18 NOT_STARTED.
 Next after owner approval: verify Free Tier, make one synthetic real Gemini request with a private key, then check revision/invalidation/explicit approval and actual PayPal Sandbox buyer integration before upgrading status.
 Official provider contract: https://ai.google.dev/api/generate-content and https://ai.google.dev/gemini-api/docs/migrate-to-interactions .
+
+## Verified CI and residual risk (2026-10-24 KST)
+- First integration run 267/268; one failure was the SQLite source allowlist. Corrected by adding GEMINI_API to explicit source validation; second run [#40093698206](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40093698206) on 80d97e1b: **268/268 Node PASS, localhost Chromium PASS, 18-day progress PASS**.
+- Before any real enabled third-party API use, add or verify **durable, per-quote/version AI-generation reservation and cost cap**, because a stale or concurrent draft request may otherwise consume AI calls before its SQL version-CAS rejects a write. No active production integration exists today; default offline mode is unchanged.
+- Confirmation of owner Free Tier, private key, actual API output, PayPal Sandbox Orders/GET/Capture and contest submission remains a separate external gate.
