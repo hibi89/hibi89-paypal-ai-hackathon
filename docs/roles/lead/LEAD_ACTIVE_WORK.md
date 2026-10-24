@@ -1,20 +1,19 @@
 # PayPal 단일 총괄 — CURRENT ACTIVE WORK (2026-10-24 KST)
-<!-- resume: day_id=PPL-D10; percent=0; est_h=3; safe_h=7 -->
+<!-- resume: day_id=PPL-D11; percent=0; est_h=5; safe_h=10 -->
 
-> 정확한 시작 문장 `[페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈]` 또는 `ㄱ`/`r`. GitHub `lead/paypal` 최신 HEAD → [진척 원장](../../../data/paypal_daily_progress.json) → 이 파일 → 직접 개발·테스트. 옛 worker 라우터 사용 금지.
+> 정확한 시작 `[페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈]`, `ㄱ` 또는 `r`. 정본 GitHub `lead/paypal`. [CHAT_BOOTSTRAP](../../../CHAT_BOOTSTRAP.md) → [진척 JSON](../../../data/paypal_daily_progress.json) → 본 지시. 과거 worker 디스패처 사용 금지.
 
-## D10 READY — 2026-11-03 계획분 선행
-- **0%/100%, 남은 예상 3h / 안전 확보 7h, 실측 NOT_MEASURED.**
-- 공식 PayPal Subscriptions/Plans·Webhooks·서명 검증 API 문서와 계정/국가·무료 Sandbox 가능성/Rate limits를 **최신 공식 출처**로 조사하고, 확인 가능·실계정 차단·미검증을 명확히 구분. 서비스 실제 사용 가능 여부를 추정으로 승인하지 않는다.
-- D10 100점 체크리스트 원장 그대로: `OFFICIAL_SUBSCRIPTIONS_REGION_FEASIBILITY` 25, `WEBHOOK_VERIFICATION_OFFICIAL_RESEARCH` 25, `SUBSCRIPTION_STATE_CONTRACT` 20, `FREE_ACCOUNT_COST_AND_ACCESS_GATES` 20, `CI_DOCS_HANDOFF` 10.
-- 실 계정이 없어도 독립적인 공식 문서 검증/상태 모델·테스트를 수행할 수 있다. D03 실 PayPal Sandbox·무료 AI API 접근 **0% BLOCKED** (3h/8h + 외부 대기 UNKNOWN), D04 실 AI 20% **BLOCKED** (2h/4h) 그대로 유지. 실거래 OAuth/Subscriptions/한국 계정 검증을 했다고 주장하지 말 것.
-- 기존 결제 POST 503, Live·유료/카드·비밀·고객자료 공개/전송 금지. GitHub Public 소스 변경 전 최신 HEAD/CI 확인, 원본 이력 보존.
+## D11 READY — 공식 2026-11-04 예정, 10/24 선행
+- **0%/100%, 잔여 예상 5h, 안전 확보 10h; 실제 소요 시간 NOT_MEASURED.**
+- 목표: 실제 PayPal Webhook 형태에 대한 *오프라인* HTTP ingress, raw original bytes 보존, cryptographic signature verification 경계/부적절 cert_url SSRF 차단, SQLite UNIQUE eventId+transmissionId dedup, 역순·동일 timestamp·재전송/미등록 resource GET-first, 감사 trail. **서명 검증 전 2xx 승인/처리 금지**, 미검증 webhook으로 결제 상태 수정/PayPal POST 호출 금지.
+- 공식 소스 우선: [PayPal REST Webhooks](https://developer.paypal.com/api/rest/webhooks/rest/)에 raw original body CRC32 *decimal*, 등록 webhook ID·PayPal certificate/verify-webhook-signature POST; simulator postback 불가·mock special WEBHOOK_ID. `src/subscription_contract.mjs` pure planner는 유효 event/중복 상태 계획만, 보안 경계/원장 아님. [공식 연구](../../technical/PPL_D10_SUBSCRIPTIONS_FEASIBILITY_20261024.md).
+- 100점 체크리스트: `AUTHENTIC_WEBHOOK_BOUNDARY_AND_PARSER` 25, `SIGNATURE_VALIDATION_NEGATIVE_TESTS` 25, `DURABLE_EVENT_ID_DEDUP_ATOMICITY` 25, `ORDERING_REPLAY_AND_GET_FIRST_GUARDS` 15, `CI_DOCS_HANDOFF` 10.
+- **중요:** developer Sandbox webhookId/실 cert/한국 merchant 구독 entitlement/HTTPS public listener는 계정이 없어 `NOT_TESTED`. 실제 PayPal API 서명 검증을 성공했다고 주장하지 말고 synthetic key/cert 서명은 offline-only로 보고. 실 계정 연결·지출·외부 공개 권한 변경에는 사용자 승인이 필요. PayPal 결제 HTTP POST 503 그대로.
 
-## 이전 작업 D09 완료 (오프라인/로컬만)
-- `web/offline_demo.html`, `web/contract_client.js`, `web/demo_client.js`와 `src/offline_demo_server.mjs` 수정; local 테스트 `scripts/run_demo.mjs`, `tests/browser_offline_e2e.py`, `tests/offline_demo_server.test.mjs`.
-- 승인 견적→명시 계약 생성, 납품 제출/검수 반려·재제출·승인, 금전 `NOT_CAPTURED`와 검수 `ACCEPTED` 독립 표시. 계약 생성·납품/검수 POST 모두 클릭 발생 때만.
-- 검수자 신원은 테스트 전용 서버 생성 random cookie, CI harness 별도 브라우저 context에만 주입, Browser actor/role payload 신뢰 안 함. 외부/운영 로그인으로 사용 금지.
-- [D09 CI 40071015803](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40071015803) **Node 133/133 PASS / Chromium PASS**, 기능 SHA `9e3ee79aab9e7b2326360fd165c9bb12a575efe2`. [기술 메모](../../technical/PPL_D09_CONTRACT_BROWSER_20261024.md).
+## 지난 D10 완료 / 차단
+- D10 연구 및 상태 계약 **100%**: REST subscriptions/products/plans 존재, 웹훅 이벤트·상태·검증·KR 일반 REST 코드 등재 확인. 사용자 KR merchant 구독 권한은 미검증. 코드 `src/subscription_contract.mjs`와 13 테스트. [Actions 40072332710](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40072332710): **Node 146/146 PASS, 기존 Chromium PASS**, 근거 SHA `1c852b75b6841eeee0cd2968c234d69fedaa9e0a`.
+- D03 실제 PayPal/무료 AI **0% BLOCKED**, 잔여 3h/8h+외부 대기 UNKNOWN. D04 80% 실 AI 20% BLOCKED, 잔여 2h/4h. D01/D02/D05~D09 오프라인/합성 각각 100%.
+- Production/Cloudflare D1/실 PayPal OAuth/Live·Orders/Subscriptions·실 AI/Devpost는 NOT_TESTED.
 
-## 종료/인수인계
-`npm test`→실제 Actions→원장/현재 포인터 `CHAT_BOOTSTRAP.md` `AGENTS.md` `STATUS.md` `HANDOFF.md` 이 파일 `TO_HACKATHON_LEAD.md` 동일 SHA/동일 resume 포인터로 커밋 → 원격 새 Actions 검증. [RESUME_SYNC_CONTRACT](../../RESUME_SYNC_CONTRACT.md). 기능 미증명은 VERIFIED 금지, 차단·이월 명시.
+## 다음 채팅 종료 계약
+직접 개발·테스트→Actions 확인→JSON 100점/시간/차단 보존→`CHAT_BOOTSTRAP.md`, `AGENTS.md`, `STATUS.md`, `HANDOFF.md`, 본 파일, `TO_HACKATHON_LEAD.md` 동일 resume 마커/원장으로 같은 커밋→CI/원격 HEAD 검증. [RESUME_SYNC_CONTRACT](../../RESUME_SYNC_CONTRACT.md).

@@ -1,6 +1,6 @@
 # PayPal 해커톤 — 한 문장 재개 프로토콜 (CURRENT)
 
-<!-- resume: day_id=PPL-D10; percent=0; est_h=3; safe_h=7 -->
+<!-- resume: day_id=PPL-D11; percent=0; est_h=5; safe_h=10 -->
 
 > **사용자 고정 호출 한 문장:** `[페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈]` 또는 `페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈`
 >
@@ -22,9 +22,9 @@
 7. [인수인계 자동 무결성 테스트](tests/resume_contract.test.mjs)가 전체 문서의 `resume:` 포인터와 JSON 일차 값을 검증한다. `npm test` + 실제 GitHub Actions 성공 확인, 최신 리모트 SHA 재조회 후 사용자에게 당일 **X%/100%·남은 예상 Yh·안전 Z h·차단·다음 작업·링크**를 보고한다. GitHub CI 실패 시 고치거나 FAIL/PENDING으로 명시한다.
 
 ## 최신 확정 재개 위치 (수치는 원격 원장이 우선)
-- **현재 NEXT `PPL-D10` (11/03 배정분 선행):** 구독/Plans/Webhooks 공식 API·한국 계정/지역 가능성과 무료 비용·인증 한계 확인, 구독 상태 계약. **0%/100%, 남은 예상 3h/안전 7h**. D09 로컬 계약·납품·검수 브라우저 UI E2E 완료, Node 133 PASS+Chromium PASS (CI 40071015803).
+- **현재 NEXT `PPL-D11` (11/04 배정분 선행):** 검증된 Webhook ingress/원문 서명 확인·event ID SQLite dedup·역순/재전송 GET-first·거짓 금전 상태 차단의 로컬 오프라인 개발. **0%/100%, 남은 예상 5h/안전 10h**. D10 공식 API/한국 계정 제한 조사+pure 계약 CI 146 Node+Chromium PASS (run 40072332710). 실 PayPal/AI/한국 merchant 접근 미검증.
 - D01/D02/D05/D06: 각 **그날 검증된 오프라인 범위 100%**. D03: **0%/100%, 실 PayPal Sandbox Business/Personal·무료 AI 접근 차단 (잔여 예상 3h/안전 8h, 외부 기다림 UNKNOWN)**. D04: **80%/100%, 실제 AI 호출 20% 차단 (잔여 예상 2h/안전 4h)**.
-- **최신 D09 기능/브라우저 CI:** `lead/paypal@9e3ee79aab9e7b2326360fd165c9bb12a575efe2`, [Actions 40071015803](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40071015803) **133/133 Node PASS + 실제 로컬 Chromium 계약/납품/검수 E2E PASS**. 이후 문서 커밋의 CI도 재검증.
+- **최신 D10 기능/브라우저 CI:** `lead/paypal@1c852b75b6841eeee0cd2968c234d69fedaa9e0a`, [Actions 40072332710](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40072332710) **146/146 Node PASS + 기존 실제 로컬 Chromium E2E PASS**. D10은 PayPal 공식 문서와 pure planner만, 실제 구독/서명 검증 아니다. 문서 동기화 커밋의 Actions도 별도 확인.
 - PayPal HTTP 결제 POST는 **503 fail-closed**. 실제 PayPal OAuth/주문/캡처/GET, 실 AI API, 운영 로그인·호스팅, Devpost 접수증은 **NOT_TESTED/미완료**. 로컬 `OFFLINE_MOCK` + Chromium 성공을 실거래/실제품 성공으로 대체 금지.
 - 비용 **₩0 추가**, PayPal Live·실고객 PII·토큰 GitHub/채팅 게시·자동 결제 금지. 사용자 승인 없이 금전·유료·공개 설정 변경 금지.
 - 제품: AI 견적 → **사람의 명시적 승인** → PayPal Sandbox Orders → 계약·마일스톤·납품/검수 → 구독·실패·Webhook. 내부 2026-11-11 제출 목표 / 공식 2026-11-13 05:00 KST 마감. 실제 제출 증거가 없으면 완료 주장 금지.

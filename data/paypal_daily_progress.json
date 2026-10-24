@@ -2,7 +2,7 @@
   "schema_version": 1,
   "updated_kst": "2026-10-24",
   "scope": "Per-day verified acceptance; NOT entire PayPal hackathon project percent",
-  "active_day_id": "PPL-D10",
+  "active_day_id": "PPL-D11",
   "reporting_mode": "mandatory_after_each_actual_work_session",
   "days": [
     {
@@ -497,45 +497,105 @@
     {
       "day_id": "PPL-D10",
       "scheduled_date_kst": "2026-11-03",
-      "executed_date_kst": null,
+      "executed_date_kst": "2026-10-24",
       "scope": "Official PayPal Subscriptions and Webhooks support/region/cost feasibility; offline subscription state-machine contract",
-      "status": "NOT_STARTED",
+      "status": "DAY10_DOCUMENTED_FEASIBILITY_AND_OFFLINE_STATE_CONTRACT_ACCEPTED",
       "estimated_total_hours": 3,
       "safe_total_hours": 7,
-      "estimated_remaining_hours": 3,
-      "safe_remaining_hours": 7,
-      "percent_complete": 0,
+      "estimated_remaining_hours": 0,
+      "safe_remaining_hours": 0,
+      "percent_complete": 100,
       "actual_elapsed_hours": null,
-      "actual_elapsed_note": "NOT_STARTED. 3h/7h estimates exclude unknown external account approval wait.",
-      "carryover": [],
+      "actual_elapsed_note": "NOT_MEASURED. 3h/7h planned hours are not wall-clock measurements.",
+      "carryover": [
+        "D11 signed Webhook HTTP receiver, durable deduplication, malformed/replayed/out-of-order protection, signature tests",
+        "Real PayPal Sandbox merchant KR subscriptions entitlement, buyer approval and webhook delivery blocked without private account access",
+        "Real PayPal API calls, AI, D1, production auth, deployment, Devpost not tested"
+      ],
       "limitations": [
-        "Actual PayPal Developer account, merchant region and subscription product eligibility NOT_TESTED",
-        "Official current Subscriptions/Plans/Webhooks constraints require source verification; do not claim available until checked",
-        "No real webhook endpoint, no production signature verification, no paid API or subscription purchase",
-        "D03 real Sandbox and free AI are still externally BLOCKED"
+        "Subscriptions REST and Webhooks existence is officially documented; KR is a general REST country code, NOT proof a particular KR merchant is eligible for subscriptions",
+        "D10 local pure planner accepts trusted=true only as an explicit internal test/integration boundary; it is NOT cryptographic webhook signature verification",
+        "No actual PayPal developer account, Business/Personal Sandbox pair or event webhook ID, cert, OAuth, HTTPS endpoint used",
+        "Pure event ID array is not durable and stops at 200; SQLite UNIQUE event ledger/atomic ack required for D11",
+        "Subscription lifecycle notifications never prove a specific payment was captured; all money observation requires provider reconciliation",
+        "First D10 CI 40072290586 failed two invalid synthetic event IDs; corrected at 1c852b75 (146/146 PASS); failure evidence preserved",
+        "No added paid costs, no real PayPal/Live calls, no production deployment, no Devpost submission"
       ],
       "checklist": [
         {
           "id": "OFFICIAL_SUBSCRIPTIONS_REGION_FEASIBILITY",
           "weight_pct": 25,
-          "state": "PENDING",
-          "evidence": null
+          "state": "VERIFIED",
+          "evidence": "Official PayPal https://developer.paypal.com/api/subscriptions/v1, /api/subscriptions/v1/definitions/subscription/, /subscriptions/webhooks/ and /reference/country-codes researched 2026-10-24; region account eligibility NOT_TESTED; docs/technical/PPL_D10_SUBSCRIPTIONS_FEASIBILITY_20261024.md"
         },
         {
           "id": "WEBHOOK_VERIFICATION_OFFICIAL_RESEARCH",
+          "weight_pct": 25,
+          "state": "VERIFIED",
+          "evidence": "Official PayPal https://developer.paypal.com/api/rest/webhooks/rest/ CRC32 decimal original-body self verification or /v1/notifications/verify-webhook-signature, app webhook ID, HTTPS listener/retries; research document; no actual signature verified"
+        },
+        {
+          "id": "SUBSCRIPTION_STATE_CONTRACT",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "src/subscription_contract.mjs pure planTrustedSubscriptionEvent and tests/subscription_contract.test.mjs; approved/active/suspend/resume/cancel/expire and duplicate/out-of-order/unknown/payment separation; CI 40072332710"
+        },
+        {
+          "id": "FREE_ACCOUNT_COST_AND_ACCESS_GATES",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "Official sandbox accounts/testing and Korean fees docs cited in research; no live calls/charges/account eligibility claims; D03 and real KR merchant checks remain BLOCKED/NOT_TESTED"
+        },
+        {
+          "id": "CI_DOCS_HANDOFF",
+          "weight_pct": 10,
+          "state": "VERIFIED",
+          "evidence": "GitHub Actions 40072332710 completed/success at 1c852b75: Node 146/146 PASS, Chromium offline E2E PASS. D10 JSON/handoff sync new CI checked separately."
+        }
+      ]
+    },
+    {
+      "day_id": "PPL-D11",
+      "scheduled_date_kst": "2026-11-04",
+      "executed_date_kst": null,
+      "scope": "Offline webhook ingress, signature verification boundary, SQLite event-id idempotency and out-of-order fail closed with synthetic signature tests; real PayPal Sandbox remains blocked",
+      "status": "NOT_STARTED",
+      "estimated_total_hours": 5,
+      "safe_total_hours": 10,
+      "estimated_remaining_hours": 5,
+      "safe_remaining_hours": 10,
+      "percent_complete": 0,
+      "actual_elapsed_hours": null,
+      "actual_elapsed_note": "NOT_STARTED. Estimates exclude unknown external access approval.",
+      "carryover": [],
+      "limitations": [
+        "Actual PayPal app webhook ID/cert and HTTPS public delivery cannot be validated without account/hosting; preserve NOT_TESTED",
+        "PayPal self-verification CRC32 decimal requires original raw bytes and controlled PayPal cert URL to prevent SSRF",
+        "No sample/mock verification may be called real PayPal verified signature",
+        "No paid API/Live/card/money, and existing payment HTTP POST 503 remains unchanged"
+      ],
+      "checklist": [
+        {
+          "id": "AUTHENTIC_WEBHOOK_BOUNDARY_AND_PARSER",
           "weight_pct": 25,
           "state": "PENDING",
           "evidence": null
         },
         {
-          "id": "SUBSCRIPTION_STATE_CONTRACT",
-          "weight_pct": 20,
+          "id": "SIGNATURE_VALIDATION_NEGATIVE_TESTS",
+          "weight_pct": 25,
           "state": "PENDING",
           "evidence": null
         },
         {
-          "id": "FREE_ACCOUNT_COST_AND_ACCESS_GATES",
-          "weight_pct": 20,
+          "id": "DURABLE_EVENT_ID_DEDUP_ATOMICITY",
+          "weight_pct": 25,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "ORDERING_REPLAY_AND_GET_FIRST_GUARDS",
+          "weight_pct": 15,
           "state": "PENDING",
           "evidence": null
         },

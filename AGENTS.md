@@ -1,6 +1,6 @@
 # PayPal 단일 총괄·개발자 행동 규칙 — CURRENT
 
-<!-- resume: day_id=PPL-D10; percent=0; est_h=3; safe_h=7 -->
+<!-- resume: day_id=PPL-D11; percent=0; est_h=5; safe_h=10 -->
 
 **정확한 사용자 시작 명령:** `[페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈]` → [CHAT_BOOTSTRAP.md](CHAT_BOOTSTRAP.md) → `lead/paypal` 최신 원격 HEAD → [ACTIVE_WORK](docs/roles/lead/LEAD_ACTIVE_WORK.md)·[진척 원장](data/paypal_daily_progress.json) → **다음 실제 작업 직접 코딩·테스트·커밋**.
 
@@ -10,5 +10,5 @@
 4. 추가 현금 **₩0**, PayPal Live 금지. 유료 API/카드 등록·계정 설정·권한/공개 변경·실사용자 PII/비밀키 공개/실 고객 외부 전송은 사용자 사전 승인 없이는 안 됨.
 5. 브라우저 local OFFLINE_MOCK/Node CI/실 Sandbox/실 AI/운영 배포/Devpost 접수는 완전히 다른 검증 단계. `NOT_TESTED`를 성공으로 주장하지 않는다. 동일 접근 2회 실패면 원인·대안·유예.
 6. **모든 실제 작업 종료 후** [RESUME_SYNC_CONTRACT](docs/RESUME_SYNC_CONTRACT.md)에 따라 원장+시작/현작업/STATUS/HANDOFF/상위 보고를 **같은 커밋으로 최신화**하고 원격 SHA·CI를 확인. 체크포인트가 일치하지 않으면 `npm test` 실패하도록 [resume 계약 검사](tests/resume_contract.test.mjs) 상시 유지.
-7. 다음 직접 작업: **D10 0%/100%, 남은 예상 3h/안전 7h**, 공식 PayPal 구독·Webhook/국가·무료 계정 접근 리서치와 구독 상태 계약(실 API 접근 차단 별도 보존). D09는 로컬 계약/납품 Chromium E2E 100% (CI 40071015803, 133 Node PASS). D03 실 Sandbox/AI 0%, D04 실 AI 20% BLOCKED 유지. [원장](data/paypal_daily_progress.json) 정본.
+7. 다음 직접 작업: **D11 0%/100%, 예상 5h/안전 10h**, Webhook 수신·실제 cryptographic verification 경계·SQLite 이벤트 중복·역순/재전송 OFFLINE 검증. D10 공식 PayPal API 조사+pure state planner 100% (Actions 40072332710, 146 Node+Chromium PASS). D03 Sandbox/AI 실증 0%, D04 실 AI 20% BLOCKED 보존. [원장](data/paypal_daily_progress.json) 정본.
 8. 내부 마감 11/11, 공식 11/13 05:00 KST. 전체 플랜 82h/164h 고위험, 실 작업시간 NOT_MEASURED. 무인 백그라운드 자동 작업 아님.

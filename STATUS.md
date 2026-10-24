@@ -1,30 +1,27 @@
 # PayPal STATUS — 2026-10-24 KST
-<!-- resume: day_id=PPL-D10; percent=0; est_h=3; safe_h=7 -->
+<!-- resume: day_id=PPL-D11; percent=0; est_h=5; safe_h=10 -->
 
-**정본:** `hibi89/hibi89-paypal-ai-hackathon` / `lead/paypal`. 한 문장 `[페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈]` 또는 `ㄱ`/`r` → [CHAT_BOOTSTRAP](CHAT_BOOTSTRAP.md) → [ACTIVE](docs/roles/lead/LEAD_ACTIVE_WORK.md) → [진척 원장](data/paypal_daily_progress.json).
+**재개 명령:** `[페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈]` · `ㄱ` · `r`. 정본 `lead/paypal`; [원장](data/paypal_daily_progress.json)·[ACTIVE](docs/roles/lead/LEAD_ACTIVE_WORK.md)·[부트스트랩](CHAT_BOOTSTRAP.md). GitHub HEAD 우선, force-push 금지.
 
-## NEXT READY — D10
-- **D10 0%/100%, 남은 예상 3h·안전 확보 7h, 실측 NOT_MEASURED.** PayPal 구독 및 Webhook 공식 API 문서·지역/계정/무료 비용·서명 검증 조건 확인, 오프라인 상태 계약. 한국 계정 실제 접근/결제 가능성은 별도 검증 전까지 `NOT_TESTED`.
-- D03 실제 PayPal Sandbox/무료 AI 외부 접근 `BLOCKED`를 우회하지 않는다. 독립적 설계·공식 문서 검증을 선행한다.
+**D10 범위 100% 완료:** 공식 문서 검증과 오프라인 순수 구독 이벤트 상태 계약. *이는 실제 PayPal 구독 계정/서명 실증이나 운영 기능 완료가 아니다*. [D10 근거](docs/technical/PPL_D10_SUBSCRIPTIONS_FEASIBILITY_20261024.md): REST Subscriptions/Plans, Webhook original raw CRC32(decimal) or verify-signature postback, 25회/3일 재전송, KR 일반 REST 코드는 있지만 해당 판매자 Subscriptions 가입/기능 권한 NOT_TESTED.
 
-## 일별 100점 진행률 (해커톤 전체 % 아님)
-| 일차 | 진척 | 남은 예상 | 남은 안전 | 검증 수준 |
+**CI:** [Actions 40072332710](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40072332710) `completed/success` at `1c852b75b6841eeee0cd2968c234d69fedaa9e0a`, **Node 146/146 PASS, Chromium 기존 로컬 계약·검수 E2E PASS**. 첫 D10 [40072290586](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40072290586) 실패 144 PASS/2 FAIL (합성 ID에 '.' 사용) 수정 후 통과. 본 문서 커밋의 별도 CI도 확인해야 함.
+
+**NEXT:** **D11 0%/100%, 예상 잔여 5시간, 안전 확보 10시간, 실측 NOT_MEASURED**. Webhook HTTP ingestion/cryptographic verification boundary/SQLite UNIQUE event id/dedup/역순·재전송·GET-first 검증(오프라인). 실제 PayPal app webhook ID/cert/외부 HTTPS listener·OAuth/merchant/Biz+Personal/무료 AI/Production/D1/Devpost는 NOT_TESTED. 결제 HTTP POST는 503 유지. Live·실금전·유료 API·실고객 정보·secret 공개 금지. 내부 마감 11/11, 공식 11/13 05:00 KST.
+
+
+## 일별 진척 (하루 작업 분모 각각 100, 프로젝트 전체 % 아님)
+| D | % | 예상 잔여 | 안전 확보 | 상태 |
 |---|---:|---:|---:|---|
-| D01 | 100% | 0h | 0h | 오프라인 견적 API |
-| D02 | 100% | 0h | 0h | 로컬 SQLite 결제 안전 |
-| **D03** | **0%** | **3h** | **8h** | 실 Sandbox/AI **BLOCKED** + 대기 UNKNOWN |
-| **D04** | **80%** | **2h** | **4h** | 견적 mock UI, 실 AI 미검증 |
-| D05 | 100% | 0h | 0h | mock PayPal adapter |
-| D06 | 100% | 0h | 0h | quote Chromium E2E |
-| D07 | 100% | 0h | 0h | SQLite 계약/마일스톤 |
-| D08 | 100% | 0h | 0h | 계약 HTTP API |
-| **D09** | **100%** | **0h** | **0h** | 계약·납품·검수 로컬 Chromium E2E |
-| **D10** | **0%** | **3h** | **7h** | NEXT 구독/Webhook 공식 가능성·계약 |
+| D01/D02 | 100% | 0h | 0h | 오프라인 견적/SQLite |
+| **D03** | **0%** | **3h** | **8h** | 실 Sandbox/AI 접근 BLOCKED; 기다림 UNKNOWN |
+| D04 | 80% | 2h | 4h | 실 AI 차단 |
+| D05~D09 | 100% | 0h | 0h | mock transport·Chromium·계약/납품 |
+| **D10** | **100%** | **0h** | **0h** | 공식 가능성 조사+pure 상태 계약 |
+| **D11** | **0%** | **5h** | **10h** | NEXT Webhook 수신·서명/중복 방어 |
 
-## 근거/보안/미검증
-- **D09 소스 SHA** `9e3ee79aab9e7b2326360fd165c9bb12a575efe2`; [Actions 40071015803](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40071015803) **Node 133/133 PASS, Chromium 실제 loopback E2E PASS**. 계약 생성 → 납품 제출 → 별도 테스트 검수자 반려 → 소유자 재제출 → 승인 → 여전히 `NOT_CAPTURED`; F5/GET 무부작용, 결제 POST 0건. [기술 보고](docs/technical/PPL_D09_CONTRACT_BROWSER_20261024.md).
-- reviewer 세션은 사용자 로그인/서비스 인증이 아닌 **서버가 생성한 로컬 테스트용 쿠키** (테스트 opt-in 및 임시 파일)이며, 외부 공개 배포 불가. 운영 인증·PayPal 실 Sandbox·무료 AI·Cloudflare D1/Production·Devpost 제출은 **NOT_TESTED**.
-- 결제 HTTP POST **503**, Live·신규 비용·실고객 개인정보/토큰 업로드 금지. 사용자 승인 없는 인증·인프라·권한/공개 변경 없음.
-- 최초 D09 UI 변경 커밋 `37ae135c` Node/기존 Chromium PASS, 최종 D09 E2E `9e3ee79a` PASS. D09 작업시간은 `NOT_MEASURED`.
-- 내부 11/11, 공식 마감 **11/13 05:00 KST**. 기존 계획 82h/164h는 고위험 추정, 남은 외부 접근 대기 UNKNOWN.
-- 본 문서 동기화 커밋의 새 CI는 별도로 검증; D09 기능 합격 SHA와 동일시하지 않는다.
+## D10 실제 범위 및 미검증
+- `src/subscription_contract.mjs` / `tests/subscription_contract.test.mjs`: verified-only planner, created/active/suspended/cancelled/expired, 중복·역순·결제 이벤트·terminal 상태 GET-first 보수 처리. `trusted=true`는 *암호학적 검증 구현이 아니므로 HTTP 입력에서 받을 수 없음*. 어떤 실 provider HTTP API도 호출하지 않았다.
+- PayPal 문서 기준 KR 일반 REST API 코드 등재는 확인, 실제 KR 판매자 구독 기능 권한/요금·Sandbox 계정 활성화 미확인.
+- 운영 서버/PayPal 인증서 서명·webhook 수신은 D11 범위. Mock·Node·Chromium 통과가 실 provider pass를 의미하지 않는다.
+- 계획 82h / 안전 확보 164h는 과거 총괄 예산, 개발 실 소요 시간 미측정. 세 해커톤 병행 위험 HIGH.
