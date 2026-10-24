@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
+import {mkdtempSync,rmSync,mkdirSync,readFileSync,symlinkSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {claimOwnerProbeOnce} from '../src/owner_probe_reservation.mjs';
 import {fileURLToPath} from 'node:url';
 import {parseP0ProbeArgs,runP0OneShotProbe} from '../src/p0_one_shot_probe.mjs';
 const env={PAYPAL_SANDBOX_CLIENT_ID:'test_local_id',
@@ -119,4 +123,82 @@ test('CLI default refuses network and exits 2, without dumping environment secre
   const r=JSON.parse(child.stdout);
   assert.equal(r.networkCalls,0);assert.equal(r.externalEvidence,false);
  }
+});
+
+test('owner probe reservation keeps a durable marker per provider without secrets',()=>{
+ const dir=mkdtempSync(join(tmpdir(),'ppl-claim-'));
+ try{
+  assert.equal(claimOwnerProbeOnce({provider:'paypal',stateDir:dir}),'CLAIMED');
+  const record=JSON.parse(readFileSync(join(dir,'sandbox-oauth.claim'),'utf8'));
+  assert.deepEqual(Object.keys(record).sort(),['createdAt','kind','provider']);
+  assert.equal(record.provider,'paypal');
+  assert.equal(claimOwnerProbeOnce({provider:'paypal',stateDir:dir}),'ALREADY_CLAIMED');
+  assert.equal(claimOwnerProbeOnce({provider:'gemini',stateDir:dir}),'CLAIMED');
+  assert.equal(claimOwnerProbeOnce({provider:'gemini',stateDir:dir}),'ALREADY_CLAIMED');
+ }finally{rmSync(dir,{recursive:true,force:true});}
+});
+test('same owner-approved OAuth probe invoked twice never issues second transport request',async()=>{
+ const dir=mkdtempSync(join(tmpdir(),'ppl-claim-run-'));
+ try{
+  let calls=0;
+  const config={provider:'paypal',...opts,
+   reserveAttempt:provider=>claimOwnerProbeOnce({provider,stateDir:dir}),
+   fetchImpl:async()=>{calls++;return fakeResponse(goodPayPal);}};
+  assert.equal((await runP0OneShotProbe(config)).status,'SANDBOX_OAUTH_REACHED');
+  const again=await runP0OneShotProbe(config);
+  assert.equal(again.status,'PROBE_ALREADY_CLAIMED_NO_RETRY');
+  assert.equal(again.externalEvidence,false);
+  assert.equal(again.networkCalls,0);
+  assert.equal(calls,1);
+ }finally{rmSync(dir,{recursive:true,force:true});}
+});
+test('ambiguous Gemini network failure still consumes attempt across sessions',async()=>{
+ const dir=mkdtempSync(join(tmpdir(),'ppl-claim-failure-'));
+ try{
+  let calls=0;
+  const config={provider:'gemini',...opts,freeTierConfirmed:true,
+   reserveAttempt:p=>claimOwnerProbeOnce({provider:p,stateDir:dir}),
+   fetchImpl:async()=>{calls++;throw Error('ambiguous remote response');}};
+  assert.equal((await runP0OneShotProbe(config)).status,'REMOTE_NETWORK_FAILED');
+  assert.equal((await runP0OneShotProbe(config)).status,'PROBE_ALREADY_CLAIMED_NO_RETRY');
+  assert.equal(calls,1);
+ }finally{rmSync(dir,{recursive:true,force:true});}
+});
+test('dry-run, partial approval and missing credentials never claim any provider',async()=>{
+ const dir=mkdtempSync(join(tmpdir(),'ppl-claim-dry-'));
+ try{
+  let reservations=0,calls=0;
+  const reserveAttempt=p=>{reservations++;return claimOwnerProbeOnce({provider:p,stateDir:dir});};
+  for(const x of [{provider:'paypal',env,execute:false,ownerAuthorized:true},
+   {provider:'paypal',env,execute:true,ownerAuthorized:false},
+   {provider:'gemini',env,execute:true,ownerAuthorized:true},
+   {provider:'paypal',env:{},execute:true,ownerAuthorized:true}]){
+    const result=await runP0OneShotProbe({...x,reserveAttempt,
+     fetchImpl:async()=>{calls++;return fakeResponse(goodPayPal);}});
+    assert.equal(result.networkCalls,0);
+  }
+  assert.equal(reservations,0);assert.equal(calls,0);
+  assert.equal(claimOwnerProbeOnce({provider:'paypal',stateDir:dir}),'CLAIMED');
+ }finally{rmSync(dir,{recursive:true,force:true});}
+});
+test('symlinked state directory and invalid provider fail closed',()=>{
+ const root=mkdtempSync(join(tmpdir(),'ppl-claim-link-'));
+ try{
+  const target=join(root,'private');mkdirSync(target);
+  const link=join(root,'link');symlinkSync(target,link,'dir');
+  assert.equal(claimOwnerProbeOnce({provider:'paypal',stateDir:link}),'RESERVATION_UNAVAILABLE');
+  assert.equal(claimOwnerProbeOnce({provider:'live',stateDir:target}),'RESERVATION_UNAVAILABLE');
+  assert.equal(claimOwnerProbeOnce({provider:'paypal',stateDir:''}),'RESERVATION_UNAVAILABLE');
+  assert.equal(claimOwnerProbeOnce({provider:'paypal',stateDir:target}),'CLAIMED');
+ }finally{rmSync(root,{recursive:true,force:true});}
+});
+test('reservation failure cannot leak paths or access the external transport',async()=>{
+ let calls=0;
+ const marker='/SECRET_PRIVATE_PATH_TO_NEVER_LEAK';
+ const result=await runP0OneShotProbe({provider:'paypal',...opts,
+  reserveAttempt:()=>{throw Error(marker)},
+  fetchImpl:async()=>{calls++;return fakeResponse(goodPayPal)}});
+ assert.equal(result.status,'PROBE_RESERVATION_UNAVAILABLE');
+ assert.equal(result.networkCalls,0);assert.equal(calls,0);
+ assert.equal(JSON.stringify(result).includes(marker),false);
 });

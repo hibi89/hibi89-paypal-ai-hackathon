@@ -10,7 +10,7 @@ const ok=(provider,status,other={})=>Object.freeze({provider,status,networkCalls
   externalEvidence:false,accountFreeTierVerified:false,credentialsReported:false,...other});
 export async function runP0OneShotProbe({
   provider,execute=false,ownerAuthorized=false,freeTierConfirmed=false,
-  env={},fetchImpl
+  env={},fetchImpl,reserveAttempt
 }={}){
  if(!['paypal','gemini'].includes(provider))return ok('unspecified','INVALID_PROVIDER');
  if(!execute||!ownerAuthorized)return ok(provider,'DRY_RUN_OWNER_APPROVAL_REQUIRED');
@@ -22,6 +22,17 @@ export async function runP0OneShotProbe({
    :!has(env.GEMINI_API_KEY);
  if(missing)return ok(provider,'PRIVATE_CREDENTIALS_NOT_CONFIGURED');
  if(typeof fetchImpl!=='function')return ok(provider,'EXPLICIT_FETCH_REQUIRED');
+ // Owner CLI injects a durable one-shot reservation before any remote HTTP.
+ if(reserveAttempt!==undefined){
+  if(typeof reserveAttempt!=='function')
+   return ok(provider,'PROBE_RESERVATION_UNAVAILABLE');
+  let result;
+  try{result=await reserveAttempt(provider);}
+  catch{return ok(provider,'PROBE_RESERVATION_UNAVAILABLE');}
+  if(result!=='CLAIMED')
+   return ok(provider,result==='ALREADY_CLAIMED'
+    ?'PROBE_ALREADY_CLAIMED_NO_RETRY':'PROBE_RESERVATION_UNAVAILABLE');
+ }
  // No retry, no redirects, fixed allowlisted endpoint, no arbitrary payload/model.
  const url=provider==='paypal'?PAYPAL_URL:GEMINI_URL;
  const options=provider==='paypal'?{
