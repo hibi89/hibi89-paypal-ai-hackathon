@@ -1,45 +1,21 @@
 # PayPal LEAD ACTIVE WORK — PPL-D15
 <!-- resume: day_id=PPL-D15; percent=20; est_h=5; safe_h=10 -->
-> **D15 로컬 복구·신원 경계 신규 실증 (2026-10-24):** `src/d1_recovery.mjs`·`tests/d1_recovery.test.mjs` 11건 추가. [Actions #40082429683](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40082429683) @ `949eb8b25645`: Node **204/204**, 로컬 Chromium 및 18일 진행표 PASS. 조회 SELECT-only/내부 복구 권한/5분 경과 IN_FLIGHT→UNKNOWN/멀티테넌트 404 보존. **D15 20% 유지, 기본 5h/안전 10h**, 실측 NOT_MEASURED. 실 PayPal GET·운영 세션·D1·외부 배포 NOT_TESTED. [근거](docs/technical/PPL_D15_D1_RECOVERY_AUTH_20261024.md).
 
-> **D15 2026-10-24 후속 기술 검증:** D1 후보 스키마 `migrations/d1/0001_payment_claims.sql`, 단일 점유 함수 `src/d1_claim.mjs`, 9개 로컬 SQLite/D1-형상 검증(`tests/d1_claim.test.mjs`) 추가. [GitHub Actions #40081717845](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40081717845) @ `0d8497a69b5`: **Node 193/193, 로컬 Chromium, 18일 일정 검사 PASS**. 실제 D1/Cloudflare 계정·실 PayPal/AI·공개 URL은 **NOT_TESTED**. 진척률 **D15 20%/100% 그대로**, 잔여 기본 **5시간**·안전 확보 **10시간** (계획, 실측 NOT_MEASURED). 외부 배포·계정 승인 전 실행 금지.
-> **D15 진행 기록 (2026-10-24 KST):** `lead/paypal`의 사전 검사 코드 `src/hosting_preflight.mjs`·CLI·4개 테스트와 [D15 설계](docs/technical/PPL_D15_HOSTING_PREFLIGHT_20261024.md)를 추가. 실제 GitHub Actions [#40080872405](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40080872405) @ `18875d360b21`: **Node 184/184, 로컬 Chromium E2E, 18일 진척 검사 PASS**. D15 **20%**(설계·의존성 확인만 검증). 남은 기본 5h/안전 총량 10h, 실측 NOT_MEASURED. 공개 URL/Cloudflare 계정/운영 인증/D1/실 PayPal·실 AI는 **NOT_TESTED**. `npm run preflight:hosting`는 차단 증거 출력 후 종료 코드 2(예상 동작). 사용자 별도 승인 없이는 배포 금지.
+**원격 기준:** `hibi89/hibi89-paypal-ai-hackathon` / `lead/paypal` · 2026-10-24 KST.
 
+**진도:** 18일 DONE 12 / PARTIAL 2 / BLOCKED 1 / NOT_STARTED 3. D15 **20% PARTIAL**, 기본 작업 잔여 **5h**, 예비 포함 안전 총량 **10h**, 실측 NOT_MEASURED. D15 예정일 2026-11-08, 작업 선행일 2026-10-24.
 
-**원격 기준:** hibi89/hibi89-paypal-ai-hackathon, 개발·총괄 lead/paypal. 사용자 명령 [페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈] 또는 ㄱ.
+**최근 소스 검증:** `c9464a671bc0b20fe434b2af189d3fa19258eb02`, [Actions #40083028520](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40083028520) — Node **219/219**, localhost Chromium, 18일 `MASTER_PROGRESS --check` PASS. 여기의 Sandbox GET은 **주입된 합성 transport**로 시험한 코드 계약일 뿐, 실 PayPal/D1/Cloudflare 실행이 아님.
 
-**D14 완료:** 사용자 승인 MIT LICENSE·package.json·라이선스 테스트, 오프라인 보안/영문 재현 초안. 검증 SHA d45b8d5a055cdf236a9a004e165a090d21d467db, Actions https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40079691820 — Node 180/180, 로컬 Chromium 및 18일 마스터 PASS.
+**외부 차단:** D03 실제 Business/Personal PayPal Sandbox·무료 AI 계정 0% BLOCKED, D04 실 AI 20% 미완료, D15 Cloudflare Free·D1/운영 인증/공개 URL 미검증. 카드/유료 API/Live/실 고객 데이터/외부 배포 별도 사용자 승인 전 금지.
 
-**다음:** PPL-D15(11/08 원래 예정), 20% PARTIAL, 기본 잔여 5h/안전 확보 10h, 실제 투입 NOT_MEASURED.
+**다음 기술작업:** 실제 PayPal Sandbox GET을 안전하게 주입할 **서버 인증/내부 조합 하네스**의 오프라인 검증, 이후 사용자 승인 기반 실제 API/계정·무료 한도 확인. 검증 없이 배포 완료 또는 실 결제 성공 보고 금지.
 
-**외부 차단:** D03 실제 PayPal Business/Personal Sandbox 및 무료 AI 0% BLOCKED, D04 실제 무료 AI 20% 미검증. D15 공개 Cloudflare/D1·실인증·Production, D16 심사위원 실제 브라우저, D17 영상, D18 Devpost 미검증.
+## READY — user `ㄱ` next unit
+1. 원격 `lead/paypal` HEAD와 JSON 원장/중앙 지시 먼저 검증. 실 Sandbox + AI가 출품의 **P0 외부 병목**임을 유지.
+2. **독립적으로 가능한 다음 개발:** 새 `src/d1_sandbox_get_reconcile.mjs`의 모의 GET·CAS가 인증된 서버 조합에서만 호출되도록 `resolveSession`/private transport composition harness 및 리그레션 테스트 작성. 토큰·실 API 호출·클라우드 계정·호스팅 작업은 하지 않음. 필요 시 D1 원격 일관성 조건은 공식 문서로만 검토.
+3. 기존 GET/CAS: order ID/intent/1 purchase unit/reference/merchant/정확한 USD 금액과 상태 검사, create IN_FLIGHT/UNKNOWN→APPROVED; capture는 기존 승인과 claim+유일한 COMPLETED proof 있을 때만 PAID CAS. 실 프로바이더 검증 아님. 자료 [D15 기술 문서](../../technical/PPL_D15_SANDBOX_GET_CAS_20261024.md).
+4. **배포 승인 후에만:** Free 가입·계정 내 실제 무료 한도 확인, D1 schema/migrations, 운영 인증/CSRF/Cookie/tenant, 실제 PayPal Sandbox merchant/buyer GET+Orders/웹훅, 무료 AI, 브라우저·로그·복구. 실 POST 불확실 시 UNKNOWN 유지; 배포 이전 데이터 백업/롤백 계획.
+5. D15 체크리스트 **design 20 VERIFIED / implementation 40 PENDING / production verification 30 PENDING / CI release handoff 10 PENDING**. D15 20% / 기본 5h / 예비 포함 10h (실측 null). 계정 권한 확보 없이 추가 테스트로 이 수치를 억지로 올리지 않음.
 
-**보안:** 신규 지출 0원, 실 결제/카드/Live/유료 API/실 고객 데이터 금지. 사용자 승인 없는 새 호스팅·외부 계정·환경변수·도메인·권한 변경·공개 서비스 실행 금지. D14의 로컬 성공은 실제 PayPal/AI 성공이 아님.
-
-**원본/이력:** 기존 변경 전 HEAD 31a89d12dad680627c0cefd92ce61928dc6fb337 및 이전 Git 커밋에 복구 가능한 전체 기록. 새 문서 동기화 커밋은 별도 CI로 확인.
-
-## D15 검증 가능한 다음 단위
-1. 외부 계정/비용 승인 전 두 안을 평가: A 심사위원 로컬 재현(무료·간단, 운영 심사 재현/실 API 충족 부족), B Workers+D1 무료 실배포(실 인증·Secrets·서버 저장소 재설계·계정/무료한도 승인 필요). 기능 축소를 의미하지 않음.
-2. Node sqlite/local loopback mock 서버를 직접 공개하지 말 것. 기존 운영·원본 설정 건드리지 말 것.
-3. API/호스팅의 무료 정책, 접근권한, 인증·저장/조회 분리, 예외/복구/중복 요청, 민감 데이터 보호·공개 정책을 정적 검토한다. 접근 불가하면 BLOCKED로 증빙한다.
-4. 무료 실제 서비스 URL·HTTP/React·Console/Network/API·권한·재시작/복구가 검증되기 전 D15 DONE 100% 금지. D03 실 Sandbox/AI는 독립 차단.
-
-**작업 시작:** 원격 최신 HEAD → source/test → 실제 최소 검증 → 일별 JSON→마스터→CI→인수인계. 조건 없는 외부 계정 연결과 실제 결제/AI API 호출 금지.
-
-**필수 새 채팅 동기화 규약:** [RESUME_SYNC_CONTRACT.md](../../../docs/RESUME_SYNC_CONTRACT.md) — 다음 작업도 동일 문서·JSON·CI를 원자적 커밋으로 갱신한다.
-
-### D15 현재 중단점 및 다음 실질 과제
-- 검증된 설계 20%, 도구 `npm run preflight:hosting` 예상 exit 2(차단 증거), Node 184/184 + 로컬 Chromium PASS.
-- 외부 승인 전 다음 코딩은 D1 스키마·CAS 계약 테스트와 Worker 호환성 구조 검증까지 안전하게 가능. 그러나 공개 Worker 생성/배포·실 Provider 호출은 사용자 별도 승인 없이는 차단.
-- 완료의 필수요건은 공개 URL/Production HTTP/자산/API/신뢰 세션/재시작 D1·무료 한도 증거. 지금 전부 NOT_TESTED.
-
-### 다음 미완료 구현 (2026-10-24)
-1. D1 후보 마이그레이션·단일 claim/UNKNOWN 차단은 **로컬 SQLite shim에서만** 9 PASS. 원격 D1 호환성·실 D1 인증/세션·실 결제 승인과 GET reconciliation는 전부 미구현. `docs/technical/PPL_D15_D1_CLAIM_FENCE_20261024.md` 확인.
-2. 계정/배포 승인 전에도 재현 가능한 순수 계약 테스트와 신뢰할 수 있는 GET 검증 상태기계 설계는 진행 가능. 단, CI 193 PASS를 실 Provider 1건 성공으로 환산 금지.
-3. D15 20% / 기본 5h / 안전 10h. 다음 `ㄱ`에서 원격 최신 HEAD·업무 포인터 확인 후 이월 작업 수행; 외부 호스팅 계정/실결제/Live 금지.
-
-### Latest D15 recovery gate, next unit
-- Offline D1 reader/recovery `src/d1_recovery.mjs`: **11 tests added**, CI #40082429683 204/204 Node + local Chromium PASS. No external accounts or secret use.
-- **Still missing**: backend-verified session provider, authenticated and provenance-verified actual Sandbox GET + safe APPROVED/PAID CAS transitions, D1 remote binding and real Production URL. D03/D04 are unresolved external provider gates; maintain strict `BLOCKED_BY_ACCESS` semantics.
-- Independent offline next candidate: design trusted Sandbox GET proof validation & guarded payment state transitions. Do not wire to a public HTTP endpoint, and do not label synthetic GET as real PayPal evidence.
-- D15 20% (design) only / base 5h / safe 10h, actual NOT_MEASURED. All source and tests in `lead/paypal` Git history; refer to [recovery design](../../technical/PPL_D15_D1_RECOVERY_AUTH_20261024.md).
+**필수 규약:** `docs/RESUME_SYNC_CONTRACT.md`; 원격 원자적 커밋, CI, `MASTER_PROGRESS.md` 재생성, `STATUS.md`·`HANDOFF.md`·상위 답신 동기화. 사용자 지시 [페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈] 또는 `ㄱ`으로 재개.

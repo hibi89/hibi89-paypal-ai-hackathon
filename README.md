@@ -22,3 +22,6 @@ D03 실 Business/Personal Sandbox+실 무료 AI 계정 BLOCKED; D04 실 AI 부�
 
 ### D15 internal claim-recovery boundary (offline)
 [Read-only/authenticated-tenant recovery prototype](src/d1_recovery.mjs) · [11 local regression tests](tests/d1_recovery.test.mjs) · [assurance and remaining gaps](docs/technical/PPL_D15_D1_RECOVERY_AUTH_20261024.md). [Actions #40082429683](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40082429683) Node 204/204 + Chromium localhost PASS. Explicitly NOT actual D1, real PayPal GET or public authentication.
+
+### D15 local Sandbox GET proof / D1 CAS (not remote PayPal)
+[Private GET reconciliation](src/d1_sandbox_get_reconcile.mjs) · [15 synthetic tests](tests/d1_sandbox_get_reconcile.test.mjs) · [verification and blockers](docs/technical/PPL_D15_SANDBOX_GET_CAS_20261024.md). [Actions #40083028520](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40083028520) Node **219/219**, local Chromium PASS, zero real PayPal/D1 calls. D15 remains 20% because Production acceptance is not met.
