@@ -3,6 +3,7 @@
 // Only an EXPLICIT injected HTTP implementation is allowed; no implicit global fetch.
 // Never store/log OAuth access tokens or credentials. No Live PayPal capability.
 import { planOrder, planCapture, requestKey, approvedAmount, paypalRequestHeaderId } from './payment_contract.mjs';
+import { planOwnerSandboxPilotCheckout } from './sandbox_pilot_checkout_plan.mjs';
 
 const BASE = 'https://api-m.sandbox.paypal.com';
 // Bound every OAuth, order and capture request. POST timeout is UNKNOWN, never retried.
@@ -125,9 +126,9 @@ export function createSandboxTransport(options={}) {
     const data=await fetchJson('/v2/checkout/orders/'+encodeURIComponent(id),{token});
     return verifiedOrder(quote,data,id);
   }
-  async function createOrderOnce(quote,claim) {
-    claimValidated(quote,claim,'create');
-    const planned=planOrder(quote);
+  async function createFromPlan(quote,planned) {
+    // This helper is never exported. Only an explicit, validated first-claim
+    // call from the two entrypoints below can reach provider OAuth/Orders.
     const token=await accessToken();
     const created=await fetchJson(planned.path,{
       method:'POST',token,body:JSON.stringify(planned.body),requestId:planned.requestId,
@@ -142,6 +143,18 @@ export function createSandboxTransport(options={}) {
       'SANDBOX_CREATE_GET_STATUS_CONFLICT');
     return {orderId:created.id,payerUrl,orderStatus:checked.status,
       paymentState:'NOT_PAID',source:'SANDBOX_TRANSPORT'};
+  }
+  async function createOrderOnce(quote,claim) {
+    claimValidated(quote,claim,'create');
+    return createFromPlan(quote,planOrder(quote));
+  }
+  async function createOwnerPilotOrderOnce(quote,claim,{publicOrigin,serverSession}={}) {
+    // Fail closed before OAuth, provider POST or payment-token exposure.
+    // Approval to CALL the remote provider remains separate and not implied.
+    // Only a trusted server can attest session ownership and HTTPS hosting.
+    claimValidated(quote,claim,'create');
+    const plan=planOwnerSandboxPilotCheckout({quote,publicOrigin,serverSession});
+    return createFromPlan(quote,plan);
   }
   async function captureOnce(quote,claim,orderId) {
     claimValidated(quote,claim,'capture');
@@ -178,6 +191,6 @@ export function createSandboxTransport(options={}) {
       id:c.id,orderId:order.id,status:c.status,amount:c.amount,
     }};
   }
-  return Object.freeze({createOrderOnce,getOrder,captureOnce,getCaptureProof,
+  return Object.freeze({createOrderOnce,createOwnerPilotOrderOnce,getOrder,captureOnce,getCaptureProof,
     sandboxBase:BASE,mode:'SANDBOX_ONLY',realAccessTested:false});
 }
