@@ -15,4 +15,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - run: npm test
+      - name: Offline Node regression tests
+        run: npm test
+      - name: Install free browser test tooling
+        run: |
+          python3 -m venv .browser-venv
+          .browser-venv/bin/pip install --disable-pip-version-check playwright==1.56.0
+      - name: Actual Chromium offline UI journey
+        run: .browser-venv/bin/python tests/browser_offline_e2e.py
