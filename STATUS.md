@@ -37,3 +37,11 @@
 - 현재 발행 작업 **PPL-001 / READY / `feature/quote-payment`**: 실 Sandbox+무료 모델 가용성 및 견적·결제 구현안 2개/데이터 계약 검토. 추후 `PPL-002`는 큐에만 있으며 **착수 금지**.
 - 핵심 보호: 추가 지출 0원, Sandbox only, 코드/테스트 PASS 실증 필요, 역할별 보고는 선택된 feature `TO_PAYPAL_LEAD.md`, 총괄 메시지는 `lead/paypal`. 자동 실행·GitHub 웹훅·작업자 연락/알림 없음.
 - 작업자 채팅은 **아직 실제 생성·착수 검증 전**, 실 Sandbox 인증/호출, 앱/CI/배포/Devpost 제출 성과는 그대로 미완료·미검증. 이번 변경은 운영 체계 설정 및 다음 작업 지시 발행.
+
+## 2026-10-24 KST — 새 총괄 GitHub 복원·실사 판정 (최신)
+- **현재 확정 주제:** AI 프리랜서 계약·견적·PayPal Sandbox 결제 자동화 Agent, 기능 3개를 **출품작 하나**로 통합. 상단의 '잠정/승인 전' 문구는 당시 스냅샷이며 최신 운영 결정은 본 항목·REQUIREMENTS·실행계획 v4.0을 따른다.
+- **현재 지시:** `PPL-001 / READY / feature/quote-payment`. 작업자 시작/종료 보고 아직 없으며 `PPL-002` 발행 금지. 세 feature 브랜치 원격 HEAD: quote `e5b70e0`, delivery `77dc532`, subscriptions `9d77f90`.
+- 원격 파일 트리 검수: lead 21개 blob, feature 각각 12개 blob, 전부 문서/운영 파일. 앱 소스·테스트·CI 설정·배포는 **미구현/미검증**. 세 feature 보고함은 초기 안내만 있으며 STARTED/READY_FOR_REVIEW 없음.
+- 공식 Devpost 확인: 2026-11-12 12:00 PST = **11-13 05:00 KST**; 공개 코드/루트 LICENSE, 영어 제출/영어 번역, 3분 미만 공개 YouTube 시연, 심사위원의 실동작 접근 요구. https://paypalaihackathon.devpost.com/rules
+- 신규 위험: 공개 저장소·Sandbox 비밀 보호와 심사위원의 무료 기능 접근을 동시에 충족하는 데모/테스트 계정 전략 미정. 보안 우회나 공개 비밀키 없이 PPL-001 기술 검토 및 추후 제출 설계에서 결정.
+- 이번 작업은 운영 검수·공식 규정 확인 및 총괄 기록 갱신만 수행. Sandbox/AI/Cloudflare 계정·실 API 호출·제품 테스트/Production/Devpost 실제 제출 없음. 추가 현금 지출 없음.

@@ -61,3 +61,13 @@
 
 - 세 브랜치 **운영 문서만 갱신**, 기능 코드/실 API/CI 변경·개발 착수 없음. `lead/paypal:docs/dispatch/ACTIVE_TASK.md` = PPL-001 READY `feature/quote-payment`.
 - 총괄이 현 활성 작업을 바꾼 뒤에는 다시 세 브랜치 HEAD/TO_PAYPAL_LEAD을 직접 읽고 새로운 값을 기록한다. 채팅 자동 알림 불가.
+
+## 2026-10-24 KST — 총괄 새 채팅 복원 후 전수 재검토
+| feature | 확인한 최신 원격 SHA | `TO_PAYPAL_LEAD.md` 검토 |
+|---|---|---|
+| `feature/quote-payment` | `e5b70e0376628dc9e6237d69234f56648c849ca8` | 초기 안내만, PPL-001 STARTED/검증 보고 없음 |
+| `feature/delivery` | `77dc5327b69432d3f64a320dea8a1ae0c2f427ce` | 초기 안내만, 신규 작업 보고 없음 |
+| `feature/subscriptions` | `9d77f9029d9dfb571f14f5d10289f97015ba6f4f` | 초기 안내만, 신규 작업 보고 없음 |
+- 총괄 현재 ACTIVE_TASK `PPL-001 / READY / feature/quote-payment` 확인. 다음 작업 발행 조건 불충족; **기존 ACTIVE_TASK와 feature 브랜치 불변**.
+- 확인 범위: 각 보고 파일/전체 트리/운영 라우터. 앱 소스·실 API·테스트·배포는 부재 또는 미검증.
+- 제출 규정 추가 점검: 심사위원 테스트 경로·공개 LICENSE·영어 텍스트/자막/실행 안내·공개 YouTube 3분 미만 및 Sandbox 비밀키 비노출 방안 추후 확정 필요.

@@ -53,3 +53,9 @@
 - **운영 구성 작업 완료(문서 기반)**: lead 전용 `WORKER_START_HERE.md`, `docs/dispatch/{ACTIVE_TASK,QUEUE,PROTOCOL,WORKER_CHAT_PROMPT}.md` 등록·확인. 현 작업 **PPL-001 READY** `feature/quote-payment`. ChatGPT 채팅이 자율 실행되는 자동화가 아니라 **사용자가 채팅에서 호출할 때 GitHub를 조회하는 방식**이다.
 - 3개 feature 브랜치 각각 README/AGENTS에 lead 지시 우선 라우터 공시를 **원격 검증**. `quote-payment` HEAD `e5b70e0376628dc9e6237d69234f56648c849ca8`; `delivery` HEAD `77dc5327b69432d3f64a320dea8a1ae0c2f427ce`; `subscriptions` HEAD `9d77f9029d9dfb571f14f5d10289f97015ba6f4f`.
 - **총괄 1개+개발자 채팅 1개/한 번에 하나의 작업·한 브랜치**로 변경. 기능 3개/브랜치 3개/0원/마감 유지. 기능 코드/실 API/배포/CI/제출은 **미착수·미검증**.
+
+## 2026-10-24 KST — 최신 원격 복원 감사
+- **최신 확정 범위:** 세 기능 통합 단일 제품(상단 역사적 '잠정' 스냅샷보다 우선). `PPL-001 READY / feature/quote-payment`, 작업자 보고 없음. `PPL-002`는 대기.
+- GitHub 실제 HEAD: lead `b8d1225`, quote `e5b70e0`, delivery `77dc532`, subscriptions `9d77f90`. 세 기능 메시지함 모두 초기 기록만. 전체 파일 트리 문서형(lead 21 blobs; features 각각 12 blobs). 코드/테스트/CI/서비스 0건.
+- 공식 규정에서 **11/13 05:00 KST** 마감, 공개 LICENSE·영어 자료·3분 미만 공개 YouTube·동작 가능한 심사 경로 확인. https://paypalaihackathon.devpost.com/rules
+- 위험: 무료 호스팅/심사 접근과 비밀 보안의 동시 달성 방식은 미결. 실 Sandbox·AI·무료 계정/브라우저/제출 미검증. 기존 ACTIVE_TASK 수정·선행 기능 시작 금지.

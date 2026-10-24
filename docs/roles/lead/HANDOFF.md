@@ -51,3 +51,15 @@
 - 현재 발행 작업 **PPL-001 / READY / `feature/quote-payment`**: 실 Sandbox+무료 모델 가용성 및 견적·결제 구현안 2개/데이터 계약 검토. 추후 `PPL-002`는 큐에만 있으며 **착수 금지**.
 - 핵심 보호: 추가 지출 0원, Sandbox only, 코드/테스트 PASS 실증 필요, 역할별 보고는 선택된 feature `TO_PAYPAL_LEAD.md`, 총괄 메시지는 `lead/paypal`. 자동 실행·GitHub 웹훅·작업자 연락/알림 없음.
 - 작업자 채팅은 **아직 실제 생성·착수 검증 전**, 실 Sandbox 인증/호출, 앱/CI/배포/Devpost 제출 성과는 그대로 미완료·미검증. 이번 변경은 운영 체계 설정 및 다음 작업 지시 발행.
+
+## 2026-10-24 KST — 최신 확인(기존 인수인계 10항 보충)
+1. 확정 범위: AI 견적·사람 승인·PayPal Sandbox 결제/납품/구독 통합 1개, ₩0 신규지출, 단일 순환 작업자. 기존 첫 문단의 '잠정'은 과거 기록.
+2. 검증 성과: lead 및 feature 3개 원격 HEAD, 필수 지시/인수인계, 메시지함, 트리 존재 점검. 공식 Devpost 규정의 마감/데모/소스/LICENSE/영상/영어 요건 확인.
+3. 테스트: 운영 파일 조회 PASS; 실제 앱 테스트 0 PASS/0 FAIL, Sandbox/AI/CI/브라우저/Production 모두 NOT_TESTED.
+4. 진행 상태: `PPL-001 READY` `feature/quote-payment`, 작업자 STARTED 없음. 두 다른 기능 브랜치 대기. `PPL-002` 대기열만.
+5. 장애·대안: 라우터 오류 없음; Sandbox 권한 미확인. 심사위원 데모 접근 방식과 보안 충돌 위험은 호스팅/로컬 재현 2안으로 PPL-001 이후 검토.
+6. 버전: 기준 lead `b8d1225`, quote `e5b70e0`, delivery `77dc532`, subscriptions `9d77f90`; 이 감사 내용은 이후 lead 변경 커밋에 포함.
+7. 서비스: 미배포, URL/실행 명령 미적용, Vercel/Cloudflare 실제 계정 미확인.
+8. 데이터/보안: 원격 원본 보존, Public 저장소에 비밀·개인 데이터 없음(검토한 운영 파일 범위). 외부 계정 인증정보 수집 안 함.
+9. 다음: 작업자 채팅에서 현 `ACTIVE_TASK` 한 개 실행/보고→총괄 인수 후 다음 작업 발행. Live·유료·범위 변경은 명시적 승인 필요.
+10. 확인 시점: 2026-10-24 KST, GitHub 원격 구조·문서 및 공식 Devpost 규정 검증 범위. 실제 API/CI/제품 동작 미검증.

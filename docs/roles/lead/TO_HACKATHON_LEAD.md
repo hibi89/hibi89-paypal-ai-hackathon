@@ -66,3 +66,11 @@
 - **운영 구성 작업 완료(문서 기반)**: lead 전용 `WORKER_START_HERE.md`, `docs/dispatch/{ACTIVE_TASK,QUEUE,PROTOCOL,WORKER_CHAT_PROMPT}.md` 등록·확인. 현 작업 **PPL-001 READY** `feature/quote-payment`. ChatGPT 채팅이 자율 실행되는 자동화가 아니라 **사용자가 채팅에서 호출할 때 GitHub를 조회하는 방식**이다.
 - 3개 feature 브랜치 각각 README/AGENTS에 lead 지시 우선 라우터 공시를 **원격 검증**. `quote-payment` HEAD `e5b70e0376628dc9e6237d69234f56648c849ca8`; `delivery` HEAD `77dc5327b69432d3f64a320dea8a1ae0c2f427ce`; `subscriptions` HEAD `9d77f9029d9dfb571f14f5d10289f97015ba6f4f`.
 - **총괄 1개+개발자 채팅 1개/한 번에 하나의 작업·한 브랜치**로 변경. 기능 3개/브랜치 3개/0원/마감 유지. 기능 코드/실 API/배포/CI/제출은 **미착수·미검증**.
+
+## 2026-10-24 KST — 새로운 PayPal 총괄 원격 복원·운영 검수 보고
+- **총괄 기준 HEAD(검수 시작):** `lead/paypal b8d12259307e7ca3f893680c4f8d2877f8020ee9`. 작업 feature 원격 SHA: quote `e5b70e0376628dc9e6237d69234f56648c849ca8`, delivery `77dc5327b69432d3f64a320dea8a1ae0c2f427ce`, subscriptions `9d77f9029d9dfb571f14f5d10289f97015ba6f4f`. 이 기록 갱신 후에는 본 문서 포함 원격 lead 최신 HEAD를 기준으로 확인.
+- **현재 하나의 작업:** `PPL-001 READY / feature/quote-payment`, 개발자 STARTED·보고 없음. `PPL-002` 이후는 예약만. 단일 작업자 체계/보고함/브랜치 조회 검증, 라우팅 변경 불필요.
+- **기능/검증:** 소스코드/자동 테스트/PayPal Sandbox 호출/무료 AI 호출/Cloudflare·Vercel 배포/영상·Devpost 제출 모두 미착수 또는 NOT_TESTED. GitHub 운영 문서만 PASS. 추가 지출 0원 유지(외부 계정 비용 실제 과금 검증은 미실시).
+- **공식 일정 확인:** 11/12 12:00 PST = 11/13 05:00 KST. 11/11 조기 제출 목표 유지. https://paypalaihackathon.devpost.com/rules
+- **중요 리스크:** 심사 기간의 무료 실행/심사위원 접근 요구와 공개 repo 인증정보 비노출을 함께 만족하는 안전한 재현/데모 경로 미정. 공개 LICENSE 및 영어 자료·3분 미만 공개 YouTube는 향후 준비 필수. 사용자 승인 없는 유료/Live 변경 금지.
+- **다음 행동:** 기존 PPL-001 담당자가 두 기술안·Sandbox/API 접근성·Quote/Payment/Approval 계약과 증거를 자기 브랜치에 제출하면 총괄이 검수. 현 단계 새 지시 발행 없음. 상위 다른 해커톤 소스 변경 없음.
