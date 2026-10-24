@@ -65,7 +65,7 @@ test('day5 completion does not disguise the blocked external gate or next-day wo
   assert.equal(d6.safe_remaining_hours,0);
   assert.equal(ledger.active_day_id,ledger.days.at(-1).day_id);
 });
-test('Chromium D06 and contract D07 completed offline; server API D08 remains READY',()=>{
+test('Chromium D06, contract D07 and contract HTTP D08 maintain verified offline acceptance',()=>{
   const d6=ledger.days.find(d=>d.day_id==='PPL-D06');
   const d7=ledger.days.find(d=>d.day_id==='PPL-D07');
   assert.equal(d6.percent_complete,100);
@@ -76,9 +76,10 @@ test('Chromium D06 and contract D07 completed offline; server API D08 remains RE
   assert.equal(d7.safe_remaining_hours,0);
   const d8=ledger.days.find(d=>d.day_id==='PPL-D08');
   assert.ok(d8);
-  assert.equal(d8.status,'NOT_STARTED');
-  assert.equal(d8.percent_complete,0);
-  assert.equal(d8.estimated_remaining_hours,4);
-  assert.equal(d8.safe_remaining_hours,8);
-  assert.equal(ledger.active_day_id,d8.day_id);
+  assert.equal(d8.percent_complete,100);
+  assert.ok(d8.checklist.every(x=>x.state==='VERIFIED'));
+  assert.equal(d8.estimated_remaining_hours,0);
+  assert.equal(d8.safe_remaining_hours,0);
+  assert.ok(ledger.days.some(d=>d.day_id==='PPL-D09'));
+  assert.equal(ledger.active_day_id,ledger.days.at(-1).day_id);
 });

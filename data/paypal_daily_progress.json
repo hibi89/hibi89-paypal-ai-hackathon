@@ -2,7 +2,7 @@
   "schema_version": 1,
   "updated_kst": "2026-10-24",
   "scope": "Per-day verified acceptance; NOT entire PayPal hackathon project percent",
-  "active_day_id": "PPL-D08",
+  "active_day_id": "PPL-D09",
   "reporting_mode": "mandatory_after_each_actual_work_session",
   "days": [
     {
@@ -380,42 +380,101 @@
     {
       "day_id": "PPL-D08",
       "scheduled_date_kst": "2026-11-01",
-      "executed_date_kst": null,
+      "executed_date_kst": "2026-10-24",
       "scope": "Authenticated server API for contract, milestones, delivery submission and reviewer acceptance/rejection",
-      "status": "NOT_STARTED",
+      "status": "DAY8_CONTRACT_HTTP_OFFLINE_ACCEPTED",
       "estimated_total_hours": 4,
       "safe_total_hours": 8,
-      "estimated_remaining_hours": 4,
-      "safe_remaining_hours": 8,
-      "percent_complete": 0,
+      "estimated_remaining_hours": 0,
+      "safe_remaining_hours": 0,
+      "percent_complete": 100,
       "actual_elapsed_hours": null,
-      "actual_elapsed_note": "NOT_STARTED; estimate, not measured execution time",
-      "carryover": [],
+      "actual_elapsed_note": "NOT_MEASURED; planned 4h/8h is not an elapsed wall-clock measurement",
+      "carryover": [
+        "D09 synthetic local delivery/review user interface and payment-status separation E2E pending",
+        "Production identity provider, public authenticated server, Cloudflare D1, real PayPal Sandbox and real AI remain external/production gates"
+      ],
       "limitations": [
-        "D07 repository methods exist; production authentication/HTTP routes not yet implemented",
-        "Payment POST remains 503 until actual Sandbox gate; separate D03/D04 blockers"
+        "Local Node SQLite and 127.0.0.1 synthetic owner session only; no production authenticated identity or real buyer/reviewer session",
+        "Contract HTTP review identity verified only through trusted resolveSession injection in Node tests, not a public browser login",
+        "New D08 contract HTTP endpoints are offline demonstration endpoints; NOT safe for public deployment",
+        "Actual PayPal order/capture/GET and real free AI calls NOT_TESTED; payment HTTP POST remains 503",
+        "Actions actual Chromium PASS covers previous quote/draft/approval UI regression, while contract HTTP integration is tested by Node actual-loopback fetch",
+        "Initial CI run 40070147386: 130 PASS / 1 FAIL due to incorrect test expectation self-reviewer 404 vs domain 400; corrected test run 40070199115 PASS"
       ],
       "checklist": [
         {
           "id": "CONTRACT_READ_AND_CREATE_API",
           "weight_pct": 25,
-          "state": "PENDING",
-          "evidence": null
+          "state": "VERIFIED",
+          "evidence": "src/contract_api.mjs creates/reads contract and events via trusted session context; Node actual 127.0.0.1 API test, CI 40070199115 @ 17b804e"
         },
         {
           "id": "DELIVERY_SUBMISSION_API",
+          "weight_pct": 25,
+          "state": "VERIFIED",
+          "evidence": "src/contract_api.mjs POST /api/contracts/:id/milestones/:mid/submit, expectedState+version CAS and evidence note; tests/contract_api.test.mjs, CI 40070199115"
+        },
+        {
+          "id": "REVIEWER_DECISION_API",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "src/contract_api.mjs accept/reject with reviewer role only; injected verified session negative/positive cases in tests/contract_api.test.mjs, CI 40070199115"
+        },
+        {
+          "id": "AUTH_CSRF_IDEMPOTENCY_TESTS",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "src/quote_api.mjs shares bounded JSON/no-store helper; contract API uses verified actor+merchant from resolver, CSRF/Origin, ID/body size, replay conflict; payment POST remains 503; CI 40070199115"
+        },
+        {
+          "id": "CI_DOCS_HANDOFF",
+          "weight_pct": 10,
+          "state": "VERIFIED",
+          "evidence": "GitHub Actions 40070199115 success @ 17b804eb: npm test 131/131 PASS and local Chromium existing quote UI E2E PASS; all progress/handoff documents synchronized in subsequent atomic commit"
+        }
+      ]
+    },
+    {
+      "day_id": "PPL-D09",
+      "scheduled_date_kst": "2026-11-02",
+      "executed_date_kst": null,
+      "scope": "Contract/delivery UI and separated payment status local E2E; real PayPal Sandbox dependent tests remain D03 external blocked",
+      "status": "NOT_STARTED",
+      "estimated_total_hours": 5,
+      "safe_total_hours": 9,
+      "estimated_remaining_hours": 5,
+      "safe_remaining_hours": 9,
+      "percent_complete": 0,
+      "actual_elapsed_hours": null,
+      "actual_elapsed_note": "NOT_STARTED; estimated 5h and reserved 9h are not elapsed time",
+      "carryover": [],
+      "limitations": [
+        "D08 contract HTTP API verified offline with synthetic owner session only",
+        "Actual provider payment and production identity/Cloudflare deployment blocked separately",
+        "Reviewer-side browser requires trusted reviewer session; do not derive role from query/header/body or deploy synthetic persona publicly"
+      ],
+      "checklist": [
+        {
+          "id": "CONTRACT_UI_AND_READONLY_SUMMARY",
           "weight_pct": 25,
           "state": "PENDING",
           "evidence": null
         },
         {
-          "id": "REVIEWER_DECISION_API",
+          "id": "DELIVERY_REVIEW_INTERACTION",
+          "weight_pct": 25,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "PAYMENT_VS_FULFILLMENT_UI",
           "weight_pct": 20,
           "state": "PENDING",
           "evidence": null
         },
         {
-          "id": "AUTH_CSRF_IDEMPOTENCY_TESTS",
+          "id": "BROWSER_E2E_AND_SECURITY",
           "weight_pct": 20,
           "state": "PENDING",
           "evidence": null

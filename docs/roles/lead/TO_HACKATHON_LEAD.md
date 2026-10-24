@@ -1,25 +1,22 @@
-# PayPal → 통합 해커톤 총괄 (2026-10-24 KST)
-<!-- resume: day_id=PPL-D08; percent=0; est_h=4; safe_h=8 -->
+# PayPal → 통합 해커톤 총괄 최신 보고 (2026-10-24 KST)
+<!-- resume: day_id=PPL-D09; percent=0; est_h=5; safe_h=9 -->
 
-**단일 PayPal 총괄=개발자.** 시작 명령 `[페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈]`, 정본 `hibi89/hibi89-paypal-ai-hackathon` / `lead/paypal`. 주어진 일차의 100점 기준만 사용하며 전체 대회 진척도로 오인하지 않는다.
+**정본:** `hibi89/hibi89-paypal-ai-hackathon` / `lead/paypal`. 1인 PayPal 총괄=개발자. 시작 명령 `[페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈]`.
 
-| 일차 | 완료% | 남은 예상 | 남은 안전 | 검증 수준 |
+| 계획 일차 | 진척(일차별 100) | 남은 예상 | 안전 확보 | 상태 |
 |---|---:|---:|---:|---|
-| D01 | 100% | 0h | 0h | offline quote |
-| D02 | 100% | 0h | 0h | SQLite payment ledger |
-| D03 | 0% | 3h | 8h | 실제 Sandbox/무료 AI **BLOCKED**, 접근대기 UNKNOWN |
-| D04 | 80% | 2h | 4h | OFFLINE_MOCK, 실제 AI BLOCKED |
-| D05 | 100% | 0h | 0h | mocked Sandbox adapter |
-| D06 | 100% | 0h | 0h | local Chromium E2E |
-| **D07** | **100%** | **0h** | **0h** | offline contracts/milestones SQLite |
-| **D08** | **0%** | **4h** | **8h** | **NEXT** server APIs |
+| D01 | 100% | 0h | 0h | quote offline |
+| D02 | 100% | 0h | 0h | SQLite payment |
+| **D03** | **0%** | **3h** | **8h** | 실 PayPal Sandbox/AI **BLOCKED** (+외부 대기 UNKNOWN) |
+| D04 | 80% | 2h | 4h | OFFLINE_MOCK, 실제 AI 20% BLOCKED |
+| D05 | 100% | 0h | 0h | mocked transport |
+| D06 | 100% | 0h | 0h | local Chromium quote E2E |
+| D07 | 100% | 0h | 0h | SQLite contracts |
+| **D08** | **100%** | **0h** | **0h** | offline contract HTTP API |
+| **D09 NEXT** | **0%** | **5h** | **9h** | local delivery UI |
 
-- **D07 근거:** `e682d6dd876cfc1afe9ca7aeec32842ad306d698`, [Actions 40069063023](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40069063023) 121/121 Node + 로컬 Chromium PASS. SQL snapshot, 계약/결제 상태 분리, reviewer role, CAS, append-only 감사 이벤트, Day2 레거시 스키마 마이그레이션 검증. [기술 보고](../../technical/PPL_D07_CONTRACTS_20261024.md).
-- **D08 READY**: 11/01 일감 선행, backend-only contract/milestone API를 서버 인증/CSRF/Origin/GET readonly HTTP에 연결. 4h 예상/8h 안전(실측 NOT_MEASURED). [ACTIVE](LEAD_ACTIVE_WORK.md).
-- 보안: **Live/유료/실카드 금지, 결제 POST 503**, 영업/PII/토큰 외부 공유 금지. 실제 PayPal merchant/buyer·무료 AI·Production/D1·Devpost **NOT_TESTED**.
-- 내부 제출 목표 11/11, 공식 11/13 05:00 KST. 원래 82h/164h 일정은 3개 대회 병행 시 **HIGH RISK**. 계정 접근 및 D1/배포/영상 실증이 관건.
-- 이번 문서 커밋의 원격 SHA·Actions 상태는 다음 재개 시 확인. 각 세션 종료는 [원장](../../../data/paypal_daily_progress.json) 및 [HANDOFF](../../../HANDOFF.md) 동일 커밋 갱신.
-
-## 2026-10-24 D07→D08 문서 CI 회귀 수정 이력
-- [Actions 40069270325](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40069270325) **FAIL**: `tests/daily_progress.test.mjs`가 과거 활성 D07 0%를 고정값으로 단언해 새 D08 포인터·D07 100% 원장과 충돌 (118 PASS / 3 FAIL). 기능 DB 코드 오류는 검출되지 않았지만 해당 HEAD CI는 실패다.
-- 일별 기준값은 과거 사실 그대로 검증하되 활성 day 포인터는 마지막 원장 항목 기준으로, D07 완료/D08 준비 검증으로 업데이트. 수정 커밋 CI는 별도 조회하고 PASS 전에는 새 HEAD를 PASS로 표시하지 않는다.
+- **D08 완료 증거**: `src/contract_api.mjs`, `src/offline_demo_server.mjs`, `tests/contract_api.test.mjs`; SHA `17b804eb93d2d36f94a2813b6c002769fdd5b9c2` [Actions 40070199115](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40070199115), **Node 131/131 PASS + 기존 quote UI 로컬 Chromium PASS**. 신규 HTTP contract 실제 로컬 Node fetch 테스트 포함; 운영 auth/실 AI/실 PayPal 미실시. 초기 CI 40070147386 130/131 (테스트 기대값 문제), 수정됨. [상세](../../technical/PPL_D08_CONTRACT_HTTP_20261024.md).
+- **D09** 11/02 계획 조기 진행: 계약/납품/검수 UI + 결제 상태 분리 + 로컬 브라우저 검증. 실측 NOT_MEASURED, 예상 5h/안전 9h. 실 Sandbox/API 접근 대기 때문에 독립 작업 우선.
+- Production/Cloudflare D1/Devpost 미검증, 실제 merchant/buyer/AI API 접근 없음, PayPal POST 503 유지. Live/카드/유료/비밀/PII 공개 금지.
+- 공식 마감 **2026-11-13 05:00 KST**, 내부 11/11 목표, 기존 82h/164h 추정 고위험. 현 상태는 프로젝트 전체 완료 %가 아님.
+- 보고 경로 [HANDOFF](../../../HANDOFF.md) · [ACTIVE](LEAD_ACTIVE_WORK.md) · [JSON](../../../data/paypal_daily_progress.json); 채팅 간 자동 동기화 없음.
