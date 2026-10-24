@@ -13,7 +13,7 @@
 | PPL-D01 | 2026-10-25 | Quote read-only GET; explicit human-approved POST; offline API security validation | DONE | 100% | 0h | 0h | 2026-10-24 | src/quote_api.mjs @ 9fa2084e27995ec7d77e5907c2390246f13f4150; tests/quote_api.test.mjs | — | — |
 | PPL-D02 | 2026-10-26 | Durable DB and unique/atomic payment operation claims | DONE | 100% | 0h | 0h | 2026-10-24 | src/sqlite_ledger.mjs & tests/sqlite_ledger.test.mjs @ 0c07306bb9633183358f0a1c86a8a3d28653d15e; SQLite file persists close/open; UNIQUE quote/remote IDs | — | — |
 | PPL-D03 | 2026-10-27 | Access feasibility: actual PayPal Sandbox and free AI external API (no credential disclosure) | PARTIAL | 65% | 2h | 3h | 2026-10-25 | User-supplied sanitized PowerShell output 2026-10-25: PayPal sandbox OAuth /v1/oauth2/token status=SANDBOX_OAUTH_REACHED httpStatus=200 networkCalls=1 externalEvidence=true; Gemini generateContent gemini-3.5-flash-lite status=GEMINI_TEXT_GENERATED httpStatus=200 networkCalls=1 externalEvidence=true; private credential values not disclosed. docs/technical/PPL_P0_REAL_PROVIDER_FIRST_SUCCESS_20261025.md | — | — |
-| PPL-D04 | 2026-10-28 | AI quote draft and explicit human approval UI; mock-only forward development | PARTIAL | 80% | 2h | 2h | 2026-10-24 | src/quote_draft.mjs; src/quote_api.mjs @ ee0427e8a6c4ef22904e671f70cfa59120c009dc; synthetic tests | — | — |
+| PPL-D04 | 2026-10-28 | AI quote draft and explicit human approval UI; mock-only forward development | PARTIAL | 80% | 2h | 2h | 2026-10-24 | Owner real Gemini one-shot 2026-10-25: gemini-3.5-flash-lite HTTP 200 GEMINI_TEXT_GENERATED, synthetic landing-page sentence only; NOT actual AI quote workflow. | — | — |
 | PPL-D05 | 2026-10-29 | PayPal Sandbox-only OAuth/Orders create/GET/capture adapter; real API access remains blocked | DONE | 100% | 0h | 0h | 2026-10-24 | src/paypal_sandbox_transport.mjs @ 7e1b7ee8de5a6cdfee7f21560ff97f0d3c6760b2; cannot select live URL; mock OAuth auth | — | — |
 | PPL-D06 | 2026-10-30 | Quote→human approval→payment-safe user flow validation; browser and security adapter gap review | DONE | 100% | 0h | 0h | 2026-10-24 | tests/browser_offline_e2e.py & .github/workflows/test.yml @ 04c57a4c39767835940ed9dc3a42ca2793b47643; GitHub CI 40066792213 browser Chromium PASS with local UI draft, approval, quote revision | — | — |
 | PPL-D07 | 2026-10-31 | Contract, milestone, and delivery schema with ownership, separated settlement vs fulfillment and append-only history | DONE | 100% | 0h | 0h | 2026-10-24 | src/contract_milestones.mjs + src/sqlite_ledger.mjs; tests/contract_milestones.test.mjs (D07 CI 40069063023, SHA e682d6dd): schema, FK, snapshot sum, strict ordering, legacy migration | — | — |
@@ -32,13 +32,14 @@
 ## 보류·차단 / 다시 확인할 일
 
 - **PPL-D03 (2026-10-27, 65%):** Sandbox Order CREATE → 구매자 승인 → GET/캡처 영수증 미실증. 실제 무료 요금 청구 여부·AI 견적 UI 통합 별도 미검증. / 재검토: 실 Sandbox buyer flow 결제 승인/GET 및 one-shot CAPTURE를 별도 범위 승인·검증 후 D03 100 재평가 / 회수일: —
-- **PPL-D04 (2026-10-28, 80%):** 실 무료 AI 프로바이더 실행 검증이 누락됨 / 재검토: 무료 AI 실 API 이용 가능할 때 D04 잔여20% 검증 / 회수일: —
+- **PPL-D04 (2026-10-28, 80%):** 실 AI 단발 생성 200 확인; 실제 견적 입력·AI 응답·인간 승인 통합 및 이용한도 검증은 미완료 / 재검토: 실 Gemini 견적 generation + 검증 + 승인 UI 통합 테스트 후 D04 잔여20 재평가 / 회수일: —
 - **PPL-D15 (2026-11-08, 20%):** Cloudflare Free 계정/기존 호스팅 접근 및 공개 배포·운영 인증 승인 미확보; D03 실제 PayPal Sandbox·D04 실 AI도 미확보 / 재검토: 사용자가 외부 계정·공개 배포를 별도 승인하고 계정 무료 한도/실 인증·D1·실 API를 검증한 경우에만 운영 작업 재개 / 회수일: —
 
 ## 이미 선행한 작업과 검증 경계
 
 - PPL-D01 (2026-10-25): 예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도.
 - PPL-D02 (2026-10-26): 예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도.
+- PPL-D03 (2026-10-27): 2026-10-25 사용자 로컬에서 PayPal Sandbox OAuth HTTP 200 및 Gemini 실제 생성 HTTP 200, 각 1회. 실 주문/캡처·견적 UI/무료 청구 보증 아님.
 - PPL-D04 (2026-10-28): 예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도.
 - PPL-D05 (2026-10-29): 예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도.
 - PPL-D06 (2026-10-30): 예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도.
