@@ -123,7 +123,13 @@ def main():
         print("MASTER_PROGRESS generated")
         return 0
     if not OUTPUT.is_file() or OUTPUT.read_text(encoding="utf-8") != rendered:
+        import difflib
+        current = OUTPUT.read_text(encoding="utf-8") if OUTPUT.is_file() else ""
         print("MASTER_PROGRESS OUT OF SYNC: run python render_master_progress.py --write")
+        print("".join(difflib.unified_diff(
+            current.splitlines(keepends=True), rendered.splitlines(keepends=True),
+            fromfile="committed MASTER_PROGRESS.md", tofile="JSON-derived expected",
+            n=2))[:16000])
         return 1
     print("MASTER_PROGRESS CHECK PASS", len(doc["days"]), "calendar entries")
     return 0
