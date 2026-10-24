@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { startOfflineDemo } from '../src/offline_demo_server.mjs';
+import { request as httpRequest } from 'node:http';
 
 test('offline HTML displays explicit mock-only and payment-disabled messages',async()=>{
   const app=await startOfflineDemo();
@@ -56,8 +57,15 @@ test('loopback demo rejects forged Host header and invalid origin',async()=>{
   try {
     const session=await (await fetch(app.url+'/demo/session')).json();
     const quote=app.url+'/api/quotes/'+session.quoteId;
-    const forbidden=await fetch(app.url+'/',{headers:{host:'attacker.example'}});
-    assert.equal(forbidden.status,403);
+    // Node fetch rewrites Host automatically; use raw node:http to test forged Host.
+    const forbidden=await new Promise((resolve,reject)=>{
+      const req=httpRequest(app.url+'/',{headers:{host:'attacker.example'}},resp=>{
+        const status=resp.statusCode;
+        resp.resume();resp.once('end',()=>resolve(status));
+      });
+      req.once('error',reject);req.end();
+    });
+    assert.equal(forbidden,403);
     const denied=await fetch(quote+'/draft',{
       method:'POST',headers:{'content-type':'application/json',
         'x-csrf-token':session.csrfToken,'origin':'https://attacker.example'},
