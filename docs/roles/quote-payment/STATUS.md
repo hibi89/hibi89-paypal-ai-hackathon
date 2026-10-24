@@ -1,11 +1,11 @@
-# AI 견적·PayPal Sandbox 결제 — STATUS
-
-> 작성: 2026-10-24 KST. 역할 문서 최초 작성이며 신규 기능 개발은 **미착수**.
-
-- 소유 브랜치: `feature/quote-payment`
-- 기능 후보: 고객 요구사항 분류·구조화 견적 초안·고객 승인·PayPal Sandbox 주문 생성/승인/캡처 및 상태 증빙(가능 범위)
-- 사용자 최종 승인: **아직 없음**. 대회 총괄의 역할 배정과 기술 사양/데이터 계약 대기.
-- 코드·API 호출·단위 테스트/CI·실서비스: **실시하지 않음, 성공 근거 없음**.
-- 첫 우선 작업: PayPal Developer 가입/Orders v2 Sandbox 지원·엔드투엔드 동작 확인. API 권한·인증·필요 범위·거래 실패/재시도·중복 캡처 위험 분석
-- 중요 의존/위험: PayPal Developer Sandbox 자격증명(비공개), 서버 환경, 모델 비용/한도. 실제 결제/Live 호출은 승인 전 금지.
-- 전체 제출 마감: 2026-11-13 05:00 KST. 브랜치 운영 구조 생성은 기능 완료가 아니다.
+# AI 견적·PayPal Sandbox 결제 — PPL-001 STATUS
+- 확인일: 2026-10-24 KST / `lead/paypal ACTIVE_TASK PPL-001 READY` / `feature/quote-payment`.
+- 시작 SHA: `e5b70e0376628dc9e6237d69234f56648c849ca8` / 착수 기록: `621612bd906d191c3f68cf708b9940315cb18894`.
+- 목표: 한국 계정 + Sandbox/0원 제약 확인, 공식 Orders v2 절차·국가 제약, 2안 비교, 통합 견적/결제 계약 v0.
+- 결과 파일: `docs/technical/PPL_001_FEASIBILITY_AND_ARCHITECTURE.md`, `src/payment_contract.mjs`, `tests/payment_contract.test.mjs`.
+- 실행: Node v22.16.0 `node --test tests/payment_contract.test.mjs` = **PASS 11 / FAIL 0 / SKIP 0** (비밀 없이 합성 오프라인 테스트).
+- PayPal Sandbox 실제 OAuth·Order Create·Buyer Approval·Capture·GET: **NOT_TESTED / BLOCKED_BY_ACCESS**, Client ID/Secret 및 Sandbox buyer/merchant 없음.
+- AI 무료 API, Cloudflare D1/Workers, 브라우저·CI·Production: **NOT_TESTED**.
+- 한국 등록 계정 간 PayPal 국내 결제 불가(공식); 한국 판매자↔외국 구매자 Sandbox E2E는 미확인. 신규 현금 지출 0원.
+- 다음: 총괄 검수/사용자 승인 후 PayPal 계정/무료 AI 접근 실증. 승인 전 다른 브랜치/Live/유료 결제 금지.
+- 원격 종료 SHA·미해결 항목: `docs/roles/quote-payment/TO_PAYPAL_LEAD.md`와 GitHub HEAD 참조.
