@@ -23,4 +23,4 @@ The private Sandbox transport and D1-shaped GET reconciler already require order
 - Only owner can authorize provider credentials/secret handling, real Sandbox actions, zero-charge AI call or public contest submission.
 
 ## CI
-Pending for this commit; record outcome and exact SHA in handoff only after verified Actions run.
+Confirmed source SHA `da195e5906574b28d819248d6b0f20199a6f136d`. [GitHub Actions #40100184698](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40100184698) **SUCCESS**: Node **302/302** PASS (4 newly added integration/negative tests), Chromium localhost E2E PASS, 18-day progress CHECK PASS. Documentation-only follow-up commit gets its own CI; simulated and real provider evidence remain strictly separate.
