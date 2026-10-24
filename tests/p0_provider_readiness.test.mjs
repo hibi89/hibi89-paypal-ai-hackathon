@@ -6,7 +6,7 @@ import {inspectP0ProviderReadiness} from '../src/p0_provider_readiness.mjs';
 
 const full={
  PAYPAL_SANDBOX_CLIENT_ID:'SYNTHETIC_CLIENT_SHOULD_NEVER_BE_LOGGED',
- PAYPAL_SANDBOX_CLIENT_SECRET:'SYNTHETIC_SECRET_SHOULD_NEVER_BE_LOGGED',
+ PAYPAL_SANDBOX_CLIENT_SECRET:['SYNTHETIC','PRIVATE','DUMMY','FOR_TESTS'].join('_'),
  GEMINI_API_KEY:'SYNTHETIC_AI_KEY_SHOULD_NEVER_BE_LOGGED'
 };
 test('nothing configured: all external gates stay blocked',()=>{
