@@ -84,7 +84,7 @@ test('payment failure and sale completion never mark subscription paid or inacti
   const x=planTrustedSubscriptionEvent(fresh(),activated(),trusted).snapshot;
   for(const type of ['BILLING.SUBSCRIPTION.PAYMENT.FAILED',
     'PAYMENT.SALE.COMPLETED','PAYMENT.SALE.REVERSED','PAYMENT.SALE.REFUNDED']){
-    const decision=planTrustedSubscriptionEvent(x,event(type,'WH-'+type),trusted);
+    const decision=planTrustedSubscriptionEvent(x,event(type,'WH-'+type.replace(/[^A-Z0-9_-]/g,'-')),trusted);
     assert.equal(decision.action,'RECONCILE_GET_FIRST');
     assert.equal(decision.snapshot.status,'ACTIVE');
     assert.equal(decision.snapshot.paymentEvidence,'NOT_VERIFIED');
@@ -94,7 +94,7 @@ test('payment failure and sale completion never mark subscription paid or inacti
 test('updated and unknown event types need provider GET; no implicit state change',()=>{
   const x=fresh();
   for(const type of ['BILLING.SUBSCRIPTION.UPDATED','BILLING.SUBSCRIPTION.MYSTERY']){
-    const decision=planTrustedSubscriptionEvent(x,event(type,'WH-'+type),trusted);
+    const decision=planTrustedSubscriptionEvent(x,event(type,'WH-'+type.replace(/[^A-Z0-9_-]/g,'-')),trusted);
     assert.equal(decision.action,'RECONCILE_GET_FIRST');
     assert.equal(decision.snapshot.status,'UNKNOWN');
   }
