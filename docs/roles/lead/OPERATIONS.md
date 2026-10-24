@@ -31,3 +31,8 @@
 - PayPal 작업 우선 일정은 [전용 실행계획 v3.0](../../PAYPAL_EXECUTION_PLAN_20261024.md); 0원 스택 정책은 [Guardrails](../../ZERO_COST_STACK_AND_GUARDRAILS.md). 3개 해커톤 통합 일정은 기록용으로 보존하지만 **PayPal 개발 우선순위 계산에 사용하지 않는다**.
 - 새 기능 지시 전 **세 작업자 메시지함 직접 확인** 및 `MESSAGE_REVIEW.md` 기록. 담당자별 10/27, 11/02, 11/06 Gate 상태·API 증거·Git SHA·무료 한도/비용 추적. 11/11 Devpost 제출은 실제 증빙만 인정.
 - B안과 3개 모듈 통합 목표는 승인됨. **유료 전환/Live 결제/외부 실제 데이터/기능 범위 변경**은 여전히 별도 승인 필요.
+
+## 2026-10-24 KST — 최종 운영 변경: PayPal 기능 담당 1명 순차 활성
+- 이전 '3명 병렬'은 더 이상 유효하지 않음. **PayPal 기능 활성 작업자는 한 번에 단 1명.** 다른 두 작업자는 대기. 전역 3대회(KIC/PayPal/UGREEN)는 각 대회 1명씩 병렬 가능.
+- 신규 지시 전 각 feature HEAD·TO_PAYPAL_LEAD 확인. 이전 작업자 중단→검증/커밋/STATUS·HANDOFF/TO_PAYPAL_LEAD 인수→다음 작업자 1명에게 지시. 각각의 담당자에게 동시 실행 지시를 보내지 않음.
+- 유효 일정 [단일 슬롯 v4.0](../../PAYPAL_EXECUTION_PLAN_20261024.md), 0원 하드캡 그대로. 실제 기능/Devpost/무료 배포 성공은 아직 증명되지 않음.
