@@ -10,7 +10,7 @@ test('approved root MIT license contains the complete attribution and required g
   assert.match(file, /to use, copy, modify, merge, publish, distribute, sublicense, and\/or sell/);
   assert.match(file, /The above copyright notice and this permission notice shall be included/);
   assert.match(file, /THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND/);
-  assert.match(file, /SOFTWARE\.$/);
+  assert.match(file, /SOFTWARE\.\n?$/);
   assert.doesNotMatch(file, /\[(?:year|fullname)\]/);
   const pkg = JSON.parse(readFileSync(new URL('package.json', root), 'utf8'));
   assert.equal(pkg.license, 'MIT');
