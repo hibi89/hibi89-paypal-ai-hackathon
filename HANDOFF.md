@@ -29,3 +29,9 @@
 - Gate: **10/27 실 PayPal Sandbox 결제 POC 및 무료 AI 호출**, **11/02 첫 E2E**, **11/06 기능 동결**, **11/09 제출 후보**, **11/11 조기 제출**, 공식 마감 **11/13 05:00 KST**.
 - **미완료/미검증:** 사용자 PayPal Developer/Sandbox·Cloudflare·Gemini 무료 계정 접근, 3 담당 AI 채팅 실제 배정, 기능 코드·API 호출·CI·배포·영상·Devpost 제출은 아직 검증되지 않음. 계획 승인≠구현/제출 완료.
 - 다음 실제 작업은 10/25 공통 데이터 계약, 10/26 무료계정·SDK 실증, 10/27 Sandbox POC이다. 각 AI 담당자 신규 채팅 시작 시 최신 lead SHA/문서 읽기를 안내하고, 독립 branch 책임 유지.
+
+## 2026-10-24 KST — 최종 운영 변경: PayPal 기능 담당 1명 순차 활성
+- 이전 PayPal 내부 3명 병렬 B안은 **사용자 새 지시로 폐기**. **PayPal 기능 활성 담당자는 언제나 한 명뿐**이며 나머지 둘은 대기. 해커톤 3개(KIC, PayPal, UGREEN)는 각 1명씩 동시에 진행 가능.
+- 기능 브랜치 3개/통합 출품작 1개/0원 증분 비용/공식 마감 유지. 순차 순서: quote-payment(10/26~30), delivery(10/31~11/02), subscriptions(11/03~06), 통합 검증(11/07~09), 11/11 조기 제출.
+- 최신 지침: [`docs/PAYPAL_EXECUTION_PLAN_20261024.md`](docs/PAYPAL_EXECUTION_PLAN_20261024.md) **v4.0**. 이전 단계 담당자의 원격 SHA/테스트/STATUS·HANDOFF·TO_PAYPAL_LEAD.md를 인수한 뒤에만 다음 작업자 활성화.
+- 총괄 브랜치 운영문서만 수정. 실 작업자 채팅 미배정, 실제 API/개발/CI/배포/영상/Devpost 제출은 미완료/미검증.
