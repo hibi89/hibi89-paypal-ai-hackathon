@@ -50,7 +50,9 @@ function mount({deferredApproval=false}={}){
   const context={document:{getElementById:id=>elements.get(id)},fetch,
     Error,Number,String};
   runInNewContext(client,context,{filename:'web/demo_client.js'});
-  const ready=async()=>{for(let i=0;i<12;i++)await Promise.resolve();};
+  // VM async bootstrap crosses contexts; yield an event-loop tick rather than
+  // assuming N Promise microtasks are enough in Node 22 GitHub Actions.
+  const ready=async()=>{for(let i=0;i<3;i++)await new Promise(setImmediate);};
   const el=id=>elements.get(id);
   return {el,requests,ready,quote:()=>q,release:()=>{if(unblockApproval)unblockApproval();}};
 }
