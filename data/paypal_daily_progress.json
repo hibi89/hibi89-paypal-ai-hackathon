@@ -954,51 +954,54 @@
       "evidence": [
         "docs/technical/PPL_D15_HOSTING_PREFLIGHT_20261024.md; docs/technical/PPL_D15_D1_CLAIM_FENCE_20261024.md; GitHub Actions 40081717845 @ 0d8497a69b69e8515e178fae8a6aabbe277310b5: 193/193 Node, local Chromium PASS",
         "migrations/d1/0001_payment_claims.sql; src/d1_claim.mjs; tests/d1_claim.test.mjs: 9 offline D1-shaped contract tests (not remote D1)",
-        "src/hosting_preflight.mjs; tests/hosting_preflight.test.mjs: no-deploy static report"
+        "src/hosting_preflight.mjs; tests/hosting_preflight.test.mjs: no-deploy static report",
+        "src/d1_recovery.mjs; tests/d1_recovery.test.mjs: authenticated tenant-bound read-only inspection, privileged 5m stale UNKNOWN, 11 offline tests. Actions #40082429683 @ 949eb8b25645d29f43e22669bf757c15e347ce49: 204/204 Node + local Chromium PASS"
       ],
-      "verified_sha": "0d8497a69b69e8515e178fae8a6aabbe277310b5",
+      "verified_sha": "949eb8b25645d29f43e22669bf757c15e347ce49",
       "blocker": "Cloudflare Free 계정/기존 호스팅 접근 및 공개 배포·운영 인증 승인 미확보; D03 실제 PayPal Sandbox·D04 실 AI도 미확보",
       "recovery_date_kst": null,
       "recovery_condition": "사용자가 외부 계정·공개 배포를 별도 승인하고 계정 무료 한도/실 인증·D1·실 API를 검증한 경우에만 운영 작업 재개",
-      "advance_note": "10/24 D15 정적 사전검사 + D1 호환 후보 스키마/결제 claim 원자성 9테스트, GitHub Actions 193/193·로컬 Chromium PASS. 실제 배포/PayPal/AI 전부 미검증.",
-      "status": "D15_OFFLINE_CLAIM_FENCE_VERIFIED_REMOTE_BLOCKED",
+      "advance_note": "10/24 선행: 정적 호스팅 감사, D1 후보 단일 claim, tenant-bound 읽기·5분 경과 UNKNOWN 복구. Node 204/204, 로컬 Chromium PASS. 실 PayPal/AI/D1/배포 전부 미검증.",
+      "status": "D15_OFFLINE_D1_RECOVERY_FENCE_VERIFIED_REMOTE_BLOCKED",
       "actual_elapsed_note": "NOT_MEASURED; estimated remaining work budgets (not elapsed time) + unbounded external account/approval wait",
       "carryover": [
         "Never publish 127.0.0.1 synthetic server as real app; Node sqlite stub on Workers, use D1 binding instead",
         "D15 static design 20% only; deployment implementation 40%, real deployment verification 30%, production CI handoff 10% all PENDING",
         "D03 real Sandbox and D04 AI external gates not solved; owner approval required before Cloudflare creation/deploy",
-        "D1 claim prototype has no remote binding/HTTP/provider. Migration is NOT APPLIED to Cloudflare; implement verified GET reconciliation and real authentication before any hosted use."
+        "D1 claim prototype has no remote binding/HTTP/provider. Migration is NOT APPLIED to Cloudflare; implement verified GET reconciliation and real authentication before any hosted use.",
+        "D1 recovery inspection/maintenance simulated only; user authentication provider and PayPal authenticated GET verifier still absent. Do NOT expose recovery as public HTTP."
       ],
       "limitations": [
         "No Cloudflare/D1 account connector or owned resource was inspected; documentation limits not account verification",
         "No production URL, identity, real payment or AI integration tested",
         "Preflight exits 2 by design; passing Node tests verify blocker detection, not deployment availability",
-        "Node SQLite shim is not a real Cloudflare D1 integration, despite SQL compatibility and offline tests"
+        "Node SQLite shim is not a real Cloudflare D1 integration, despite SQL compatibility and offline tests",
+        "Local SQLite D1-shaped shim does not prove real D1 Sessions/replication or provider provenance"
       ],
       "checklist": [
         {
           "id": "REQUIREMENTS_AND_DESIGN",
           "weight_pct": 20,
           "state": "VERIFIED",
-          "evidence": "docs/technical/PPL_D15_HOSTING_PREFLIGHT_20261024.md; docs/technical/PPL_D15_D1_CLAIM_FENCE_20261024.md; GitHub Actions 40081717845 @ 0d8497a69b69e8515e178fae8a6aabbe277310b5: 193/193 Node, local Chromium PASS"
+          "evidence": "docs/technical/PPL_D15_HOSTING_PREFLIGHT_20261024.md; docs/technical/PPL_D15_D1_CLAIM_FENCE_20261024.md; GitHub Actions 40081717845 @ 0d8497a69b69e8515e178fae8a6aabbe277310b5: 193/193 Node, local Chromium PASS; src/d1_recovery.mjs; tests/d1_recovery.test.mjs: authenticated tenant-bound read-only inspection, privileged 5m stale UNKNOWN, 11 offline tests. Actions #40082429683 @ 949eb8b25645d29f43e22669bf757c15e347ce49: 204/204 Node + local Chromium PASS"
         },
         {
           "id": "IMPLEMENTATION",
           "weight_pct": 40,
           "state": "PENDING",
-          "evidence": "Local D1-shaped migration and atomic claim prototype validated in SQLite, but remote D1, real authenticated API, provider GET reconciliation and production implementation not authorized or tested."
+          "evidence": "Offline tenant-bound D1-shaped read-only inspection + stale UNKNOWN recovery prototype proven on SQLite (11 new tests). Production user session, actual D1, PayPal GET transport, full API and deployment still NOT_IMPLEMENTED/NOT_TESTED."
         },
         {
           "id": "AUTOMATED_VERIFICATION",
           "weight_pct": 30,
           "state": "PENDING",
-          "evidence": "193/193 Node + local Chromium PASS; this test count includes 9 D1-shaped SQLite shim tests. No actual D1/HTTPS/prod browser evidence, acceptance remains PENDING."
+          "evidence": "Actions #40082429683 Node 204/204 & Chromium local PASS; remote D1/HTTP/production browser E2E unperformed."
         },
         {
           "id": "CI_HANDOFF",
           "weight_pct": 10,
           "state": "PENDING",
-          "evidence": "GitHub Actions 40081717845 @ 0d8497a69b69e8515e178fae8a6aabbe277310b5 PASS local, production CI handoff still PENDING."
+          "evidence": "Actions #40082429683 204 Node + local Chromium PASS, 18-day check; no production CI/deployment acceptance."
         }
       ]
     },
