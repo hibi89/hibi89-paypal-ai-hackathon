@@ -892,21 +892,21 @@
       "actual_elapsed_hours": null,
       "evidence": [
         "docs/technical/PPL_D14_SECURITY_REPRO_20261024.md; two zero-cost alternatives and guards compared",
-        "GitHub Actions 40079069519 @ 624c5ff49a70: 179/179 Node PASS including guard + tracked-secret signature check; real Chromium loopback E2E PASS",
-        "GitHub Actions 40079069519 @ 624c5ff49a70: 18-day MASTER_PROGRESS --check PASS, Node 179 PASS, Chromium PASS. First attempt 40079004250 178/179 FAIL stale D14 assumption, fixed",
-        "src/demo_rate_limit.mjs; tests/public_secret_scan.test.mjs; docs/JUDGE_REPRODUCTION_EN.md; docs/VIDEO_STORYBOARD_EN.md"
+        "GitHub Actions 40079303005 @ 55c0c50a89e094f07e6bc2dec3cb608062aee733: 179/179 Node tests PASS, Chromium loopback E2E PASS, Git tracked secret signature scanner PASS",
+        "GitHub Actions 40079303005 @ 55c0c50a89e094f07e6bc2dec3cb608062aee733: 18-day dashboard --check, Node 179/179, real local Chromium E2E PASS. Prior 40079004250 failed stale day test; 40079230840 failed flaky async browser assertion; both corrected",
+        "src/demo_rate_limit.mjs; tests/public_secret_scan.test.mjs; tests/browser_offline_e2e.py; docs/JUDGE_REPRODUCTION_EN.md"
       ],
-      "verified_sha": "624c5ff49a7061c58aebfcf67219bfd9ecfab2d6",
+      "verified_sha": "55c0c50a89e094f07e6bc2dec3cb608062aee733",
       "blocker": "공개 OSI LICENSE 종류에 대한 사용자 승인 대기",
       "recovery_date_kst": null,
       "recovery_condition": "MIT 또는 Apache-2.0 등 라이선스 선택 후 루트 LICENSE 반영/검증",
-      "advance_note": "10/24 D14 보안·영문 초안 및 179 Node+Chromium PASS; 공개 LICENSE 최종 승인은 보류.",
+      "advance_note": "10/24 D14 179 Node·Chromium PASS @ 55c0c50, 2개 CI 오류 수정; 공개 LICENSE 법적 승인 보류.",
       "status": "D14_OFFLINE_SECURITY_AND_CI_PASS_LICENSE_PENDING",
       "actual_elapsed_note": "NOT_MEASURED; planned remaining work estimates only. External license approval wait UNKNOWN.",
       "carryover": [
-        "Public root LICENSE pending owner decision. Without approved legal grant do not mark D14 100%.",
-        "Production-grade auth and provider integration remain separate external tasks D03/D04/D15/D16",
-        "First CI d6dd022 178/179 fail on stale test; corrected commit 624c5ff passed 179/179 + Chromium"
+        "Root public OSI LICENSE pending owner's explicit license choice (MIT vs Apache-2.0); D14 max 60% until approved/tested",
+        "Real Sandbox Business+Personal and real zero-cost AI D03/D04 externally BLOCKED; Production, Devpost NOT_TESTED",
+        "CI 40079004250 stale day test FAIL fixed 624c5ff; CI 40079230840 flaky browser GET/POST timing FAIL fixed 55c0c50; CI 40079303005 PASS"
       ],
       "limitations": [
         "Loopback-only process-scoped 360 GET/HEAD + 60 other / 60s, not distributed production throttling",
@@ -930,13 +930,13 @@
           "id": "AUTOMATED_VERIFICATION",
           "weight_pct": 30,
           "state": "VERIFIED",
-          "evidence": "GitHub Actions 40079069519 @ 624c5ff49a70: 179/179 Node PASS including guard + tracked-secret signature check; real Chromium loopback E2E PASS"
+          "evidence": "GitHub Actions 40079303005 @ 55c0c50a89e094f07e6bc2dec3cb608062aee733: 179/179 Node tests PASS, Chromium loopback E2E PASS, Git tracked secret signature scanner PASS"
         },
         {
           "id": "CI_HANDOFF",
           "weight_pct": 10,
           "state": "VERIFIED",
-          "evidence": "GitHub Actions 40079069519 @ 624c5ff49a70: 18-day MASTER_PROGRESS --check PASS, Node 179 PASS, Chromium PASS. First attempt 40079004250 178/179 FAIL stale D14 assumption, fixed"
+          "evidence": "GitHub Actions 40079303005 @ 55c0c50a89e094f07e6bc2dec3cb608062aee733: 18-day dashboard --check, Node 179/179, real local Chromium E2E PASS. Prior 40079004250 failed stale day test; 40079230840 failed flaky async browser assertion; both corrected"
         }
       ]
     },

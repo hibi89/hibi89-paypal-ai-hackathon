@@ -1,5 +1,7 @@
 # PayPal HANDOFF — D13 verified, D14 next (2026-10-24)
 <!-- resume: day_id=PPL-D14; percent=60; est_h=2; safe_h=4 -->
+> **D14 최종 보안 오프라인 검증 (2026-10-24):** 최초 CI 40079004250 Node 178/179 (오래된 D14=0% 단정), 보정 624c5ff CI PASS. 문서 커밋 CI 40079230840의 Chromium에서 refresh→submit 비동기 경쟁조건 발견, 테스트 동기화 보정 `55c0c50a89e0`. [최신 CI 40079303005](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40079303005)에서 **Node 179/179, 18일 일정표, Chromium E2E 모두 PASS**. D14 **60%/100%**, 남은 기본 **2h**, 안전 총 확보 **4h**, 실측 NOT_MEASURED. root LICENSE 사용자 승인 전 BLOCKED, 실제 Sandbox/AI/Production/Devpost NOT_TESTED.
+
 > **D14 2026-10-24 진행 60% (로컬 CI 검증):** 로컬 fixed-window rate guard + 429/Retry-After, Node 단위/HTTP 회귀 테스트, Git 추적 텍스트 서명 검사, 영문 reviewer 재현/영상 시나리오 초안 작성. 원격 새 HEAD의 Node/Chromium CI는 **179/179 Node+Chromium PASS, GitHub Actions 40079069519 @ 624c5ff49a70**. LICENSE는 사용자 선택 전 발행하지 않음. D03 실 Sandbox·D04 실 AI·Production/Devpost 미검증. 기본 잔여 계획 2h / 안전 확보 4h; 실측 NOT_MEASURED. [D14 기록](docs/technical/PPL_D14_SECURITY_REPRO_20261024.md).
 
 
@@ -41,3 +43,9 @@
 - Corrected test commit `624c5ff49a7061c58aebfcf67219bfd9ecfab2d6`, follow-up run [40079069519](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40079069519) **179/179 Node, 18-day dashboard check, Chromium E2E PASS**.
 - D14 60% PARTIAL: published security code/test/English drafts proven by local CI; root LICENSE pending user decision; real Sandbox/AI/browser Production and submission NOT_TESTED.
 - Fresh document commit may trigger a new CI; do not attribute prior CI to that SHA.
+
+### Current remote verification / 2026-10-24 KST
+- Latest tested application+browser fixture commit: `55c0c50a89e094f07e6bc2dec3cb608062aee733`; Actions [40079303005](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40079303005) **179 Node PASS, 0 FAIL; real local Chromium E2E PASS**.
+- New docs sync commit will have its own SHA and fresh CI; do not assert success until separately completed.
+- D14 stays PARTIAL 60%, root LICENSE absent pending explicit legal choice. D03/D04 external blockers not overwritten.
+- Previous remote history retained for rollback; no force push. Local model container unable to clone GitHub due DNS; GitHub connector + Actions provide current actual proof.
