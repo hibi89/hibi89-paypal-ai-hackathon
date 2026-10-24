@@ -13,11 +13,11 @@ const approveButton=document.getElementById('approve-submit');
 const refreshButton=document.getElementById('refresh');
 const paymentButton=document.getElementById('payment-status');
 const controls=[draftButton,approveButton,refreshButton,paymentButton];
-let csrfToken=null,quoteId=null,current=null,initialized=false,busy=false;
+let csrfToken=null,quoteId=null,current=null,initialized=false,busy=false,reviewerMode=false;
 function updateControls(){
-  for(const element of controls) element.disabled=!initialized||busy;
+  for(const element of controls) element.disabled=!initialized||busy||reviewerMode;
   // An already-approved amount cannot be approved again; draft revision is allowed.
-  approveButton.disabled=!initialized||busy||current?.status!=='PROPOSED';
+  approveButton.disabled=!initialized||busy||reviewerMode||current?.status!=='PROPOSED';
   root.setAttribute('aria-busy',String(busy));
 }
 function show(text){message.textContent=text;}
@@ -72,7 +72,11 @@ async function init(){
       throw new Error('INVALID_DEMO_SESSION');
     csrfToken=session.csrfToken;
     quoteId=session.quoteId;
-    await refresh();
+    reviewerMode=session.role==='reviewer';
+    if(reviewerMode){
+      for(const id of ['quote-panel','draft-panel','approval-panel','payment-panel'])
+        document.getElementById(id).hidden=true;
+    }else await refresh();
     initialized=true;
     show('Offline demo ready. No AI or PayPal external calls.');
   }catch(error){show('Cannot load local demo: '+(error instanceof Error?error.message:'REQUEST_FAILED'));}

@@ -14,6 +14,7 @@ label{display:block;font-weight:650;margin:8px 0 4px}
 textarea,input{display:block;width:100%;padding:10px;border:1px solid #8492a5;border-radius:8px;font:inherit}
 button{cursor:pointer;font:inherit;border:0;border-radius:8px;padding:10px 14px;background:#1e4582;color:white;margin:10px 6px 0 0}
 button:disabled{opacity:.45;cursor:not-allowed}
+[hidden]{display:none!important}.delivery-status{font-weight:700}.contract-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.contract-grid p{margin:4px 0}.contract-actions{display:flex;flex-wrap:wrap;gap:6px}
 code{background:#e8edf5;padding:2px 5px;border-radius:4px}
 #message{min-height:2em}#message[role=status]{white-space:pre-wrap}
 strong{font-weight:700}.meta{color:#485972;font-size:.9rem}
@@ -25,12 +26,12 @@ strong{font-weight:700}.meta{color:#485972;font-size:.9rem}
 <p class="warning"><strong>Offline demonstration — NOT REAL AI OR PAYPAL.</strong> The price is a deterministic placeholder. No external model or payment is called. This example uses a synthetic user in a loopback-only server; do not deploy it publicly.</p>
 </header>
 <main id="demo-main" aria-busy="false">
-<section class="panel" aria-labelledby="current-heading">
+<section class="panel" id="quote-panel" aria-labelledby="current-heading">
 <h2 id="current-heading">Current quote</h2>
 <p id="quote-view">Loading local example…</p>
 <button type="button" id="refresh">Refresh quote (GET only)</button>
 </section>
-<section class="panel">
+<section class="panel" id="draft-panel">
 <h2>1. Suggest a scope and a demo estimate</h2>
 <form id="draft-form">
 <label for="scope">Project scope (synthetic data only)</label>
@@ -39,7 +40,7 @@ strong{font-weight:700}.meta{color:#485972;font-size:.9rem}
 </form>
 <p class="meta">Editing or replacing a proposal increments the quote version and invalidates previous approval. If a payment was ever claimed for a quote, revisions are blocked.</p>
 </section>
-<section class="panel">
+<section class="panel" id="approval-panel">
 <h2>2. Explicit human approval</h2>
 <form id="approve-form">
 <label for="dollars">Approved amount (USD; human chosen, not AI)</label>
@@ -49,13 +50,40 @@ strong{font-weight:700}.meta{color:#485972;font-size:.9rem}
 </form>
 <p class="meta">PayPal order and capture POST remain disabled until actual Sandbox verification.</p>
 </section>
-<section class="panel">
+<section class="panel" id="payment-panel">
 <h2>3. Payment safety status</h2>
 <p><strong>Payment is DISABLED.</strong> No Live transactions, no Sandbox charges, no deployed provider integration.</p>
 <button type="button" id="payment-status">Check payment status (GET)</button>
 </section>
+<section class="panel" aria-labelledby="contract-heading" id="contract-panel">
+<h2 id="contract-heading">4. Contract &amp; delivery — OFFLINE MOCK</h2>
+<p class="meta" id="session-role">Synthetic session loading…</p>
+<p class="meta">A signed-off quote is not a paid or delivered contract. The reviewer is a separate server-bound synthetic session, not a browser-selectable role.</p>
+<div class="contract-grid">
+<div><p>Payment status</p><p id="contract-payment" class="delivery-status">NOT_CAPTURED</p></div>
+<div><p>Fulfillment status</p><p id="contract-fulfillment" class="delivery-status">NO_CONTRACT</p></div>
+</div>
+<p id="contract-view" role="status" aria-live="polite">Contract not yet created.</p>
+<div class="contract-actions">
+<button type="button" id="contract-create">Create contract from approved quote</button>
+<button type="button" id="contract-refresh">Refresh contract (GET only)</button>
+</div>
+<form id="delivery-form" hidden>
+<label for="delivery-note">Delivery evidence (synthetic only)</label>
+<textarea id="delivery-note" minlength="8" maxlength="1000" rows="2" required>Uploaded the completed synthetic deliverables</textarea>
+<button type="submit" id="delivery-submit">Submit milestone for review</button>
+</form>
+<div id="review-actions" hidden>
+<label for="review-note">Rejection reason (required for rejection)</label>
+<textarea id="review-note" rows="2" minlength="8" maxlength="1000">Missing requested synthetic assets</textarea>
+<button type="button" id="review-accept">Accept delivery</button>
+<button type="button" id="review-reject">Reject delivery</button>
+</div>
+<p id="contract-message" role="status" aria-live="polite"></p>
+</section>
 <p id="message" role="status" aria-live="polite"></p>
 </main>
 <script src="/demo/client.js" defer></script>
+<script src="/demo/contract.js" defer></script>
 </body>
 </html>
