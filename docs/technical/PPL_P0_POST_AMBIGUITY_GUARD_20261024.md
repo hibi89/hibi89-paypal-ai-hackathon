@@ -16,7 +16,7 @@ HTTP 503 or an unreadable 2xx JSON body may follow an already-processed create/c
 4. Capture Orders POST 201 malformed JSON => UNKNOWN and one capture POST.
 5. OAuth network reset => OAuth-specific error, zero payment POSTs.
 
-The original orchestrator's SQLite UNKNOWN and GET-first contract remains unchanged. Run `npm test` plus `python render_master_progress.py --check` in full repository and verify exact SHA GitHub Actions. **At authoring, new CI is PENDING, not PASS.** No real provider account/API calls or production deployment.
+The original orchestrator's SQLite UNKNOWN and GET-first contract remains unchanged. Run `npm test` plus `python render_master_progress.py --check` in full repository and verify exact SHA GitHub Actions. **Verified:** source SHA `9cc221fb0cdeff9ba7703ba62f974e2c22f91a7c`, [GitHub Actions #40105307161](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40105307161) — 325/325 Node tests, 0 failures, 18-day progress check and localhost Chromium browser E2E PASS. Later documentation-only SHA has separate CI status. No real provider account/API calls or production deployment.
 
 ## Remaining P0 conditions
 D03 0% BLOCKED — actual PayPal Business/Personal Sandbox and free AI setup; D04 80% PARTIAL — real AI test missing; D15 20% PARTIAL — public HTTPS identity/session/D1 not implemented or tested (remaining planned 5h base, 10h safe; actual null). D16–D18 0%. No actual Devpost submission.
