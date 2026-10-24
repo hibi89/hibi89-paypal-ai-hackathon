@@ -72,7 +72,7 @@ def render(doc):
         rows.append("| " + " | ".join([
             clean(d["day_id"]), clean(d["scheduled_date_kst"]), clean(d.get("scope") or d.get("task")),
             status, str(pct) + "%", number(d["estimated_remaining_hours"]) + "h",
-            number(d["safe_remaining_hours"]) + "h",
+            number(d["safe_remaining_hours"] - d["estimated_remaining_hours"] if SOURCE.name == "paypal_daily_progress.json" else d["safe_remaining_hours"]) + "h",
             clean(d.get("executed_date_kst") or "—"), proof, sha, recover
         ]) + " |")
     lines = [
