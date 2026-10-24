@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { approvedAmount, requestKey, planOrder, planCapture, reconcileCapture } from '../src/payment_contract.mjs';
+import { approvedAmount, requestKey, planOrder, planCapture, reconcileCapture, paypalRequestHeaderId } from '../src/payment_contract.mjs';
 
 const q = () => ({ id: 'quote-demo-1', version: 2, currency: 'USD',
   aiSuggestedMinor: 9900, approval: { decision: 'APPROVED', quoteVersion: 2,
@@ -52,4 +52,31 @@ test('pending, failed and missing payment proof cannot be paid', () => {
 test('tampered capture order and amount fail closed', () => {
   assert.throws(() => reconcileCapture(q(), order('COMPLETED'), { ...capture(), orderId: 'WRONG' }), { code: 'CAPTURE_ORDER_MISMATCH' });
   assert.throws(() => reconcileCapture(q(), order('COMPLETED'), { ...capture(), amount: { currency_code: 'USD', value: '99.00' } }), { code: 'CAPTURE_AMOUNT_MISMATCH' });
+});
+
+
+test('PayPal outbound idempotency header is at most 38 single-byte characters; persisted IDs unchanged',()=>{
+ const create=requestKey(q(),'create');
+ const capture=requestKey(q(),'capture');
+ assert.equal(create.length,39);
+ assert.equal(capture.length,40);
+ for(const id of [create,capture]){
+  const outgoing=paypalRequestHeaderId(id);
+  assert.equal(Buffer.byteLength(outgoing,'utf8'),38);
+  assert.match(outgoing,/^p-[0-9a-f]{36}$/);
+  assert.equal(paypalRequestHeaderId(id),outgoing);
+ }
+ assert.notEqual(paypalRequestHeaderId(create),paypalRequestHeaderId(capture));
+ assert.equal(planOrder(q()).requestId,create);
+ assert.equal(planCapture(q(),order()).requestId,capture);
+});
+test('PayPal outbound idempotency header rejects unknown, forged or truncated ledger identifiers',()=>{
+ for(const value of ['',null,undefined,'create-short','capture-'+('g'.repeat(32)),
+  'create-'+('f'.repeat(31)),'create-'+('f'.repeat(33)),('x'.repeat(38))])
+  assert.throws(()=>paypalRequestHeaderId(value),{code:'INVALID_LEDGER_REQUEST_ID'});
+});
+test('outbound mapping stays unique for the same quote on a new version',()=>{
+ const previous=paypalRequestHeaderId(requestKey(q(),'create'));
+ const renewed={...q(),version:3,approval:{...q().approval,quoteVersion:3}};
+ assert.notEqual(paypalRequestHeaderId(requestKey(renewed,'create')),previous);
 });

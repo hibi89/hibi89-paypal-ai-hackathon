@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSandboxTransport } from '../src/paypal_sandbox_transport.mjs';
-import { requestKey } from '../src/payment_contract.mjs';
+import { requestKey, paypalRequestHeaderId } from '../src/payment_contract.mjs';
 const q={id:'quote-demo',version:2,currency:'USD',
   approval:{decision:'APPROVED',quoteVersion:2,actorId:'synthetic',amountMinor:1500}};
 const claim=operation=>({action:'FIRST_CLAIM_ONLY_NO_PROVIDER_CALL',attempt:{
@@ -58,7 +58,8 @@ test('create uses sandbox OAuth and PayPal-Request-Id, then validates GET',async
   assert.ok(calls.length>=3);
   assert.ok(calls.every(x=>x.url.startsWith('https://api-m.sandbox.paypal.com/')));
   const create=calls.find(x=>x.method==='POST'&&x.url.endsWith('/v2/checkout/orders'));
-  assert.equal(create.headers['PayPal-Request-Id'],requestKey(q,'create'));
+  assert.equal(create.headers['PayPal-Request-Id'],paypalRequestHeaderId(requestKey(q,'create')));
+  assert.equal(Buffer.byteLength(create.headers['PayPal-Request-Id'],'utf8'),38);
   assert.equal(JSON.parse(create.body).purchase_units[0].amount.value,'15.00');
   assert.ok(!JSON.stringify(result).includes('SYNTHETIC_TOKEN'));
 });
@@ -83,7 +84,8 @@ test('capture gets latest approved order and returns UNKNOWN_PENDING_GET, not pa
   const result=await transport.captureOnce(q,claim('capture'),'ORDER0001');
   assert.equal(result.paymentState,'UNKNOWN_AWAITING_GET');
   const capture=calls.find(x=>x.url.endsWith('/capture'));
-  assert.equal(capture.headers['PayPal-Request-Id'],requestKey(q,'capture'));
+  assert.equal(capture.headers['PayPal-Request-Id'],paypalRequestHeaderId(requestKey(q,'capture')));
+  assert.equal(Buffer.byteLength(capture.headers['PayPal-Request-Id'],'utf8'),38);
   assert.equal(capture.method,'POST');
 });
 test('capture will not run if first claim is forged or wrong operation',async()=>{

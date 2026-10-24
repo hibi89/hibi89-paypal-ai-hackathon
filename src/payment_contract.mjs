@@ -26,6 +26,23 @@ export function requestKey(quote, action) {
   return `${action}-${createHash('sha256').update(`${quote.id}:${quote.version}:${action}`).digest('hex').slice(0, 32)}`;
 }
 
+
+/**
+ * Map the durable ledger ID to a PayPal-compliant outbound idempotency header.
+ *
+ * Do NOT shorten/change requestKey(): it is persisted as payment_attempts.request_id
+ * and referenced throughout crash recovery. PayPal's header is <=38 single-byte
+ * characters; the current persisted create/capture keys are 39/40 characters.
+ * This deterministic 144-bit mapping stays stable on restart and is disjoint
+ * across operation types. Never silently retry an UNKNOWN payment POST.
+ */
+export function paypalRequestHeaderId(ledgerRequestId) {
+  failIf(typeof ledgerRequestId !== 'string' ||
+    !/^(?:create|capture)-[0-9a-f]{32}$/.test(ledgerRequestId),
+    'INVALID_LEDGER_REQUEST_ID');
+  return 'p-' + createHash('sha256').update(ledgerRequestId).digest('hex').slice(0,36);
+}
+
 export function planOrder(quote) {
   const cents = approvedAmount(quote);
   return {

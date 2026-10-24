@@ -2,7 +2,7 @@
 // The caller must first atomically claim the operation in the persistent ledger.
 // Only an EXPLICIT injected HTTP implementation is allowed; no implicit global fetch.
 // Never store/log OAuth access tokens or credentials. No Live PayPal capability.
-import { planOrder, planCapture, requestKey, approvedAmount } from './payment_contract.mjs';
+import { planOrder, planCapture, requestKey, approvedAmount, paypalRequestHeaderId } from './payment_contract.mjs';
 
 const BASE = 'https://api-m.sandbox.paypal.com';
 // Bound every OAuth, order and capture request. POST timeout is UNKNOWN, never retried.
@@ -68,7 +68,7 @@ export function createSandboxTransport(options={}) {
     const url=BASE+path;
     const headers={'accept':'application/json'};
     if (token) headers.authorization='Bearer '+token;
-    if (requestId) headers['PayPal-Request-Id']=requestId;
+    if (requestId) headers['PayPal-Request-Id']=paypalRequestHeaderId(requestId);
     if (method==='POST') headers['content-type']=path.includes('/oauth2/')
       ? 'application/x-www-form-urlencoded':'application/json';
     if (path==='/v1/oauth2/token')
