@@ -122,6 +122,10 @@ export function createQuoteApi({ repository, resolveSession, draftProvider } = {
   if (draftProvider !== undefined &&
       (typeof draftProvider !== 'function' || typeof repository.revise !== 'function'))
     throw new TypeError('DRAFT_PROVIDER_AND_REVISION_REPOSITORY_REQUIRED');
+  if(draftProvider?.requiresExternalConsent===true &&
+     (typeof repository.claimAiDraft!=='function'||
+      typeof repository.markAiDraftUnknown!=='function'))
+    throw new TypeError('DURABLE_AI_RESERVATION_REPOSITORY_REQUIRED');
   return async function handleQuoteRequest(request) {
     try {
       if (!(request instanceof Request))
@@ -170,23 +174,33 @@ export function createQuoteApi({ repository, resolveSession, draftProvider } = {
         const externalAI = draftProvider.requiresExternalConsent === true;
         fail(externalAI && data.externalAiConsent !== true,
           'EXTERNAL_AI_CONSENT_REQUIRED',403);
-        // No third-party request without this explicit consent and trusted session.
-        let proposal;
-        try {proposal=await draftProvider({scope:data.scope,currency:quote.currency});}
-        catch {throw new QuoteApiError('DRAFT_PROVIDER_UNAVAILABLE',503);}
-        const expectedSource=externalAI?'GEMINI_API':'OFFLINE_MOCK';
-        fail(!proposal || !Number.isSafeInteger(proposal.suggestedMinor) ||
-          proposal.suggestedMinor < 100 || proposal.suggestedMinor > 1000000 ||
-          proposal.source !== expectedSource,
-        'INVALID_DRAFT_PROVIDER_RESULT', 503);
-        const revised = await repository.revise({
-          id: r.id, actorId: session.actorId, expectedVersion: data.expectedVersion,
-          scope: data.scope, suggestedMinor: proposal.suggestedMinor,
-          suggestionSource: proposal.source,
-        });
-        return reply({quote:revised,provider:expectedSource,
-          warning:externalAI?'AI estimate only; human approval required before payment':
-          'Deterministic demonstration only; not a live AI model'});
+        // Durable one-shot CAS/finite budget, performed before any third-party call.
+        const claimArgs={id:r.id,actorId:session.actorId,
+          expectedVersion:data.expectedVersion};
+        if(externalAI)await repository.claimAiDraft(claimArgs);
+        try{
+          let proposal;
+          try{proposal=await draftProvider({scope:data.scope,currency:quote.currency});}
+          catch{throw new QuoteApiError('DRAFT_PROVIDER_UNAVAILABLE',503);}
+          const expectedSource=externalAI?'GEMINI_API':'OFFLINE_MOCK';
+          fail(!proposal || !Number.isSafeInteger(proposal.suggestedMinor) ||
+            proposal.suggestedMinor < 100 || proposal.suggestedMinor > 1000000 ||
+            proposal.source!==expectedSource,'INVALID_DRAFT_PROVIDER_RESULT',503);
+          const revised=await repository.revise({
+            id:r.id,actorId:session.actorId,expectedVersion:data.expectedVersion,
+            scope:data.scope,suggestedMinor:proposal.suggestedMinor,
+            suggestionSource:proposal.source,
+          });
+          return reply({quote:revised,provider:expectedSource,
+            warning:externalAI?'AI estimate only; human approval required before payment':
+              'Deterministic demonstration only; not a live AI model'});
+        }catch(error){
+          if(externalAI){
+            // Once the call may have started, NEVER release its durable reservation.
+            try{await repository.markAiDraftUnknown(claimArgs);}catch{}
+          }
+          throw error;
+        }
       }
       const data = await parseSmallJson(request);
       fail(data.confirmed !== true, 'EXPLICIT_CONFIRMATION_REQUIRED');

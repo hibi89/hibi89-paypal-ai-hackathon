@@ -12,6 +12,9 @@ const idOk = value => typeof value === 'string' && /^[a-zA-Z0-9_-]{1,64}$/.test(
 const dbSafeText = value => typeof value === 'string' && value.length > 0 && value.length <= 128;
 const clone = v => structuredClone(v);
 
+// Each persistent SQLite file has a deliberately tiny pilot AI request budget.
+// No actual provider transport is enabled by this ledger module.
+const MAX_AI_DRAFT_ATTEMPTS_PER_LEDGER=1;
 const SCHEMA = [
   'CREATE TABLE IF NOT EXISTS quotes (' +
   'id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, merchant_id TEXT NOT NULL,' +
@@ -31,7 +34,12 @@ const SCHEMA = [
   'remote_id TEXT UNIQUE, amount_minor INTEGER NOT NULL, currency TEXT NOT NULL,' +
   'created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, observed_at TEXT,' +
   'UNIQUE (merchant_id, quote_id, quote_version, operation))',
-  'CREATE INDEX IF NOT EXISTS idx_attempts_quote ON payment_attempts(quote_id, quote_version)'
+  'CREATE INDEX IF NOT EXISTS idx_attempts_quote ON payment_attempts(quote_id, quote_version)',
+  'CREATE TABLE IF NOT EXISTS ai_draft_attempts ('+
+  'quote_id TEXT NOT NULL REFERENCES quotes(id),quote_version INTEGER NOT NULL,'+
+  'owner_id TEXT NOT NULL,state TEXT NOT NULL CHECK(state IN (\'RESERVED\',\'UNKNOWN\',\'COMMITTED\')),'+
+  'created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,'+
+  'PRIMARY KEY(quote_id,quote_version))'
 ];
 
 function convertQuote(q) {
@@ -131,6 +139,8 @@ export function createSqliteLedger({ filename } = {}) {
         reject(!row || row.owner_id !== actorId,'QUOTE_NOT_FOUND',404);
         reject(row.version !== expectedVersion,'STALE_QUOTE_VERSION',409);
         reject(row.status !== 'PROPOSED','QUOTE_ALREADY_APPROVED',409);
+        reject(!!stmt('SELECT 1 FROM ai_draft_attempts WHERE quote_id=? AND quote_version=? AND state=\'RESERVED\'').get(id,expectedVersion),
+          'AI_DRAFT_IN_FLIGHT',409);
         const res = stmt('UPDATE quotes SET status=\'APPROVED\',approval_actor=?,' +
           'approval_version=?,approval_amount_minor=? WHERE id=? AND owner_id=?' +
           ' AND version=? AND status=\'PROPOSED\'')
@@ -160,14 +170,70 @@ export function createSqliteLedger({ filename } = {}) {
           'CONTRACT_EXISTS',409);
         reject(!!stmt('SELECT 1 AS found FROM payment_attempts WHERE quote_id=? LIMIT 1')
           .get(id), 'PAYMENT_ATTEMPT_EXISTS', 409);
+        const ai=stmt('SELECT state FROM ai_draft_attempts WHERE quote_id=? AND quote_version=?')
+          .get(id,expectedVersion);
+        if(suggestionSource==='GEMINI_API')
+          reject(ai?.state!=='RESERVED','AI_DRAFT_CLAIM_REQUIRED',409);
+        else reject(ai?.state==='RESERVED','AI_DRAFT_IN_FLIGHT',409);
         const done = stmt('UPDATE quotes SET version=version+1, status=\'PROPOSED\',' +
           'approval_actor=NULL,approval_version=NULL,approval_amount_minor=NULL,' +
           'scope_text=?,suggestion_source=?,ai_suggested_minor=?' +
           ' WHERE id=? AND owner_id=? AND version=?')
           .run(scope, suggestionSource, suggestedMinor, id, actorId, expectedVersion);
         reject(done.changes !== 1, 'REVISION_CONFLICT', 409);
+        if(suggestionSource==='GEMINI_API'){
+          const commit=stmt('UPDATE ai_draft_attempts SET state=\'COMMITTED\''+
+            ' WHERE quote_id=? AND quote_version=? AND owner_id=? AND state=\'RESERVED\'')
+            .run(id,expectedVersion,actorId);
+          reject(commit.changes!==1,'AI_DRAFT_COMMIT_CONFLICT',409);
+        }
         return convertQuote(getRow(id));
       });
+    },
+    // Atomically reserve a single potential third-party AI call, before provider HTTP.
+    // A crashed or timed-out reservation is NOT automatically retryable.
+    async claimAiDraft({id,actorId,expectedVersion}={}) {
+      reject(!Number.isSafeInteger(expectedVersion)||expectedVersion<1,
+        'QUOTE_VERSION_REQUIRED');
+      return transaction(()=>{
+        const row=getRow(id);
+        reject(!row || row.owner_id!==actorId,'QUOTE_NOT_FOUND',404);
+        reject(row.version!==expectedVersion,'STALE_QUOTE_VERSION',409);
+        reject(row.status!=='PROPOSED','AI_DRAFT_REQUIRES_PROPOSAL',409);
+        reject(!!stmt('SELECT 1 FROM contracts WHERE quote_id=? LIMIT 1').get(id),
+          'CONTRACT_EXISTS',409);
+        reject(!!stmt('SELECT 1 FROM payment_attempts WHERE quote_id=? LIMIT 1').get(id),
+          'PAYMENT_ATTEMPT_EXISTS',409);
+        reject(!!stmt('SELECT 1 FROM ai_draft_attempts WHERE quote_id=? AND quote_version=?')
+          .get(id,expectedVersion),'AI_DRAFT_ALREADY_CLAIMED',409);
+        reject(stmt('SELECT COUNT(*) AS total FROM ai_draft_attempts').get().total
+          >=MAX_AI_DRAFT_ATTEMPTS_PER_LEDGER,'AI_DRAFT_BUDGET_EXHAUSTED',429);
+        stmt('INSERT INTO ai_draft_attempts(quote_id,quote_version,owner_id,state)'+
+          ' VALUES(?,?,?,\'RESERVED\')').run(id,expectedVersion,actorId);
+        return {status:'RESERVED',quoteId:id,quoteVersion:expectedVersion,
+          maxAttemptsPerLedger:MAX_AI_DRAFT_ATTEMPTS_PER_LEDGER};
+      });
+    },
+    async markAiDraftUnknown({id,actorId,expectedVersion}={}) {
+      return transaction(()=>{
+        const row=stmt('SELECT state FROM ai_draft_attempts'+
+          ' WHERE quote_id=? AND quote_version=? AND owner_id=?')
+          .get(id,expectedVersion,actorId);
+        reject(!row,'AI_DRAFT_CLAIM_NOT_FOUND',404);
+        if(row.state==='RESERVED')
+          stmt('UPDATE ai_draft_attempts SET state=\'UNKNOWN\''+
+            ' WHERE quote_id=? AND quote_version=? AND owner_id=? AND state=\'RESERVED\'')
+            .run(id,expectedVersion,actorId);
+        return {state:stmt('SELECT state FROM ai_draft_attempts'+
+          ' WHERE quote_id=? AND quote_version=? AND owner_id=?')
+          .get(id,expectedVersion,actorId).state};
+      });
+    },
+    async getAiDraftAttempt({id,expectedVersion}={}) {
+      const row=stmt('SELECT quote_id,quote_version,state,created_at FROM ai_draft_attempts'+
+        ' WHERE quote_id=? AND quote_version=?').get(id,expectedVersion);
+      return row?{quoteId:row.quote_id,quoteVersion:row.quote_version,
+        state:row.state,createdAt:row.created_at}:null;
     },
     // Atomically occupies each quote/version/merchant operation once, forever.
     // A duplicate NEVER reissues provider POST; it must reconcile via PayPal GET.
