@@ -2,7 +2,7 @@
   "schema_version": 1,
   "updated_kst": "2026-10-24",
   "scope": "Per-day verified acceptance; NOT entire PayPal hackathon project percent",
-  "active_day_id": "PPL-D03",
+  "active_day_id": "PPL-D05",
   "reporting_mode": "mandatory_after_each_actual_work_session",
   "days": [
     {
@@ -147,6 +147,116 @@
           "id": "FREE_AI_ACTUAL_CALL",
           "weight_pct": 20,
           "state": "BLOCKED",
+          "evidence": null
+        }
+      ]
+    },
+    {
+      "day_id": "PPL-D04",
+      "scheduled_date_kst": "2026-10-28",
+      "executed_date_kst": "2026-10-24",
+      "scope": "AI quote draft and explicit human approval UI; mock-only forward development",
+      "status": "OFFLINE_IMPL_PASS_REAL_AI_BLOCKED",
+      "estimated_total_hours": 4,
+      "safe_total_hours": 8,
+      "percent_complete": 80,
+      "estimated_remaining_hours": 2,
+      "safe_remaining_hours": 4,
+      "actual_elapsed_hours": null,
+      "actual_elapsed_note": "NOT_MEASURED. Remaining hands-on time only after a validated free AI account; waiting UNKNOWN.",
+      "carryover": [
+        "Actual free AI generation & accuracy/limits test when D03 access is available"
+      ],
+      "limitations": [
+        "Provider is OFFLINE_MOCK deterministic estimator, not AI",
+        "Local loopback browser UI only, no production auth/host",
+        "Actual free AI account/access/real API testing unavailable"
+      ],
+      "checklist": [
+        {
+          "id": "MOCK_DRAFT_PROVIDER",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "src/quote_draft.mjs; src/quote_api.mjs @ ee0427e8a6c4ef22904e671f70cfa59120c009dc; synthetic tests"
+        },
+        {
+          "id": "VERSIONED_APPROVAL_INVALIDATION",
+          "weight_pct": 30,
+          "state": "VERIFIED",
+          "evidence": "src/sqlite_ledger.mjs + tests/quote_draft.test.mjs @ ee0427e8a6c4ef22904e671f70cfa59120c009dc; old approval reset, edits blocked after payment claim"
+        },
+        {
+          "id": "LOOPBACK_UI_HTTP_E2E",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "web/offline_demo.html, web/demo_client.js, src/offline_demo_server.mjs; tests/offline_demo_server.test.mjs @ 3765bf20ce627031ec097c2f95c85de5a8eda361"
+        },
+        {
+          "id": "MOCK_CI_VERIFIED",
+          "weight_pct": 10,
+          "state": "VERIFIED",
+          "evidence": "GitHub Actions 40065235436 success; 40065142461 first failed due to Host test then corrected"
+        },
+        {
+          "id": "REAL_FREE_AI_PROVIDER",
+          "weight_pct": 20,
+          "state": "BLOCKED",
+          "evidence": null
+        }
+      ]
+    },
+    {
+      "day_id": "PPL-D05",
+      "scheduled_date_kst": "2026-10-29",
+      "executed_date_kst": "2026-10-24",
+      "scope": "PayPal Sandbox-only OAuth/Orders create/GET/capture adapter; real API access remains blocked",
+      "status": "OFFLINE_TRANSPORT_PASS_WORKFLOW_PENDING",
+      "estimated_total_hours": 5,
+      "safe_total_hours": 10,
+      "percent_complete": 75,
+      "estimated_remaining_hours": 2.5,
+      "safe_remaining_hours": 5,
+      "actual_elapsed_hours": null,
+      "actual_elapsed_note": "NOT_MEASURED. Hands-on estimates exclude external credentials/permissions wait.",
+      "carryover": [
+        "Backend ledger-to-Sandbox orchestration, real verified GET after capture, unknown recovery integration",
+        "Actual Sandbox OAuth/order/buyer approval/capture awaits private D03 account access"
+      ],
+      "limitations": [
+        "All responses mocked by injected fetch, no real PayPal API network requests",
+        "Payment HTTP routes still explicitly return 503",
+        "Transport claim object requires trusted server orchestration; cannot use standalone for public payment",
+        "Real merchant/payee matching and signed provider/Browser approval still unverified"
+      ],
+      "checklist": [
+        {
+          "id": "SANDBOX_OAUTH_ALLOWLIST",
+          "weight_pct": 15,
+          "state": "VERIFIED",
+          "evidence": "src/paypal_sandbox_transport.mjs @ 7e1b7ee8de5a6cdfee7f21560ff97f0d3c6760b2; cannot select live URL; mock OAuth auth"
+        },
+        {
+          "id": "CREATE_ORDER_WITH_FIRST_CLAIM",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "tests/paypal_sandbox_transport.test.mjs @ 7e1b7ee8de5a6cdfee7f21560ff97f0d3c6760b2; request ID, amount; no calls without injected claim"
+        },
+        {
+          "id": "ORDER_GET_AND_LINK_GUARDS",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "tests/paypal_sandbox_transport.test.mjs; amount/reference mismatch and non-Sandbox approval link rejected"
+        },
+        {
+          "id": "CAPTURE_AND_AMBIGUOUS_NO_RETRY",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "tests/paypal_sandbox_transport.test.mjs; payer approved by GET, distinct capture request ID; timeout unknown, no blind retry"
+        },
+        {
+          "id": "END_TO_END_LEDGER_RECONCILIATION",
+          "weight_pct": 25,
+          "state": "PENDING",
           "evidence": null
         }
       ]
