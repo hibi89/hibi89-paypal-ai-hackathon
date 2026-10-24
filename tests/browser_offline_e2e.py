@@ -39,6 +39,10 @@ try:
             page.reload()
             expect(page.locator("#message")).to_contain_text("Offline demo ready")
             page.locator("#refresh").click()
+            # A read-only refresh is asynchronous. Do not issue a synthetic
+            # submit while its runOnce guard is still busy: that would test
+            # a dropped click rather than the actual quote draft path.
+            expect(page.locator("#message")).to_contain_text("Read-only GET completed")
             assert not any(method=="POST" for method,_ in requests)
             page.evaluate("""() => {
               const e=document.getElementById('draft-form');
