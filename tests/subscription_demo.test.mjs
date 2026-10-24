@@ -119,8 +119,12 @@ test('D12: local HTTP GET is read-only, POST needs CSRF and exact trusted shape'
   assert.equal((await (await fetch(url)).json()).subscription.version,2);
   assert.equal((await fetch(url+'/actions/fail')).status,405);
   assert.equal((await req('/actions/start',{expectedVersion:2,eventId:'OTHER'})).status,409);
-  assert.equal((await fetch(app.url+'/api/quotes/'+session.quoteId+'/orders',{
-    method:'POST',headers:{'x-csrf-token':session.csrfToken},body:'{}'})).status,503);
+  // No human quote approval exists; upstream quote gate refuses at 409
+  // before the later 503 provider gate. Neither response issues a payment.
+  const order=await fetch(app.url+'/api/quotes/'+session.quoteId+'/orders',{
+    method:'POST',headers:{'x-csrf-token':session.csrfToken},body:'{}'});
+  assert.equal(order.status,409);
+  assert.equal((await order.json()).error,'HUMAN_APPROVAL_REQUIRED');
  }finally{await app.close()}
 });
 test('D12: reviewer cookie cannot change synthetic subscription by role spoofing',async()=>{
