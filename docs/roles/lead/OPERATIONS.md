@@ -36,3 +36,10 @@
 - 이전 '3명 병렬'은 더 이상 유효하지 않음. **PayPal 기능 활성 작업자는 한 번에 단 1명.** 다른 두 작업자는 대기. 전역 3대회(KIC/PayPal/UGREEN)는 각 대회 1명씩 병렬 가능.
 - 신규 지시 전 각 feature HEAD·TO_PAYPAL_LEAD 확인. 이전 작업자 중단→검증/커밋/STATUS·HANDOFF/TO_PAYPAL_LEAD 인수→다음 작업자 1명에게 지시. 각각의 담당자에게 동시 실행 지시를 보내지 않음.
 - 유효 일정 [단일 슬롯 v4.0](../../PAYPAL_EXECUTION_PLAN_20261024.md), 0원 하드캡 그대로. 실제 기능/Devpost/무료 배포 성공은 아직 증명되지 않음.
+
+## 최종 승인 — 2026-10-24: 담당자 채팅 하나 + GitHub 지시서 라우팅
+- **채팅은 총괄 1개 + 순환 작업자 1개**. 기능 담당 3개의 GitHub 브랜치는 유지하되 3개 별도 작업자 채팅을 만들지 않는다. KIC/UGREEN은 별도 프로젝트다.
+- **PayPal 작업자 진입점:** [`WORKER_START_HERE.md`](../../../WORKER_START_HERE.md). **현재 단 하나의 활성 지시:** [`docs/dispatch/ACTIVE_TASK.md`](../../dispatch/ACTIVE_TASK.md). [큐](../../dispatch/QUEUE.md)는 미래 일정일 뿐 작업 지시가 아님. 총괄만 lead 지시서 갱신.
+- **작업자 채팅 동일 세션 재사용:** 매번 lead의 최신 ACTIVE_TASK 조회 → 지정된 feature 브랜치만 코드·테스트·TO_PAYPAL_LEAD·STATUS/HANDOFF 갱신 → 총괄 검수/인수 후 다음 task_ID+branch 발행. 날짜/큐 보고 자동 전환 금지.
+- 최초 `PPL-001` READY, target `feature/quote-payment`: Sandbox 무료 가능성+설계 A/B/계약 v0 및 재현 가능한 증빙. **실행/검증 시작 전**.
+- 구 채팅 3개/담당자별 별도 대화 방식과 충돌하면 **이 최신 GitHub 라우팅 규칙이 우선**. 추가 지출 0원·Live 금지·기능 3개 출품 1개·11/13 05:00 공식 제출 마감 유지.
