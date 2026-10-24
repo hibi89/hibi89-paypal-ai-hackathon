@@ -44,6 +44,7 @@ function verifiedOrder(quote, data, id) {
     !['CREATED','APPROVED','COMPLETED'].includes(data.status) ||
     !Array.isArray(units) || units.length!==1 ||
     units[0]?.reference_id!==quote.id ||
+    (quote.merchantId && units[0]?.payee?.merchant_id!==quote.merchantId) ||
     units[0]?.amount?.currency_code!=='USD' ||
     units[0]?.amount?.value!==(cents/100).toFixed(2),
   'SANDBOX_ORDER_MISMATCH');
@@ -132,6 +133,26 @@ export function createSandboxTransport(options={}) {
     // A successful POST is not payment proof; caller must GET and reconcile.
     return {orderId,paymentState:'UNKNOWN_AWAITING_GET',postStatus:payload.status};
   }
-  return Object.freeze({createOrderOnce,getOrder,captureOnce,
+  // Only a fresh authenticated PayPal GET of the order can prove completion.
+  // Do not trust an order returned by the browser or a capture POST body.
+  async function getCaptureProof(quote,orderId) {
+    const order=await getOrder(quote,orderId);
+    if(order.status!=='COMPLETED') return {order,capture:null};
+    const captures=order.purchase_units?.[0]?.payments?.captures;
+    if(!Array.isArray(captures) || captures.length!==1)
+      return {order,capture:null};
+    const c=captures[0];
+    const merchant=order.purchase_units[0]?.payee?.merchant_id;
+    reject(quote.merchantId && merchant!==quote.merchantId,
+      'SANDBOX_MERCHANT_MISMATCH');
+    reject(!ORDER_ID.test(c?.id) ||
+      c.amount?.currency_code!==quote.currency ||
+      c.amount?.value!==(approvedAmount(quote)/100).toFixed(2),
+    'SANDBOX_CAPTURE_PROOF_MISMATCH');
+    return {order,capture:{
+      id:c.id,orderId:order.id,status:c.status,amount:c.amount,
+    }};
+  }
+  return Object.freeze({createOrderOnce,getOrder,captureOnce,getCaptureProof,
     sandboxBase:BASE,mode:'SANDBOX_ONLY',realAccessTested:false});
 }

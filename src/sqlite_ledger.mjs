@@ -190,6 +190,37 @@ export function createSqliteLedger({ filename } = {}) {
         return {action:'FIRST_CLAIM_ONLY_NO_PROVIDER_CALL',attempt:convertAttempt(attemptRow(rid))};
       });
     },
+    // Persist the remote order id immediately after a trusted, verified GET.
+    // A known CREATED order is NOT paid: keep UNKNOWN and forbid another POST.
+    async recordCreatedOrderFromGet({quoteId,actorId,merchantId,order}) {
+      return transaction(() => {
+        const {quote,cents}=lockedApprovedQuote(quoteId,actorId,merchantId);
+        const unit=order?.purchase_units?.[0];
+        reject(!idOk(order?.id) ||
+          !['CREATED','APPROVED'].includes(order.status) ||
+          !Array.isArray(order.purchase_units) || order.purchase_units.length!==1 ||
+          unit?.reference_id!==quoteId ||
+          unit?.amount?.currency_code!=='USD' ||
+          unit?.amount?.value!==(cents/100).toFixed(2) ||
+          (unit?.payee?.merchant_id !== undefined &&
+            unit.payee.merchant_id !== merchantId),
+        'ORDER_PROOF_MISMATCH',409);
+        const rid=requestKey(quote,'create');
+        const prior=attemptRow(rid);
+        reject(!prior || prior.merchant_id!==merchantId ||
+          prior.amount_minor!==cents, 'CREATE_ATTEMPT_REQUIRED',409);
+        reject(prior.remote_id!==null && prior.remote_id!==order.id,
+          'ORDER_ID_CONFLICT',409);
+        // Never downgrade a previously approved order due to stale remote GET.
+        const desired=prior.state==='APPROVED' || order.status==='APPROVED'
+          ? 'APPROVED' : 'UNKNOWN';
+        stmt('UPDATE payment_attempts SET state=?,remote_id=?,'+
+          'observed_at=CURRENT_TIMESTAMP WHERE request_id=? AND state IN '+
+          '(\'UNKNOWN\',\'IN_FLIGHT\',\'APPROVED\')')
+          .run(desired,order.id,rid);
+        return convertAttempt(attemptRow(rid));
+      });
+    },
     // Called only by trusted BACKEND observer after GET (never browser redirect).
     // This module has no PayPal transport and cannot independently attest the evidence.
     async recordApprovedOrderFromGet({quoteId,actorId,merchantId,order}) {
