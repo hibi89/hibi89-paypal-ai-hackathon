@@ -105,8 +105,11 @@ test('spoofed body actor, merchant, owner and role are invalid and ignored',fixt
     identity.actor('intruder');
     assert.equal((await api(post('/api/contracts',{...createBody(),...injected}))).status,400);
   }
-  identity.actor('reviewer');
+  identity.actor('intruder');
   assert.equal((await api(post('/api/contracts',createBody()))).status,404);
+  identity.actor('reviewer');
+  // Reviewer cannot also be the contract owner; rejected before quote lookup.
+  assert.equal((await api(post('/api/contracts',createBody()))).status,400);
   identity.actor('owner');
   assert.equal((await api(post('/api/contracts',createBody()))).status,201);
   identity.actor('reviewer');
