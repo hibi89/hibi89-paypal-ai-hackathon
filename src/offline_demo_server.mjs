@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createSqliteLedger } from './sqlite_ledger.mjs';
 import { createQuoteApi } from './quote_api.mjs';
+import { createContractApi } from './contract_api.mjs';
 import { createOfflineMockDraftProvider } from './quote_draft.mjs';
 
 const html = readFileSync(new URL('../web/offline_demo.html', import.meta.url), 'utf8');
@@ -24,13 +25,15 @@ export async function startOfflineDemo({ port = 0 } = {}) {
     id: quoteId, ownerId: actorId, merchantId: 'synthetic-merchant',
     version: 1, aiSuggestedMinor: null,
   });
+  const resolveSession = async () => ({ verified:true,actorId,merchantId:'synthetic-merchant',csrfToken });
   const api = createQuoteApi({
     repository: ledger,
     draftProvider: createOfflineMockDraftProvider(),
     // This is intentionally a fixed synthetic demo session bound to 127.0.0.1.
     // Real deployment MUST replace with a verified identity/CSRF cookie provider.
-    resolveSession: async () => ({ verified: true, actorId, csrfToken }),
+    resolveSession,
   });
+  const contractApi = createContractApi({repository:ledger,resolveSession});
   let server;
   server = createServer(async (req, res) => {
     try {
@@ -88,7 +91,8 @@ export async function startOfflineDemo({ port = 0 } = {}) {
       const options={method:req.method,headers:new Headers(req.headers)};
       if (req.method !== 'GET' && req.method !== 'HEAD')
         options.body=Buffer.concat(chunks);
-      const reply=await api(new Request(url,options));
+      const reply=await (path==='/api/contracts'||path.startsWith('/api/contracts/')
+        ? contractApi : api)(new Request(url,options));
       res.writeHead(reply.status, Object.fromEntries(reply.headers));
       res.end(await reply.text());
     } catch {

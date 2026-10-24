@@ -60,7 +60,7 @@ export function createMemoryQuoteRepository(quotes = []) {
     },
   };
 }
-function reply(body, status = 200, headers = {}) {
+export function reply(body, status = 200, headers = {}) {
   return new Response(JSON.stringify(body), {
     status, headers: {
       'content-type': 'application/json; charset=utf-8',
@@ -69,7 +69,7 @@ function reply(body, status = 200, headers = {}) {
     },
   });
 }
-async function parseSmallJson(request) {
+export async function parseSmallJson(request) {
   fail(!/^application\/json(?:\s*;|$)/i.test(
     request.headers.get('content-type') || ''), 'JSON_CONTENT_TYPE_REQUIRED', 415);
   const reader = request.body?.getReader();
