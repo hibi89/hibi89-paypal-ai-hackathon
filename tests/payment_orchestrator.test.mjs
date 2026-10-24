@@ -9,7 +9,7 @@ import { createSandboxPaymentOrchestrator } from '../src/payment_orchestrator.mj
 
 const ctx={quoteId:'q1',actorId:'owner',merchantId:'merchant'};
 function fixture({createLost=false,captureLost=false,invalidAmount=false,merchantMismatch=false,
-  captureMismatch=false}={}){
+  captureMismatch=false,payerActionRequired=false}={}){
   const dir=mkdtempSync(join(tmpdir(),'paypal-orchestration-'));
   const filename=join(dir,'ledger.sqlite');
   let ledger=createSqliteLedger({filename});
@@ -24,12 +24,13 @@ function fixture({createLost=false,captureLost=false,invalidAmount=false,merchan
         return {status:200,json:async()=>({access_token:'TEST_TOKEN',token_type:'Bearer'})};
       if(options.method==='POST' && end('/v2/checkout/orders')){
         if(state.createLost) throw Error('request might have reached remote');
-        return {status:201,json:async()=>({id:'ORDER42',status:'CREATED',links:[
+        return {status:201,json:async()=>({id:'ORDER42',status:payerActionRequired?'PAYER_ACTION_REQUIRED':'CREATED',links:[
           {rel:'payer-action',href:'https://www.sandbox.paypal.com/checkoutnow?token=ORDER42'},
         ]})};
       }
       if(options.method==='GET' && end('/v2/checkout/orders/ORDER42')){
-        const status=state.captured?'COMPLETED':state.buyerApproved?'APPROVED':'CREATED';
+        const status=state.captured?'COMPLETED':state.buyerApproved?'APPROVED':
+          payerActionRequired?'PAYER_ACTION_REQUIRED':'CREATED';
         return {status:200,json:async()=>({
           id:'ORDER42',intent:'CAPTURE',status,
           purchase_units:[{
@@ -182,3 +183,18 @@ test('two concurrent calls to openOrder cause only one create POST',
     // Later safe GET can reconcile; nothing can rerun POST.
     assert.equal((await f.service().openOrder(ctx)).status,'BUYER_APPROVAL_PENDING');
   }));
+
+test('PAYER_ACTION_REQUIRED persists and allows capture only after buyer APPROVED GET',
+ withFixture({payerActionRequired:true},async f=>{
+  const first=await f.service().openOrder(ctx);
+  assert.equal(first.status,'BUYER_APPROVAL_PENDING');
+  assert.equal((await f.ledger().listAttempts('q1'))[0].state,'UNKNOWN');
+  assert.equal((await f.service().captureApproved(ctx)).status,'BUYER_APPROVAL_PENDING');
+  assert.equal(counts(f,'/capture'),0);
+  f.restart();
+  assert.equal((await f.service().openOrder(ctx)).status,'BUYER_APPROVAL_PENDING');
+  assert.equal(counts(f,'/v2/checkout/orders'),1);
+  f.state.buyerApproved=true;
+  assert.equal((await f.service().captureApproved(ctx)).status,'PAID');
+  assert.equal(counts(f,'/capture'),1);
+ }));

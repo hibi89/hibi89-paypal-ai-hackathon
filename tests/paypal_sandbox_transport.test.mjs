@@ -9,7 +9,7 @@ const claim=operation=>({action:'FIRST_CLAIM_ONLY_NO_PROVIDER_CALL',attempt:{
   requestId:requestKey(q,operation),
   amountMinor:1500,currency:'USD',state:'IN_FLIGHT'}});
 function stub({getStatus='CREATED',value='15.00',linkHost='www.sandbox.paypal.com',
-  failAt=null,getOverride=null,approvalHref=null}={}) {
+  failAt=null,getOverride=null,approvalHref=null,createStatus='CREATED'}={}) {
   const calls=[];
   const transport=createSandboxTransport({
     clientId:'SYNTHETIC_TEST_ID',clientSecret:'SYNTHETIC_TEST_SECRET',
@@ -21,7 +21,7 @@ function stub({getStatus='CREATED',value='15.00',linkHost='www.sandbox.paypal.co
         return {status:200,json:async()=>({access_token:'SYNTHETIC_TOKEN',token_type:'Bearer'})};
       if(options.method==='POST'&&url.endsWith('/v2/checkout/orders'))
         return {status:201,json:async()=>({
-          id:'ORDER0001',status:'CREATED',links:[{
+          id:'ORDER0001',status:createStatus,links:[{
             rel:'payer-action',href:approvalHref??'https://'+linkHost+'/checkoutnow?token=ORDER0001',
           }],
         })};
@@ -209,4 +209,21 @@ test('real PayPal approval link may contain harmless metadata but token stays ti
  const result=await transport.createOrderOnce(q,claim('create'));
  assert.equal(result.payerUrl,url);
  assert.equal(result.paymentState,'NOT_PAID');
+});
+
+test('PAYER_ACTION_REQUIRED after create is buyer-pending, cannot initiate capture',async()=>{
+ const {transport,calls}=stub({createStatus:'PAYER_ACTION_REQUIRED',
+  getStatus:'PAYER_ACTION_REQUIRED'});
+ const x=await transport.createOrderOnce(q,claim('create'));
+ assert.equal(x.orderStatus,'PAYER_ACTION_REQUIRED');
+ assert.equal(x.paymentState,'NOT_PAID');
+ await assert.rejects(transport.captureOnce(q,claim('capture'),'ORDER0001'),
+  {code:'PAYPAL_APPROVAL_REQUIRED'});
+ assert.equal(calls.filter(c=>c.url.endsWith('/capture')).length,0);
+});
+test('unknown provider order status is not silently treated as buyer approval',async()=>{
+ const {transport,calls}=stub({getStatus:'MADE_UP_STATUS'});
+ await assert.rejects(transport.createOrderOnce(q,claim('create')),
+  {code:'SANDBOX_ORDER_MISMATCH'});
+ assert.equal(calls.filter(c=>c.url.endsWith('/capture')).length,0);
 });

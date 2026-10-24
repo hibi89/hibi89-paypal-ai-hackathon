@@ -286,3 +286,19 @@ test('capture GET cannot persist PAID without nested matching capture proof',wit
     'IN_FLIGHT');
  }finally{db.close();}
 }));
+
+test('buyer-action-required GET remains durable UNKNOWN, capture cannot be claimed',withDb(async e=>{
+ const db=e.open();
+ try{
+  await seed(db);await approve(db);await db.claimOperation(claim());
+  const pending=await db.recordCreatedOrderFromGet({
+   ...claim(),order:order('PAYER_ACTION_REQUIRED')});
+  assert.equal(pending.state,'UNKNOWN');
+  assert.equal(pending.remoteId,'ORDER001');
+  await assert.rejects(db.claimOperation(claim('capture')),
+   {code:'REMOTE_ORDER_APPROVAL_REQUIRED'});
+  await assert.rejects(db.recordApprovedOrderFromGet({
+   ...claim(),order:order('PAYER_ACTION_REQUIRED')}),
+   {code:'ORDER_PROOF_MISMATCH'});
+ }finally{db.close();}
+}));

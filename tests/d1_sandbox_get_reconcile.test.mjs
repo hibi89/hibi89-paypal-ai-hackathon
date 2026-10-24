@@ -227,3 +227,14 @@ test('invalid quote version is rejected before remote call',using(async f=>{
  {code:'INVALID_RECONCILIATION_INPUT'});
  assert.equal(getAttempt(x).state,'IN_FLIGHT');
 }));
+
+test('PAYER_ACTION_REQUIRED GET is pending and cannot CAS-approve a create attempt',using(async f=>{
+ const x=await claimed(f);bindOrderId(x);
+ const transport={mode:'SANDBOX_ONLY',
+  async getOrder(){return order('PAYER_ACTION_REQUIRED')},
+  async getCaptureProof(){throw Error('GET capture never expected')}};
+ const result=await backend(x.db,transport).refreshOrder({...ids,request:{}});
+ assert.equal(result.status,'BUYER_APPROVAL_PENDING_NO_POST');
+ assert.equal(result.ledgerState,'IN_FLIGHT');
+ assert.equal(getAttempt(x).state,'IN_FLIGHT');
+}));
