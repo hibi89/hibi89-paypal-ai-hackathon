@@ -1,3 +1,5 @@
+> **통합 수뇌부 직접 전달 (2026-10-24 사용자 지시):** [상위 감독 시정·우선순위 메시지](docs/FROM_HACKATHON_COMMAND.md)를 **매 신규 채팅·각 주요 작업 전 필독**. 사용자 지시로 GitHub에 직접 게시된 **상위 총괄 감사 의견**이며 현행 단일 진도 JSON, `LEAD_ACTIVE_WORK.md`, 실제 CI·원격 최신 HEAD보다 *진행 숫자*의 우선순위가 높지 않다. 필수 요건/제출 권한 변경 없이 지적의 수용·반론·시정 증거를 `TO_HACKATHON_LEAD.md`에 남길 것. 자동 채팅 간 전달이 아닌 GitHub 정적 지시다.
+
 # PayPal AI Hackathon — single prompt resume / 2026-10-24
 <!-- resume: day_id=PPL-D14; percent=0; est_h=4; safe_h=10 -->
 
