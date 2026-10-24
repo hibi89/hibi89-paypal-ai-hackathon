@@ -35,7 +35,7 @@
 
 ## 2026-10-24 KST — 사용자 승인: PayPal 0원/B안 실행계획 확정
 - **확정 운영 의사결정:** ① 추가 현금 지출 0원(유료 전환/카드 등록/Live 결제 금지), ② 결제 실증 우선→세 AI 담당자 병렬 개발 **B안**, ③ AI 견적·결제/납품/구독 3개 기능을 **통합 출품 1개**로 완성 목표, ④ 타 해커톤 일정을 PayPal 개발 기한에 반영하지 않음.
-- **최신 단독 실행계획:** [`docs/PAYPAL_EXECUTION_PLAN_20261024.md`](../../docs/PAYPAL_EXECUTION_PLAN_20261024.md), **비용/무료 한도·차단 계약:** [`docs/ZERO_COST_STACK_AND_GUARDRAILS.md`](../../docs/ZERO_COST_STACK_AND_GUARDRAILS.md). 상대 경로는 저장소 루트 기준이다.
+- **최신 단독 실행계획:** [`docs/PAYPAL_EXECUTION_PLAN_20261024.md`](../../PAYPAL_EXECUTION_PLAN_20261024.md), **비용/무료 한도·차단 계약:** [`docs/ZERO_COST_STACK_AND_GUARDRAILS.md`](../../ZERO_COST_STACK_AND_GUARDRAILS.md). 상대 경로는 저장소 루트 기준이다.
 - Gate: **10/27 실 PayPal Sandbox 결제 POC 및 무료 AI 호출**, **11/02 첫 E2E**, **11/06 기능 동결**, **11/09 제출 후보**, **11/11 조기 제출**, 공식 마감 **11/13 05:00 KST**.
 - **미완료/미검증:** 사용자 PayPal Developer/Sandbox·Cloudflare·Gemini 무료 계정 접근, 3 담당 AI 채팅 실제 배정, 기능 코드·API 호출·CI·배포·영상·Devpost 제출은 아직 검증되지 않음. 계획 승인≠구현/제출 완료.
 - 3명 담당 채팅 배정은 여전히 미확인. feature 브랜치 변경 없이 lead 문서에 명령/일정 기준만 확정. 기술 실제성 미증명.
