@@ -78,7 +78,7 @@ export function createPilotCheckoutSessionStore({filename,now=Date.now}={}){
   const hash=digest(token),row=lookup(hash);
   if(!matches(row,quote,principal,t))deny();
   const proof=Object.freeze({kind:'PERSISTED_PILOT_SESSION_PROOF'});
-  PROOFS.set(proof,Object.freeze({db,lookup,current,principal:{
+  PROOFS.set(proof,Object.freeze({lookup,current,matches,principal:{
     actorId:principal.actorId,merchantId:principal.merchantId},tokenHash:hash,
     fields:snapshot(quote)}));
   return proof;
@@ -101,7 +101,7 @@ export function boundServerSessionFromStoredProof(proof,quote){
  const p=PROOFS.get(proof);
  if(!p||!quote||p.fields.some((x,i)=>x!==snapshot(quote)[i]))deny();
  const t=p.current(),row=p.lookup(p.tokenHash);
- if(!matches(row,quote,p.principal,t))deny();
+ if(!p.matches(row,quote,p.principal,t))deny();
  return Object.freeze({verified:true,actorId:p.principal.actorId,
    merchantId:p.principal.merchantId,checkoutSessionId:row.session_id});
 }
