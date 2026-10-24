@@ -1,3 +1,5 @@
+> **ARCHIVED — NO LONGER EXECUTABLE (2026-10-24 KST):** Participant combined PayPal lead and developer into the SAME chat. Former PPL-001 worker task and any `IN_PROGRESS`/READY markers below are historical; this file DOES NOT authorize a separate worker or a new feature-branch implementation. Go to `docs/roles/lead/LEAD_ACTIVE_WORK.md` and `LEAD_FULLSTACK_PROTOCOL.md` on `lead/paypal`. Do not duplicate prior work.
+
 # PayPal 총괄↔단일 순환 작업자 프로토콜 v1.0
 
 기준일: **2026-10-24 KST**. 사용자 승인: **PayPal 담당자 채팅방 1개**에서 현재 할당된 작업을 수행하며, 총괄이 GitHub의 **단일 활성 지시서**를 갱신하면 같은 작업자 채팅이 다음 브랜치로 이동한다. 과거 '세 담당자 각각 별도 채팅' 운영 규정은 이 프로토콜로 대체한다.

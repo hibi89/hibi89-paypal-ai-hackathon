@@ -1,3 +1,5 @@
+> **CURRENT POLICY / 2026-10-24 KST — PayPal 총괄은 제품 개발·테스트·검수까지 직접 수행하는 유일한 담당자.** 별도 PayPal 공통 작업자 채팅/feature 순환 디스패치를 종료했다. 최신 작업: [LEAD_ACTIVE_WORK](docs/roles/lead/LEAD_ACTIVE_WORK.md); [단일 개발 프로토콜](docs/roles/lead/LEAD_FULLSTACK_PROTOCOL.md). `lead/paypal`이 신규 개발 브랜치이며 이전 feature 브랜치/산출물은 보존·검토 뒤 선택적으로 통합한다. 종전 '작업자 호출' 문구는 이력으로만 해석.
+
 # PayPal AI Hackathon
 
 > **현재 작업자 지시 시스템:** [**WORKER_START_HERE.md**](WORKER_START_HERE.md) → [**ACTIVE_TASK.md**](docs/dispatch/ACTIVE_TASK.md) → [PROTOCOL](docs/dispatch/PROTOCOL.md). **작업자 채팅 1개만 사용**, GitHub가 현재 대상 브랜치를 지정한다. 현재 활성 작업 **PPL-001 / quote-payment / READY**.

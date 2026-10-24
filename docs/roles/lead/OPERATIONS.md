@@ -43,3 +43,11 @@
 - **작업자 채팅 동일 세션 재사용:** 매번 lead의 최신 ACTIVE_TASK 조회 → 지정된 feature 브랜치만 코드·테스트·TO_PAYPAL_LEAD·STATUS/HANDOFF 갱신 → 총괄 검수/인수 후 다음 task_ID+branch 발행. 날짜/큐 보고 자동 전환 금지.
 - 최초 `PPL-001` READY, target `feature/quote-payment`: Sandbox 무료 가능성+설계 A/B/계약 v0 및 재현 가능한 증빙. **실행/검증 시작 전**.
 - 구 채팅 3개/담당자별 별도 대화 방식과 충돌하면 **이 최신 GitHub 라우팅 규칙이 우선**. 추가 지출 0원·Live 금지·기능 3개 출품 1개·11/13 05:00 공식 제출 마감 유지.
+
+
+## 2026-10-24 KST — 최신: 사용자 지시 1개 총괄·개발 통합 체계
+- PayPal은 **별도 개발 작업자 채팅을 폐기**, 이 총괄 채팅이 직접 아키텍처/코딩/테스트/검수/통합/제출을 수행. KIC·UGREEN도 동일, 통합 총괄 포함 총 **4개 채팅**.
+- 신규 작업 브랜치는 `lead/paypal` 단일 기본. feature/quote-payment, feature/delivery, feature/subscriptions는 원본 이력/증거로 보존, 삭제·force push 금지. 합격 증거를 확인한 소스만 안전히 현재 lead 코드와 병합, `main`은 별도 테스트 후 안정화 통합.
+- **중단 인계 점:** 기존 PPL-001 작업자는 `feature/quote-payment@876d7d1b5935b91e6baddea36abdb8e50602c4fb`에서 `READY_FOR_REVIEW` 보고. `src/payment_contract.mjs`, `tests/payment_contract.test.mjs`, `docs/technical/PPL_001_FEASIBILITY_AND_ARCHITECTURE.md` 작성, **오프라인 Node 테스트 11 PASS/0 FAIL 보고**. 실제 PayPal Sandbox OAuth/Orders/capture는 **접근권한 부재로 NOT_TESTED**. 총괄 독립 검수/합병은 미완료.
+- 이전 `docs/dispatch/ACTIVE_TASK.md`·`PROTOCOL.md`·작업자 입문 문서는 과거 이력으로만 보관하고 새 작업 권한 없음. 최신 작업은 `docs/roles/lead/LEAD_ACTIVE_WORK.md`, 실행 기준은 `LEAD_FULLSTACK_PROTOCOL.md`. PPL-002 임의 자동 시작 금지.
+- PayPal Live 결제, 유료 API/호스팅, 민감정보 전송, 인가 변경 불가(사용자 사전 승인). 공식 제출 2026-11-13 05:00 KST, 내부 11/11 목표. 기존 문서 기준 `lead/paypal@2fb4eaabd3f572330e34b2406f532ce51b780361`, `main@b58533ac7e632706a95d807de5ced6497b5e46b0`. 새 커밋 원격 확인 필요.

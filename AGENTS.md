@@ -1,3 +1,5 @@
+> **CURRENT POLICY / 2026-10-24 KST — PayPal 총괄은 제품 개발·테스트·검수까지 직접 수행하는 유일한 담당자.** 별도 PayPal 공통 작업자 채팅/feature 순환 디스패치를 종료했다. 최신 작업: [LEAD_ACTIVE_WORK](docs/roles/lead/LEAD_ACTIVE_WORK.md); [단일 개발 프로토콜](docs/roles/lead/LEAD_FULLSTACK_PROTOCOL.md). `lead/paypal`이 신규 개발 브랜치이며 이전 feature 브랜치/산출물은 보존·검토 뒤 선택적으로 통합한다. 종전 '작업자 호출' 문구는 이력으로만 해석.
+
 # PayPal AI 역할 및 공통 운영 규칙
 
 - 실제 참가자: 사용자 **1명**. PayPal AI 채팅방은 **총괄 1개 + 순환 작업자 1개**, 작업 feature 브랜치는 3개 유지. 역할 전환은 총괄의 ACTIVE_TASK 지시로만.

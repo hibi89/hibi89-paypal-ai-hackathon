@@ -1,3 +1,5 @@
+> **ARCHIVED — NO LONGER EXECUTABLE (2026-10-24 KST):** Participant combined PayPal lead and developer into the SAME chat. Former PPL-001 worker task and any `IN_PROGRESS`/READY markers below are historical; this file DOES NOT authorize a separate worker or a new feature-branch implementation. Go to `docs/roles/lead/LEAD_ACTIVE_WORK.md` and `LEAD_FULLSTACK_PROTOCOL.md` on `lead/paypal`. Do not duplicate prior work.
+
 # ACTIVE TASK — PayPal 단일 담당자 실행 지시 (현재 단 한 건)
 
 > **총괄 전용 수정** · 2026-10-24 KST 발행 · **작업자 채팅에서 매번 원격 최신 본문 재조회** · 계획 발행과 실제 작업 시작/완료는 다름.
