@@ -32,3 +32,8 @@ PPL-003 계약/납품·마일스톤 → PPL-004 구독/웹훅 → PPL-005 통합
 - **Day1 10/25 scheduled block executed early by user ㄱ:** `src/quote_api.mjs`, `tests/quote_api.test.mjs`, [API technical contract](../../technical/PPL_002_DAY1_API_CONTRACT.md). Human approval POST and no-side-effect GET implemented. Existing 11 + new 23 synthetic tests, GitHub Actions [40063789450](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40063789450) success on code SHA `9fa2084e27995ec7d77e5907c2390246f13f4150`.
 - **Safety:** quote repo only volatile test fixture; all payment POST blocked, real Sandbox/OAuth/AI/Browser/Production/Devpost still untested. No cross-process durable idempotency claimed. Day1 4h expected / 8h reserve are planned estimates, NOT measured actual.
 - **NOW NEXT: Day2 (10/26 slot), 5h expected / 9h reserved:** design+implement durable SQLite or D1 storage, UNIQUE key and transactional CAS for single-claim operations; persist approved snapshot and payment attempt state; concurrency/restart tests; don't enable PayPal transport before proof. Keep real auth/region/API prerequisites transparent.
+
+## 2026-10-24 KST — 일차별 100% 진행률·남은 시간 필수 기록 규칙
+- [일일 진척/잔여시간 정책](../../DAILY_PROGRESS_REPORTING.md) / [검증 근거 JSON 원장](../../../data/paypal_daily_progress.json). **앞으로 매 실제 작업 종료 보고에 '그날 X%/100%, 남은 예상 Y시간, 남은 안전 확보 Z시간, 실측 여부, 완료·미완료·이월' 필수**. 분모는 당일 인수 기준만; 프로젝트 전체와 다름.
+- 1일차(10/25 작업을 10/24 조기 실행) **100%/100%, 잔여 예상 0시간·안전 잔여 0시간** (오프라인 quote API 부분 범위만). 2일차(10/26 계획) **0%/100%, 잔여 예상 5시간·안전 잔여 9시간** (현재 NOT_STARTED). 실제 경과시간 NOT_MEASURED.
+- 퍼센트는 근거 확인된 항목의 가중치 합계로 계산한다. 예상보다 오래 걸려도 시간을 쓴 것만으로 완료% 상승하지 않는다. 새 회귀 검증 테스트를 추가했다. PayPal 실 Sandbox·AI·Production·Devpost 제출 미검증 유지.

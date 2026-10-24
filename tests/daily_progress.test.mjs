@@ -1,0 +1,33 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+const ledger = JSON.parse(readFileSync(new URL('../data/paypal_daily_progress.json', import.meta.url), 'utf8'));
+test('daily status ledger has a tracked active day', () => {
+  assert.equal(ledger.schema_version, 1);
+  assert.ok(ledger.days.length >= 1);
+  assert.ok(ledger.days.some(d => d.day_id === ledger.active_day_id));
+});
+test('each day contains exactly 100% of acceptance criteria and evidence-backed progress', () => {
+  for (const d of ledger.days) {
+    assert.match(d.day_id, /^PPL-D\d+$/);
+    assert.equal(new Set(d.checklist.map(c => c.id)).size, d.checklist.length);
+    assert.ok(d.checklist.length >= 3 && d.checklist.length <= 8);
+    assert.equal(d.checklist.reduce((a,c) => a + c.weight_pct, 0), 100);
+    for (const c of d.checklist) {
+      assert.ok(Number.isInteger(c.weight_pct) && c.weight_pct > 0);
+      assert.ok(['VERIFIED','PENDING','FAILED','BLOCKED'].includes(c.state));
+      if(c.state === 'VERIFIED') assert.ok(typeof c.evidence === 'string' && c.evidence.length >= 12);
+    }
+    assert.equal(d.percent_complete, d.checklist.filter(c=>c.state==='VERIFIED').reduce((a,c)=>a+c.weight_pct,0));
+    assert.ok(d.percent_complete >= 0 && d.percent_complete <= 100);
+  }
+});
+test('time estimates are separate from measured elapsed and cannot be negative', () => {
+  for (const d of ledger.days) {
+    assert.ok(d.estimated_total_hours > 0 && d.safe_total_hours >= d.estimated_total_hours);
+    for (const key of ['estimated_remaining_hours','safe_remaining_hours','actual_elapsed_hours'])
+      assert.ok(d[key] === null || Number.isFinite(d[key]) && d[key] >= 0);
+    if (d.percent_complete === 100) { assert.equal(d.estimated_remaining_hours, 0); assert.equal(d.safe_remaining_hours, 0); }
+    if (d.status === 'NOT_STARTED') { assert.equal(d.percent_complete, 0); assert.equal(d.estimated_remaining_hours,d.estimated_total_hours); assert.equal(d.safe_remaining_hours,d.safe_total_hours); }
+  }
+});

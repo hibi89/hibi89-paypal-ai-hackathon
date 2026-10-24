@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "updated_kst": "2026-10-24",
+  "scope": "Per-day verified acceptance; NOT entire PayPal hackathon project percent",
+  "active_day_id": "PPL-D02",
+  "reporting_mode": "mandatory_after_each_actual_work_session",
+  "days": [
+    {
+      "day_id": "PPL-D01",
+      "scheduled_date_kst": "2026-10-25",
+      "executed_date_kst": "2026-10-24",
+      "scope": "Quote read-only GET; explicit human-approved POST; offline API security validation",
+      "status": "DAY1_OFFLINE_ACCEPTED",
+      "estimated_total_hours": 4,
+      "safe_total_hours": 8,
+      "percent_complete": 100,
+      "estimated_remaining_hours": 0,
+      "safe_remaining_hours": 0,
+      "actual_elapsed_hours": null,
+      "actual_elapsed_note": "NOT_MEASURED",
+      "carryover": [],
+      "limitations": [
+        "single-process fixture, not durable database",
+        "real PayPal Sandbox, AI, browser, production NOT_TESTED"
+      ],
+      "checklist": [
+        {
+          "id": "READ_ONLY_GET",
+          "weight_pct": 25,
+          "state": "VERIFIED",
+          "evidence": "src/quote_api.mjs @ 9fa2084e27995ec7d77e5907c2390246f13f4150; tests/quote_api.test.mjs"
+        },
+        {
+          "id": "HUMAN_APPROVAL_POST",
+          "weight_pct": 35,
+          "state": "VERIFIED",
+          "evidence": "src/quote_api.mjs @ 9fa2084e27995ec7d77e5907c2390246f13f4150; tests/quote_api.test.mjs"
+        },
+        {
+          "id": "PAYMENT_GATE_CLOSED",
+          "weight_pct": 15,
+          "state": "VERIFIED",
+          "evidence": "src/quote_api.mjs @ 9fa2084e27995ec7d77e5907c2390246f13f4150; no PayPal HTTP"
+        },
+        {
+          "id": "OFFLINE_CI",
+          "weight_pct": 25,
+          "state": "VERIFIED",
+          "evidence": "GitHub Actions run 40063789450 completed success, npm test success; 23 new and 11 existing offline cases"
+        }
+      ]
+    },
+    {
+      "day_id": "PPL-D02",
+      "scheduled_date_kst": "2026-10-26",
+      "executed_date_kst": null,
+      "scope": "Durable DB and unique/atomic payment operation claims",
+      "status": "NOT_STARTED",
+      "estimated_total_hours": 5,
+      "safe_total_hours": 9,
+      "percent_complete": 0,
+      "estimated_remaining_hours": 5,
+      "safe_remaining_hours": 9,
+      "actual_elapsed_hours": null,
+      "actual_elapsed_note": "NOT_STARTED",
+      "carryover": [],
+      "limitations": [
+        "No durable ledger, no real PayPal Sandbox authentication"
+      ],
+      "checklist": [
+        {
+          "id": "DURABLE_SCHEMA",
+          "weight_pct": 20,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "APPROVAL_CAS",
+          "weight_pct": 20,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "PAYMENT_ATTEMPT_LEDGER",
+          "weight_pct": 25,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "CONCURRENCY_RESTART",
+          "weight_pct": 25,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "CI_HANDOFF",
+          "weight_pct": 10,
+          "state": "PENDING",
+          "evidence": null
+        }
+      ]
+    }
+  ]
+}

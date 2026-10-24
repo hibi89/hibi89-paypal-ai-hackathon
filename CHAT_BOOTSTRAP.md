@@ -40,3 +40,8 @@
 ## 2026-10-24 KST — Latest PPL-002 Day1 checkpoint (re-query HEAD)
 - Source new `src/quote_api.mjs`, tests `tests/quote_api.test.mjs` (23) + 11 original; CI run 40063789450 success, source SHA 9fa2084e27995ec7d77e5907c2390246f13f4150. Quote GET/explicit POST only, no outbound PayPal transport.
 - **Day1 OFFLINE_ACCEPTED, NEXT Day2 DB transaction/idempotency**, NOT real Sandbox/AI/browser/deployment. Read latest `LEAD_ACTIVE_WORK.md` and day1 technical doc before work; DO NOT switch to old worker dispatcher.
+
+## 2026-10-24 KST — 일차별 100% 진행률·남은 시간 필수 기록 규칙
+- [일일 진척/잔여시간 정책](docs/DAILY_PROGRESS_REPORTING.md) / [검증 근거 JSON 원장](data/paypal_daily_progress.json). **앞으로 매 실제 작업 종료 보고에 '그날 X%/100%, 남은 예상 Y시간, 남은 안전 확보 Z시간, 실측 여부, 완료·미완료·이월' 필수**. 분모는 당일 인수 기준만; 프로젝트 전체와 다름.
+- 1일차(10/25 작업을 10/24 조기 실행) **100%/100%, 잔여 예상 0시간·안전 잔여 0시간** (오프라인 quote API 부분 범위만). 2일차(10/26 계획) **0%/100%, 잔여 예상 5시간·안전 잔여 9시간** (현재 NOT_STARTED). 실제 경과시간 NOT_MEASURED.
+- 퍼센트는 근거 확인된 항목의 가중치 합계로 계산한다. 예상보다 오래 걸려도 시간을 쓴 것만으로 완료% 상승하지 않는다. 새 회귀 검증 테스트를 추가했다. PayPal 실 Sandbox·AI·Production·Devpost 제출 미검증 유지.
