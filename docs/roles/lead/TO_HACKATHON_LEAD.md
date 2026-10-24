@@ -54,3 +54,10 @@
 - **IMPLEMENTED_VERIFIED_OFFLINE:** root LICENSE 상태로 수정된 영어 Windows/Linux 재현 가이드 + `npm run preflight:submission` (실 API·계정 접근 0, 증빙 없으면 exit2). `src/submission_evidence_gate.mjs` + 8 tests. [CI #40088755056](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40088755056) @ `b3f150c6b0e84056eb85534fccd586c08c99fcaa`: Node 259/259, local Chromium, master schedule PASS.
 - **BLOCKED_EXTERNAL:** 실 PayPal/AI 영수증 0, D03 0 BLOCKED, D04 80 PARTIAL, D15 20 PARTIAL, D16/17/18 0 NOT_STARTED. 운영 로그인/공개 URL/촬영 영상/Devpost 제출증도 없음. 사용자 휴대폰 지시 시점이라 PC나 비밀키 조작 요구하지 않음.
 - **NEXT:** 외부 계정 확보·사용자 명시 승인 시 좁은 Sandbox-only OAuth/Gemini Free 실제 응답부터 검증, 이후 주문·승인·캡처/GET + 실 AI 견적 통합 증빙. 승인 전은 GitHub 수준 독립 검수만.
+
+## New official-source directive compliance — 2026-10-24
+- **[OFFICIAL LINK AUDIT](docs/audits/PPL_OFFICIAL_DEVPOST_LINK_AUDIT_20261024.md)**: PayPal Rules, FAQs, Resources, Oct 6 webinar video, official PayPal AI Toolkit/REST/Postman/example, Devpost portfolio modal. **Start project** is needed when the portfolio is empty; importing an existing project is not a blocker. Real PayPal+AI mandatory; **hosting optional** if a judge can run the working app locally; public YouTube demo under three minutes plus English submission and visible MIT license required. Receipt/Sandbox/AI still NOT_TESTED.
+- Developer PayPal notes: Sandbox Business/Personal often auto-generated; outside-US testing may need an account capable of Business testing. No account touched, no token requested.
+- Current `main` vs `lead/paypal` is a future reviewer discovery risk: ensure the final submitted public URL opens the actual latest working branch and license. **No branch promotion made**.
+
+**IMPLEMENTED_VERIFIED (PUBLIC-DOC AUDIT ONLY)**: Rules/FAQ/Resources/recording all crosschecked. **BLOCKED_EXTERNAL** unchanged; real provider proofs 0. **ACCEPTED** P0 first, no mock-first pivot.

@@ -28,3 +28,8 @@
 6. 원장 D03 **0% BLOCKED**, D04 **80% PARTIAL**, D15 **20% PARTIAL** (기본 5h/안전 10h, 실측 null), D16–18 0%. DONE12/PARTIAL2/BLOCKED1/NOT_STARTED3. 작업 종료에 원장·인수인계·상위 보고·Actions SHA 동기화.
 
 **필수 규약:** `docs/RESUME_SYNC_CONTRACT.md`; 원격 원자적 커밋, CI, `MASTER_PROGRESS.md` 재생성, `STATUS.md`·`HANDOFF.md`·상위 답신 동기화. 사용자 지시 [페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈] 또는 `ㄱ`으로 재개.
+
+## 2026-10-24 Official Devpost screenshots/links audit
+- **[OFFICIAL LINK AUDIT](docs/audits/PPL_OFFICIAL_DEVPOST_LINK_AUDIT_20261024.md)**: PayPal Rules, FAQs, Resources, Oct 6 webinar video, official PayPal AI Toolkit/REST/Postman/example, Devpost portfolio modal. **Start project** is needed when the portfolio is empty; importing an existing project is not a blocker. Real PayPal+AI mandatory; **hosting optional** if a judge can run the working app locally; public YouTube demo under three minutes plus English submission and visible MIT license required. Receipt/Sandbox/AI still NOT_TESTED.
+- Developer PayPal notes: Sandbox Business/Personal often auto-generated; outside-US testing may need an account capable of Business testing. No account touched, no token requested.
+- Current `main` vs `lead/paypal` is a future reviewer discovery risk: ensure the final submitted public URL opens the actual latest working branch and license. **No branch promotion made**.
