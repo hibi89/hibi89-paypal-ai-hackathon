@@ -10,6 +10,8 @@
 - [제출 후 심사 접근 유지·수상 대응표](docs/POST_SUBMISSION_JUDGING_PLAN_20261024.md) (PayPal은 별도 공식 본선 개발 단계 없음; 기본 8h·안전 16h, 조건부)
 - [단일 개발 프로토콜](docs/roles/lead/LEAD_FULLSTACK_PROTOCOL.md) · [브랜치 규정](docs/BRANCH_WORKFLOW.md) · [실행 일정](docs/PAYPAL_EXECUTION_PLAN_20261024.md).
 
+- [PPL-002 Day1 code, API/CI evidence](docs/technical/PPL_002_DAY1_API_CONTRACT.md) — 23 new offline tests + 11 existing, CI success; real PayPal/order unavailable.
+
 ## 제품 및 제약
 프리랜서 **AI 견적 → 사람 승인 → PayPal Sandbox 주문·결제 → 계약·마일스톤·납품 → 구독·실패 예외** 통합 작품 1개. 신규 현금 지출 **0원**, Live/유료 API/카드 등록/실 고객 데이터 금지.
 

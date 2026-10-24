@@ -27,3 +27,8 @@ PPL-003 계약/납품·마일스톤 → PPL-004 구독/웹훅 → PPL-005 통합
 ## Stage Two 오해 방지 및 제출 후 조건부 감독
 - PayPal에는 공식 '본선 진출→추가 개발' 전환 지시가 없으며 Stage One 통과 시 기존 제출물의 Stage Two 심사를 받는다. [심사 대응표](../../POST_SUBMISSION_JUDGING_PLAN_20261024.md) 기본 8h / 안전 16h, 제출·작동 데모 완료 후만 적용.
 - 현재 PPL-002 개발 우선순위·11/11 제출 목표·82h/164h 작업표 유지. 제출 후에는 사용 가능 데모/무상 접근·제출본 동결, 심사 기간 대응만; Sandbox/AI/브라우저 성공 미검증은 그대로 기록.
+
+## 2026-10-24 KST — DAY1_OFFLINE_ACCEPTED / CURRENT NEXT DAY2
+- **Day1 10/25 scheduled block executed early by user ㄱ:** `src/quote_api.mjs`, `tests/quote_api.test.mjs`, [API technical contract](../../technical/PPL_002_DAY1_API_CONTRACT.md). Human approval POST and no-side-effect GET implemented. Existing 11 + new 23 synthetic tests, GitHub Actions [40063789450](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40063789450) success on code SHA `9fa2084e27995ec7d77e5907c2390246f13f4150`.
+- **Safety:** quote repo only volatile test fixture; all payment POST blocked, real Sandbox/OAuth/AI/Browser/Production/Devpost still untested. No cross-process durable idempotency claimed. Day1 4h expected / 8h reserve are planned estimates, NOT measured actual.
+- **NOW NEXT: Day2 (10/26 slot), 5h expected / 9h reserved:** design+implement durable SQLite or D1 storage, UNIQUE key and transactional CAS for single-claim operations; persist approved snapshot and payment attempt state; concurrency/restart tests; don't enable PayPal transport before proof. Keep real auth/region/API prerequisites transparent.

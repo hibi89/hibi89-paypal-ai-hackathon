@@ -37,3 +37,10 @@
 ## 2026-10-24 KST — '본선 진출시' PayPal 공식 심사 단계·조건부 작업표
 - PayPal 규정의 Stage One(pass/fail)·Stage Two(심사)은 별도 공식 본선 진출 후 개발 기간이 아니다. **제출 이후 신규 개발 의무/본선 실적 확인 불가**. [제출 이후 11회 접근/장애 대응 작업표 ](docs/POST_SUBMISSION_JUDGING_PLAN_20261024.md)는 **총 예상 8h / 2배 안전 확보 16h**, 심사기간 2026-12-02 07:00~12-16 01:00 KST, 결과 12/22 전후. 비점검일 0h, 실제 장애 시 추가 비상 4~8h 조건부. Devpost 제출 마감 후 출품자료 임의 수정 금지·심사 종료까지 무료 접근 유지.
 - **이 시간표는 공식 제출·작동 데모 확보가 전제**이며 11/11 전 개발표 82h/164h를 대체하지 않는다. PayPal 실 Sandbox·무료 AI·Production·최종 제출은 미검증. 사용자와 통합 해커톤 총괄이 보기 위한 예정안으로서 자동 미래 실행을 보장하지 않는다.
+
+## 2026-10-24 KST — PPL-002 Day1 actual implementation / CI evidence
+- Original date slot: 10/25, invoked by user 10/24. Day1 expected 4h / reserved 8h; actual elapsed wall-clock **NOT_MEASURED**. Do not claim 4h of actual work or an additional free day.
+- **DAY1_OFFLINE_ACCEPTED:** new src/quote_api.mjs + tests/quote_api.test.mjs. GET own quote never writes; POST human-approved version/amount checks, trusted session and CSRF/Origin, replay/foreign owner/stale version rejection. Payment POST explicitly 503 until durable ledger; no provider transport.
+- New 23 synthetic test cases + existing 11 = 34 expected, source commit 9fa2084e27995ec7d77e5907c2390246f13f4150. GitHub Actions run [40063789450](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40063789450): completed/success, Node22/npm test success (job & step verified).
+- NOT_TESTED / NOT_IMPLEMENTED: real PayPal OAuth/Orders, AI API, persistent D1/SQLite, production session verifier, deployed browser and Devpost. No charge performed.
+- **Next work (Day2):** 10/26 planned D1/SQLite database with UNIQUE and atomic CAS; double-submit/restart recovery and payment journal. Expected 5h / reserved 9h, actual pending. Details: [day1 contract](docs/technical/PPL_002_DAY1_API_CONTRACT.md).

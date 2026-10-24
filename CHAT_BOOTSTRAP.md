@@ -36,3 +36,7 @@
 
 ## 제출 후 Stage Two 심사 복원
 - PayPal 공식 별도 본선 재개발 없음. [제출 후 심사·수상 조건부 작업표](docs/POST_SUBMISSION_JUDGING_PLAN_20261024.md)를 읽어 제출 전 실제 개발 계획(82h/164h)과 구분하라. 11/13 마감 이후부터 심사 종료(12/16 01:00 KST)까지 무료 접속·출품본 불변을 확인. 예정 점검 8h/안전 16h는 완료 보장이 아님; 실제 출품·배포 전에는 실행 단계가 아니다.
+
+## 2026-10-24 KST — Latest PPL-002 Day1 checkpoint (re-query HEAD)
+- Source new `src/quote_api.mjs`, tests `tests/quote_api.test.mjs` (23) + 11 original; CI run 40063789450 success, source SHA 9fa2084e27995ec7d77e5907c2390246f13f4150. Quote GET/explicit POST only, no outbound PayPal transport.
+- **Day1 OFFLINE_ACCEPTED, NEXT Day2 DB transaction/idempotency**, NOT real Sandbox/AI/browser/deployment. Read latest `LEAD_ACTIVE_WORK.md` and day1 technical doc before work; DO NOT switch to old worker dispatcher.
