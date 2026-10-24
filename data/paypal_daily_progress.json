@@ -2,7 +2,7 @@
   "schema_version": 1,
   "updated_kst": "2026-10-24",
   "scope": "Per-day verified acceptance; NOT entire PayPal hackathon project percent",
-  "active_day_id": "PPL-D14",
+  "active_day_id": "PPL-D15",
   "reporting_mode": "mandatory_after_each_actual_work_session",
   "days": [
     {
@@ -884,34 +884,32 @@
       "acceptance": "공개 비밀 0건, 심사 재현/영상 시나리오 초안",
       "estimated_total_hours": 4,
       "safe_total_hours": 10,
-      "estimated_remaining_hours": 2,
-      "safe_remaining_hours": 4,
-      "progress_state": "PARTIAL",
-      "percent_complete": 60,
+      "estimated_remaining_hours": 0,
+      "safe_remaining_hours": 0,
+      "progress_state": "DONE",
+      "percent_complete": 100,
       "executed_date_kst": "2026-10-24",
       "actual_elapsed_hours": null,
       "evidence": [
-        "docs/technical/PPL_D14_SECURITY_REPRO_20261024.md; two zero-cost alternatives and guards compared",
-        "GitHub Actions 40079303005 @ 55c0c50a89e094f07e6bc2dec3cb608062aee733: 179/179 Node tests PASS, Chromium loopback E2E PASS, Git tracked secret signature scanner PASS",
-        "GitHub Actions 40079303005 @ 55c0c50a89e094f07e6bc2dec3cb608062aee733: 18-day dashboard --check, Node 179/179, real local Chromium E2E PASS. Prior 40079004250 failed stale day test; 40079230840 failed flaky async browser assertion; both corrected",
-        "src/demo_rate_limit.mjs; tests/public_secret_scan.test.mjs; tests/browser_offline_e2e.py; docs/JUDGE_REPRODUCTION_EN.md"
+        "LICENSE + package.json SPDX MIT + tests/license.test.mjs @ d45b8d5a055cdf236a9a004e165a090d21d467db",
+        "GitHub Actions 40079691820 Node 180/180, Chromium PASS, 18-day progress PASS",
+        "src/demo_rate_limit.mjs; tests/public_secret_scan.test.mjs; docs/JUDGE_REPRODUCTION_EN.md; docs/VIDEO_STORYBOARD_EN.md"
       ],
-      "verified_sha": "55c0c50a89e094f07e6bc2dec3cb608062aee733",
-      "blocker": "공개 OSI LICENSE 종류에 대한 사용자 승인 대기",
+      "verified_sha": "d45b8d5a055cdf236a9a004e165a090d21d467db",
+      "blocker": null,
       "recovery_date_kst": null,
-      "recovery_condition": "MIT 또는 Apache-2.0 등 라이선스 선택 후 루트 LICENSE 반영/검증",
-      "advance_note": "10/24 D14 179 Node·Chromium PASS @ 55c0c50, 2개 CI 오류 수정; 공개 LICENSE 법적 승인 보류.",
-      "status": "D14_OFFLINE_SECURITY_AND_CI_PASS_LICENSE_PENDING",
-      "actual_elapsed_note": "NOT_MEASURED; planned remaining work estimates only. External license approval wait UNKNOWN.",
+      "recovery_condition": null,
+      "advance_note": "10/24 선행 완료: 사용자 MIT 승인, 루트 LICENSE·무결성 테스트, Node 180/180·로컬 Chromium CI PASS; 외부 API/배포 미검증.",
+      "status": "DAY14_OFFLINE_SECURITY_MIT_LICENSE_ACCEPTED",
+      "actual_elapsed_note": "NOT_MEASURED; planned hours are not actual work time",
       "carryover": [
-        "Root public OSI LICENSE pending owner's explicit license choice (MIT vs Apache-2.0); D14 max 60% until approved/tested",
-        "Real Sandbox Business+Personal and real zero-cost AI D03/D04 externally BLOCKED; Production, Devpost NOT_TESTED",
-        "CI 40079004250 stale day test FAIL fixed 624c5ff; CI 40079230840 flaky browser GET/POST timing FAIL fixed 55c0c50; CI 40079303005 PASS"
+        "Real PayPal Sandbox Business+Personal and AI provider remain blocked D03/D04",
+        "Production login, external deployment, actual video and Devpost remain NOT_TESTED"
       ],
       "limitations": [
-        "Loopback-only process-scoped 360 GET/HEAD + 60 other / 60s, not distributed production throttling",
-        "Heuristic tracked secret signature scan PASS is not comprehensive security proof",
-        "Real PayPal, real AI, production identity, public deployment and Devpost NOT_TESTED"
+        "D14 100% is local scope only",
+        "License on lead/paypal; main release not updated",
+        "No actual PayPal/AI/Production proof"
       ],
       "checklist": [
         {
@@ -923,8 +921,8 @@
         {
           "id": "IMPLEMENTATION",
           "weight_pct": 40,
-          "state": "PENDING",
-          "evidence": "Loopback limiter and English reproducer committed and CI-passed; root OSI LICENSE not published until owner approval"
+          "state": "VERIFIED",
+          "evidence": "Owner-approved root MIT LICENSE + package.json SPDX + tests/license.test.mjs; GitHub Actions 40079691820 at d45b8d5a055cdf236a9a004e165a090d21d467db 180/180 Node+Chromium PASS"
         },
         {
           "id": "AUTOMATED_VERIFICATION",
