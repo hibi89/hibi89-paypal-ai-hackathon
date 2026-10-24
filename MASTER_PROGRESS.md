@@ -4,9 +4,9 @@
 > 예정일과 실제 수행일은 별개. DONE은 **그날 정한 검증 범위만** 완료했음을 의미하며 실제 외부 API/운영/제출 성공과 다릅니다.
 > 시간은 예상 작업·별도 안전 예비의 **미사용 작업 배정량**입니다. 외부 승인 대기 및 미계측 실투입시간은 포함하지 않습니다.
 
-**전체 18일 / 완료 10 / 부분 1 / 차단 1 / 미착수 6**
+**전체 18일 / 완료 11 / 부분 1 / 차단 1 / 미착수 5**
 
-**다음 실행 포인터: `PPL-D13`** · 원래 일정: `docs/DAILY_CAPACITY_PLAN_20261024.md`
+**다음 실행 포인터: `PPL-D14`** · 원래 일정: `docs/DAILY_CAPACITY_PLAN_20261024.md`
 
 | ID | 예정일(KST) | 원래 작업 | 상태 | 해당 일 완료율 | 남은 기본 | 남은 예비 | 실제 수행일 | 증거(경로·CI) | 검증 SHA | 회수 목표일 |
 |---|---|---|---|---:|---:|---:|---|---|---|---|
@@ -22,7 +22,7 @@
 | PPL-D10 | 2026-11-03 | Official PayPal Subscriptions and Webhooks support/region/cost feasibility; offline subscription state-machine contract | DONE | 100% | 0h | 0h | 2026-10-24 | Official PayPal https://developer.paypal.com/api/subscriptions/v1, /api/subscriptions/v1/definitions/subscription/, /subscriptions/webhooks/ and /reference/country-codes researched 2026-10-24; region account eligibility NOT_TESTED; docs/technical/PPL_D10_SUBSCRIPTIONS_FEASIBILITY_20261024.md | — | — |
 | PPL-D11 | 2026-11-04 | Offline webhook ingress, signature verification boundary, SQLite event-id idempotency and out-of-order fail closed with synthetic signature tests; real PayPal Sandbox remains blocked | DONE | 100% | 0h | 0h | 2026-10-24 | src/webhook_ingress.mjs @ 8e4d6503: original raw body CRC32(decimal), pinned sandbox cert URL, off-line-only RSA-SHA256 Fetch handler, no automatic service wiring; 17 fixture tests @ 6f5cc754 | 1fbbb56357b3243c2ff45c19f549d49780491ada | — |
 | PPL-D12 | 2026-11-05 | 구독 UI 및 실패·취소·복구 시나리오 | DONE | 100% | 0h | 0h | 2026-10-24 | D12 design/guards: src/subscription_demo_store.mjs + src/subscription_demo_api.mjs; synthetic-only lifecycle with NOT_VERIFIED payment, version CAS/CSRF/trusted owner and forbidden CANCELLED recovery | 80bb6c8442e02bde8247980537cc1efbc05e6698 | — |
-| PPL-D13 | 2026-11-06 | 전체 기능 통합 회귀·주요 결함 수정 | NOT_STARTED | 0% | 6h | 5h | — | — | — | — |
+| PPL-D13 | 2026-11-06 | 전체 기능 통합 회귀·주요 결함 수정 | DONE | 100% | 0h | 0h | 2026-10-24 | D13 design: src/local_integration_readiness.mjs explicitly evaluates approved quote/version/owner/merchant/amount+accepted milestone+synthetic subscription ACTIVE; status LOCAL_DEMO_CANDIDATE only, realPayPal/AI/deployment NOT_TESTED | 673f47a1e47b25197e2a51f1b949024e356d3a25 | — |
 | PPL-D14 | 2026-11-07 | 보안/권한/Rate 제한·LICENSE·영문 자료 초안 | NOT_STARTED | 0% | 4h | 6h | — | — | — | — |
 | PPL-D15 | 2026-11-08 | 무료 호스팅·D1·실제 데모 배포/복구 | NOT_STARTED | 0% | 6h | 6h | — | — | — | — |
 | PPL-D16 | 2026-11-09 | 실제 브라우저 E2E·심사위원 접근 검수 | NOT_STARTED | 0% | 5h | 5h | — | — | — | — |
@@ -47,6 +47,7 @@
 - PPL-D10 (2026-11-03): 예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도.
 - PPL-D11 (2026-11-04): 2026-10-24 선행: 오프라인 합성 RSA Webhook·SQLite 중복 원장·재전송/GET-first 17개 신규 테스트 및 전체 163/163 Node, Chromium CI PASS. 실제 PayPal 서명·HTTPS 수신 NOT_TESTED.
 - PPL-D12 (2026-11-05): 2026-10-24 선행: 구독 모의 UI(활성·실패·복구·취소) SQLite·권한/CSRF 및 실제 로컬 Chromium 171 Node CI PASS. 실제 PayPal 구독/거래/GET 미검증.
+- PPL-D13 (2026-11-06): 2026-10-24 선행: 견적→계약·납품→구독 합성 E2E 통합검증과 read-only 로컬 freeze 후보 판정, Node 175/175+Chromium PASS. 실 PayPal·AI·공개배포/제출 미검증.
 
 ## 운영 의무
 

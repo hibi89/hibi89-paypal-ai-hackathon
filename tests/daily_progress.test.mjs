@@ -109,7 +109,17 @@ test('D06-D10 tracked offline acceptance and D11 webhook guard READY',()=>{
   assert.equal(d13.status,'NOT_STARTED');
   assert.equal(d13.estimated_remaining_hours,6);
   assert.equal(d13.safe_remaining_hours,11);
-  assert.equal(ledger.active_day_id,d13.day_id);
+  assert.equal(d13.percent_complete,100);
+  assert.equal(d13.status,'DAY13_OFFLINE_CROSS_FEATURE_FREEZE_CANDIDATE_ACCEPTED');
+  assert.ok(d13.checklist.every(x=>x.state==='VERIFIED'));
+  assert.equal(d13.estimated_remaining_hours,0);
+  assert.equal(d13.safe_remaining_hours,0);
+  const d14=ledger.days.find(x=>x.day_id==='PPL-D14');
+  assert.equal(d14.percent_complete,0);
+  assert.equal(d14.status,'NOT_STARTED');
+  assert.equal(d14.estimated_remaining_hours,4);
+  assert.equal(d14.safe_remaining_hours,10);
+  assert.equal(ledger.active_day_id,d14.day_id);
   assert.equal(ledger.days.length,18);
   assert.equal(ledger.days.at(-1).day_id,'PPL-D18');
 });

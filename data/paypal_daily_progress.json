@@ -2,7 +2,7 @@
   "schema_version": 1,
   "updated_kst": "2026-10-24",
   "scope": "Per-day verified acceptance; NOT entire PayPal hackathon project percent",
-  "active_day_id": "PPL-D13",
+  "active_day_id": "PPL-D14",
   "reporting_mode": "mandatory_after_each_actual_work_session",
   "days": [
     {
@@ -818,48 +818,62 @@
       "acceptance": "자동테스트·보안·기능 동결 후보, 실패 시 동결 보류",
       "estimated_total_hours": 6,
       "safe_total_hours": 11,
-      "estimated_remaining_hours": 6,
-      "safe_remaining_hours": 11,
-      "progress_state": "NOT_STARTED",
-      "percent_complete": 0,
-      "executed_date_kst": null,
+      "estimated_remaining_hours": 0,
+      "safe_remaining_hours": 0,
+      "progress_state": "DONE",
+      "percent_complete": 100,
+      "executed_date_kst": "2026-10-24",
       "actual_elapsed_hours": null,
-      "evidence": [],
-      "verified_sha": null,
+      "evidence": [
+        "D13 design: src/local_integration_readiness.mjs explicitly evaluates approved quote/version/owner/merchant/amount+accepted milestone+synthetic subscription ACTIVE; status LOCAL_DEMO_CANDIDATE only, realPayPal/AI/deployment NOT_TESTED",
+        "D13 implementation: src/offline_demo_server.mjs GET-only /api/demo/integration with trusted synthetic owner and 404 reviewer, web/integration_client.js + web/offline_demo.html read-only summary and role isolation",
+        "D13 regression: tests/local_integration_readiness.test.mjs 4 tests, Node existing 171+4=175 passed; full quote approval→contract amount lock→reviewer acceptance→subscription failure/recovery/cancel, forged reviewer denied, zero real charge; tests/browser_offline_e2e.py Chromium PASS, CI run 40077804576",
+        "CI 40077804576 completed success at 673f47a1e47b25197e2a51f1b949024e356d3a25: Node 175/175 PASS, Chromium local browser PASS, generated 18-day schedule --check PASS; D13 handoff/schedule final commit CI will be checked separately"
+      ],
+      "verified_sha": "673f47a1e47b25197e2a51f1b949024e356d3a25",
       "blocker": null,
       "recovery_date_kst": null,
       "recovery_condition": null,
-      "advance_note": null,
-      "status": "NOT_STARTED",
-      "actual_elapsed_note": "NOT_STARTED/NOT_MEASURED",
-      "carryover": [],
+      "advance_note": "2026-10-24 선행: 견적→계약·납품→구독 합성 E2E 통합검증과 read-only 로컬 freeze 후보 판정, Node 175/175+Chromium PASS. 실 PayPal·AI·공개배포/제출 미검증.",
+      "status": "DAY13_OFFLINE_CROSS_FEATURE_FREEZE_CANDIDATE_ACCEPTED",
+      "actual_elapsed_note": "NOT_MEASURED. 6h/11h are original planning estimates, not actual measured time.",
+      "carryover": [
+        "D14 security and release checklist: public secrets, permissions, rate limiting, license, and English/demo reproducibility evidence",
+        "D15 deploy is not authorized or proven. D03 real PayPal/AI access and D04 free AI part remain blocked",
+        "D13 UI synthetic cross-feature audit is not a production compliance/security certification"
+      ],
       "limitations": [
-        "Not implemented or tested yet; no real provider or production completion claimed"
+        "D13 acceptance is LOCAL_SYNTHETIC_FREEZE_CANDIDATE, NOT real PayPal production feature freeze or deploy-ready status",
+        "All 3 user flows run on 127.0.0.1 only; user role synthetic; no provider credentials, API calls, hosted authentication, real payments or buyer approval tested",
+        "Real PayPal/AI account region/entitlement still externally blocked by D03 and D04; user approval required for official integration",
+        "Two local SQLite files are separate fixtures; no Cloudflare D1 schema/production multi-process integration or global atomic commit tested",
+        "Local integrations never claim payments from contract acceptance or synthetic subscription activation; real PayPal and production auth remain NOT_TESTED",
+        "No GitHub/Devpost deployment or submission evidence, no real work time measurements"
       ],
       "checklist": [
         {
           "id": "REQUIREMENTS_AND_DESIGN",
           "weight_pct": 20,
-          "state": "PENDING",
-          "evidence": null
+          "state": "VERIFIED",
+          "evidence": "D13 design: src/local_integration_readiness.mjs explicitly evaluates approved quote/version/owner/merchant/amount+accepted milestone+synthetic subscription ACTIVE; status LOCAL_DEMO_CANDIDATE only, realPayPal/AI/deployment NOT_TESTED"
         },
         {
           "id": "IMPLEMENTATION",
           "weight_pct": 40,
-          "state": "PENDING",
-          "evidence": null
+          "state": "VERIFIED",
+          "evidence": "D13 implementation: src/offline_demo_server.mjs GET-only /api/demo/integration with trusted synthetic owner and 404 reviewer, web/integration_client.js + web/offline_demo.html read-only summary and role isolation"
         },
         {
           "id": "AUTOMATED_VERIFICATION",
           "weight_pct": 30,
-          "state": "PENDING",
-          "evidence": null
+          "state": "VERIFIED",
+          "evidence": "D13 regression: tests/local_integration_readiness.test.mjs 4 tests, Node existing 171+4=175 passed; full quote approval→contract amount lock→reviewer acceptance→subscription failure/recovery/cancel, forged reviewer denied, zero real charge; tests/browser_offline_e2e.py Chromium PASS, CI run 40077804576"
         },
         {
           "id": "CI_HANDOFF",
           "weight_pct": 10,
-          "state": "PENDING",
-          "evidence": null
+          "state": "VERIFIED",
+          "evidence": "CI 40077804576 completed success at 673f47a1e47b25197e2a51f1b949024e356d3a25: Node 175/175 PASS, Chromium local browser PASS, generated 18-day schedule --check PASS; D13 handoff/schedule final commit CI will be checked separately"
         }
       ]
     },
