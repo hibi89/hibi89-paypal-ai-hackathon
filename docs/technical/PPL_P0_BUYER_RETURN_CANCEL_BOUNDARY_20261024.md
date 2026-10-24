@@ -18,3 +18,6 @@ Before a real Sandbox order create/approval:
 3. Independent authenticated backend GET checks PayPal order id, merchant, quote, intent CAPTURE, approved amount and status. An explicit CSRF-protected payment capture action plus durable first claim is required before any POST. An authenticated fresh GET showing COMPLETED nested capture is required before PAID.
 4. Cancellation only signifies the browser left checkout. It does not prove that a PayPal order was voided or unpaid and must not wipe an existing payment ledger.
 5. No real PayPal/Gemini calls, public hosting, customer funds or Devpost were used. D03 0% BLOCKED / D04 80% PARTIAL / D15 20% PARTIAL (5h base, 10h safe, elapsed null), D16–18 0.
+
+## Verified GitHub test evidence
+Feature SHA: `c8d364aba216d7456c6002d7b26c29caaf23952f`. [Actions #40103115344](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40103115344): **SUCCESS**, 314/314 Node tests, Chromium localhost integration E2E PASS, master 18-day dashboard PASS. All simulated; no external PayPal, AI, public HTTPS callbacks or user identity validation was executed.
