@@ -167,19 +167,26 @@ export function createQuoteApi({ repository, resolveSession, draftProvider } = {
         fail(typeof data.scope !== 'string' || data.scope.length < 8 ||
           data.scope.length > 500 || /[\u0000-\u0008\u000b-\u001f]/.test(data.scope),
         'INVALID_SCOPE');
-        // Repo CAS always re-checks version/owner and blocks changes after any payment claim.
-        const proposal = await draftProvider({ scope: data.scope, currency: quote.currency });
+        const externalAI = draftProvider.requiresExternalConsent === true;
+        fail(externalAI && data.externalAiConsent !== true,
+          'EXTERNAL_AI_CONSENT_REQUIRED',403);
+        // No third-party request without this explicit consent and trusted session.
+        let proposal;
+        try {proposal=await draftProvider({scope:data.scope,currency:quote.currency});}
+        catch {throw new QuoteApiError('DRAFT_PROVIDER_UNAVAILABLE',503);}
+        const expectedSource=externalAI?'GEMINI_API':'OFFLINE_MOCK';
         fail(!proposal || !Number.isSafeInteger(proposal.suggestedMinor) ||
           proposal.suggestedMinor < 100 || proposal.suggestedMinor > 1000000 ||
-          proposal.source !== 'OFFLINE_MOCK',
+          proposal.source !== expectedSource,
         'INVALID_DRAFT_PROVIDER_RESULT', 503);
         const revised = await repository.revise({
           id: r.id, actorId: session.actorId, expectedVersion: data.expectedVersion,
           scope: data.scope, suggestedMinor: proposal.suggestedMinor,
           suggestionSource: proposal.source,
         });
-        return reply({ quote: revised, provider: 'OFFLINE_MOCK',
-          warning: 'Deterministic demonstration only; not a live AI model' });
+        return reply({quote:revised,provider:expectedSource,
+          warning:externalAI?'AI estimate only; human approval required before payment':
+          'Deterministic demonstration only; not a live AI model'});
       }
       const data = await parseSmallJson(request);
       fail(data.confirmed !== true, 'EXPLICIT_CONFIRMATION_REQUIRED');
