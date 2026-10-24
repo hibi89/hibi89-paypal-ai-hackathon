@@ -16,9 +16,9 @@ git clone https://github.com/hibi89/hibi89-paypal-ai-hackathon.git
 cd hibi89-paypal-ai-hackathon
 git switch lead/paypal
 node --version
+npm run preflight:reviewer
 npm test
 python3 render_master_progress.py --check
-npm run preflight:submission
 npm run demo
 ```
 
@@ -29,15 +29,17 @@ git clone https://github.com/hibi89/hibi89-paypal-ai-hackathon.git
 Set-Location hibi89-paypal-ai-hackathon
 git switch lead/paypal
 node --version
+npm run preflight:reviewer
 npm test
 python render_master_progress.py --check
-npm run preflight:submission
 npm run demo
 ```
 
-**Prerequisites:** Node.js 22 or newer, Git, and Python 3 to check the generated progress dashboard. `npm test` invokes Node's `--experimental-sqlite` local driver and built-in test runner. No PayPal account, API keys, paid plan, additional server or production database is required for this offline walkthrough.
+**Prerequisites:** Node.js **22.5+** (or newer major), Git, and Python 3 to check the generated progress dashboard. Node 22.0–22.4 lacks the built-in experimental `node:sqlite` module used by the demo. `npm test` invokes Node's `--experimental-sqlite` local driver and built-in test runner. No PayPal account, API keys, paid plan, additional server or production database is required for this offline walkthrough.
 
-`npm run preflight:submission` reports **SUBMISSION_BLOCKED_EXTERNAL_EVIDENCE** and intentionally exits code **2**, even when the offline assets all exist. The tool makes zero API calls and does not perform or authorize the final Devpost submission. Its blocked result is expected until verified real provider/entry evidence exists.
+`npm run preflight:reviewer` is the **green local readiness check**. It starts an isolated loopback instance, performs four local **GET-only** smoke requests (page, session, quote, integration), closes its temporary SQLite-backed server and prints `REVIEWER_LOCAL_READY` with **exit 0** on success. No external PayPal/AI calls, paid services, public ports or payment POSTs occur. This result **does not prove** the real providers or final submission. `npm test` then checks Node contracts; `npm run demo` launches the separate interactive page.
+
+**Separately, for contest-entry eligibility only**, run `npm run preflight:submission` when reviewing remaining deliverables. It prints **SUBMISSION_BLOCKED_EXTERNAL_EVIDENCE** and intentionally exits **2**, even when the offline demo works. Do **not** place this expected-blocked command ahead of an automated demo sequence or interpret it as an app startup failure. The command makes zero third-party calls and cannot authorize Devpost submission.
 
 `npm run demo` prints an exact URL similar to `http://127.0.0.1:PORT`. Open **the printed URL**, with your browser on the same computer. Do not publish the Node loopback server behind an internet tunnel, reverse proxy, Cloudflare Worker or public network address. Stop the process with Ctrl+C.
 

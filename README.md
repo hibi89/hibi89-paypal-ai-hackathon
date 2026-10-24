@@ -6,7 +6,7 @@
 
 제품: 모의 견적→인간 승인→계약·마일스톤·납품/검수→합성 구독, GET-only 통합 로컬 데모. 현재 127.0.0.1 전용이며 **실제 결제·실제 AI·공개 서비스·제출 성공이 아님**. 실 PayPal 주문/캡처 POST는 503 차단, 구독도 합성.
 
-실행: Node 22 이상, npm test / npm run demo / python3 render_master_progress.py --check. [English reviewer guide](docs/JUDGE_REPRODUCTION_EN.md) · [video draft](docs/VIDEO_STORYBOARD_EN.md) · [MIT license](LICENSE) · [license decision](docs/LICENSING_DECISION.md). User approved MIT with Copyright (c) 2026 hibi89; package.json SPDX MIT.
+실행: Node 22.5 이상, **npm run preflight:reviewer** (로컬 GET 4개/외부API 0/정상 종료0) → npm test → npm run demo. **npm run preflight:submission** 은 실증/영상/제출 증거가 없어 현재 의도적으로 종료2(실패 아님). python3 render_master_progress.py --check. [English reviewer guide](docs/JUDGE_REPRODUCTION_EN.md) · [video draft](docs/VIDEO_STORYBOARD_EN.md) · [MIT license](LICENSE) · [license decision](docs/LICENSING_DECISION.md). User approved MIT with Copyright (c) 2026 hibi89; package.json SPDX MIT.
 
 브랜치: lead/paypal 개발 정본, main 별도 릴리스, 3개 feature 이력 브랜치 보존. [AGENTS](AGENTS.md), [REQUIREMENTS](REQUIREMENTS.md), [MASTER_PROGRESS](MASTER_PROGRESS.md). 이전 문서/코드의 전체 이력은 Git SHA 31a89d12dad680627c0cefd92ce61928dc6fb337 및 관련 technical 문서로 복원.
 
