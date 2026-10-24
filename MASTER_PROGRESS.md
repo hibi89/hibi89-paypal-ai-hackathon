@@ -46,7 +46,6 @@
 - PPL-D09 (2026-11-02): 예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도.
 - PPL-D10 (2026-11-03): 예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도.
 - PPL-D11 (2026-11-04): 2026-10-24 선행: 오프라인 합성 RSA Webhook·SQLite 중복 원장·재전송/GET-first 17개 신규 테스트 및 전체 163/163 Node, Chromium CI PASS. 실제 PayPal 서명·HTTPS 수신 NOT_TESTED.
-
 - PPL-D12 (2026-11-05): 2026-10-24 선행: 구독 모의 UI(활성·실패·복구·취소) SQLite·권한/CSRF 및 실제 로컬 Chromium 171 Node CI PASS. 실제 PayPal 구독/거래/GET 미검증.
 
 ## 운영 의무
