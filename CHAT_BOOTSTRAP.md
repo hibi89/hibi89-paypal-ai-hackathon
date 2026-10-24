@@ -60,3 +60,10 @@
 - CI: mock 견적 코드 `ee0427e8` [40065041558](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40065041558) 성공; loopback 첫 [40065142461](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40065142461) 실패→Host 테스트 수정 `3765bf20` [40065235436](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40065235436) 성공; Sandbox 전송 `7e1b7ee8` [40065398597](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40065398597) **82 PASS / 0 FAIL** GitHub runner 실로그 직접 확인.
 - 모든 일차 진행률은 [검증 기준 JSON 원장](data/paypal_daily_progress.json)에 분리. 실제 투입시간 **NOT_MEASURED**, 작업 시간을 예산과 동일시 금지. 사용자 승인 없는 실결제·Live·유료·공개 호스팅 없음.
 - **CURRENT NEXT:** PPL-D05의 미완료 원장↔transport 통합/GET 조회 후 UNKNOWN 복구. PPL-D03 실제 Sandbox/AI 게이트는 계속 별도 차단. 하루별 완료 기준을 지운 채 100%로 올리지 말 것.
+
+## 2026-10-24 KST — PPL-D05 결제 원장↔Sandbox mock 전송 통합 완료
+- **5일차 100%/100%**, 해당 일차 남은 예상 **0시간**, 남은 안전 확보 **0시간** — 원장 선점 → 모의 Sandbox POST 1회 → GET 비교 → 수동 승인 mock → 캡처 1회 → 조회 증거 PAID/UNKNOWN 복구 등 **오프라인 통합 테스트만 완료**. [상세](docs/technical/PPL_D05_LEDGER_TRANSPORT_RECONCILIATION.md).
+- Source: `src/sqlite_ledger.mjs`/`src/paypal_sandbox_transport.mjs`/`src/payment_orchestrator.mjs`, tests `tests/payment_orchestrator.test.mjs` (+12 cases). 사전 소스 SHA `13cfdf7`, 통합 SHA `bfd7f64`; [GitHub Actions 40065874692](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40065874692) **95/95 tests PASS** (CI runner 로그 직접 확인).
+- **3일차 0%** (실 PayPal Sandbox·무료 AI 계정 접근 없음, 예상 3h/안전 8h+외부대기 UNKNOWN); **4일차 80%** (실 무료 AI 20% 차단, 예상 2h/안전 4h).
+- **현재 NEXT 6일차 0%/100%**, 남은 예상 **5시간** / 안전 확보 **9시간**. 오프라인 화면 사용자 흐름/새로고침/동시 클릭/권한 차단/로컬 UI 연동 검증. 실 PayPal 거래, 실제 AI API, 생산 배포, 운영 인증/Devpost 출품은 **NOT_TESTED**; 결제 HTTP POST **503 fail-closed** 유지.
+- 전체 프로젝트 완료율과 일별 100% 혼동 금지. 실측 작업 경과시간 `NOT_MEASURED`, 실제 Sandbox/외부 승인 기다림 시간 미계측/미확정. [검증 원장](data/paypal_daily_progress.json) 최신화.

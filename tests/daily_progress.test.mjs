@@ -41,7 +41,7 @@ test('day2 SQLite criteria are all verified, and next day remains blocked at zer
   assert.equal(d3.percent_complete,0);
   assert.equal(d3.estimated_remaining_hours,3);
   assert.equal(d3.safe_remaining_hours,8);
-  assert.equal(ledger.active_day_id,'PPL-D05');
+  assert.equal(ledger.active_day_id,'PPL-D06');
 });
 test('accelerated mock days preserve unmet AI and actual provider criteria',()=>{
   const d4=ledger.days.find(d=>d.day_id==='PPL-D04');
@@ -50,8 +50,18 @@ test('accelerated mock days preserve unmet AI and actual provider criteria',()=>
   assert.equal(d4.estimated_remaining_hours,2);
   assert.equal(d4.safe_remaining_hours,4);
   assert.equal(d4.checklist.find(c=>c.id==='REAL_FREE_AI_PROVIDER').state,'BLOCKED');
-  assert.equal(d5.percent_complete,75);
-  assert.equal(d5.estimated_remaining_hours,2.5);
-  assert.equal(d5.safe_remaining_hours,5);
-  assert.equal(d5.checklist.find(c=>c.id==='END_TO_END_LEDGER_RECONCILIATION').state,'PENDING');
+  assert.equal(d5.percent_complete,100);
+  assert.equal(d5.estimated_remaining_hours,0);
+  assert.equal(d5.safe_remaining_hours,0);
+  assert.equal(d5.checklist.find(c=>c.id==='END_TO_END_LEDGER_RECONCILIATION').state,'VERIFIED');
+});
+test('day5 completion does not disguise the blocked external gate or next-day work',()=>{
+  const d3=ledger.days.find(d=>d.day_id==='PPL-D03');
+  const d6=ledger.days.find(d=>d.day_id==='PPL-D06');
+  assert.equal(d3.percent_complete,0);
+  assert.ok(d3.checklist.some(x=>x.state==='BLOCKED'));
+  assert.equal(d6.percent_complete,0);
+  assert.equal(d6.estimated_remaining_hours,5);
+  assert.equal(d6.safe_remaining_hours,9);
+  assert.equal(ledger.active_day_id,'PPL-D06');
 });

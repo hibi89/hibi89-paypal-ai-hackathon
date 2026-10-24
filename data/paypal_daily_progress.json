@@ -2,7 +2,7 @@
   "schema_version": 1,
   "updated_kst": "2026-10-24",
   "scope": "Per-day verified acceptance; NOT entire PayPal hackathon project percent",
-  "active_day_id": "PPL-D05",
+  "active_day_id": "PPL-D06",
   "reporting_mode": "mandatory_after_each_actual_work_session",
   "days": [
     {
@@ -210,23 +210,26 @@
       "scheduled_date_kst": "2026-10-29",
       "executed_date_kst": "2026-10-24",
       "scope": "PayPal Sandbox-only OAuth/Orders create/GET/capture adapter; real API access remains blocked",
-      "status": "OFFLINE_TRANSPORT_PASS_WORKFLOW_PENDING",
+      "status": "DAY5_OFFLINE_LEDGER_TRANSPORT_ACCEPTED",
       "estimated_total_hours": 5,
       "safe_total_hours": 10,
-      "percent_complete": 75,
-      "estimated_remaining_hours": 2.5,
-      "safe_remaining_hours": 5,
+      "percent_complete": 100,
+      "estimated_remaining_hours": 0,
+      "safe_remaining_hours": 0,
       "actual_elapsed_hours": null,
-      "actual_elapsed_note": "NOT_MEASURED. Hands-on estimates exclude external credentials/permissions wait.",
+      "actual_elapsed_note": "NOT_MEASURED. Planned 5h/10h was not elapsed duration.",
       "carryover": [
-        "Backend ledger-to-Sandbox orchestration, real verified GET after capture, unknown recovery integration",
-        "Actual Sandbox OAuth/order/buyer approval/capture awaits private D03 account access"
+        "Actual real PayPal Sandbox OAuth/merchant/buyer approval/capture/GET evidence remains PPL-D03 blocked",
+        "Production authenticated payment endpoint, tested merchant credentials and public deployment deferred to later integration; payment HTTP routes remain 503"
       ],
       "limitations": [
-        "All responses mocked by injected fetch, no real PayPal API network requests",
-        "Payment HTTP routes still explicitly return 503",
-        "Transport claim object requires trusted server orchestration; cannot use standalone for public payment",
-        "Real merchant/payee matching and signed provider/Browser approval still unverified"
+        "100% means D05 local synthetic transport-ledger orchestration acceptance ONLY, not real Sandbox verification",
+        "Actual PayPal Sandbox OAuth/Orders/merchant/buyer/payment NOT_TESTED, lives in D03",
+        "Mock injected fetch supplies signed-in-like order/capture data; real merchant consent, real GET provenance and remote reliability unverified",
+        "Payment HTTP routes deliberately remain 503 and orchestrator is internal-only, no real card/charges",
+        "Create POST timeout before saving remote order ID remains UNKNOWN requiring manual operator reconciliation; never blind POST retry",
+        "Local SQLite/Node only; D1/Production hosted migration, real auth/session & browser proof not tested",
+        "Actual elapsed wall-clock NOT_MEASURED"
       ],
       "checklist": [
         {
@@ -256,6 +259,58 @@
         {
           "id": "END_TO_END_LEDGER_RECONCILIATION",
           "weight_pct": 25,
+          "state": "VERIFIED",
+          "evidence": "src/payment_orchestrator.mjs & tests/payment_orchestrator.test.mjs @ bfd7f641183d150a685ccb11a30b3b796af6414a; create→persist→GET reconcile→capture once→GET proof→PAID; GitHub Actions 40065874692 95/95 PASS (mock)"
+        }
+      ]
+    },
+    {
+      "day_id": "PPL-D06",
+      "scheduled_date_kst": "2026-10-30",
+      "executed_date_kst": null,
+      "scope": "Quote→human approval→payment-safe user flow validation; browser and security adapter gap review",
+      "status": "NOT_STARTED",
+      "estimated_total_hours": 5,
+      "safe_total_hours": 9,
+      "estimated_remaining_hours": 5,
+      "safe_remaining_hours": 9,
+      "actual_elapsed_hours": null,
+      "actual_elapsed_note": "NOT_STARTED (hands-on estimate; no measured execution)",
+      "percent_complete": 0,
+      "carryover": [],
+      "limitations": [
+        "Local HTML and Node HTTP integration from D04 do not prove real browser user journey or production authentication",
+        "Payment HTTP endpoints remain 503; real Sandbox depends on separate blocked D03",
+        "D06 can test realistic offline UI and claim rejection without external payment credentials; do not re-label D03 tests"
+      ],
+      "checklist": [
+        {
+          "id": "BROWSER_USER_JOURNEY",
+          "weight_pct": 25,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "REFRESH_AND_DOUBLE_CLICK",
+          "weight_pct": 20,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "SESSION_OWNER_SECURITY",
+          "weight_pct": 20,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "PAYMENT_FAIL_CLOSED_IN_UI",
+          "weight_pct": 20,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "CI_HANDOFF",
+          "weight_pct": 15,
           "state": "PENDING",
           "evidence": null
         }
