@@ -24,7 +24,7 @@ strong{font-weight:700}.meta{color:#485972;font-size:.9rem}
 <h1>Freelancer Quote Agent</h1>
 <p class="warning"><strong>Offline demonstration — NOT REAL AI OR PAYPAL.</strong> The price is a deterministic placeholder. No external model or payment is called. This example uses a synthetic user in a loopback-only server; do not deploy it publicly.</p>
 </header>
-<main>
+<main id="demo-main" aria-busy="false">
 <section class="panel" aria-labelledby="current-heading">
 <h2 id="current-heading">Current quote</h2>
 <p id="quote-view">Loading local example…</p>
@@ -35,7 +35,7 @@ strong{font-weight:700}.meta{color:#485972;font-size:.9rem}
 <form id="draft-form">
 <label for="scope">Project scope (synthetic data only)</label>
 <textarea id="scope" rows="3" minlength="8" maxlength="500" required>Build an accessible and responsive freelancer portfolio landing page</textarea>
-<button type="submit">Generate OFFLINE MOCK draft</button>
+<button type="submit" id="draft-submit">Generate OFFLINE MOCK draft</button>
 </form>
 <p class="meta">Editing or replacing a proposal increments the quote version and invalidates previous approval. If a payment was ever claimed for a quote, revisions are blocked.</p>
 </section>
@@ -45,7 +45,7 @@ strong{font-weight:700}.meta{color:#485972;font-size:.9rem}
 <label for="dollars">Approved amount (USD; human chosen, not AI)</label>
 <input id="dollars" type="number" min="1" max="10000" step="0.01" value="50.00" required>
 <label><input id="confirm" type="checkbox" required style="display:inline;width:auto"> I approve this quote version and amount.</label>
-<button type="submit">Approve current quote</button>
+<button type="submit" id="approve-submit">Approve current quote</button>
 </form>
 <p class="meta">PayPal order and capture POST remain disabled until actual Sandbox verification.</p>
 </section>
