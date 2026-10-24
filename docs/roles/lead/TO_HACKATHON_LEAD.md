@@ -29,3 +29,8 @@
 - 10/25~11/11 PayPal 전체 **예상 82h, 보수 확보 164h(2배 수준), 하루 평균 9.1h PayPal 전용**. 세 해커톤 병행과 Sandbox 계정·무료 AI/Cloudflare 의존에 따라 **11/11 조기 제출은 HIGH RISK/안전하지 않음**. 이는 구현 성과가 아니라 계획의 현실성 검수임.
 - 10/24 과거 소요시간은 측정 근거 없어 집계 제외. 4h/day PayPal 가용시 72h로 순작업보다 10h, 안전 확보시간보다 92h 부족. 실제 PayPal 실결제 Sandbox/AI/Production·공식 제출은 미검증. 사용자 승인 없이 3기능 범위·0원/마감 변경하지 않음.
 - 각 총괄은 실제 일일 가용시간·이월·외부 차단·유효 제출 가능성으로 위험 조기 보고 필요. 다른 대회 코드·계획은 이 PayPal 총괄이 수정하지 않음.
+
+## 2026-10-24 KST — Stage Two 규정과 제출 후 조건부 작업표 공시
+- PayPal에는 **공식 '본선 진출→신규 개발' 단계 없음**. Stage One 적합성 pass/fail→Stage Two 기존 제출물 평가. Stage Two를 본선 진출 포트폴리오로 표시 금지. 공식 https://paypalaihackathon.devpost.com/rules
+- [제출 이후 심사 접근 유지·수상 대응 작업표](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/lead/paypal/docs/POST_SUBMISSION_JUDGING_PLAN_20261024.md): 11/13~12/22 전후 **11회 기본 점검 총 8h / 안전 확보 16h**, 대부분 비점검일 0h. 예측불가 장애는 추가 4~8h 예비 필요. 심사 12/02 07:00~12/16 01:00 KST; 결과 12/22 전후(공식 Rules와 일정 발표 **시각 불일치**). 심사 종료까지 무료로 작동하는 앱/재현 경로를 유지하고 마감 후 제출 내용 임의 수정 금지.
+- 기존 제출 전 **82h/164h** 계획과 **별개·후행 조건부**이며, 실 Sandbox/AI/API/배포/Devpost 제출은 현재 미완료. KIC·UGREEN의 별도 본선 개발 계획에 이 표 적용 금지.
