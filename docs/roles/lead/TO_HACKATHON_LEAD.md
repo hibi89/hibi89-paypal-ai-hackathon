@@ -1,5 +1,7 @@
 # PayPal → 3-hackathon Chief (2026-10-24 KST)
 <!-- resume: day_id=PPL-D15; percent=20; est_h=5; safe_h=10 -->
+> **최신 P0 우선순위 반영 — 2026-10-24:** 통합 총괄 [ACTIVE 19:12 지시](docs/FROM_HACKATHON_COMMAND.md) 수용. 실제 PayPal Business/Personal Sandbox + 무료 AI 실증이 출품 최우선 차단. [계정별 안전 설정 안내](docs/technical/PPL_P0_REAL_PROVIDER_UNBLOCK_20261024.md) + `npm run preflight:p0`(로컬 환경변수 이름만 확인·값 미노출·외부호출 0·exit 2) 구현. [GitHub Actions #40086442379](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40086442379) @ `491183ca51f0`: Node **240/240**, 로컬 Chromium 및 일정 검사 PASS. 실제 Provider OAuth/Orders/AI/D1/배포는 **NOT_TESTED**. D03 0% BLOCKED / D04 80% PARTIAL / D15 20% PARTIAL(남은 기본 5h, 안전 10h) 유지.
+
 > **최신 D15 (2026-10-24):** `src/offline_sandbox_d1_harness.mjs`로 Sandbox transport + D1 CAS + 주입된 신원 확인을 **네트워크 없는 합성 HTTP**에서 결합. 신규 13테스트, [Actions #40084869412](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40084869412) @ `b308fad345c8`: **Node 232/232, 로컬 Chromium, 18일 원장 PASS**. 최초 2개 테스트 비교 오류는 수정 후 재검증. **실 PayPal/AI/D1/Cloudflare 미실행**. D15 **20%** / 잔여 기본 **5h**·안전 확보 **10h** / 실측 NOT_MEASURED. [상세](docs/technical/PPL_D15_OFFLINE_TRANSPORT_COMPOSITION_20261024.md).
 
 
@@ -28,3 +30,10 @@
 - **IMPLEMENTED_VERIFIED_OFFLINE_ONLY:** 실제 Sandbox transport 소스의 OAuth/GET 경로를 고정 인메모리 HTTP 응답과 D1-shaped CAS/서버가 주입하는 합성 신원에 연결. 초기 CI 230/232 (객체 프로토타입 assert) → 후속 #40084869412 232/232 + 로컬 Chromium PASS. SHA `b308fad345c810917bd4736bc9d4b24f87cf2b79`.
 - **P0 BLOCKED_EXTERNAL:** 실제 Sandbox Business/Personal·실 OAuth·실 AI·실 D1/운영 인증·외부 URL 증거 전부 없음. 추가 13개 테스트를 API 성공으로 보고하면 안 됨. 외부 승인 없는 보안·결제·호스팅 변경 없음.
 - **진도:** D15 설계 20%만 유효, 남은 기본 5h·안전 10h(계획), 원장 전체 DONE12/PARTIAL2/BLOCKED1/NOT_STARTED3. 원격 승인/비용/실API 관련 사용자 결정 필요.
+
+## [ACTIVE 2026-10-24 19:12] 지시 답신 — P0 외부 실증 최우선
+- **ACCEPTED:** 사용자·상위 총괄 최우선은 실제 PayPal Sandbox Business/Personal REST 앱, 진짜 무료 AI 1회 응답 및 양측 통합 증거. Mock Cloudflare/D1 추가 개발은 후순위. 실 Live/실결제/카드/유료 계정·무단 배포 없음.
+- **IMPLEMENTED_VERIFIED (LOCAL READINESS ONLY):** owner-only account/onboarding 정확한 절차 [P0 가이드](../../technical/PPL_P0_REAL_PROVIDER_UNBLOCK_20261024.md), `src/p0_provider_readiness.mjs` + `npm run preflight:p0` + 8 tests. GitHub [Actions #40086442379](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40086442379) @ `491183ca51f06bb3f71206bbbe44b7e7684fa330`: Node 240/240, Chromium local, master schedule PASS. 사전 secret scan 이슈는 fixture만 고쳐 해결.
+- **BLOCKED_EXTERNAL:** PayPal Developer 로그인·Sandbox REST app 및 Business/Personal 계정 실제 접근 **NOT_VERIFIED**; 실제 OAuth/Orders/GET/Capture **NOT_TESTED**; Gemini AI Studio 무료 등급/모델/실 AI 응답 **NOT_TESTED**. Provider 영수증 **0**. D03 **0%**, D04 **80%**, D15 **20%** 유지. D15 예상 기본 잔여 **5h**·안전 **10h**, 실측 미계측.
+- **OWNER MINIMUM ACTIONS:** ① 본인 PayPal Developer Dashboard Sandbox 앱+연결 Business+Personal buyer 보유 여부 확인 ② Gemini AI Studio 해당 프로젝트의 Free Tier·사용 가능한 무료 텍스트 모델·API 키 존재 확인(결제 연결 금지) ③ 실제 Sandbox OAuth/GET와 실제 무료 AI 1회 호출의 승인 여부 결정. 모든 비밀키·계정정보는 본인 비공개 환경에서만 관리하고 채팅/공개 저장소 제출 금지.
+- **NEXT:** 승인/자격이 검증되면 read-only 우선 1회 실 provider 수신증거 취득. 없다면 P0 BLOCKED 그대로, 모의 결과를 출품 자격으로 대체하지 않음.

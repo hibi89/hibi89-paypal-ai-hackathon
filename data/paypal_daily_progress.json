@@ -142,12 +142,15 @@
       "safe_remaining_hours": 8,
       "actual_elapsed_hours": null,
       "actual_elapsed_note": "NOT_STARTED. External account approval may add unbounded waiting time.",
-      "carryover": [],
+      "carryover": [
+        "Confirm private PayPal Developer Sandbox business merchant, personal buyer, REST app and approved Sandbox OAuth permission; owner must keep secrets private. Run npm run preflight:p0 for local-name-only status."
+      ],
       "limitations": [
         "Sandbox developer app, Business merchant and Personal buyer private session access NOT_AVAILABLE",
         "No free AI API key/model billing-limit access; cannot validate real call",
         "3h/8h planned hands-on effort EXCLUDES unknown third-party access wait",
-        "User must handle permitted private account login; no credentials in chat or public repo"
+        "User must handle permitted private account login; no credentials in chat or public repo",
+        "P0 8 readiness tests and written account steps are documentation/software validation, NOT PayPal Dashboard access or real OAuth evidence."
       ],
       "checklist": [
         {
@@ -176,7 +179,9 @@
         }
       ],
       "progress_state": "BLOCKED",
-      "evidence": [],
+      "evidence": [
+        "2026-10-24 P0 account-unblock prep: docs/technical/PPL_P0_REAL_PROVIDER_UNBLOCK_20261024.md; src/p0_provider_readiness.mjs; scripts/check_p0_provider_readiness.mjs; tests/p0_provider_readiness.test.mjs. Actions #40086442379 @ 491183ca51f06bb3f71206bbbe44b7e7684fa330: 240/240 Node + local Chromium PASS. Presence-only NO network/credential output; actual PayPal Sandbox/AI NOT_TESTED."
+      ],
       "verified_sha": null,
       "blocker": "실 PayPal Sandbox Business/Personal·무료 AI 계정 접근 불가",
       "recovery_date_kst": null,
@@ -197,7 +202,8 @@
       "actual_elapsed_hours": null,
       "actual_elapsed_note": "NOT_MEASURED. Remaining hands-on time only after a validated free AI account; waiting UNKNOWN.",
       "carryover": [
-        "Actual free AI generation & accuracy/limits test when D03 access is available"
+        "Actual free AI generation & accuracy/limits test when D03 access is available",
+        "Check Gemini AI Studio project Free tier/eligible model privately (NO billing upgrade); real text generation remains BLOCKED until authorized key access and actual provider response."
       ],
       "limitations": [
         "Provider is OFFLINE_MOCK deterministic estimator, not AI",
@@ -972,7 +978,8 @@
         "D1 claim prototype has no remote binding/HTTP/provider. Migration is NOT APPLIED to Cloudflare; implement verified GET reconciliation and real authentication before any hosted use.",
         "D1 recovery inspection/maintenance simulated only; user authentication provider and PayPal authenticated GET verifier still absent. Do NOT expose recovery as public HTTP.",
         "Sandbox GET/CAS requires backend-injected trusted authenticated PayPal transport and D1 primary session; 15 fixture tests do not authenticate real PayPal or certify hosted status.",
-        "Offline composition uses a fixed in-process fake fetch and synthetic token. Real auth provider, PayPal Sandbox account/OAuth/GET, D1, and production hosting are not verified; prioritize external P0 blocker after explicit authorization."
+        "Offline composition uses a fixed in-process fake fetch and synthetic token. Real auth provider, PayPal Sandbox account/OAuth/GET, D1, and production hosting are not verified; prioritize external P0 blocker after explicit authorization.",
+        "Chief ACTIVE 19:12 P0 priority: do not extend mock Cloudflare/D1 ahead of real Sandbox+AI account feasibility. One-shot local readiness command npm run preflight:p0 is non-authorizing and always exit 2."
       ],
       "limitations": [
         "No Cloudflare/D1 account connector or owned resource was inspected; documentation limits not account verification",

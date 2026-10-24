@@ -2,6 +2,8 @@
 
 # PayPal — one-command resume
 <!-- resume: day_id=PPL-D15; percent=20; est_h=5; safe_h=10 -->
+> **최신 P0 우선순위 반영 — 2026-10-24:** 통합 총괄 [ACTIVE 19:12 지시](docs/FROM_HACKATHON_COMMAND.md) 수용. 실제 PayPal Business/Personal Sandbox + 무료 AI 실증이 출품 최우선 차단. [계정별 안전 설정 안내](docs/technical/PPL_P0_REAL_PROVIDER_UNBLOCK_20261024.md) + `npm run preflight:p0`(로컬 환경변수 이름만 확인·값 미노출·외부호출 0·exit 2) 구현. [GitHub Actions #40086442379](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40086442379) @ `491183ca51f0`: Node **240/240**, 로컬 Chromium 및 일정 검사 PASS. 실제 Provider OAuth/Orders/AI/D1/배포는 **NOT_TESTED**. D03 0% BLOCKED / D04 80% PARTIAL / D15 20% PARTIAL(남은 기본 5h, 안전 10h) 유지.
+
 > **최신 D15 (2026-10-24):** `src/offline_sandbox_d1_harness.mjs`로 Sandbox transport + D1 CAS + 주입된 신원 확인을 **네트워크 없는 합성 HTTP**에서 결합. 신규 13테스트, [Actions #40084869412](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40084869412) @ `b308fad345c8`: **Node 232/232, 로컬 Chromium, 18일 원장 PASS**. 최초 2개 테스트 비교 오류는 수정 후 재검증. **실 PayPal/AI/D1/Cloudflare 미실행**. D15 **20%** / 잔여 기본 **5h**·안전 확보 **10h** / 실측 NOT_MEASURED. [상세](docs/technical/PPL_D15_OFFLINE_TRANSPORT_COMPOSITION_20261024.md).
 
 

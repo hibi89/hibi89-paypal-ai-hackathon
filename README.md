@@ -28,3 +28,6 @@ D03 실 Business/Personal Sandbox+실 무료 AI 계정 BLOCKED; D04 실 AI 부�
 
 ### Latest D15 offline transport composition (2026-10-24)
 [Code](src/offline_sandbox_d1_harness.mjs) · [13 regression tests](tests/offline_sandbox_d1_harness.test.mjs) · [verified boundaries & next action](docs/technical/PPL_D15_OFFLINE_TRANSPORT_COMPOSITION_20261024.md) · [Actions #40084869412](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40084869412) Node **232/232**, Chromium localhost PASS. No real PayPal, AI, Cloudflare D1 or public deployment. D15 20% PARTIAL.
+
+## P0 REAL provider access readiness — owner action, no external calls
+**The actual contest blocker is real PayPal Sandbox + one truly free AI generation, NOT more mock D1 tests.** Follow [owner-only PayPal/Gemini setup & non-secret evidence guide](docs/technical/PPL_P0_REAL_PROVIDER_UNBLOCK_20261024.md). Run `npm run preflight:p0`: it checks *only names/presence* of private local variables, never performs OAuth or a provider call, never prints secrets and exits 2 while external evidence is missing. [Actions #40086442379](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40086442379) Node 240/240 and local Chromium PASS; real PayPal/AI/D1 still NOT_TESTED. No payments, Live, paid AI, public deploy or keys in GitHub/chat.

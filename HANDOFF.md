@@ -1,5 +1,7 @@
 # PayPal HANDOFF — D15 exact resume, 2026-10-24 KST
 <!-- resume: day_id=PPL-D15; percent=20; est_h=5; safe_h=10 -->
+> **최신 P0 우선순위 반영 — 2026-10-24:** 통합 총괄 [ACTIVE 19:12 지시](docs/FROM_HACKATHON_COMMAND.md) 수용. 실제 PayPal Business/Personal Sandbox + 무료 AI 실증이 출품 최우선 차단. [계정별 안전 설정 안내](docs/technical/PPL_P0_REAL_PROVIDER_UNBLOCK_20261024.md) + `npm run preflight:p0`(로컬 환경변수 이름만 확인·값 미노출·외부호출 0·exit 2) 구현. [GitHub Actions #40086442379](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40086442379) @ `491183ca51f0`: Node **240/240**, 로컬 Chromium 및 일정 검사 PASS. 실제 Provider OAuth/Orders/AI/D1/배포는 **NOT_TESTED**. D03 0% BLOCKED / D04 80% PARTIAL / D15 20% PARTIAL(남은 기본 5h, 안전 10h) 유지.
+
 > **최신 D15 (2026-10-24):** `src/offline_sandbox_d1_harness.mjs`로 Sandbox transport + D1 CAS + 주입된 신원 확인을 **네트워크 없는 합성 HTTP**에서 결합. 신규 13테스트, [Actions #40084869412](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40084869412) @ `b308fad345c8`: **Node 232/232, 로컬 Chromium, 18일 원장 PASS**. 최초 2개 테스트 비교 오류는 수정 후 재검증. **실 PayPal/AI/D1/Cloudflare 미실행**. D15 **20%** / 잔여 기본 **5h**·안전 확보 **10h** / 실측 NOT_MEASURED. [상세](docs/technical/PPL_D15_OFFLINE_TRANSPORT_COMPOSITION_20261024.md).
 
 
@@ -43,3 +45,10 @@ Cloudflare 계정/무료 한도/서비스 URL, 실 D1 마이그레이션/세션/
 - D15 진행률 20% PARTIAL, 기본 남은 예상 5h, 안전 확보 10h, 실측 null. 실제 Sandbox/OAuth/AI/D1/Cloudflare/운영 인증/URL 모두 NOT_TESTED. D03 실 계정·D04 실 AI 병목 우선.
 - 다음 READY는 trusted-session/server-side merchant binding·OAuth 정보 노출 방지 오프라인 검증. 사용자 승인 없이는 외부 계정, Secret, API 및 배포 작업 금지.
 - [설계 및 CI 영수증](docs/technical/PPL_D15_OFFLINE_TRANSPORT_COMPOSITION_20261024.md). 현 동기화 커밋의 Actions는 새로 확인할 것.
+
+## 2026-10-24 Chief ACTIVE 19:12 수신 및 P0 실제 Provider unblock
+- **지시 수용:** 실 PayPal Sandbox + 실제 AI가 최우선. 기존 232 테스트는 mock. P0 신규 코드 `src/p0_provider_readiness.mjs`, CLI `scripts/check_p0_provider_readiness.mjs`, 테스트 `tests/p0_provider_readiness.test.mjs`, `npm run preflight:p0` 추가. 외부 호출·credential echo 없음, 항상 2로 차단.
+- **증거:** 최초 CI #40086394528 @ `535ff01e...` Node 239/240(가짜 키 문자열이 public secret scan에 탐지), 테스트 fixture만 수정하여 최종 **#40086442379 @ `491183ca51f06bb3f71206bbbe44b7e7684fa330` Node 240/240 + 로컬 Chromium + 원장 PASS**. 보안 검사 약화 없음.
+- **구체적 사용자 작업:** [PayPal Business/Personal Sandbox REST 앱, Gemini AI Studio Free-tier 확인 및 승인 체크리스트](docs/technical/PPL_P0_REAL_PROVIDER_UNBLOCK_20261024.md). 비밀값은 채팅/공개 GitHub에 올리지 않는다.
+- **미검증:** PayPal 실 계정/ OAuth/Orders/GET/Capture; Gemini 실제 무료 프로젝트/모델·AI 호출, D1 remote 및 Cloudflare. D03 0 BLOCKED/D04 80 PARTIAL/D15 20 PARTIAL, D15 남은 기본 5h/안전 10h, 실제 경과 NOT_MEASURED.
+- **다음:** 소유자 확인/승인·계정 접근 확보 후 격리된 로컬 단발성 real provider 실증, 실패/실제 응답 기록의 비밀값 제거. 허가 없으면 BLOCKED 유지하며 임의 Mock 확대 금지.
