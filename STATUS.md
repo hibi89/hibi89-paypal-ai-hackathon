@@ -1,4 +1,4 @@
-> **2026-10-24 P0 전송 계층 제한시간 보강:** Sandbox-only OAuth/Orders/GET/Capture의 주입형 `fetch`에 요청별 고정 10초 `AbortSignal` 적용. POST 제한시간·네트워크 오류는 기존 `UNKNOWN`/재POST 금지 계약 유지. 테스트 1개 추가(`tests/paypal_sandbox_transport.test.mjs`); **실 PayPal/AI 요청 0회**, 신규 커밋 CI는 **PENDING**(직전 `70f0d5b` Actions #40089857353 PASS, Node 259/259 + Chromium). D03 0% BLOCKED / D04 80% / D15 20%, D15 잔여 5h·안전 10h, 실측 NULL 유지. 기본 `main`이 작업 `lead/paypal`과 183 ahead/5 behind로 분기됨; 릴리스 승인 전 자동 병합 금지.
+> **2026-10-24 P0 전송 계층 제한시간 보강:** Sandbox-only OAuth/Orders/GET/Capture의 주입형 `fetch`에 요청별 고정 10초 `AbortSignal` 적용. POST 제한시간·네트워크 오류는 기존 `UNKNOWN`/재POST 금지 계약 유지. 테스트 1개 추가(`tests/paypal_sandbox_transport.test.mjs`); **실 PayPal/AI 요청 0회**, 기능 변경 SHA `571368c` [Actions #40090973294](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40090973294) **Node 260/260 PASS, Chromium E2E PASS, 18일 원장 PASS** (이후 문서전용 커밋은 별도 CI). D03 0% BLOCKED / D04 80% / D15 20%, D15 잔여 5h·안전 10h, 실측 NULL 유지. 기본 `main`이 작업 `lead/paypal`과 183 ahead/5 behind로 분기됨; 릴리스 승인 전 자동 병합 금지.
 
 # PayPal STATUS — D15 active, 2026-10-24 KST
 <!-- resume: day_id=PPL-D15; percent=20; est_h=5; safe_h=10 -->
