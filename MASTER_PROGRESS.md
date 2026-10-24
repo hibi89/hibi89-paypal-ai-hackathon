@@ -4,7 +4,7 @@
 > 예정일과 실제 수행일은 별개. DONE은 **그날 정한 검증 범위만** 완료했음을 의미하며 실제 외부 API/운영/제출 성공과 다릅니다.
 > 시간은 예상 작업·별도 안전 예비의 **미사용 작업 배정량**입니다. 외부 승인 대기 및 미계측 실투입시간은 포함하지 않습니다.
 
-**전체 18일 / 완료 12 / 부분 1 / 차단 1 / 미착수 4**
+**전체 18일 / 완료 12 / 부분 2 / 차단 1 / 미착수 3**
 
 **다음 실행 포인터: `PPL-D15`** · 원래 일정: `docs/DAILY_CAPACITY_PLAN_20261024.md`
 
@@ -24,7 +24,7 @@
 | PPL-D12 | 2026-11-05 | 구독 UI 및 실패·취소·복구 시나리오 | DONE | 100% | 0h | 0h | 2026-10-24 | D12 design/guards: src/subscription_demo_store.mjs + src/subscription_demo_api.mjs; synthetic-only lifecycle with NOT_VERIFIED payment, version CAS/CSRF/trusted owner and forbidden CANCELLED recovery | 80bb6c8442e02bde8247980537cc1efbc05e6698 | — |
 | PPL-D13 | 2026-11-06 | 전체 기능 통합 회귀·주요 결함 수정 | DONE | 100% | 0h | 0h | 2026-10-24 | D13 design: src/local_integration_readiness.mjs explicitly evaluates approved quote/version/owner/merchant/amount+accepted milestone+synthetic subscription ACTIVE; status LOCAL_DEMO_CANDIDATE only, realPayPal/AI/deployment NOT_TESTED | 673f47a1e47b25197e2a51f1b949024e356d3a25 | — |
 | PPL-D14 | 2026-11-07 | 보안/권한/Rate 제한·LICENSE·영문 자료 초안 | DONE | 100% | 0h | 0h | 2026-10-24 | LICENSE + package.json SPDX MIT + tests/license.test.mjs @ d45b8d5a055cdf236a9a004e165a090d21d467db | d45b8d5a055cdf236a9a004e165a090d21d467db | — |
-| PPL-D15 | 2026-11-08 | 무료 호스팅·D1·실제 데모 배포/복구 | NOT_STARTED | 0% | 6h | 6h | — | — | — | — |
+| PPL-D15 | 2026-11-08 | 무료 호스팅·D1·실제 데모 배포/복구 | PARTIAL | 20% | 5h | 5h | 2026-10-24 | docs/technical/PPL_D15_HOSTING_PREFLIGHT_20261024.md: source inventory + local vs Cloudflare+D1 design & official Free limits; GitHub Actions 40080872405 @ 18875d360b21, 184/184 Node + local Chromium PASS | 18875d360b21329887d767f5c76b811ceb80ba64 | — |
 | PPL-D16 | 2026-11-09 | 실제 브라우저 E2E·심사위원 접근 검수 | NOT_STARTED | 0% | 5h | 5h | — | — | — | — |
 | PPL-D17 | 2026-11-10 | 영문 Devpost 안내·3분 미만 영상 촬영/편집 | NOT_STARTED | 0% | 6h | 5h | — | — | — | — |
 | PPL-D18 | 2026-11-11 | Devpost 제출·링크/권한·접수증 검수 | NOT_STARTED | 0% | 3h | 4h | — | — | — | — |
@@ -33,6 +33,7 @@
 
 - **PPL-D03 (2026-10-27, 0%):** 실 PayPal Sandbox Business/Personal·무료 AI 계정 접근 불가 / 재검토: 실 Developer 앱과 buyer 계정 접근 확보 시 D03 재검토 / 회수일: —
 - **PPL-D04 (2026-10-28, 80%):** 실 무료 AI 프로바이더 실행 검증이 누락됨 / 재검토: 무료 AI 실 API 이용 가능할 때 D04 잔여20% 검증 / 회수일: —
+- **PPL-D15 (2026-11-08, 20%):** Cloudflare Free 계정/기존 호스팅 접근 및 공개 배포·운영 인증 승인 미확보; D03 실제 PayPal Sandbox·D04 실 AI도 미확보 / 재검토: 사용자가 외부 계정·공개 배포를 별도 승인하고 계정 무료 한도/실 인증·D1·실 API를 검증한 경우에만 운영 작업 재개 / 회수일: —
 
 ## 이미 선행한 작업과 검증 경계
 
@@ -49,6 +50,7 @@
 - PPL-D12 (2026-11-05): 2026-10-24 선행: 구독 모의 UI(활성·실패·복구·취소) SQLite·권한/CSRF 및 실제 로컬 Chromium 171 Node CI PASS. 실제 PayPal 구독/거래/GET 미검증.
 - PPL-D13 (2026-11-06): 2026-10-24 선행: 견적→계약·납품→구독 합성 E2E 통합검증과 read-only 로컬 freeze 후보 판정, Node 175/175+Chromium PASS. 실 PayPal·AI·공개배포/제출 미검증.
 - PPL-D14 (2026-11-07): 10/24 선행 완료: 사용자 MIT 승인, 루트 LICENSE·무결성 테스트, Node 180/180·로컬 Chromium CI PASS; 외부 API/배포 미검증.
+- PPL-D15 (2026-11-08): 10/24 D15 정적 사전검사·Node 184/184·로컬 Chromium 선행검증, 인터넷 배포·실 PayPal/AI 증거 없음.
 
 ## 운영 의무
 
