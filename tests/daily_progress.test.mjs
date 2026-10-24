@@ -65,7 +65,7 @@ test('day5 completion does not disguise the blocked external gate or next-day wo
   assert.equal(d6.safe_remaining_hours,0);
   assert.equal(ledger.active_day_id,ledger.days.at(-1).day_id);
 });
-test('Chromium D06, contract D07 and contract HTTP D08 maintain verified offline acceptance',()=>{
+test('D06-D09 offline acceptance remains verified and D10 research is next READY',()=>{
   const d6=ledger.days.find(d=>d.day_id==='PPL-D06');
   const d7=ledger.days.find(d=>d.day_id==='PPL-D07');
   assert.equal(d6.percent_complete,100);
@@ -80,6 +80,16 @@ test('Chromium D06, contract D07 and contract HTTP D08 maintain verified offline
   assert.ok(d8.checklist.every(x=>x.state==='VERIFIED'));
   assert.equal(d8.estimated_remaining_hours,0);
   assert.equal(d8.safe_remaining_hours,0);
-  assert.ok(ledger.days.some(d=>d.day_id==='PPL-D09'));
-  assert.equal(ledger.active_day_id,ledger.days.at(-1).day_id);
+  const d9=ledger.days.find(d=>d.day_id==='PPL-D09');
+  assert.equal(d9.percent_complete,100);
+  assert.ok(d9.checklist.every(c=>c.state==='VERIFIED'));
+  assert.equal(d9.estimated_remaining_hours,0);
+  assert.equal(d9.safe_remaining_hours,0);
+  const d10=ledger.days.find(d=>d.day_id==='PPL-D10');
+  assert.ok(d10);
+  assert.equal(d10.percent_complete,0);
+  assert.equal(d10.status,'NOT_STARTED');
+  assert.equal(d10.estimated_remaining_hours,3);
+  assert.equal(d10.safe_remaining_hours,7);
+  assert.equal(ledger.active_day_id,d10.day_id);
 });

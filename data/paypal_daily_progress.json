@@ -2,7 +2,7 @@
   "schema_version": 1,
   "updated_kst": "2026-10-24",
   "scope": "Per-day verified acceptance; NOT entire PayPal hackathon project percent",
-  "active_day_id": "PPL-D09",
+  "active_day_id": "PPL-D10",
   "reporting_mode": "mandatory_after_each_actual_work_session",
   "days": [
     {
@@ -438,43 +438,103 @@
     {
       "day_id": "PPL-D09",
       "scheduled_date_kst": "2026-11-02",
-      "executed_date_kst": null,
+      "executed_date_kst": "2026-10-24",
       "scope": "Contract/delivery UI and separated payment status local E2E; real PayPal Sandbox dependent tests remain D03 external blocked",
-      "status": "NOT_STARTED",
+      "status": "DAY9_LOCAL_CONTRACT_BROWSER_E2E_ACCEPTED",
       "estimated_total_hours": 5,
       "safe_total_hours": 9,
-      "estimated_remaining_hours": 5,
-      "safe_remaining_hours": 9,
-      "percent_complete": 0,
+      "estimated_remaining_hours": 0,
+      "safe_remaining_hours": 0,
+      "percent_complete": 100,
       "actual_elapsed_hours": null,
-      "actual_elapsed_note": "NOT_STARTED; estimated 5h and reserved 9h are not elapsed time",
-      "carryover": [],
+      "actual_elapsed_note": "NOT_MEASURED; planned 5h and safe 9h are estimates, not actual elapsed time.",
+      "carryover": [
+        "D10 PayPal subscriptions/webhook regional capability and free-account availability must be independently verified with current official sources",
+        "Production identity provider and public reviewer authentication remain unimplemented",
+        "Cloudflare/D1 production database, real Sandbox and real AI are separate blocked/untested gates"
+      ],
       "limitations": [
-        "D08 contract HTTP API verified offline with synthetic owner session only",
-        "Actual provider payment and production identity/Cloudflare deployment blocked separately",
-        "Reviewer-side browser requires trusted reviewer session; do not derive role from query/header/body or deploy synthetic persona publicly"
+        "D09 browser E2E is actual Chromium on localhost/127.0.0.1 and uses only synthetic quotes, contracts, user roles and payments",
+        "The reviewer cookie is random and server-bound but enabled only when a local test harness explicitly opts in; there is no real customer/reviewer login",
+        "Browser page GET/F5 only reads contract; create/submit/reject/accept require explicit user-initiated POST and CAS",
+        "Separate displays: contract paymentState remains NOT_CAPTURED even after milestone ACCEPTED; no real payment was attempted",
+        "D09 browser runner writes ephemeral reviewer fixture cookie to owner-only local temporary file (mode 0600), deletes on stop; do not use as production auth",
+        "Live PayPal / actual Sandbox OAuth and purchase, real free AI, D1 deployment, public browser validation and Devpost NOT_TESTED"
       ],
       "checklist": [
         {
           "id": "CONTRACT_UI_AND_READONLY_SUMMARY",
           "weight_pct": 25,
-          "state": "PENDING",
-          "evidence": null
+          "state": "VERIFIED",
+          "evidence": "web/offline_demo.html and web/contract_client.js: contract creation from approved quote, read-only GET quote/contract, D09 Chromium real loopback E2E in CI 40071015803 @ 9e3ee79a"
         },
         {
           "id": "DELIVERY_REVIEW_INTERACTION",
+          "weight_pct": 25,
+          "state": "VERIFIED",
+          "evidence": "web/contract_client.js plus src/offline_demo_server.mjs reviewer test-session resolver; Chromium owner submit, reviewer reject, owner resubmit, reviewer accept in CI 40071015803"
+        },
+        {
+          "id": "PAYMENT_VS_FULFILLMENT_UI",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "Separate #contract-payment NOT_CAPTURED and #contract-fulfillment state, never auto-pay on delivery; Chromium assert ACCEPTED while NOT_CAPTURED, CI 40071015803"
+        },
+        {
+          "id": "BROWSER_E2E_AND_SECURITY",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "tests/browser_offline_e2e.py verifies explicit POST only, refresh/F5 no POST, duplicate form submit once, server-bound reviewer, payment POST zero; tests/offline_demo_server.test.mjs forgery/owner denial/review audit; CI 40071015803"
+        },
+        {
+          "id": "CI_DOCS_HANDOFF",
+          "weight_pct": 10,
+          "state": "VERIFIED",
+          "evidence": "GitHub Actions 40071015803 completed/success @ 9e3ee79a: Node 133/133 PASS, Chromium D09 browser E2E PASS; documentation/JSON same-checkpoint sync CI separately checked"
+        }
+      ]
+    },
+    {
+      "day_id": "PPL-D10",
+      "scheduled_date_kst": "2026-11-03",
+      "executed_date_kst": null,
+      "scope": "Official PayPal Subscriptions and Webhooks support/region/cost feasibility; offline subscription state-machine contract",
+      "status": "NOT_STARTED",
+      "estimated_total_hours": 3,
+      "safe_total_hours": 7,
+      "estimated_remaining_hours": 3,
+      "safe_remaining_hours": 7,
+      "percent_complete": 0,
+      "actual_elapsed_hours": null,
+      "actual_elapsed_note": "NOT_STARTED. 3h/7h estimates exclude unknown external account approval wait.",
+      "carryover": [],
+      "limitations": [
+        "Actual PayPal Developer account, merchant region and subscription product eligibility NOT_TESTED",
+        "Official current Subscriptions/Plans/Webhooks constraints require source verification; do not claim available until checked",
+        "No real webhook endpoint, no production signature verification, no paid API or subscription purchase",
+        "D03 real Sandbox and free AI are still externally BLOCKED"
+      ],
+      "checklist": [
+        {
+          "id": "OFFICIAL_SUBSCRIPTIONS_REGION_FEASIBILITY",
           "weight_pct": 25,
           "state": "PENDING",
           "evidence": null
         },
         {
-          "id": "PAYMENT_VS_FULFILLMENT_UI",
+          "id": "WEBHOOK_VERIFICATION_OFFICIAL_RESEARCH",
+          "weight_pct": 25,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "SUBSCRIPTION_STATE_CONTRACT",
           "weight_pct": 20,
           "state": "PENDING",
           "evidence": null
         },
         {
-          "id": "BROWSER_E2E_AND_SECURITY",
+          "id": "FREE_ACCOUNT_COST_AND_ACCESS_GATES",
           "weight_pct": 20,
           "state": "PENDING",
           "evidence": null
