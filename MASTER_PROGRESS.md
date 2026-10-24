@@ -24,7 +24,7 @@
 | PPL-D12 | 2026-11-05 | 구독 UI 및 실패·취소·복구 시나리오 | DONE | 100% | 0h | 0h | 2026-10-24 | D12 design/guards: src/subscription_demo_store.mjs + src/subscription_demo_api.mjs; synthetic-only lifecycle with NOT_VERIFIED payment, version CAS/CSRF/trusted owner and forbidden CANCELLED recovery | 80bb6c8442e02bde8247980537cc1efbc05e6698 | — |
 | PPL-D13 | 2026-11-06 | 전체 기능 통합 회귀·주요 결함 수정 | DONE | 100% | 0h | 0h | 2026-10-24 | D13 design: src/local_integration_readiness.mjs explicitly evaluates approved quote/version/owner/merchant/amount+accepted milestone+synthetic subscription ACTIVE; status LOCAL_DEMO_CANDIDATE only, realPayPal/AI/deployment NOT_TESTED | 673f47a1e47b25197e2a51f1b949024e356d3a25 | — |
 | PPL-D14 | 2026-11-07 | 보안/권한/Rate 제한·LICENSE·영문 자료 초안 | DONE | 100% | 0h | 0h | 2026-10-24 | LICENSE + package.json SPDX MIT + tests/license.test.mjs @ d45b8d5a055cdf236a9a004e165a090d21d467db | d45b8d5a055cdf236a9a004e165a090d21d467db | — |
-| PPL-D15 | 2026-11-08 | 무료 호스팅·D1·실제 데모 배포/복구 | PARTIAL | 20% | 5h | 5h | 2026-10-24 | D15 Sandbox GET evidence / D1 CAS: src/d1_sandbox_get_reconcile.mjs; tests/d1_sandbox_get_reconcile.test.mjs (15 mock tests); docs/technical/PPL_D15_SANDBOX_GET_CAS_20261024.md; Actions 40083028520 @ c9464a671bc0b20fe434b2af189d3fa19258eb02, Node 219/219 + local Chromium PASS; PayPal/D1 remote NOT_TESTED | c9464a671bc0b20fe434b2af189d3fa19258eb02 | — |
+| PPL-D15 | 2026-11-08 | 무료 호스팅·D1·실제 데모 배포/복구 | PARTIAL | 20% | 5h | 5h | 2026-10-24 | D15 private integration: src/offline_sandbox_d1_harness.mjs + tests/offline_sandbox_d1_harness.test.mjs (13 new tests); docs/technical/PPL_D15_OFFLINE_TRANSPORT_COMPOSITION_20261024.md; GitHub Actions 40084869412 @ b308fad345c810917bd4736bc9d4b24f87cf2b79: 232/232 Node, local Chromium and 18-day master PASS; real Sandbox/D1/AI/Cloudflare NOT_TESTED | b308fad345c810917bd4736bc9d4b24f87cf2b79 | — |
 | PPL-D16 | 2026-11-09 | 실제 브라우저 E2E·심사위원 접근 검수 | NOT_STARTED | 0% | 5h | 5h | — | — | — | — |
 | PPL-D17 | 2026-11-10 | 영문 Devpost 안내·3분 미만 영상 촬영/편집 | NOT_STARTED | 0% | 6h | 5h | — | — | — | — |
 | PPL-D18 | 2026-11-11 | Devpost 제출·링크/권한·접수증 검수 | NOT_STARTED | 0% | 3h | 4h | — | — | — | — |
@@ -50,7 +50,7 @@
 - PPL-D12 (2026-11-05): 2026-10-24 선행: 구독 모의 UI(활성·실패·복구·취소) SQLite·권한/CSRF 및 실제 로컬 Chromium 171 Node CI PASS. 실제 PayPal 구독/거래/GET 미검증.
 - PPL-D13 (2026-11-06): 2026-10-24 선행: 견적→계약·납품→구독 합성 E2E 통합검증과 read-only 로컬 freeze 후보 판정, Node 175/175+Chromium PASS. 실 PayPal·AI·공개배포/제출 미검증.
 - PPL-D14 (2026-11-07): 10/24 선행 완료: 사용자 MIT 승인, 루트 LICENSE·무결성 테스트, Node 180/180·로컬 Chromium CI PASS; 외부 API/배포 미검증.
-- PPL-D15 (2026-11-08): 10/24 D15 선행: 무료호스팅 정적 점검, D1 단일 점유·복구, Sandbox GET 계약 검증과 D1 CAS 모의 검사 15건 추가; 총 Node 219/219·로컬 Chromium PASS. 실제 PayPal/AI/D1/배포 0건.
+- PPL-D15 (2026-11-08): 10/24 D15 선행: preflight, D1 점유·복구·GET CAS, 실제 Sandbox transport를 내장 모의 서버/세션에 조합. 13개 신규 테스트, Actions 232/232 Node+로컬 Chromium PASS. 실 PayPal/D1/AI/외부 배포 없음.
 
 ## 운영 의무
 

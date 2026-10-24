@@ -952,17 +952,18 @@
       "executed_date_kst": "2026-10-24",
       "actual_elapsed_hours": null,
       "evidence": [
-        "D15 Sandbox GET evidence / D1 CAS: src/d1_sandbox_get_reconcile.mjs; tests/d1_sandbox_get_reconcile.test.mjs (15 mock tests); docs/technical/PPL_D15_SANDBOX_GET_CAS_20261024.md; Actions 40083028520 @ c9464a671bc0b20fe434b2af189d3fa19258eb02, Node 219/219 + local Chromium PASS; PayPal/D1 remote NOT_TESTED",
+        "D15 private integration: src/offline_sandbox_d1_harness.mjs + tests/offline_sandbox_d1_harness.test.mjs (13 new tests); docs/technical/PPL_D15_OFFLINE_TRANSPORT_COMPOSITION_20261024.md; GitHub Actions 40084869412 @ b308fad345c810917bd4736bc9d4b24f87cf2b79: 232/232 Node, local Chromium and 18-day master PASS; real Sandbox/D1/AI/Cloudflare NOT_TESTED",
         "migrations/d1/0001_payment_claims.sql; src/d1_claim.mjs; tests/d1_claim.test.mjs: 9 offline D1-shaped contract tests (not remote D1)",
         "src/hosting_preflight.mjs; tests/hosting_preflight.test.mjs: no-deploy static report",
-        "src/d1_recovery.mjs; tests/d1_recovery.test.mjs: authenticated tenant-bound read-only inspection, privileged 5m stale UNKNOWN, 11 offline tests. Actions #40082429683 @ 949eb8b25645d29f43e22669bf757c15e347ce49: 204/204 Node + local Chromium PASS"
+        "src/d1_recovery.mjs; tests/d1_recovery.test.mjs: authenticated tenant-bound read-only inspection, privileged 5m stale UNKNOWN, 11 offline tests. Actions #40082429683 @ 949eb8b25645d29f43e22669bf757c15e347ce49: 204/204 Node + local Chromium PASS",
+        "Initial Actions 40084818417 @ 38c5fc0d7505a66e19f7a3bce89976e660c47f6f failed 2/232 due Node SQLite null-prototype comparison; fixed test assertion only in b308fad345c810917bd4736bc9d4b24f87cf2b79, final CI 232/232 PASS."
       ],
-      "verified_sha": "c9464a671bc0b20fe434b2af189d3fa19258eb02",
+      "verified_sha": "b308fad345c810917bd4736bc9d4b24f87cf2b79",
       "blocker": "Cloudflare Free 계정/기존 호스팅 접근 및 공개 배포·운영 인증 승인 미확보; D03 실제 PayPal Sandbox·D04 실 AI도 미확보",
       "recovery_date_kst": null,
       "recovery_condition": "사용자가 외부 계정·공개 배포를 별도 승인하고 계정 무료 한도/실 인증·D1·실 API를 검증한 경우에만 운영 작업 재개",
-      "advance_note": "10/24 D15 선행: 무료호스팅 정적 점검, D1 단일 점유·복구, Sandbox GET 계약 검증과 D1 CAS 모의 검사 15건 추가; 총 Node 219/219·로컬 Chromium PASS. 실제 PayPal/AI/D1/배포 0건.",
-      "status": "D15_OFFLINE_SANDBOX_GET_CAS_VERIFIED_REMOTE_BLOCKED",
+      "advance_note": "10/24 D15 선행: preflight, D1 점유·복구·GET CAS, 실제 Sandbox transport를 내장 모의 서버/세션에 조합. 13개 신규 테스트, Actions 232/232 Node+로컬 Chromium PASS. 실 PayPal/D1/AI/외부 배포 없음.",
+      "status": "D15_OFFLINE_TRANSPORT_COMPOSITION_VERIFIED_REMOTE_BLOCKED",
       "actual_elapsed_note": "NOT_MEASURED; estimated remaining work budgets (not elapsed time) + unbounded external account/approval wait",
       "carryover": [
         "Never publish 127.0.0.1 synthetic server as real app; Node sqlite stub on Workers, use D1 binding instead",
@@ -970,7 +971,8 @@
         "D03 real Sandbox and D04 AI external gates not solved; owner approval required before Cloudflare creation/deploy",
         "D1 claim prototype has no remote binding/HTTP/provider. Migration is NOT APPLIED to Cloudflare; implement verified GET reconciliation and real authentication before any hosted use.",
         "D1 recovery inspection/maintenance simulated only; user authentication provider and PayPal authenticated GET verifier still absent. Do NOT expose recovery as public HTTP.",
-        "Sandbox GET/CAS requires backend-injected trusted authenticated PayPal transport and D1 primary session; 15 fixture tests do not authenticate real PayPal or certify hosted status."
+        "Sandbox GET/CAS requires backend-injected trusted authenticated PayPal transport and D1 primary session; 15 fixture tests do not authenticate real PayPal or certify hosted status.",
+        "Offline composition uses a fixed in-process fake fetch and synthetic token. Real auth provider, PayPal Sandbox account/OAuth/GET, D1, and production hosting are not verified; prioritize external P0 blocker after explicit authorization."
       ],
       "limitations": [
         "No Cloudflare/D1 account connector or owned resource was inspected; documentation limits not account verification",
@@ -978,32 +980,33 @@
         "Preflight exits 2 by design; passing Node tests verify blocker detection, not deployment availability",
         "Node SQLite shim is not a real Cloudflare D1 integration, despite SQL compatibility and offline tests",
         "Local SQLite D1-shaped shim does not prove real D1 Sessions/replication or provider provenance",
-        "GET/CAS test transport is a private synthetic SANDBOX_ONLY-mode stub; source provenance and real PayPal OAuth were never tested"
+        "GET/CAS test transport is a private synthetic SANDBOX_ONLY-mode stub; source provenance and real PayPal OAuth were never tested",
+        "No production session provider, real PayPal OAuth, external GET, D1 binding, or public endpoint; harness uses synthetic client credentials and local HTTP simulator only"
       ],
       "checklist": [
         {
           "id": "REQUIREMENTS_AND_DESIGN",
           "weight_pct": 20,
           "state": "VERIFIED",
-          "evidence": "D15 Sandbox GET evidence / D1 CAS: src/d1_sandbox_get_reconcile.mjs; tests/d1_sandbox_get_reconcile.test.mjs (15 mock tests); docs/technical/PPL_D15_SANDBOX_GET_CAS_20261024.md; Actions 40083028520 @ c9464a671bc0b20fe434b2af189d3fa19258eb02, Node 219/219 + local Chromium PASS; PayPal/D1 remote NOT_TESTED; previous static hosting/D1 claim/recovery offline proofs preserved in d15.evidence"
+          "evidence": "D15 private integration: src/offline_sandbox_d1_harness.mjs + tests/offline_sandbox_d1_harness.test.mjs (13 new tests); docs/technical/PPL_D15_OFFLINE_TRANSPORT_COMPOSITION_20261024.md; GitHub Actions 40084869412 @ b308fad345c810917bd4736bc9d4b24f87cf2b79: 232/232 Node, local Chromium and 18-day master PASS; real Sandbox/D1/AI/Cloudflare NOT_TESTED"
         },
         {
           "id": "IMPLEMENTATION",
           "weight_pct": 40,
           "state": "PENDING",
-          "evidence": "SQLite/D1-shaped claim, read-only recovery, private injected Sandbox GET proof/CAS prototype verified offline (15 more tests); actual Worker/D1 session, real authenticated provider access, production auth, API and deployment NOT_IMPLEMENTED."
+          "evidence": "Offline D1 claim/read/recovery/GET CAS and a real Sandbox transport under injected in-memory simulator verified locally (13 further tests). Production identity provider/real Sandbox/D1/Worker/app implementation still NOT_IMPLEMENTED or NOT_TESTED."
         },
         {
           "id": "AUTOMATED_VERIFICATION",
           "weight_pct": 30,
           "state": "PENDING",
-          "evidence": "Actions 40083028520 Node 219/219 and local Chromium PASS. Remote D1/real Sandbox GET/HTTPS/Production browser still NOT_TESTED."
+          "evidence": "Actions 40084869412 Node 232/232+local Chromium PASS. Actual PayPal OAuth/GET, hosted D1/Worker, HTTPS and external browser verification PENDING."
         },
         {
           "id": "CI_HANDOFF",
           "weight_pct": 10,
           "state": "PENDING",
-          "evidence": "Actions 40083028520 source CI PASS; production CI/release acceptance PENDING."
+          "evidence": "Source CI 40084869412 PASS; production release/CI approval and remote environment NOT_TESTED."
         }
       ]
     },
