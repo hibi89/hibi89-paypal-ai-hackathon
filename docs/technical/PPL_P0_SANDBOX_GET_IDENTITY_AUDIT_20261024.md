@@ -22,4 +22,4 @@ C. Add a separate global payments state machine/rewrite: high risk and unnecessa
 - Existing SQLite ledger keys (including 38-byte outbound ID conversion), human approval, no blind retry after UNKNOWN, and D1 DB mutations remain unchanged.
 - Real Sandbox Business + Personal buyer account, actual OAuth + Orders + GET + Capture, real free AI, safe public route, video and final Devpost submit remain BLOCKED/NOT_TESTED.
 - Progress unchanged: D03 0% BLOCKED; D04 80% PARTIAL; D15 20% PARTIAL (base 5h/safe 10h, actual elapsed null); D16–18 0% NOT_STARTED.
-- CI status pending for this commit; add confirmed SHA only after GitHub Actions complete.
+- Verified source SHA `622669985c89e9179ab3e19568639769d31d0289`, [GitHub Actions #40096062080](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40096062080): Node 287/287 PASS, Chromium localhost E2E PASS, 18-day progress PASS. Docs-only synchronization has a separate CI.
