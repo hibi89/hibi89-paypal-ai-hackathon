@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { approvedAmount, requestKey, planOrder, planCapture, reconcileCapture, paypalRequestHeaderId } from '../src/payment_contract.mjs';
 
-const q = () => ({ id: 'quote-demo-1', version: 2, currency: 'USD',
+const q = () => ({ id: 'quote-demo-1', version: 2, merchantId:'sandbox_merchant', currency: 'USD',
   aiSuggestedMinor: 9900, approval: { decision: 'APPROVED', quoteVersion: 2,
     actorId: 'test-reviewer', amountMinor: 1500 } });
 const order = (status = 'APPROVED') => ({ id: 'ORDERDEMO1', status });
@@ -12,6 +12,7 @@ const capture = (status = 'COMPLETED') => ({ id: 'CAPTUREDEMO1', orderId: 'ORDER
 test('human approval locks a 15.00 USD amount instead of 99.00 AI proposal', () => {
   assert.equal(approvedAmount(q()), 1500);
   assert.equal(planOrder(q()).body.purchase_units[0].amount.value, '15.00');
+  assert.equal(planOrder(q()).body.purchase_units[0].payee.merchant_id, q().merchantId);
 });
 test('never create order without human approval', () => {
   assert.throws(() => planOrder({ ...q(), approval: null }), { code: 'HUMAN_APPROVAL_REQUIRED' });
@@ -79,4 +80,19 @@ test('outbound mapping stays unique for the same quote on a new version',()=>{
  const previous=paypalRequestHeaderId(requestKey(q(),'create'));
  const renewed={...q(),version:3,approval:{...q().approval,quoteVersion:3}};
  assert.notEqual(paypalRequestHeaderId(requestKey(renewed,'create')),previous);
+});
+
+test('PayPal Orders v2 create body binds the approved merchant to the single purchase unit',()=>{
+ const item=planOrder(q()).body;
+ assert.equal(item.intent,'CAPTURE');
+ assert.equal(item.purchase_units.length,1);
+ assert.equal(item.purchase_units[0].reference_id,q().id);
+ assert.deepEqual(item.purchase_units[0].payee,{merchant_id:q().merchantId});
+ assert.deepEqual(item.purchase_units[0].amount,{currency_code:'USD',value:'15.00'});
+});
+test('no outbound order can be planned with a missing or malformed merchant binding',()=>{
+ for(const merchantId of [undefined,null,'','foreign merchant','x'.repeat(129)]){
+  assert.throws(()=>planOrder({...q(),merchantId}),
+   {code:'SANDBOX_MERCHANT_BINDING_REQUIRED'});
+ }
 });

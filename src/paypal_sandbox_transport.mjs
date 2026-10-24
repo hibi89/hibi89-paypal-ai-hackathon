@@ -18,7 +18,7 @@ const merchantBound=(quote)=>{
     !/^[A-Za-z0-9_-]{1,128}$/.test(quote.merchantId),
     'SANDBOX_MERCHANT_BINDING_REQUIRED');
 };
-function approvalLink(links) {
+function approvalLink(links, orderId) {
   reject(!Array.isArray(links),'APPROVAL_LINK_MISSING');
   const match=links.find(x=>x?.rel==='payer-action'||x?.rel==='approve');
   reject(!safeText(match?.href),'APPROVAL_LINK_MISSING');
@@ -27,8 +27,13 @@ function approvalLink(links) {
   catch { throw new SandboxTransportError('UNSAFE_APPROVAL_LINK'); }
   reject(url.protocol!=='https:' ||
     !['www.sandbox.paypal.com','sandbox.paypal.com'].includes(url.hostname) ||
-    url.port!=='' || url.username!=='' || url.password!=='',
+    url.port!=='' || url.username!=='' || url.password!=='' ||
+    url.pathname!=='/checkoutnow' || url.hash!=='' ||
+    url.searchParams.getAll('token').length!==1 ||
+    url.searchParams.get('token')!==orderId,
   'UNSAFE_APPROVAL_LINK');
+  // A real PayPal host is not sufficient: this payer-action link must point
+  // to the exact order created by our approved quote, not some other token.
   return url.href;
 }
 function claimValidated(quote, claim, operation) {
@@ -124,7 +129,7 @@ export function createSandboxTransport(options={}) {
     reject(!ORDER_ID.test(created?.id) ||
       !['CREATED','APPROVED'].includes(created.status),
     'SANDBOX_CREATE_UNVERIFIED');
-    const payerUrl=approvalLink(created.links);
+    const payerUrl=approvalLink(created.links,created.id);
     // Mandatory server GET to validate reference/amount before returning approval URL.
     const checked=await getOrder(quote,created.id);
     reject(!['CREATED','APPROVED'].includes(checked.status),

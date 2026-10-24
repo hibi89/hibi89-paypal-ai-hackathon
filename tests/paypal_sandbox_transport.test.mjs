@@ -9,7 +9,7 @@ const claim=operation=>({action:'FIRST_CLAIM_ONLY_NO_PROVIDER_CALL',attempt:{
   requestId:requestKey(q,operation),
   amountMinor:1500,currency:'USD',state:'IN_FLIGHT'}});
 function stub({getStatus='CREATED',value='15.00',linkHost='www.sandbox.paypal.com',
-  failAt=null,getOverride=null}={}) {
+  failAt=null,getOverride=null,approvalHref=null}={}) {
   const calls=[];
   const transport=createSandboxTransport({
     clientId:'SYNTHETIC_TEST_ID',clientSecret:'SYNTHETIC_TEST_SECRET',
@@ -22,7 +22,7 @@ function stub({getStatus='CREATED',value='15.00',linkHost='www.sandbox.paypal.co
       if(options.method==='POST'&&url.endsWith('/v2/checkout/orders'))
         return {status:201,json:async()=>({
           id:'ORDER0001',status:'CREATED',links:[{
-            rel:'payer-action',href:'https://'+linkHost+'/checkoutnow?token=ORDER0001',
+            rel:'payer-action',href:approvalHref??'https://'+linkHost+'/checkoutnow?token=ORDER0001',
           }],
         })};
       if(options.method==='GET'&&url.endsWith('/v2/checkout/orders/ORDER0001'))
@@ -65,6 +65,7 @@ test('create uses sandbox OAuth and PayPal-Request-Id, then validates GET',async
   assert.equal(create.headers['PayPal-Request-Id'],paypalRequestHeaderId(requestKey(q,'create')));
   assert.equal(Buffer.byteLength(create.headers['PayPal-Request-Id'],'utf8'),38);
   assert.equal(JSON.parse(create.body).purchase_units[0].amount.value,'15.00');
+  assert.equal(JSON.parse(create.body).purchase_units[0].payee.merchant_id,q.merchantId);
   assert.ok(!JSON.stringify(result).includes('SYNTHETIC_TOKEN'));
 });
 test('wrong order amount fails before showing sandbox approval link',async()=>{
@@ -185,4 +186,27 @@ test('valid authenticated synthetic GET remains usable with bound merchant and s
  assert.equal(got.intent,'CAPTURE');
  assert.equal(got.purchase_units[0].payee.merchant_id,q.merchantId);
  assert.equal(calls.filter(x=>x.method==='GET').length,1);
+});
+
+test('same Sandbox host cannot redirect buyer to another created order token',async()=>{
+ for(const uri of [
+  'https://www.sandbox.paypal.com/checkoutnow?token=ORDER_OTHER',
+  'https://www.sandbox.paypal.com/checkoutnow',
+  'https://www.sandbox.paypal.com/checkoutnow?token=ORDER0001&token=ORDER_OTHER',
+  'https://www.sandbox.paypal.com/wrong-path?token=ORDER0001',
+  'https://www.sandbox.paypal.com/checkoutnow?token=ORDER0001#evil'
+ ]){
+  const {transport,calls}=stub({approvalHref:uri});
+  await assert.rejects(transport.createOrderOnce(q,claim('create')),
+    {code:'UNSAFE_APPROVAL_LINK'});
+  assert.equal(calls.filter(v=>v.method==='POST'&&v.url.endsWith('/v2/checkout/orders')).length,1);
+  assert.equal(calls.filter(v=>v.method==='GET'&&v.url.includes('/v2/checkout/orders/')).length,0);
+ }
+});
+test('real PayPal approval link may contain harmless metadata but token stays tied to order ID',async()=>{
+ const url='https://www.sandbox.paypal.com/checkoutnow?token=ORDER0001&useraction=commit';
+ const {transport}=stub({approvalHref:url});
+ const result=await transport.createOrderOnce(q,claim('create'));
+ assert.equal(result.payerUrl,url);
+ assert.equal(result.paymentState,'NOT_PAID');
 });

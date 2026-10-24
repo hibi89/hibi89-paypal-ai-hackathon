@@ -45,11 +45,18 @@ export function paypalRequestHeaderId(ledgerRequestId) {
 
 export function planOrder(quote) {
   const cents = approvedAmount(quote);
+  // Tie the outbound seller to the immutable merchant on the approved quote.
+  // PayPal's production merchant_id is a 13-character account identifier;
+  // synthetic offline test merchant identifiers are NOT provider credentials.
+  failIf(typeof quote.merchantId !== 'string' ||
+    !/^[A-Za-z0-9_-]{1,128}$/.test(quote.merchantId),
+  'SANDBOX_MERCHANT_BINDING_REQUIRED');
   return {
     method: 'POST',
     path: '/v2/checkout/orders',
     requestId: requestKey(quote, 'create'),
     body: { intent: 'CAPTURE', purchase_units: [{ reference_id: quote.id,
+      payee: { merchant_id: quote.merchantId },
       amount: { currency_code: 'USD', value: (cents / 100).toFixed(2) } }] }
   };
 }
