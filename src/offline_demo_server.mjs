@@ -12,6 +12,7 @@ import { createOfflineMockDraftProvider } from './quote_draft.mjs';
 import { createSubscriptionScenarioStore } from './subscription_demo_store.mjs';
 import { createSubscriptionDemoApi } from './subscription_demo_api.mjs';
 import { evaluateLocalIntegration } from './local_integration_readiness.mjs';
+import { createDemoRateLimiter } from './demo_rate_limit.mjs';
 
 const html = readFileSync(new URL('../web/offline_demo.html', import.meta.url), 'utf8');
 const onlyLoopback = address => address === '127.0.0.1' ||
@@ -62,6 +63,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false } 
   const subscriptionApi=createSubscriptionDemoApi({
     subscriptionId,store:subscriptionStore,resolveSession,offlineOnly:true
   });
+  const checkRate = createDemoRateLimiter();
   let server;
   server = createServer(async (req, res) => {
     try {
@@ -70,6 +72,19 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false } 
           req.headers.host !== '127.0.0.1:' + listenPort) {
         res.writeHead(403, { 'cache-control': 'no-store' });
         res.end('FORBIDDEN');
+        return;
+      }
+      // Reject a burst before allocating JSON buffers, calling session handlers,
+      // or touching SQLite. This protects only this single loopback process.
+      const rate = checkRate(req.method);
+      if (!rate.allowed) {
+        res.writeHead(429, {
+          'cache-control': 'no-store',
+          'content-type': 'application/json; charset=utf-8',
+          'x-content-type-options': 'nosniff',
+          'retry-after': String(rate.retryAfterSeconds),
+        });
+        res.end(JSON.stringify({error: 'LOCAL_RATE_LIMITED'}));
         return;
       }
       const path = new URL(req.url, 'http://127.0.0.1:' + listenPort).pathname;

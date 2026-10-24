@@ -1,7 +1,7 @@
 > **새 채팅은 이 한 문장만 입력:** `[페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈]`  
-> 최신 PayPal 개발 정본: [`lead/paypal` CHAT_BOOTSTRAP.md](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/lead/paypal/CHAT_BOOTSTRAP.md), [NEXT D07/현재 작업](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/lead/paypal/docs/roles/lead/LEAD_ACTIVE_WORK.md), [일차별 진행률·남은 시간](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/lead/paypal/data/paypal_daily_progress.json). **이전 채팅/오래된 아래 README 설명·`main`보다 이 링크를 우선.**
+> 최신 PayPal 개발 정본: [`lead/paypal` CHAT_BOOTSTRAP.md](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/lead/paypal/CHAT_BOOTSTRAP.md), [NEXT D14/현재 작업](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/lead/paypal/docs/roles/lead/LEAD_ACTIVE_WORK.md), [일차별 진행률·남은 시간](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/lead/paypal/data/paypal_daily_progress.json). **이전 채팅/오래된 아래 README 설명·`main`보다 이 링크를 우선.**
 >
-> **현재 (2026-10-24): D07 0%/100%, 잔여 예상 4h/안전 8h.** D03 실 API 0% 차단, D04 실제 AI 20% 차단. 마지막 기능 CI 40066974668: Node 103/103·로컬 Chromium 성공. 실 PayPal/AI/Production/Devpost 미검증.
+> **현재 (2026-10-24): D14 20%/100%, 잔여 기본 3h/안전 확보 8h (CI 대기).** D03 실제 Sandbox 0% 차단, D04 실제 AI 20% 차단. 최신 D13 175 Node+Chromium PASS; D14 새 커밋 CI 미검증. LICENSE 사용자 승인 대기, 실제 PayPal/AI/Production/Devpost 미검증.
 
 > **PayPal 새 채팅 한 문장 실행:** `페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈` → [CHAT_BOOTSTRAP.md](CHAT_BOOTSTRAP.md) → `lead/paypal` 최신 원격 HEAD → 현 작업 직접 개발·테스트·GitHub 최신화. 별도 작업자 채팅 없음.
 
@@ -11,7 +11,7 @@
 
 - **개발 원본:** `lead/paypal`; **검증 릴리스:** `main`. `feature/quote-payment`, `feature/delivery`, `feature/subscriptions`는 보존된 기존 작업 이력이며 신규 작업하지 않는다.
 - **사용자 `ㄱ`:** [HANDOFF](HANDOFF.md) → [STATUS](STATUS.md) → [AGENTS](AGENTS.md) → [REQUIREMENTS](REQUIREMENTS.md) → [현재 실제 작업](docs/roles/lead/LEAD_ACTIVE_WORK.md) → 소스/테스트를 확인해 총괄 스스로 구현·검증·커밋한다.
-- **[일차별 100% 진행률·잔여시간 현재 원장](data/paypal_daily_progress.json)** · [작업 종료 보고 의무](docs/DAILY_PROGRESS_REPORTING.md): Day1·Day2·Day5·Day6 100% (검증된 오프라인 범위), Day3 0% 차단 3h/8h, Day4 80% 2h/4h, 현재 Day7 0% 잔여 4h/안전 8h.
+- **[일차별 100% 진행률·잔여시간 현재 원장](data/paypal_daily_progress.json)** · [작업 종료 보고 의무](docs/DAILY_PROGRESS_REPORTING.md): Day1·Day2·Day5·Day6 100% (검증된 오프라인 범위), Day3 0% 차단 3h/8h, Day4 80% 2h/4h, 현재 Day14 20% 잔여 3h/안전 8h (CI 대기).
 - [보수적 일별 예상시간·완료 기준](docs/DAILY_CAPACITY_PLAN_20261024.md) (**PayPal 82h 예상·164h 지연 포함; 3대회 병행 시 고위험**)
 - [제출 후 심사 접근 유지·수상 대응표](docs/POST_SUBMISSION_JUDGING_PLAN_20261024.md) (PayPal은 별도 공식 본선 개발 단계 없음; 기본 8h·안전 16h, 조건부)
 - [단일 개발 프로토콜](docs/roles/lead/LEAD_FULLSTACK_PROTOCOL.md) · [브랜치 규정](docs/BRANCH_WORKFLOW.md) · [실행 일정](docs/PAYPAL_EXECUTION_PLAN_20261024.md).
@@ -35,3 +35,9 @@
 2026-11-13 **05:00 KST** 공식 제출, 11/11 내부 조기 목표. [0원 정책](docs/ZERO_COST_STACK_AND_GUARDRAILS.md), [상위 총괄 보고](docs/roles/lead/TO_HACKATHON_LEAD.md), [공식 규정](https://paypalaihackathon.devpost.com/rules).
 
 **폐기된 작업자 입구:** `WORKER_START_HERE.md` 및 `docs/dispatch/*`는 기록용이며 작업 실행 기준이 아니다. 과거 전문은 Git 이력에 남아 있다.
+
+## Reviewer preparation (draft, D14)
+- [English local reproduction instructions](docs/JUDGE_REPRODUCTION_EN.md) — mock only.
+- [Under-three-minute English storyboard](docs/VIDEO_STORYBOARD_EN.md) — not filmed.
+- [Security, rate limiting and test scope](docs/technical/PPL_D14_SECURITY_REPRO_20261024.md).
+- [License choice pending explicit owner approval](docs/LICENSING_DECISION.md). Public visibility alone is **not** an open-source LICENSE.

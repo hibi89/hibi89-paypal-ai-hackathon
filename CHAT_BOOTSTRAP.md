@@ -1,7 +1,9 @@
 > **통합 수뇌부 직접 전달 (2026-10-24 사용자 지시):** [상위 감독 시정·우선순위 메시지](docs/FROM_HACKATHON_COMMAND.md)를 **매 신규 채팅·각 주요 작업 전 필독**. 사용자 지시로 GitHub에 직접 게시된 **상위 총괄 감사 의견**이며 현행 단일 진도 JSON, `LEAD_ACTIVE_WORK.md`, 실제 CI·원격 최신 HEAD보다 *진행 숫자*의 우선순위가 높지 않다. 필수 요건/제출 권한 변경 없이 지적의 수용·반론·시정 증거를 `TO_HACKATHON_LEAD.md`에 남길 것. 자동 채팅 간 전달이 아닌 GitHub 정적 지시다.
 
 # PayPal AI Hackathon — single prompt resume / 2026-10-24
-<!-- resume: day_id=PPL-D14; percent=0; est_h=4; safe_h=10 -->
+<!-- resume: day_id=PPL-D14; percent=20; est_h=3; safe_h=8 -->
+> **D14 2026-10-24 진행 20% (CI 판정 대기):** 로컬 fixed-window rate guard + 429/Retry-After, Node 단위/HTTP 회귀 테스트, Git 추적 텍스트 서명 검사, 영문 reviewer 재현/영상 시나리오 초안 작성. 원격 새 HEAD의 Node/Chromium CI는 **PENDING/NOT_VERIFIED**. LICENSE는 사용자 선택 전 발행하지 않음. D03 실 Sandbox·D04 실 AI·Production/Devpost 미검증. 기본 잔여 계획 3h / 안전 확보 8h; 실측 NOT_MEASURED. [D14 기록](docs/technical/PPL_D14_SECURITY_REPRO_20261024.md).
+
 
 **원격 기준:** `hibi89/hibi89-paypal-ai-hackathon`, 개발·총괄 `lead/paypal`. 재개 명령 `[페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈]` / `ㄱ` / `r`. 반드시 최신 GitHub HEAD → `CHAT_BOOTSTRAP.md` → `docs/roles/lead/LEAD_ACTIVE_WORK.md` → `data/paypal_daily_progress.json` 순으로 재확인.
 
@@ -14,7 +16,7 @@
 - [D13 기술/판정](docs/technical/PPL_D13_INTEGRATION_FREEZE_20261024.md) · [18일 마스터](MASTER_PROGRESS.md).
 
 ## NEXT READY — D14 (11/07 예정, 선행 가능)
-- **D14 0%/100%, 기본 예상 4h / 안전 확보 총량 10h, 실측 NOT_MEASURED**.
+- **D14 20%/100%, 기본 잔여 3h / 안전 확보 8h, 실측 NOT_MEASURED**.
 - 보안/권한/Rate 제한·LICENSE·영문 자료 초안: 공용 저장소 비밀 노출 0 검증, 남용·CSRF·XSS·Origin·reviewer 역할, 공개 서버 배포 차단, rate limit 및 Node/SQLite 로컬 반례 확인, 심사위원 로컬 재현 README와 3분 미만 영상 시나리오. **운영 배포·실 계정 인증으로 확대하지 말 것.**
 - D03 **0% BLOCKED** 실 PayPal Sandbox Business/Personal + 무료 AI 계정 접근, 남은 기본 3h / 안전 8h + 외부대기 UNKNOWN. D04 **80%**, 실제 무료 AI Provider 20% BLOCKED, 남은 기본 2h / 안전 4h. D15 Deploy·D16 심사위원 URL/브라우저·D17 영상·D18 Devpost 제출 모두 미완료.
 - 공식 PayPal 제출 **2026-11-13 05:00 KST**, 내부 목표 **11/11**. 승인 없는 Live/신규 요금/개인정보/secret 공개·Public 원격 서버 연결·force push 금지. 타 2대회 저장소와 혼동 금지.

@@ -134,3 +134,25 @@ test('D09 local reviewer may reject then accept without any payment attempt',asy
     assert.equal((await jsonPost(quotes+'/orders',{})).status,503);
   }finally{await app.close();}
 });
+
+test('D14 real HTTP writes are throttled before JSON handling; GET remains available', async () => {
+  const app = await startOfflineDemo();
+  try {
+    const route = app.url + '/api/quotes/sample-project/approve';
+    const opts = {method:'POST',headers:{
+      'content-type':'application/json','x-csrf-token':'invalid',
+      'x-forwarded-for':'198.51.100.123'},
+      body:JSON.stringify({expectedVersion:1,confirmed:true,amountMinor:1500})};
+    for (let n = 0; n < 60; n++) {
+      const reply = await fetch(route, opts);
+      assert.equal(reply.status, 403);
+      await reply.text();
+    }
+    const limited = await fetch(route, opts);
+    assert.equal(limited.status, 429);
+    assert.deepEqual(await limited.json(), {error:'LOCAL_RATE_LIMITED'});
+    assert.ok(Number(limited.headers.get('retry-after')) >= 1);
+    assert.equal((await fetch(app.url + '/demo/session')).status, 200);
+    assert.equal((await fetch(app.url + '/api/quotes/sample-project/payment')).status, 503);
+  } finally { await app.close(); }
+});
