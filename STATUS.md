@@ -30,3 +30,10 @@
 - 순서/계획: quote-payment 10/26~30 → delivery 10/31~11/02 → subscriptions 11/03~06 → 단일 활성 담당자 통합 11/07~09 → 11/10 영상 → 11/11 Devpost 조기 제출. 공식 마감 11/13 05:00.
 - 인수 전환은 종료 브랜치 커밋 SHA·테스트·STATUS/HANDOFF·메시지 확인 이후. [최신 실행계획 v4.0](docs/PAYPAL_EXECUTION_PLAN_20261024.md).
 - **실제 작업자 채팅/기능 개발/API 호출/CI·배포/최종 제출 미착수·미검증**. 이전 '3명 병렬' 기록은 과거 취소된 결정.
+
+## 2026-10-24 KST — 단일 작업자 채팅/동적 기능 브랜치 라우터 구축
+- 사용자 운영 지시 반영: **PayPal 총괄 채팅 1개 + 순환 작업자 채팅 1개**. `feature/quote-payment`, `feature/delivery`, `feature/subscriptions` 브랜치는 유지하면서 담당자용 채팅을 3개로 나누지 않음.
+- 명령/실행 기준: [WORKER_START_HERE.md](WORKER_START_HERE.md) → [현재 활성 지시](docs/dispatch/ACTIVE_TASK.md) → [프로토콜](docs/dispatch/PROTOCOL.md) → [다음 작업 큐](docs/dispatch/QUEUE.md). **작업자가 매번 원격 지시를 읽어 하나의 target_branch만 수정.** 총괄이 검수하고 다음 작업 ID/브랜치를 발행할 때만 같은 채팅이 역할 변경.
+- 현재 발행 작업 **PPL-001 / READY / `feature/quote-payment`**: 실 Sandbox+무료 모델 가용성 및 견적·결제 구현안 2개/데이터 계약 검토. 추후 `PPL-002`는 큐에만 있으며 **착수 금지**.
+- 핵심 보호: 추가 지출 0원, Sandbox only, 코드/테스트 PASS 실증 필요, 역할별 보고는 선택된 feature `TO_PAYPAL_LEAD.md`, 총괄 메시지는 `lead/paypal`. 자동 실행·GitHub 웹훅·작업자 연락/알림 없음.
+- 작업자 채팅은 **아직 실제 생성·착수 검증 전**, 실 Sandbox 인증/호출, 앱/CI/배포/Devpost 제출 성과는 그대로 미완료·미검증. 이번 변경은 운영 체계 설정 및 다음 작업 지시 발행.
