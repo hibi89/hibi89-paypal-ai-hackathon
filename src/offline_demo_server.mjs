@@ -13,6 +13,7 @@ import { createSubscriptionScenarioStore } from './subscription_demo_store.mjs';
 import { createSubscriptionDemoApi } from './subscription_demo_api.mjs';
 import { evaluateLocalIntegration } from './local_integration_readiness.mjs';
 import { createDemoRateLimiter } from './demo_rate_limit.mjs';
+import { createPaypalBuyerReturnBoundary } from './paypal_buyer_return_boundary.mjs';
 
 const html = readFileSync(new URL('../web/offline_demo.html', import.meta.url), 'utf8');
 const onlyLoopback = address => address === '127.0.0.1' ||
@@ -64,6 +65,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false } 
     subscriptionId,store:subscriptionStore,resolveSession,offlineOnly:true
   });
   const checkRate = createDemoRateLimiter();
+  const buyerReturn=createPaypalBuyerReturnBoundary();
   let server;
   server = createServer(async (req, res) => {
     try {
@@ -88,6 +90,19 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false } 
         return;
       }
       const path = new URL(req.url, 'http://127.0.0.1:' + listenPort).pathname;
+      // Sandbox buyer return and cancellation are informational GET landings.
+      // No approved checkout, account session or PayPal API is available in
+      // the offline demo; ignore all token/PayerID/status query data.
+      if (path === '/checkout/paypal/return' ||
+          path === '/checkout/paypal/cancel') {
+        const response=await buyerReturn.handle(new Request(
+          'http://127.0.0.1:'+listenPort+req.url,{
+            method:req.method,headers:new Headers(req.headers)
+          }));
+        res.writeHead(response.status,Object.fromEntries(response.headers));
+        res.end(await response.text());
+        return;
+      }
       if (req.method === 'GET' && (path === '/' || path === '/demo')) {
         res.writeHead(200, {
           'content-type': 'text/html; charset=utf-8',

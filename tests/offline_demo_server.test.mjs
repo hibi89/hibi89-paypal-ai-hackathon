@@ -156,3 +156,42 @@ test('D14 real HTTP writes are throttled before JSON handling; GET remains avail
     assert.equal((await fetch(app.url + '/api/quotes/sample-project/payment')).status, 503);
   } finally { await app.close(); }
 });
+
+test('actual loopback PayPal return/cancel URLs never mark paid, mutate quote or invoke a provider',async()=>{
+ const app=await startOfflineDemo({testReviewSessions:true});
+ try{
+  const quote=app.url+'/api/quotes/sample-project';
+  const before=await (await fetch(quote)).json();
+  const poison='?token=FORGED_PAYPAL_ORDER&PayerID=FORGED_BUYER&amount=9999.00&status=COMPLETED&merchant_id=attacker';
+  for(const [path,status] of [
+   ['/checkout/paypal/return','BUYER_RETURN_NOT_PAYMENT_PROOF'],
+   ['/checkout/paypal/cancel','BUYER_CANCEL_NOT_PAYMENT_PROOF']
+  ]){
+   for(let i=0;i<3;i++){
+    const res=await fetch(app.url+path+poison,{headers:{
+      cookie:app.testReviewerCookie,'x-demo-role':'owner'
+    }});
+    assert.equal(res.status,200);
+    assert.equal(res.headers.get('cache-control'),'private, no-store');
+    assert.equal(res.headers.get('referrer-policy'),'no-referrer');
+    const raw=await res.text();
+    for(const sensitive of ['FORGED_PAYPAL_ORDER','FORGED_BUYER','9999.00','attacker'])
+      assert.equal(raw.includes(sensitive),false);
+    const body=JSON.parse(raw);
+    assert.equal(body.status,status);
+    assert.equal(body.paymentState,'NOT_CONFIRMED');
+    assert.equal(body.providerGetPerformed,false);
+    assert.equal(body.providerPostPerformed,false);
+    assert.equal(body.ledgerMutationPerformed,false);
+    assert.equal(body.retryPost,false);
+   }
+  }
+  assert.deepEqual(await (await fetch(quote)).json(),before);
+  const payment=await fetch(quote+'/payment');
+  assert.equal(payment.status,503);
+  assert.equal((await (await fetch(app.url+'/api/demo/integration')).json()).paymentState!=='PAID',true);
+  const invalidMethod=await fetch(app.url+'/checkout/paypal/return',{method:'POST'});
+  assert.equal(invalidMethod.status,405);
+  assert.equal(invalidMethod.headers.get('allow'),'GET');
+ }finally{await app.close();}
+});
