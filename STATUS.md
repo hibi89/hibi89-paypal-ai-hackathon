@@ -24,3 +24,9 @@
 - **최신 단독 실행계획:** [`docs/PAYPAL_EXECUTION_PLAN_20261024.md`](./docs/PAYPAL_EXECUTION_PLAN_20261024.md), **비용/무료 한도·차단 계약:** [`docs/ZERO_COST_STACK_AND_GUARDRAILS.md`](./docs/ZERO_COST_STACK_AND_GUARDRAILS.md). 상대 경로는 저장소 루트 기준이다.
 - Gate: **10/27 실 PayPal Sandbox 결제 POC 및 무료 AI 호출**, **11/02 첫 E2E**, **11/06 기능 동결**, **11/09 제출 후보**, **11/11 조기 제출**, 공식 마감 **11/13 05:00 KST**.
 - **미완료/미검증:** 사용자 PayPal Developer/Sandbox·Cloudflare·Gemini 무료 계정 접근, 3 담당 AI 채팅 실제 배정, 기능 코드·API 호출·CI·배포·영상·Devpost 제출은 아직 검증되지 않음. 계획 승인≠구현/제출 완료.
+
+## 2026-10-24 KST — 최종 운영 변경: PayPal 기능 담당 1명 순차 활성
+- **최신 사용자 결정**: KIC·PayPal·UGREEN은 대회당 담당자 1명씩 동시에 진행; PayPal 내부 기능 담당자 3명은 **동시 개발 금지/활성 1명**. 기존 3기능 통합 작품과 0원 비용 정책 유지.
+- 순서/계획: quote-payment 10/26~30 → delivery 10/31~11/02 → subscriptions 11/03~06 → 단일 활성 담당자 통합 11/07~09 → 11/10 영상 → 11/11 Devpost 조기 제출. 공식 마감 11/13 05:00.
+- 인수 전환은 종료 브랜치 커밋 SHA·테스트·STATUS/HANDOFF·메시지 확인 이후. [최신 실행계획 v4.0](docs/PAYPAL_EXECUTION_PLAN_20261024.md).
+- **실제 작업자 채팅/기능 개발/API 호출/CI·배포/최종 제출 미착수·미검증**. 이전 '3명 병렬' 기록은 과거 취소된 결정.
