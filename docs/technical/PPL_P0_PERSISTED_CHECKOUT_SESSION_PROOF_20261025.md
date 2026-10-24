@@ -20,3 +20,8 @@ Progress truth: D03 65% PARTIAL (buyer order/approval/capture 35% NOT_TESTED), D
 
 ## Next
 Select a trustworthy HTTPS return/cancel listener and real server auth approach; obtain the actual Sandbox Business merchant/app binding privately; then seek separate explicit authorization for at most one tiny Sandbox order, buyer approval and capture with new durable operation claims. No automatic replay on ambiguous payment POST.
+
+## Corrected CI verification
+- First feature CI [#40112189110](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40112189110) **FAILED**: the private proof validator was referenced outside its lexical scope; 338 passed and 9 failed. It made no real provider call.
+- Fix SHA [ed8fe928](https://github.com/hibi89/hibi89-paypal-ai-hackathon/commit/ed8fe9280916b48ba5a3a14b65176765bf3ae69a): the private WeakMap record captures the verifier function and rechecks persistence before use.
+- Follow-up [Actions #40112289191](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40112289191) **SUCCESS**: Node 347/347, localhost Chromium PASS, 18-day JSON/Markdown progress check PASS. External provider transactions still 0 this work session.
