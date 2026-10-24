@@ -2,7 +2,7 @@
   "schema_version": 1,
   "updated_kst": "2026-10-24",
   "scope": "Per-day verified acceptance; NOT entire PayPal hackathon project percent",
-  "active_day_id": "PPL-D06",
+  "active_day_id": "PPL-D07",
   "reporting_mode": "mandatory_after_each_actual_work_session",
   "days": [
     {
@@ -267,50 +267,106 @@
     {
       "day_id": "PPL-D06",
       "scheduled_date_kst": "2026-10-30",
-      "executed_date_kst": null,
+      "executed_date_kst": "2026-10-24",
       "scope": "Quote→human approval→payment-safe user flow validation; browser and security adapter gap review",
-      "status": "NOT_STARTED",
+      "status": "DAY6_OFFLINE_BROWSER_E2E_ACCEPTED",
       "estimated_total_hours": 5,
       "safe_total_hours": 9,
-      "estimated_remaining_hours": 5,
-      "safe_remaining_hours": 9,
+      "estimated_remaining_hours": 0,
+      "safe_remaining_hours": 0,
       "actual_elapsed_hours": null,
-      "actual_elapsed_note": "NOT_STARTED (hands-on estimate; no measured execution)",
-      "percent_complete": 0,
-      "carryover": [],
+      "actual_elapsed_note": "NOT_MEASURED; Day6 5h initial expected / 9h reserve were not measured work duration.",
+      "percent_complete": 100,
+      "carryover": [
+        "Production login, hosted app/browser and real PayPal Sandbox remain separately unverified D03/D15/D16, not counted here"
+      ],
       "limitations": [
-        "Local HTML and Node HTTP integration from D04 do not prove real browser user journey or production authentication",
-        "Payment HTTP endpoints remain 503; real Sandbox depends on separate blocked D03",
-        "D06 can test realistic offline UI and claim rejection without external payment credentials; do not re-label D03 tests"
+        "Real Chromium/browser test is on 127.0.0.1 local synthetic UI only, no real AI or PayPal API",
+        "Server is synthetic fixed identity and CSRF session for loopback, not production authentication; never publicly deploy",
+        "Payment HTTP POST continues fail-closed 503; no actual PayPal order/capture",
+        "Offsite/production browser and free deployment untested, scheduled separate day15/day16",
+        "Actual wall clock NOT_MEASURED"
       ],
       "checklist": [
         {
           "id": "BROWSER_USER_JOURNEY",
           "weight_pct": 25,
-          "state": "PENDING",
-          "evidence": null
+          "state": "VERIFIED",
+          "evidence": "tests/browser_offline_e2e.py & .github/workflows/test.yml @ 04c57a4c39767835940ed9dc3a42ca2793b47643; GitHub CI 40066792213 browser Chromium PASS with local UI draft, approval, quote revision"
         },
         {
           "id": "REFRESH_AND_DOUBLE_CLICK",
           "weight_pct": 20,
-          "state": "PENDING",
-          "evidence": null
+          "state": "VERIFIED",
+          "evidence": "web/demo_client.js, tests/demo_client.test.mjs, tests/browser_offline_e2e.py; CI 40066792213 GET-only F5/refresh; one POST on synchronized double-submit, persisted approval after reload"
         },
         {
           "id": "SESSION_OWNER_SECURITY",
           "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "tests/quote_api.test.mjs ownership 401/404/CSRF and origin; tests/offline_demo_server.test.mjs forged Host/origin forbidden; GitHub CI 40066792213 PASS. Synthetic demo session only, no production login."
+        },
+        {
+          "id": "PAYMENT_FAIL_CLOSED_IN_UI",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "tests/browser_offline_e2e.py payment status sends GET and no /orders POST; tests/offline_demo_server.test.mjs /orders 503; CI 40066792213 PASS"
+        },
+        {
+          "id": "CI_HANDOFF",
+          "weight_pct": 15,
+          "state": "VERIFIED",
+          "evidence": "Node npm test 102/102 PASS + Python real Chromium 127.0.0.1 UI E2E PASS in GitHub Actions 40066792213; docs/technical/PPL_D06_BROWSER_E2E_20261024.md; prior VM suite run 40066459542 failed before harness correction 40066534103 passed"
+        }
+      ]
+    },
+    {
+      "day_id": "PPL-D07",
+      "scheduled_date_kst": "2026-10-31",
+      "executed_date_kst": null,
+      "scope": "Contract, milestone, and delivery schema with ownership, separated settlement vs fulfillment and append-only history",
+      "status": "NOT_STARTED",
+      "estimated_total_hours": 4,
+      "safe_total_hours": 8,
+      "estimated_remaining_hours": 4,
+      "safe_remaining_hours": 8,
+      "percent_complete": 0,
+      "actual_elapsed_hours": null,
+      "actual_elapsed_note": "NOT_STARTED, baseline estimate only",
+      "carryover": [],
+      "limitations": [
+        "No contract or milestone schema implemented yet",
+        "Payment state must never imply delivered/accepted milestone",
+        "Production DB migration and real PayPal event reconciliation are separate future tasks"
+      ],
+      "checklist": [
+        {
+          "id": "CONTRACT_MILESTONE_SCHEMA",
+          "weight_pct": 25,
           "state": "PENDING",
           "evidence": null
         },
         {
-          "id": "PAYMENT_FAIL_CLOSED_IN_UI",
+          "id": "PAYMENT_VS_DELIVERY_STATE",
+          "weight_pct": 25,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "OWNER_AND_VERSION_GUARDS",
           "weight_pct": 20,
           "state": "PENDING",
           "evidence": null
         },
         {
-          "id": "CI_HANDOFF",
-          "weight_pct": 15,
+          "id": "APPEND_ONLY_HISTORY_TESTS",
+          "weight_pct": 20,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "CI_DOCS_HANDOFF",
+          "weight_pct": 10,
           "state": "PENDING",
           "evidence": null
         }

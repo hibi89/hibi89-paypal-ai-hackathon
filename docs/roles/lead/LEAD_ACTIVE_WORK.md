@@ -63,3 +63,10 @@ PPL-003 계약/납품·마일스톤 → PPL-004 구독/웹훅 → PPL-005 통합
 - **3일차 0%** (실 PayPal Sandbox·무료 AI 계정 접근 없음, 예상 3h/안전 8h+외부대기 UNKNOWN); **4일차 80%** (실 무료 AI 20% 차단, 예상 2h/안전 4h).
 - **현재 NEXT 6일차 0%/100%**, 남은 예상 **5시간** / 안전 확보 **9시간**. 오프라인 화면 사용자 흐름/새로고침/동시 클릭/권한 차단/로컬 UI 연동 검증. 실 PayPal 거래, 실제 AI API, 생산 배포, 운영 인증/Devpost 출품은 **NOT_TESTED**; 결제 HTTP POST **503 fail-closed** 유지.
 - 전체 프로젝트 완료율과 일별 100% 혼동 금지. 실측 작업 경과시간 `NOT_MEASURED`, 실제 Sandbox/외부 승인 기다림 시간 미계측/미확정. [검증 원장](../../../data/paypal_daily_progress.json) 최신화.
+
+## 2026-10-24 KST — PayPal D06 실제 Chromium 로컬 UI 검증 완료
+- **D06 100%/100%, 잔여 예상 0h/안전 확보 0h**. `web/demo_client.js` 버튼 1회 요청 잠금, 화폐 금액 안전 파싱, F5/GET만 조회; 로컬 UI 진짜 Chromium 브라우저에서 견적→승인→F5→수정·승인 무효화→결제 요청 차단 확인. [검증 설명](../../technical/PPL_D06_BROWSER_E2E_20261024.md).
+- [GitHub Actions 40066792213](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40066792213) **Node tests 102/102 PASS + Chromium browser E2E PASS** (runner 로그에서 성공 직접 확인). 첫 VM 테스트 실패 40066459542는 40066534103에서 수정, 최종 소스/브라우저 커밋 04c57a4.
+- **현재 NEXT D07 0%/100%, 남은 예상 4시간/안전 8시간:** 계약·마일스톤 DB, 결제 상태와 납품/검수 상태 독립, 변경 이력. **D03 0%/100%, 잔여 3h/안전 8h 외부 API 접근 차단; D04 80%/100%, 잔여 2h/안전 4h 실제 AI 미검증** 유지.
+- 브라우저 성공은 127.0.0.1 `OFFLINE_MOCK` 데모만; 운영 로그인/호스팅/실 PayPal 주문·결제/실 AI/Devpost **NOT_TESTED**. 주문 POST 503 유지, Live/유료/개인정보 전송 없음. 실제 경과시간 `NOT_MEASURED`.
+- [증거별 일일 진도 원장](../../../data/paypal_daily_progress.json) 최신화. 완료율은 각 일차 범위 100%이며 PayPal 전체 완성률 아님.
