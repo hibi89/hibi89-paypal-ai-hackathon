@@ -14,3 +14,7 @@
 ## GitHub/안전
 - 전환 전 lead `3fc1d9e9ac017d50c73492fb550c30f88c4f7fa2`(이전 복구점 `2fb4eaabd3f572330e34b2406f532ce51b780361`), quote `876d7d1b5935b91e6baddea36abdb8e50602c4fb`, delivery `77dc5327b69432d3f64a320dea8a1ae0c2f427ce`, subscriptions `9d77f9029d9dfb571f14f5d10289f97015ba6f4f`, main `b58533ac7e632706a95d807de5ced6497b5e46b0`. 새 기준은 본 변경 커밋의 원격 HEAD.
 - 원본 3 feature 및 `main` 불변, 비밀값/고객자료 저장·유료/Live 결제 없음.
+
+## 2026-10-24 KST — 원격 CI 실증 완료
+- `lead/paypal@226c896f1c6f53c82d6372a55be8f86a1877c7a2`에서 GitHub Actions [run 40061487185](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40061487185) **completed/success** 확인. `npm test` job step **success**, Node 22 설치·checkout 통과. 로컬 독립 11 PASS / 0 FAIL 증빙과 별개로 CI 실행을 확인했다.
+- CI는 **오프라인 결제 계약 테스트만** 검사하며 PayPal 실 Sandbox/무료 AI/브라우저/Production·Devpost 제출 검증은 포함하지 않는다. 본 문서 최신화 커밋의 CI는 별도 재조회할 것.

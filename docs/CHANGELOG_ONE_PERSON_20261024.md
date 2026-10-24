@@ -5,3 +5,6 @@
 - 작업자 PPL-001 산출물 3파일을 Git blob 동일하게 이관: 기술문서 `a7ad6d55612ed1f97b43a036b891a91885068030`, source `4cd04345a15791f1773217d57755aac405bfa13a`, tests `75802e7b22091fd3b28bd7dc32a20ff184ccc24b`.
 - **실제 오프라인 독립 테스트:** Node v22.16.0 `node --test tests/payment_contract.test.mjs`: 11 PASS/0 FAIL/0 SKIP. git hash-object와 원격 source/test blob SHA 같음. Sandbox/AI/Production/Devpost 미검증.
 - 신규 CI `.github/workflows/test.yml` 구성은 GitHub run 결과 확인 전 성공으로 주장 금지. `main`과 세 feature 원본 무변경, 이전 SHA로 복구 가능, 강제 이력 변경 없음.
+
+## 원격 CI 확인
+- 구현·구조 통합 `226c896f1c6f53c82d6372a55be8f86a1877c7a2` GitHub Actions run `40061487185`: completed/success, `npm test` step PASS. 이 실증은 Sandbox/AI API·브라우저·Production 성공이 아님.

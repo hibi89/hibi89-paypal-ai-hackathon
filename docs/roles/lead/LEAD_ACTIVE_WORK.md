@@ -15,3 +15,6 @@
 
 ## 이후 단독 실행
 PPL-003 계약/납품·마일스톤 → PPL-004 구독/웹훅 → PPL-005 통합·배포·보안·심사 → PPL-006 공개 LICENSE·영문 영상/Devpost 제출. 내부 11/11, 공식 11/13 05:00 KST. 범위 축소/유료/Live는 별도 승인.
+
+### 2026-10-24 GitHub CI 근거
+- 코드 이관 커밋 `226c896f1c6f53c82d6372a55be8f86a1877c7a2` Actions run [40061487185](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40061487185): **completed/success**; Node 22 + `npm test` 단계 `success`. 실 API/브라우저/배포 검증이 아니라 순수 계약 회귀 테스트만 PASS.
