@@ -1,5 +1,6 @@
 # PayPal HANDOFF — D14 closed / D15 preflight
 <!-- resume: day_id=PPL-D15; percent=20; est_h=5; safe_h=10 -->
+> **D15 2026-10-24 후속 기술 검증:** D1 후보 스키마 `migrations/d1/0001_payment_claims.sql`, 단일 점유 함수 `src/d1_claim.mjs`, 9개 로컬 SQLite/D1-형상 검증(`tests/d1_claim.test.mjs`) 추가. [GitHub Actions #40081717845](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40081717845) @ `0d8497a69b5`: **Node 193/193, 로컬 Chromium, 18일 일정 검사 PASS**. 실제 D1/Cloudflare 계정·실 PayPal/AI·공개 URL은 **NOT_TESTED**. 진척률 **D15 20%/100% 그대로**, 잔여 기본 **5시간**·안전 확보 **10시간** (계획, 실측 NOT_MEASURED). 외부 배포·계정 승인 전 실행 금지.
 > **D15 진행 기록 (2026-10-24 KST):** `lead/paypal`의 사전 검사 코드 `src/hosting_preflight.mjs`·CLI·4개 테스트와 [D15 설계](docs/technical/PPL_D15_HOSTING_PREFLIGHT_20261024.md)를 추가. 실제 GitHub Actions [#40080872405](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40080872405) @ `18875d360b21`: **Node 184/184, 로컬 Chromium E2E, 18일 진척 검사 PASS**. D15 **20%**(설계·의존성 확인만 검증). 남은 기본 5h/안전 총량 10h, 실측 NOT_MEASURED. 공개 URL/Cloudflare 계정/운영 인증/D1/실 PayPal·실 AI는 **NOT_TESTED**. `npm run preflight:hosting`는 차단 증거 출력 후 종료 코드 2(예상 동작). 사용자 별도 승인 없이는 배포 금지.
 
 
@@ -25,7 +26,7 @@ D01–D02와 D05–D14 각 오프라인 기준 완료 12일. 사용자 MIT 승�
 npm test; python3 render_master_progress.py --check; npm run demo. 첫 라이선스 CI 40079633642 Node 179/180 FAIL(테스트가 정상 마지막 개행 거절) → 정규식 보정 d45b8d5a055cdf236a9a004e165a090d21d467db / CI 40079691820 Node 180/180 PASS, 18일 check PASS, Chromium local E2E PASS. 실 PayPal/AI/Production/Devpost NOT_TESTED.
 
 ## ④ 완료·진행·대기·중단
-DONE12 / PARTIAL1 / BLOCKED1 / NOT_STARTED3. D14 100% 로컬 범위만; D03 실 Sandbox/AI 0% BLOCKED; D04 실 AI 20% 잔여; D15 20% active, 기본 5h/안전 10h, 실측 NOT_MEASURED, 외부 대기 UNKNOWN.
+DONE12 / PARTIAL2 / BLOCKED1 / NOT_STARTED3. D14 100% 로컬 범위만; D03 실 Sandbox/AI 0% BLOCKED; D04 실 AI 20% 잔여; D15 20% active, 기본 5h/안전 10h, 실측 NOT_MEASURED, 외부 대기 UNKNOWN.
 
 ## ⑤ 오류·시도·중단·대안
 신규 라이선스 테스트 앵커 오류만 수정, LICENSE 표준 텍스트 보존. 이미 통과한 180개 재구현 금지. D15 접근 미확보를 장애로 오판하지 말고 로컬 reviewer 재현 vs Workers/D1 정식 실배포 2안을 비용·보안·유지관리로 비교.
@@ -49,3 +50,9 @@ D15 외부 계정/무료한도/보안 게이트→2안 비교→사용자 승인
 
 ## D15 2026-10-24 검증·인수인계 추가 기록 (KST)
 ① 제품 목표·3기능·Node/SQLite 정본 유지. ② Cloudflare 무료 한도/런타임 비교와 fail-closed preflight 모듈·CLI·4개 테스트 신설, 원래 서비스 코드는 그대로. ③ GitHub Actions 40080872405 @ 18875d360b21329887d767f5c76b811ceb80ba64: Node 184/184 + Chromium 로컬 PASS; production tests 0, real Sandbox/AI 0. ④ D15 20% PARTIAL, D03 BLOCKED, D04 PARTIAL; 차단 이유 실제 계정/승인·D1/인증 없음. ⑤ 실패 없음; `npm run preflight:hosting` 종료 2는 의도된 차단 표시이지 테스트 실패가 아님. ⑥ 저장소 hibi89/hibi89-paypal-ai-hackathon `lead/paypal`, 실증 SHA 18875d360b21329887d767f5c76b811ceb80ba64; `src/hosting_preflight.mjs`, `tests/hosting_preflight.test.mjs`, `docs/technical/PPL_D15_HOSTING_PREFLIGHT_20261024.md`. ⑦ Vercel/Production URL 미적용. ⑧ 원본 변경 전 18875d360b21329887d767f5c76b811ceb80ba64, Git 이력으로 복구; 실제 비밀 값/고객 자료 입력 금지. ⑨ 다음은 D1 스키마/운영 인증 계약 및 사용자 승인 후 배포, API/HTTP/브라우저 실제 증거 전 100% 금지. ⑩ 2026-10-24 KST 기준; CI 근거 40080872405, 새 인수인계 커밋 HEAD의 CI는 별도 재확인.
+
+## D15 D1 단일 점유 실증 후속 인수(2026-10-24 KST)
+- 최신 추가 코드: `migrations/d1/0001_payment_claims.sql`, `src/d1_claim.mjs`, `tests/d1_claim.test.mjs`, `docs/technical/PPL_D15_D1_CLAIM_FENCE_20261024.md`.
+- 로컬 API shim으로 중복/경쟁/타 사용자/merchant 차단, stale version·UNKNOWN 복구·capture prior approved 조건·불변 견적을 확인. 최초 fixture cleanup 오류는 원격 업로드 전에 로컬 수정, 이후 11/11 PASS; GitHub Actions #40081717845 193/193 Node+로컬 Chromium PASS.
+- `D1 claim`의 FIRST는 내부 상태 점유일 뿐 실제 Provider POST 증명 아님. `APPROVED` fixture는 합성, 실제 PayPal GET·운영 신원·D1 바인딩·원격 배포는 모두 미검증.
+- D15 20% PARTIAL 그대로, 기본 5h/안전 10h, 실측 NOT_MEASURED. D03 실 Sandbox BLOCKED·D04 실 AI 미검증. 원본 Git SHA `7a21c1d9daf3bd38ef34207fdab0183202d5583f` 보존. 현 보고 커밋은 신규 CI 재확인.

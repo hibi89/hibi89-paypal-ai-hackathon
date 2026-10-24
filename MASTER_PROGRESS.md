@@ -24,7 +24,7 @@
 | PPL-D12 | 2026-11-05 | 구독 UI 및 실패·취소·복구 시나리오 | DONE | 100% | 0h | 0h | 2026-10-24 | D12 design/guards: src/subscription_demo_store.mjs + src/subscription_demo_api.mjs; synthetic-only lifecycle with NOT_VERIFIED payment, version CAS/CSRF/trusted owner and forbidden CANCELLED recovery | 80bb6c8442e02bde8247980537cc1efbc05e6698 | — |
 | PPL-D13 | 2026-11-06 | 전체 기능 통합 회귀·주요 결함 수정 | DONE | 100% | 0h | 0h | 2026-10-24 | D13 design: src/local_integration_readiness.mjs explicitly evaluates approved quote/version/owner/merchant/amount+accepted milestone+synthetic subscription ACTIVE; status LOCAL_DEMO_CANDIDATE only, realPayPal/AI/deployment NOT_TESTED | 673f47a1e47b25197e2a51f1b949024e356d3a25 | — |
 | PPL-D14 | 2026-11-07 | 보안/권한/Rate 제한·LICENSE·영문 자료 초안 | DONE | 100% | 0h | 0h | 2026-10-24 | LICENSE + package.json SPDX MIT + tests/license.test.mjs @ d45b8d5a055cdf236a9a004e165a090d21d467db | d45b8d5a055cdf236a9a004e165a090d21d467db | — |
-| PPL-D15 | 2026-11-08 | 무료 호스팅·D1·실제 데모 배포/복구 | PARTIAL | 20% | 5h | 5h | 2026-10-24 | docs/technical/PPL_D15_HOSTING_PREFLIGHT_20261024.md: source inventory + local vs Cloudflare+D1 design & official Free limits; GitHub Actions 40080872405 @ 18875d360b21, 184/184 Node + local Chromium PASS | 18875d360b21329887d767f5c76b811ceb80ba64 | — |
+| PPL-D15 | 2026-11-08 | 무료 호스팅·D1·실제 데모 배포/복구 | PARTIAL | 20% | 5h | 5h | 2026-10-24 | docs/technical/PPL_D15_HOSTING_PREFLIGHT_20261024.md; docs/technical/PPL_D15_D1_CLAIM_FENCE_20261024.md; GitHub Actions 40081717845 @ 0d8497a69b69e8515e178fae8a6aabbe277310b5: 193/193 Node, local Chromium PASS | 0d8497a69b69e8515e178fae8a6aabbe277310b5 | — |
 | PPL-D16 | 2026-11-09 | 실제 브라우저 E2E·심사위원 접근 검수 | NOT_STARTED | 0% | 5h | 5h | — | — | — | — |
 | PPL-D17 | 2026-11-10 | 영문 Devpost 안내·3분 미만 영상 촬영/편집 | NOT_STARTED | 0% | 6h | 5h | — | — | — | — |
 | PPL-D18 | 2026-11-11 | Devpost 제출·링크/권한·접수증 검수 | NOT_STARTED | 0% | 3h | 4h | — | — | — | — |
@@ -50,7 +50,7 @@
 - PPL-D12 (2026-11-05): 2026-10-24 선행: 구독 모의 UI(활성·실패·복구·취소) SQLite·권한/CSRF 및 실제 로컬 Chromium 171 Node CI PASS. 실제 PayPal 구독/거래/GET 미검증.
 - PPL-D13 (2026-11-06): 2026-10-24 선행: 견적→계약·납품→구독 합성 E2E 통합검증과 read-only 로컬 freeze 후보 판정, Node 175/175+Chromium PASS. 실 PayPal·AI·공개배포/제출 미검증.
 - PPL-D14 (2026-11-07): 10/24 선행 완료: 사용자 MIT 승인, 루트 LICENSE·무결성 테스트, Node 180/180·로컬 Chromium CI PASS; 외부 API/배포 미검증.
-- PPL-D15 (2026-11-08): 10/24 D15 정적 사전검사·Node 184/184·로컬 Chromium 선행검증, 인터넷 배포·실 PayPal/AI 증거 없음.
+- PPL-D15 (2026-11-08): 10/24 D15 정적 사전검사 + D1 호환 후보 스키마/결제 claim 원자성 9테스트, GitHub Actions 193/193·로컬 Chromium PASS. 실제 배포/PayPal/AI 전부 미검증.
 
 ## 운영 의무
 

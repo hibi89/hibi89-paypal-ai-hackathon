@@ -952,50 +952,53 @@
       "executed_date_kst": "2026-10-24",
       "actual_elapsed_hours": null,
       "evidence": [
-        "docs/technical/PPL_D15_HOSTING_PREFLIGHT_20261024.md: source inventory + local vs Cloudflare+D1 design & official Free limits; GitHub Actions 40080872405 @ 18875d360b21, 184/184 Node + local Chromium PASS",
-        "src/hosting_preflight.mjs; tests/hosting_preflight.test.mjs; scripts/check_hosting_preflight.mjs"
+        "docs/technical/PPL_D15_HOSTING_PREFLIGHT_20261024.md; docs/technical/PPL_D15_D1_CLAIM_FENCE_20261024.md; GitHub Actions 40081717845 @ 0d8497a69b69e8515e178fae8a6aabbe277310b5: 193/193 Node, local Chromium PASS",
+        "migrations/d1/0001_payment_claims.sql; src/d1_claim.mjs; tests/d1_claim.test.mjs: 9 offline D1-shaped contract tests (not remote D1)",
+        "src/hosting_preflight.mjs; tests/hosting_preflight.test.mjs: no-deploy static report"
       ],
-      "verified_sha": "18875d360b21329887d767f5c76b811ceb80ba64",
+      "verified_sha": "0d8497a69b69e8515e178fae8a6aabbe277310b5",
       "blocker": "Cloudflare Free 계정/기존 호스팅 접근 및 공개 배포·운영 인증 승인 미확보; D03 실제 PayPal Sandbox·D04 실 AI도 미확보",
       "recovery_date_kst": null,
       "recovery_condition": "사용자가 외부 계정·공개 배포를 별도 승인하고 계정 무료 한도/실 인증·D1·실 API를 검증한 경우에만 운영 작업 재개",
-      "advance_note": "10/24 D15 정적 사전검사·Node 184/184·로컬 Chromium 선행검증, 인터넷 배포·실 PayPal/AI 증거 없음.",
-      "status": "D15_STATIC_HOSTING_PREFLIGHT_VERIFIED_REMOTE_BLOCKED",
+      "advance_note": "10/24 D15 정적 사전검사 + D1 호환 후보 스키마/결제 claim 원자성 9테스트, GitHub Actions 193/193·로컬 Chromium PASS. 실제 배포/PayPal/AI 전부 미검증.",
+      "status": "D15_OFFLINE_CLAIM_FENCE_VERIFIED_REMOTE_BLOCKED",
       "actual_elapsed_note": "NOT_MEASURED; estimated remaining work budgets (not elapsed time) + unbounded external account/approval wait",
       "carryover": [
         "Never publish 127.0.0.1 synthetic server as real app; Node sqlite stub on Workers, use D1 binding instead",
         "D15 static design 20% only; deployment implementation 40%, real deployment verification 30%, production CI handoff 10% all PENDING",
-        "D03 real Sandbox and D04 AI external gates not solved; owner approval required before Cloudflare creation/deploy"
+        "D03 real Sandbox and D04 AI external gates not solved; owner approval required before Cloudflare creation/deploy",
+        "D1 claim prototype has no remote binding/HTTP/provider. Migration is NOT APPLIED to Cloudflare; implement verified GET reconciliation and real authentication before any hosted use."
       ],
       "limitations": [
         "No Cloudflare/D1 account connector or owned resource was inspected; documentation limits not account verification",
         "No production URL, identity, real payment or AI integration tested",
-        "Preflight exits 2 by design; passing Node tests verify blocker detection, not deployment availability"
+        "Preflight exits 2 by design; passing Node tests verify blocker detection, not deployment availability",
+        "Node SQLite shim is not a real Cloudflare D1 integration, despite SQL compatibility and offline tests"
       ],
       "checklist": [
         {
           "id": "REQUIREMENTS_AND_DESIGN",
           "weight_pct": 20,
           "state": "VERIFIED",
-          "evidence": "docs/technical/PPL_D15_HOSTING_PREFLIGHT_20261024.md: source inventory + local vs Cloudflare+D1 design & official Free limits; GitHub Actions 40080872405 @ 18875d360b21, 184/184 Node + local Chromium PASS"
+          "evidence": "docs/technical/PPL_D15_HOSTING_PREFLIGHT_20261024.md; docs/technical/PPL_D15_D1_CLAIM_FENCE_20261024.md; GitHub Actions 40081717845 @ 0d8497a69b69e8515e178fae8a6aabbe277310b5: 193/193 Node, local Chromium PASS"
         },
         {
           "id": "IMPLEMENTATION",
           "weight_pct": 40,
           "state": "PENDING",
-          "evidence": "Production D1/identity/API adapter not implemented or authorized; static fail-closed preflight helper is not a Worker"
+          "evidence": "Local D1-shaped migration and atomic claim prototype validated in SQLite, but remote D1, real authenticated API, provider GET reconciliation and production implementation not authorized or tested."
         },
         {
           "id": "AUTOMATED_VERIFICATION",
           "weight_pct": 30,
           "state": "PENDING",
-          "evidence": "src/hosting_preflight.mjs, scripts/check_hosting_preflight.mjs, tests/hosting_preflight.test.mjs: 4 preflight tests PASS in Actions 40080872405, but no public HTTP/Production E2E performed"
+          "evidence": "193/193 Node + local Chromium PASS; this test count includes 9 D1-shaped SQLite shim tests. No actual D1/HTTPS/prod browser evidence, acceptance remains PENDING."
         },
         {
           "id": "CI_HANDOFF",
           "weight_pct": 10,
           "state": "PENDING",
-          "evidence": "Node 184/184 + local Chromium PASS @ 18875d360b21; D15 production/deployment CI checkpoint still NOT_VERIFIED"
+          "evidence": "GitHub Actions 40081717845 @ 0d8497a69b69e8515e178fae8a6aabbe277310b5 PASS local, production CI handoff still PENDING."
         }
       ]
     },

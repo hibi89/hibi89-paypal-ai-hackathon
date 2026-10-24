@@ -16,3 +16,6 @@ D03 실 Business/Personal Sandbox+실 무료 AI 계정 BLOCKED; D04 실 AI 부�
 - [Cloudflare vs local decision and evidence](docs/technical/PPL_D15_HOSTING_PREFLIGHT_20261024.md).
 - `npm run preflight:hosting`: emits explicit blocker inventory and exits **2** on expected no-deploy condition. This does NOT host or configure a service.
 - [GitHub Actions #40080872405](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40080872405): 184 Node PASS + Chromium local PASS; no Production URL evidence.
+
+## D15 offline D1 payment idempotency prototype
+[SQL migration candidate](migrations/d1/0001_payment_claims.sql) · [safe internal claim helper](src/d1_claim.mjs) · [9 offline Node tests](tests/d1_claim.test.mjs) · [design and unsatisfied release gates](docs/technical/PPL_D15_D1_CLAIM_FENCE_20261024.md). [GitHub Actions #40081717845](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40081717845) Node 193/193 and local Chromium PASS. **No actual D1/PayPal/AI or public deployment proof.**
