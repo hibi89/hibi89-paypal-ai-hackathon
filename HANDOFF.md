@@ -1,30 +1,43 @@
-# PayPal — 새 채팅용 최신 인수인계 (2026-10-24 KST)
+# PayPal — 최신 재개 인수인계 (2026-10-24 KST)
+<!-- resume: day_id=PPL-D08; percent=0; est_h=4; safe_h=8 -->
 
-<!-- resume: day_id=PPL-D07; percent=0; est_h=4; safe_h=8 -->
+> 새 채팅에서 정확히 **`[페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈]`** 한 줄만 입력하면 GitHub `lead/paypal` 최신 HEAD/원장 확인 후 D08 작업을 직접 구현·검수한다. `ㄱ`도 동일. 채팅이 열려 있지 않을 때 백그라운드 작업은 실행되지 않는다.
 
-> 새 채팅에서 정확히 `[페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈]`만 보내면, PayPal 총괄 개발자는 **이 GitHub 인수인계를 조회한 뒤 다음 작업을 직접 수행**한다. 설명만 하거나 다시 사용자에게 지시문을 만들지 않는다.
+## 1. 프로젝트 목적 · 확정 요구 · 기술
+AI 프리랜서 견적(사람 승인 필수) → PayPal **Sandbox-only** 주문/캡처/GET → 계약·마일스톤·납품 검수 → 구독/Webhook. Node >=22, SQLite 로컬, HTML demo, 향후 Cloudflare Free/D1 후보. 추가 지출 ₩0, Live/실카드 금지, 공식 마감 **11/13 05:00 KST**, 내부 목표 **11/11**. [REQUIREMENTS](REQUIREMENTS.md)에서 범위 유지.
 
-## 1. 반드시 복원할 실행 상태
-- 저장소 `hibi89/hibi89-paypal-ai-hackathon`, **개발 브랜치 `lead/paypal`**. `main` 릴리스 스냅샷과 feature/구 worker 라우터는 **현재 개발 정본 아님**.
-- 최신 완료: **D06 로컬 Chromium E2E 100% / 남은 예상 0h·안전 0h**. 기능 검증 근거 `8cb714a21196336d6f28e3487f76dc04f9f38708`, [CI 40066974668](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40066974668) **Node 103 PASS, Chromium PASS**.
-- **CURRENT NEXT: D07 (10/31 배정일, 선행 승인)**. 계약·마일스톤 DB. **0%/100%, 남은 예상 4h/안전 8h**; `data/paypal_daily_progress.json` 체크리스트 25/25/20/20/10을 그대로 유지.
-- D03 실 Sandbox/무료 AI **0%, 잔여 3h/안전 8h+외부 대기 UNKNOWN**. D04 실 AI 차단 **80%, 잔여 2h/안전 4h**. D01/D02/D05 각 offline 목표 100%.
-- **실 Sandbox/AI/운영 계정/호스팅/Devpost 출품 NOT_TESTED**. 결제 POST 503. Node 로컬 SQLite·OFFLINE_MOCK·로컬 Chromium 검증을 실제 PayPal 거래로 표시하지 않는다.
+## 2. 이번 완료 기능 · 설계 결정
+- **D07 100% (오프라인 범위)**: `src/contract_milestones.mjs`에 계약 견적 승인 snapshot/금액 합산, 다단계 마일스톤 FK/순서, 소유자 납품 제출·검수자 승인/반려, version CAS/unique eventId/트랜잭션, 감사 DB UPDATE/DELETE 차단. 기존 `src/sqlite_ledger.mjs`에 연결하고 계약 후 견적 수정 차단. 지불 상태 `PAID`가 검수 완료를 자동 의미하지 않음.
+- 별도 모듈 방식을 채택하여 기존 결제 가드, UNKNOWN/no retry 및 HTTP 결제 POST 503을 그대로 유지. legacy Day2 스키마 업그레이드·동시 커넥션 테스트 추가.
 
-## 2. D07 즉시 구현 요령
-- `src/sqlite_ledger.mjs`, `src/payment_contract.mjs`, `tests/sqlite_ledger.test.mjs`를 최신 HEAD에서 읽는다.
-- 계약·마일스톤·납품/검수 이벤트 테이블을 오프라인 DB 마이그레이션 호환 방식으로 추가한다. 승인된 견적 snapshot/version/owner와 계약 연계, 결제와 납품 별도 상태 전이, 감사 기록 append-only/외래키·unique/트랜잭션.
-- 기존 API 안전 가드·미결제 UNKNOWN·무단 POST 금지 불변. `npm test` 및 CI에서 통과 확인, 새 테스트·증거가 없는 완료% 상승 금지.
-- D07이 끝나면 최신 원장·독립 과제 기준으로 D08 이후 선행 가능. 실 Sandbox/AI 접근은 차단 항목 유지·수시 점검.
+## 3. 검증 명령 · 근거
+- GitHub Actions [40069063023](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40069063023) **completed/success, `npm test` Node 121/121 PASS(실패 0), 로컬 실제 Chromium E2E PASS**. D07 코드 기준 SHA `e682d6dd876cfc1afe9ca7aeec32842ad306d698`. 처음 D07 커밋 `8c15b126`의 CI [40068908347](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40068908347)도 120/120+Chromium PASS.
+- 새 문서 동기화 커밋은 별도 Actions 확인 필요. **Sandbox 실결제/AI/운영배포/Devpost 미검증**. 단위 테스트와 실거래 혼동 금지. [기술 보고](docs/technical/PPL_D07_CONTRACTS_20261024.md).
 
-## 3. 매 작업 후 저장해야 하는 GitHub 체크포인트
-1. 실제 소스·테스트 변경 및 CI/브라우저 실증 결과와 원격 SHA 확인.
-2. `data/paypal_daily_progress.json`: 당일 목표 100점의 VERIFIED 점수%, 남은 **예상/안전** 시간, 실측/미계측, 차단 및 이월.
-3. **같은 커밋**에서 `CHAT_BOOTSTRAP.md`, `docs/roles/lead/LEAD_ACTIVE_WORK.md`, `STATUS.md`, 이 `HANDOFF.md`, `docs/roles/lead/TO_HACKATHON_LEAD.md`의 현재 `resume:` 포인터와 설명 일치. 기술 문서/일정 필요시 동시 수정.
-4. `npm test` → GitHub push → Actions 결과 조회 → 원격 SHA 재확인. Actions 대기/실패는 PENDING/FAIL로 정확히 기록; 인수인계 완결이라고 속이지 않음.
-5. 새 채팅에서 사용자에게 **이번 작업 진행 X%/100%, 남은 예상 Yh/안전 Zh, 다음 READY, 외부 차단, 최종 검증된 SHA·CI URL** 보고.
+## 4. 완료·진행·대기·차단 및 중단 지점
+- D01/D02/D05/D06/D07 각각 지정 **오프라인 범위 100%**. **D03 0%, 3h/8h + 외부 접근 대기 UNKNOWN**; **D04 80%, 2h/4h, 실제 무료 AI 20% 차단**.
+- **ACTIVE PPL-D08 0%/100%, 남은 예상 4h/안전 확보 8h, 실측 NOT_MEASURED**. [LEAD_ACTIVE_WORK](docs/roles/lead/LEAD_ACTIVE_WORK.md) → 인증된 계약/납품/검수 서버 API 개발부터 재개. 전체 프로젝트 진행률로 계산하지 않는다.
 
-## 4. 기타
-- 새 채팅은 [CHAT_BOOTSTRAP](CHAT_BOOTSTRAP.md), [ACTIVE](docs/roles/lead/LEAD_ACTIVE_WORK.md), [STATUS](STATUS.md), [원장](data/paypal_daily_progress.json), [동기화 계약](docs/RESUME_SYNC_CONTRACT.md), [시간표](docs/DAILY_CAPACITY_PLAN_20261024.md)를 읽어야 한다.
-- 11/11 내부 목표, 11/13 05:00 KST 공식 마감. 실제 Devpost 제출·브라우저 공개 데모·영문 영상 미완료. 결제 Live·신규 돈·실고객 PII 유출 절대 금지.
-- 이전 상세 작업 이력은 [직전 Git commit](https://github.com/hibi89/hibi89-paypal-ai-hackathon/commit/8cb714a21196336d6f28e3487f76dc04f9f38708)과 [archive](docs/archive/LEAD_ACTIVE_WORK_HISTORY_20261024.md). ChatGPT가 무인 백그라운드 자동 개발하는 기능은 아니다.
+## 5. 오류 근거 · 원인 · 실패 재시도 방지 · 대안
+- 외부 Sandbox Business/Personal 및 무료 AI 계정 접근 부재: 실제 OAuth/Orders/AI 호출 증빙 없음. 계정 비밀을 공개 저장소에 넣지 말 것; 사용자가 안전한 비공개 로그인/권한을 제공할 수 있을 때만 실 API 검증. 그 전에는 **offline local**만 개발.
+- 기존 로그인 없는 loopback demo를 공개하지 말 것. D08에서 서버 세션으로 owner/reviewer/merchant를 신뢰 가능한 방식으로 제공해야 한다. 브라우저 제공 actorId로 권한 판단 금지.
+- PayPal POST timeout/UNKNOWN은 원격 GET 이후 수동 판단; 동일 capture POST 무작정 재발송 금지.
+
+## 6. 저장소 · 브랜치 · SHA · 주요 경로
+- [GitHub](https://github.com/hibi89/hibi89-paypal-ai-hackathon) · **`lead/paypal` 개발 정본**, `main` 릴리스 전용, 옛 feature/* 보존. D07 기능 완료 SHA `e682d6dd...`. 현재 문서 커밋의 최종 HEAD는 GitHub에서 다시 확인할 것.
+- 원장 `data/paypal_daily_progress.json`; 소스 `src/sqlite_ledger.mjs`/`src/contract_milestones.mjs`; 테스트 `tests/contract_milestones.test.mjs`; 실행 진입 `CHAT_BOOTSTRAP.md`.
+
+## 7. Production URL · 프로젝트 · 실행 환경
+- **Production URL/Vercel: 미적용/미검증**. 배포 성공 증빙 없음. 로컬 `npm test` 및 `npm run demo` (Node >=22 --experimental-sqlite). Chromium GitHub CI만 확인.
+- 실제 공개 인증, D1 마이그레이션, 운영 웹훅 및 Devpost 제출은 이후 과제.
+
+## 8. 원본/백업 · 인증 관리 · 수정 금지
+- GitHub Git history와 변경 전 SHA `48a88451`가 코드 원본 복구 기준; DB 사용자 데이터는 GitHub 업로드 금지. 실 DB 파일 변경은 실제 DB 원본 백업 후 수행. .env/token/카드/PII 공개 금지. `main`/feature/* 원본 보존, force push 금지. PayPal Live/유료/권한·공개 전환은 사전 승인.
+
+## 9. 다음 작업 · 완료 기준 · 승인 사항
+- D08 체크리스트 **25/25/20/20/10**: 계약 생성/조회 API → 납품 제출 → 검수자 승인·반려 → 서버 인증/CSRF/Origin/멱등·GET 검사 → CI·문서 동기화.
+- 각 단계는 먼저 기존 API와 테스트를 확인한 뒤 최소 변경한다. 외부 계정 승인·유료/Live·공개 배포는 사용자 동의 없이 진행하지 않는다.
+- 작업마다 일자별 VERIFIED 점수와 잔여 예상/안전시간을 원장+6문서에 같은 커밋으로 보존. [동기화 계약](docs/RESUME_SYNC_CONTRACT.md).
+
+## 10. 확인일시 및 검증 범위
+- 기록일: **2026-10-24 KST**. 실제 확인: GitHub 원격 `lead/paypal`, D07 Actions 40069063023 Node+Chromium. 실제 작업 소요시간 **NOT_MEASURED**. 문서 기준은 이 핸드오프를 포함하는 다음 원격 문서 커밋, 코드 기능 증거 SHA는 `e682d6dd`로 분리. 새 세션은 HEAD/CI를 먼저 읽을 것.

@@ -1,6 +1,6 @@
 # PayPal 해커톤 — 한 문장 재개 프로토콜 (CURRENT)
 
-<!-- resume: day_id=PPL-D07; percent=0; est_h=4; safe_h=8 -->
+<!-- resume: day_id=PPL-D08; percent=0; est_h=4; safe_h=8 -->
 
 > **사용자 고정 호출 한 문장:** `[페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈]` 또는 `페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈`
 >
@@ -22,7 +22,7 @@
 7. [인수인계 자동 무결성 테스트](tests/resume_contract.test.mjs)가 전체 문서의 `resume:` 포인터와 JSON 일차 값을 검증한다. `npm test` + 실제 GitHub Actions 성공 확인, 최신 리모트 SHA 재조회 후 사용자에게 당일 **X%/100%·남은 예상 Yh·안전 Z h·차단·다음 작업·링크**를 보고한다. GitHub CI 실패 시 고치거나 FAIL/PENDING으로 명시한다.
 
 ## 최신 확정 재개 위치 (수치는 원격 원장이 우선)
-- **현재 NEXT `PPL-D07` (10/31 계획, 10/24 조기 진행 허용):** 계약·마일스톤 SQLite 스키마, 결제 상태/납품 상태 독립, 소유자·버전 가드, append-only 변경 이력, CI 문서. **0%/100% · 남은 예상 4h / 안전 8h**.
+- **현재 NEXT `PPL-D08` (11/01 배정분 선행):** 계약·납품·검수의 인증된 서버 API, 소유권/검수자별 권한·CSRF·원자 상태 전이·GET 무부작용. **0%/100%, 남은 예상 4h/안전 8h**. D07은 오프라인 SQLite/CI 완료(121 Node+Chromium, run 40069063023); 실제 Sandbox/AI와는 별도.
 - D01/D02/D05/D06: 각 **그날 검증된 오프라인 범위 100%**. D03: **0%/100%, 실 PayPal Sandbox Business/Personal·무료 AI 접근 차단 (잔여 예상 3h/안전 8h, 외부 기다림 UNKNOWN)**. D04: **80%/100%, 실제 AI 호출 20% 차단 (잔여 예상 2h/안전 4h)**.
 - **마지막 실제 확인된 기능/브라우저 CI:** `lead/paypal@8cb714a21196336d6f28e3487f76dc04f9f38708`, [GitHub Actions 40066974668](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40066974668) **Node 103/103 PASS + 로컬 Chromium E2E PASS**. 새 문서 커밋에도 CI가 새로 돌기 때문에 매번 최신 Actions 상태를 별도로 확인.
 - PayPal HTTP 결제 POST는 **503 fail-closed**. 실제 PayPal OAuth/주문/캡처/GET, 실 AI API, 운영 로그인·호스팅, Devpost 접수증은 **NOT_TESTED/미완료**. 로컬 `OFFLINE_MOCK` + Chromium 성공을 실거래/실제품 성공으로 대체 금지.

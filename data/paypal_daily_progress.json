@@ -2,7 +2,7 @@
   "schema_version": 1,
   "updated_kst": "2026-10-24",
   "scope": "Per-day verified acceptance; NOT entire PayPal hackathon project percent",
-  "active_day_id": "PPL-D07",
+  "active_day_id": "PPL-D08",
   "reporting_mode": "mandatory_after_each_actual_work_session",
   "days": [
     {
@@ -323,8 +323,65 @@
     {
       "day_id": "PPL-D07",
       "scheduled_date_kst": "2026-10-31",
-      "executed_date_kst": null,
+      "executed_date_kst": "2026-10-24",
       "scope": "Contract, milestone, and delivery schema with ownership, separated settlement vs fulfillment and append-only history",
+      "status": "DAY7_SQLITE_CONTRACT_OFFLINE_ACCEPTED",
+      "estimated_total_hours": 4,
+      "safe_total_hours": 8,
+      "estimated_remaining_hours": 0,
+      "safe_remaining_hours": 0,
+      "percent_complete": 100,
+      "actual_elapsed_hours": null,
+      "actual_elapsed_note": "NOT_MEASURED. CI time is not developer elapsed wall time.",
+      "carryover": [
+        "D08 server-side authenticated contract/fulfillment HTTP endpoints not implemented",
+        "Production D1 schema migration, real reviewer session, PayPal Sandbox and AI integration NOT_TESTED"
+      ],
+      "limitations": [
+        "Local Node SQLite only; not Cloudflare D1 / production persistence",
+        "Contract and milestone operations are backend-only; actorId and merchantId must originate from trusted auth middleware",
+        "Reviewer acceptance is role-bound to designated reviewer ID but no production identity provider is integrated",
+        "Payment capture and delivery acceptance states remain distinct; no real PayPal evidence generated",
+        "Real PayPal Sandbox, live hosting, free AI API, Devpost NOT_TESTED"
+      ],
+      "checklist": [
+        {
+          "id": "CONTRACT_MILESTONE_SCHEMA",
+          "weight_pct": 25,
+          "state": "VERIFIED",
+          "evidence": "src/contract_milestones.mjs + src/sqlite_ledger.mjs; tests/contract_milestones.test.mjs (D07 CI 40069063023, SHA e682d6dd): schema, FK, snapshot sum, strict ordering, legacy migration"
+        },
+        {
+          "id": "PAYMENT_VS_DELIVERY_STATE",
+          "weight_pct": 25,
+          "state": "VERIFIED",
+          "evidence": "src/contract_milestones.mjs; role-bound PENDING→SUBMITTED→ACCEPTED/REJECTED, paymentState read only; 121 Node tests in CI 40069063023"
+        },
+        {
+          "id": "OWNER_AND_VERSION_GUARDS",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "tests/contract_milestones.test.mjs; trusted principal fields, version CAS, wrong actor/merchant, duplicate create, revision blocked after contract; CI 40069063023"
+        },
+        {
+          "id": "APPEND_ONLY_HISTORY_TESTS",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "DB triggers forbid UPDATE/DELETE to contract_events; composite contract/milestone FK, unique event/version; restart/race/negative cases; CI 40069063023"
+        },
+        {
+          "id": "CI_DOCS_HANDOFF",
+          "weight_pct": 10,
+          "state": "VERIFIED",
+          "evidence": "GitHub Actions 40069063023 completed/success for e682d6dd: 121/121 Node PASS + local real Chromium offline UI PASS; STATUS/HANDOFF/ACTIVE/BOOTSTRAP/lead report sync commit follows"
+        }
+      ]
+    },
+    {
+      "day_id": "PPL-D08",
+      "scheduled_date_kst": "2026-11-01",
+      "executed_date_kst": null,
+      "scope": "Authenticated server API for contract, milestones, delivery submission and reviewer acceptance/rejection",
       "status": "NOT_STARTED",
       "estimated_total_hours": 4,
       "safe_total_hours": 8,
@@ -332,34 +389,33 @@
       "safe_remaining_hours": 8,
       "percent_complete": 0,
       "actual_elapsed_hours": null,
-      "actual_elapsed_note": "NOT_STARTED, baseline estimate only",
+      "actual_elapsed_note": "NOT_STARTED; estimate, not measured execution time",
       "carryover": [],
       "limitations": [
-        "No contract or milestone schema implemented yet",
-        "Payment state must never imply delivered/accepted milestone",
-        "Production DB migration and real PayPal event reconciliation are separate future tasks"
+        "D07 repository methods exist; production authentication/HTTP routes not yet implemented",
+        "Payment POST remains 503 until actual Sandbox gate; separate D03/D04 blockers"
       ],
       "checklist": [
         {
-          "id": "CONTRACT_MILESTONE_SCHEMA",
+          "id": "CONTRACT_READ_AND_CREATE_API",
           "weight_pct": 25,
           "state": "PENDING",
           "evidence": null
         },
         {
-          "id": "PAYMENT_VS_DELIVERY_STATE",
+          "id": "DELIVERY_SUBMISSION_API",
           "weight_pct": 25,
           "state": "PENDING",
           "evidence": null
         },
         {
-          "id": "OWNER_AND_VERSION_GUARDS",
+          "id": "REVIEWER_DECISION_API",
           "weight_pct": 20,
           "state": "PENDING",
           "evidence": null
         },
         {
-          "id": "APPEND_ONLY_HISTORY_TESTS",
+          "id": "AUTH_CSRF_IDEMPOTENCY_TESTS",
           "weight_pct": 20,
           "state": "PENDING",
           "evidence": null
