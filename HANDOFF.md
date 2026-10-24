@@ -19,3 +19,5 @@
 작업 코드→Node+Chromium 실제 CI→`data/paypal_daily_progress.json` 100점 evidence/남은 기본·안전·차단·실제 완료일 업데이트→`python render_master_progress.py --write`→동일 `MASTER_PROGRESS.md`→운영 6파일 `resume:` 주석 일치→GitHub commit fast-forward→새 Actions 성공까지 검수. 직접 측정하지 않은 작업시간은 `NOT_MEASURED`. 승인 없는 Live·유료·개인키 업로드·Production 공개 금지.
 
 **코드 복구:** D12 구현 `cff439ae`, UI `e4836412`, Node+Chromium 테스트 `e489b737`, expectation 수정 `80bb6c84`. 오래된 `main`과 legacy feature 브랜치를 다시 실행하지 않는다. Git history 보존.
+
+**Cross-session contract:** [RESUME_SYNC_CONTRACT.md](docs/RESUME_SYNC_CONTRACT.md). GitHub expected_sha CAS, evidence-based day handoff and identical resume metadata are mandatory.
