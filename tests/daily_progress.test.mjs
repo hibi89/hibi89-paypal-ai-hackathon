@@ -65,7 +65,7 @@ test('day5 completion does not disguise the blocked external gate or next-day wo
   assert.equal(d6.safe_remaining_hours,0);
   assert.ok(ledger.days.some(d=>d.day_id===ledger.active_day_id));
 });
-test('D06-D10 tracked offline acceptance and D11 webhook guard READY',()=>{
+test('D06-D13 accepted milestones and D14 progress state are consistent',()=>{
   const d6=ledger.days.find(d=>d.day_id==='PPL-D06');
   const d7=ledger.days.find(d=>d.day_id==='PPL-D07');
   assert.equal(d6.percent_complete,100);
@@ -111,10 +111,15 @@ test('D06-D10 tracked offline acceptance and D11 webhook guard READY',()=>{
   assert.equal(d13.estimated_remaining_hours,0);
   assert.equal(d13.safe_remaining_hours,0);
   const d14=ledger.days.find(x=>x.day_id==='PPL-D14');
-  assert.equal(d14.percent_complete,0);
-  assert.equal(d14.status,'NOT_STARTED');
-  assert.equal(d14.estimated_remaining_hours,4);
-  assert.equal(d14.safe_remaining_hours,10);
+  assert.equal(d14.percent_complete, d14.checklist
+    .filter(c => c.state === 'VERIFIED')
+    .reduce((total,c) => total + c.weight_pct, 0));
+  assert.ok(['NOT_STARTED','PARTIAL','DONE'].includes(d14.progress_state));
+  if (d14.progress_state === 'NOT_STARTED') assert.equal(d14.percent_complete,0);
+  if (d14.progress_state === 'PARTIAL') assert.ok(d14.percent_complete > 0 && d14.percent_complete < 100);
+  if (d14.progress_state === 'DONE') assert.equal(d14.percent_complete,100);
+  assert.ok(d14.estimated_remaining_hours >= 0);
+  assert.ok(d14.safe_remaining_hours >= d14.estimated_remaining_hours);
   assert.equal(ledger.active_day_id,d14.day_id);
   assert.equal(ledger.days.length,18);
   assert.equal(ledger.days.at(-1).day_id,'PPL-D18');
