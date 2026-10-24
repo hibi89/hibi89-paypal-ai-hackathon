@@ -20,3 +20,9 @@
 - **교차 위험:** KIC 11/12 10:00 PDF와 19시간 간격이며 PayPal은 그보다 앞서 완성작 조기 제출 목표.
 - 제출 결과·기술 상태는 변경 없음. **등록 완료 ≠ 작품 생성 ≠ 최종 제출**; 주제·기능은 사용자 승인 전 잠정, CI/실 API/배포·시연 미검증.
 - 발표/본선 등 후속 일정은 일정표 원문 기준. 중요 변경·지연·사용자 일정 개입은 총괄 상위 보고를 갱신하고 전체 총괄에게 전달할 것.
+
+## 2026-10-24 KST — PayPal 세부 개발 일정 GitHub 등록
+- 공식/통합 일정표 `docs/COMPETITION_SCHEDULE.md`의 5절에 기능별 권고 일정과 검증 관문을 등록했다. 링크: https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/lead/paypal/docs/COMPETITION_SCHEDULE.md
+- 기능 후보: quote-payment 10/27~11/01, delivery 10/29~11/04, subscriptions 10/30~11/05. 통합·검증 11/06~09, 영문 문서/영상 11/10, 내부 조기 제출 목표 11/11. 공식 제출 마감 **11/13 05:00 KST**는 변경 없음.
+- 10/24~26 주제/범위 최종 결정 및 Sandbox 접근 검증이 선행 조건. 세 기능 동시 개발은 승인된 확정 지시가 아닌 **일정 제안**이다.
+- 실기능/CI/PayPal API/브라우저/배포/Devpost 제출은 여전히 미완료·미검증. 이번 변경은 `lead/paypal` 문서만 수정했다.
