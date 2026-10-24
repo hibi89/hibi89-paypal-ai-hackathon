@@ -16,3 +16,8 @@ A (chosen): single lead implementation branch and direct work, manual evidence-b
 ## New-chat single phrase
 - `[해커톤총괄 깃헙 레포지토리 확인하고 작업하셈]` → `lead/paypal/CHAT_BOOTSTRAP.md`, current HEAD, `LEAD_ACTIVE_WORK.md`, test/source evidence, next direct development task.
 - On important work completion or chat transfer, synchronize active work, STATUS, HANDOFF, upper lead report in the same real GitHub commit; remote SHA verify. Stable bootstrap changes only if path/policy changes. Never claim background updates or Sandbox success without test evidence.
+
+## Explicit PayPal-only restart phrase (highest priority)
+- Exact Korean message: **`페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈`**. This means immediately resume work as the PayPal lead+developer from `hibi89/hibi89-paypal-ai-hackathon@lead/paypal`; do not default to the unified hackathon lead or ask the user for a handoff prompt.
+- Read [CHAT_BOOTSTRAP](../../../CHAT_BOOTSTRAP.md), `HANDOFF.md`, `STATUS.md`, `AGENTS.md`, `REQUIREMENTS.md`, `LEAD_ACTIVE_WORK.md`, actual code/tests and CI, then implement the next approved task.
+- Persist significant work and updated evidence in the same commit as `LEAD_ACTIVE_WORK`, root `STATUS/HANDOFF`, and `TO_HACKATHON_LEAD`; verify remote head; do not manufacture continuous/background updates. Former generic restart phrase is a legacy alias only when the relevant hackathon is known.

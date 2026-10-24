@@ -1,4 +1,4 @@
-> **새 채팅 단문 복원:** `[해커톤총괄 깃헙 레포지토리 확인하고 작업하셈]` → [PayPal CHAT_BOOTSTRAP.md](CHAT_BOOTSTRAP.md) (`lead/paypal`). 최신 HEAD·`LEAD_ACTIVE_WORK.md`부터 직접 실행. 작업자 채팅/구형 ACTIVE_TASK 이력은 실행 지시가 아님.
+> **PayPal 새 채팅 한 문장 실행:** `페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈` → [CHAT_BOOTSTRAP.md](CHAT_BOOTSTRAP.md) → `lead/paypal` 최신 원격 HEAD → 현 작업 직접 개발·테스트·GitHub 최신화. 별도 작업자 채팅 없음.
 
 # PayPal 총괄 겸 개발자 운영 — 최신 2026-10-24
 
