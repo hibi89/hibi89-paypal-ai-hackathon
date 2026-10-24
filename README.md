@@ -6,6 +6,7 @@
 
 - **개발 원본:** `lead/paypal`; **검증 릴리스:** `main`. `feature/quote-payment`, `feature/delivery`, `feature/subscriptions`는 보존된 기존 작업 이력이며 신규 작업하지 않는다.
 - **사용자 `ㄱ`:** [HANDOFF](HANDOFF.md) → [STATUS](STATUS.md) → [AGENTS](AGENTS.md) → [REQUIREMENTS](REQUIREMENTS.md) → [현재 실제 작업](docs/roles/lead/LEAD_ACTIVE_WORK.md) → 소스/테스트를 확인해 총괄 스스로 구현·검증·커밋한다.
+- [보수적 일별 예상시간·완료 기준](docs/DAILY_CAPACITY_PLAN_20261024.md) (**PayPal 82h 예상·164h 지연 포함; 3대회 병행 시 고위험**)
 - [단일 개발 프로토콜](docs/roles/lead/LEAD_FULLSTACK_PROTOCOL.md) · [브랜치 규정](docs/BRANCH_WORKFLOW.md) · [실행 일정](docs/PAYPAL_EXECUTION_PLAN_20261024.md).
 
 ## 제품 및 제약

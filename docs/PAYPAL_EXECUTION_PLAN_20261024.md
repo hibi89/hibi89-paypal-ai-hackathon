@@ -15,3 +15,9 @@
 제품 세 기능 통합 1개, **신규 지출 ₩0 하드캡**. Cloudflare Workers/D1 Free, Gemini/Workers AI 무료 후보, PayPal Sandbox는 실제 계정·지역·한도 검증 전 확정 금지. Live 결제/유료 API/카드·새 도메인/실 고객 자료 금지. 계정 접근 불가를 테스트 실패 또는 성공으로 오인하지 않고 `NOT_TESTED/BLOCKED_BY_ACCESS` 표기.
 
 [현재 직접 작업](roles/lead/LEAD_ACTIVE_WORK.md) · [0원 정책](ZERO_COST_STACK_AND_GUARDRAILS.md) · [단일 총괄 프로토콜](roles/lead/LEAD_FULLSTACK_PROTOCOL.md)
+
+## 2026-10-24 KST — 일정 신뢰도 정정 (이 절이 상단 v5의 낙관적 날짜보다 우선)
+**위 일정은 작업기간 배치이지 그날 끝낼 수 있는 검증된 작업시간이 아니다.** 사용자가 과거 4시간 작업이 8~20시간이 된 사례를 지적하여, 구체적인 **일별 18개 단위·순작업 82시간·확보 여유 164시간**을 별도 정본 [DAILY_CAPACITY_PLAN_20261024.md](DAILY_CAPACITY_PLAN_20261024.md)에 등록했다.
+
+- 3개 해커톤 병행 기준 **11/11 조기 제출은 위험(HIGH RISK), 보수적 실현성 확인 안 됨**. 하루 PayPal 약 9.1시간 확보가 필요하다는 추산은 사용자 실제 가용시간 승인/확인 전이며, 부족하면 즉시 이월·일정 재산정/범위 조정 승인 요청.
+- `ㄱ` 진행 시 반드시 일별 계획·실측·지연을 대조. 공식 11/13 05:00 KST 및 0원/3기능 요구 변경 없음. PayPal Sandbox·무료 AI 인증은 시간만으로 해결할 수 없는 외부 차단.
