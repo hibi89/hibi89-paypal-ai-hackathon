@@ -20,3 +20,5 @@
 4. 무료 실제 서비스 URL·HTTP/React·Console/Network/API·권한·재시작/복구가 검증되기 전 D15 DONE 100% 금지. D03 실 Sandbox/AI는 독립 차단.
 
 **작업 시작:** 원격 최신 HEAD → source/test → 실제 최소 검증 → 일별 JSON→마스터→CI→인수인계. 조건 없는 외부 계정 연결과 실제 결제/AI API 호출 금지.
+
+**필수 새 채팅 동기화 규약:** [RESUME_SYNC_CONTRACT.md](../../../docs/RESUME_SYNC_CONTRACT.md) — 다음 작업도 동일 문서·JSON·CI를 원자적 커밋으로 갱신한다.

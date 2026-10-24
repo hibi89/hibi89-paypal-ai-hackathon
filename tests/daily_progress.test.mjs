@@ -120,7 +120,7 @@ test('D06-D13 accepted milestones and D14 progress state are consistent',()=>{
   if (d14.progress_state === 'DONE') assert.equal(d14.percent_complete,100);
   assert.ok(d14.estimated_remaining_hours >= 0);
   assert.ok(d14.safe_remaining_hours >= d14.estimated_remaining_hours);
-  assert.equal(ledger.active_day_id,d14.day_id);
+  assert.ok(ledger.days.some(day=>day.day_id===ledger.active_day_id && day.progress_state!=='DONE'), 'active work must exist and remain open');
   assert.equal(ledger.days.length,18);
   assert.equal(ledger.days.at(-1).day_id,'PPL-D18');
 });
