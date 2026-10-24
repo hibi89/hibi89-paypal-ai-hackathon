@@ -16,7 +16,8 @@ const SCHEMA = [
   'id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, merchant_id TEXT NOT NULL,' +
   'version INTEGER NOT NULL CHECK(version >= 1), currency TEXT NOT NULL CHECK(currency = \'USD\'),' +
   'status TEXT NOT NULL CHECK(status IN (\'PROPOSED\',\'APPROVED\')),' +
-  'ai_suggested_minor INTEGER, approval_actor TEXT, approval_version INTEGER,' +
+  'ai_suggested_minor INTEGER, scope_text TEXT, suggestion_source TEXT,' +
+  'approval_actor TEXT, approval_version INTEGER,' +
   'approval_amount_minor INTEGER,' +
   'CHECK ((status = \'PROPOSED\' AND approval_actor IS NULL AND approval_version IS NULL AND approval_amount_minor IS NULL)' +
   ' OR (status = \'APPROVED\' AND approval_actor = owner_id AND approval_version = version' +
@@ -38,6 +39,7 @@ function convertQuote(q) {
     id:q.id, ownerId:q.owner_id, merchantId:q.merchant_id,
     version:q.version, currency:q.currency, status:q.status,
     aiSuggestedMinor:q.ai_suggested_minor,
+    scope:q.scope_text ?? null, suggestionSource:q.suggestion_source ?? null,
     approval:q.status === 'APPROVED' ? {
       actorId:q.approval_actor, decision:'APPROVED',
       quoteVersion:q.approval_version, amountMinor:q.approval_amount_minor,
@@ -62,6 +64,11 @@ export function createSqliteLedger({ filename } = {}) {
   db.exec('PRAGMA busy_timeout = 5000');
   db.exec('PRAGMA journal_mode = WAL');
   for (const sql of SCHEMA) db.exec(sql);
+  // Migrate earlier day-2 SQLite files without deleting approvals or attempts.
+  const columns = db.prepare('PRAGMA table_info(quotes)').all().map(c => c.name);
+  if (!columns.includes('scope_text')) db.exec('ALTER TABLE quotes ADD COLUMN scope_text TEXT');
+  if (!columns.includes('suggestion_source'))
+    db.exec('ALTER TABLE quotes ADD COLUMN suggestion_source TEXT');
   const stmt = sql => db.prepare(sql);
   function transaction(fn) {
     db.exec('BEGIN IMMEDIATE');
@@ -126,6 +133,33 @@ export function createSqliteLedger({ filename } = {}) {
           ' AND version=? AND status=\'PROPOSED\'')
           .run(actorId,expectedVersion,amountMinor,id,actorId,expectedVersion);
         reject(res.changes !== 1,'APPROVAL_CONFLICT',409);
+        return convertQuote(getRow(id));
+      });
+    },
+    // Version compare-and-set; any approved snapshot is invalidated by a revised scope.
+    // Never allow editing once ANY remote payment attempt has been claimed.
+    async revise({ id, actorId, expectedVersion, scope, suggestedMinor,
+      suggestionSource }) {
+      reject(!Number.isSafeInteger(expectedVersion) || expectedVersion < 1,
+        'QUOTE_VERSION_REQUIRED');
+      reject(typeof scope !== 'string' || scope.length < 8 || scope.length > 500,
+        'INVALID_SCOPE');
+      reject(!Number.isSafeInteger(suggestedMinor) || suggestedMinor < 100 ||
+        suggestedMinor > 1000000 || suggestionSource !== 'OFFLINE_MOCK',
+      'INVALID_DRAFT');
+      return transaction(() => {
+        const row = getRow(id);
+        reject(!row || row.owner_id !== actorId, 'QUOTE_NOT_FOUND', 404);
+        reject(row.version !== expectedVersion, 'STALE_QUOTE_VERSION', 409);
+        reject(row.version >= Number.MAX_SAFE_INTEGER, 'QUOTE_VERSION_EXHAUSTED', 409);
+        reject(!!stmt('SELECT 1 AS found FROM payment_attempts WHERE quote_id=? LIMIT 1')
+          .get(id), 'PAYMENT_ATTEMPT_EXISTS', 409);
+        const done = stmt('UPDATE quotes SET version=version+1, status=\'PROPOSED\',' +
+          'approval_actor=NULL,approval_version=NULL,approval_amount_minor=NULL,' +
+          'scope_text=?,suggestion_source=?,ai_suggested_minor=?' +
+          ' WHERE id=? AND owner_id=? AND version=?')
+          .run(scope, suggestionSource, suggestedMinor, id, actorId, expectedVersion);
+        reject(done.changes !== 1, 'REVISION_CONFLICT', 409);
         return convertQuote(getRow(id));
       });
     },

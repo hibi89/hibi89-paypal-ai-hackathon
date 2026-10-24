@@ -108,17 +108,20 @@ function route(path) {
       parts[1] !== 'api' || parts[2] !== 'quotes' ||
       !/^[a-zA-Z0-9_-]{1,64}$/.test(parts[3])) return null;
   const resource = parts[4] || 'quote';
-  return ['quote', 'approve', 'orders', 'payment'].includes(resource)
+  return ['quote', 'approve', 'orders', 'payment', 'draft'].includes(resource)
     ? { id: parts[3], resource } : null;
 }
 
 // resolveSession is a TRUSTED server-side session verifier; never read actorId
 // or csrfToken from arbitrary browser headers/body. No insecure fallback.
-export function createQuoteApi({ repository, resolveSession } = {}) {
+export function createQuoteApi({ repository, resolveSession, draftProvider } = {}) {
   if (!repository || typeof repository.get !== 'function' ||
       typeof repository.approve !== 'function' ||
       typeof resolveSession !== 'function')
     throw new TypeError('TRUSTED_SESSION_AND_REPOSITORY_REQUIRED');
+  if (draftProvider !== undefined &&
+      (typeof draftProvider !== 'function' || typeof repository.revise !== 'function'))
+    throw new TypeError('DRAFT_PROVIDER_AND_REVISION_REPOSITORY_REQUIRED');
   return async function handleQuoteRequest(request) {
     try {
       if (!(request instanceof Request))
@@ -154,6 +157,29 @@ export function createQuoteApi({ repository, resolveSession } = {}) {
         catch { throw new QuoteApiError('HUMAN_APPROVAL_REQUIRED', 409); }
         // Deliberately no outbound HTTP until DB uniqueness/idempotency is built.
         return reply({ error: 'PAYMENT_GATE_NOT_READY' }, 503);
+      }
+      if (r.resource === 'draft') {
+        // Live AI access is not implied: provider supplies its own explicit origin label.
+        fail(!draftProvider, 'DRAFT_PROVIDER_NOT_CONFIGURED', 503);
+        const data = await parseSmallJson(request);
+        fail(!Number.isSafeInteger(data.expectedVersion) || data.expectedVersion < 1,
+          'QUOTE_VERSION_REQUIRED');
+        fail(typeof data.scope !== 'string' || data.scope.length < 8 ||
+          data.scope.length > 500 || /[\u0000-\u0008\u000b-\u001f]/.test(data.scope),
+        'INVALID_SCOPE');
+        // Repo CAS always re-checks version/owner and blocks changes after any payment claim.
+        const proposal = await draftProvider({ scope: data.scope, currency: quote.currency });
+        fail(!proposal || !Number.isSafeInteger(proposal.suggestedMinor) ||
+          proposal.suggestedMinor < 100 || proposal.suggestedMinor > 1000000 ||
+          proposal.source !== 'OFFLINE_MOCK',
+        'INVALID_DRAFT_PROVIDER_RESULT', 503);
+        const revised = await repository.revise({
+          id: r.id, actorId: session.actorId, expectedVersion: data.expectedVersion,
+          scope: data.scope, suggestedMinor: proposal.suggestedMinor,
+          suggestionSource: proposal.source,
+        });
+        return reply({ quote: revised, provider: 'OFFLINE_MOCK',
+          warning: 'Deterministic demonstration only; not a live AI model' });
       }
       const data = await parseSmallJson(request);
       fail(data.confirmed !== true, 'EXPLICIT_CONFIRMATION_REQUIRED');
