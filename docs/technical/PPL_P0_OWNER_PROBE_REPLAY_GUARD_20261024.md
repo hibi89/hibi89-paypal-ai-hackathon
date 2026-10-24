@@ -18,3 +18,7 @@ Prior one-shot scripts emitted at most one POST per invocation but could be run 
 ## Tests and progress
 Six new fixture regression tests cover claim persistence, dual-provider separation, duplicate/ambiguous request freeze, dry-run and incomplete consent, symlink fail-closed, and sanitized errors.
 CI pending. D03=0% BLOCKED, D04=80% PARTIAL, D15=20% PARTIAL (base 5h / safe 10h / actual elapsed null), D16–D18=0%. No real provider calls or public deploy.
+
+## Verified remote regression results
+- Source commit `d8cfacd9a7f99201c00298fe9709f46bc54714d1`; [GitHub Actions #40099182100](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40099182100) **SUCCESS**: Node 298/298 pass, Chromium localhost E2E pass, 18-day progress validator pass.
+- All new provider-response tests use injected synthetic fetch; real remote requests and provider free/billing entitlements are still unverified. CI only supports narrow per-user-home atomic reservation.
