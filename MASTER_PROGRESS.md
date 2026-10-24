@@ -45,7 +45,6 @@
 - PPL-D08 (2026-11-01): 예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도.
 - PPL-D09 (2026-11-02): 예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도.
 - PPL-D10 (2026-11-03): 예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도.
-
 - PPL-D11 (2026-11-04): Off-line synthetic webhook ingestion and SQLite are preliminary until remote CI confirms. No real PayPal webhook signature tested.
 
 ## 운영 의무
