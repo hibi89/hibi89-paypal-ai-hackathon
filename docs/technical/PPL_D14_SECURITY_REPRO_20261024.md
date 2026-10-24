@@ -20,3 +20,8 @@
 ## Scope gates
 
 Node tests and actual GitHub Actions outcome must be recorded separately. This D14 local guard does **not** convert any D03/D04 external blocker to verified status; real payment API POST remains disabled. Production rate limiting needs a replacement, not reuse of this synthetic single-process limiter.
+
+## Execution evidence and observed correction
+- GitHub Actions [40079004250](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40079004250): progress-check PASS, Node 178/179 PASS, 1 FAIL due to old hard-coded D14 0%-only test; browser step not run. This was **not** a regression in limiter behavior.
+- GitHub Actions [40079069519](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40079069519) at `624c5ff49a7061c58aebfcf67219bfd9ecfab2d6`: Node **179/179 PASS**, master progress **18 dates PASS**, actual local Chromium browser **PASS**. Includes `public_secret_scan` signature test passing across Git-tracked text. This is a heuristic only.
+- D14 60/100 by unchanged milestone weights (20 design + 30 tested + 10 CI; 40 IMPLEMENTATION remains pending final public LICENSE approval). Remaining planned 2h basic/4h safe; actual work duration NOT_MEASURED; legal/third-party waiting UNKNOWN.

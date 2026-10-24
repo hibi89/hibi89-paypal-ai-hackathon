@@ -884,31 +884,34 @@
       "acceptance": "공개 비밀 0건, 심사 재현/영상 시나리오 초안",
       "estimated_total_hours": 4,
       "safe_total_hours": 10,
-      "estimated_remaining_hours": 3,
-      "safe_remaining_hours": 8,
+      "estimated_remaining_hours": 2,
+      "safe_remaining_hours": 4,
       "progress_state": "PARTIAL",
-      "percent_complete": 20,
+      "percent_complete": 60,
       "executed_date_kst": "2026-10-24",
       "actual_elapsed_hours": null,
       "evidence": [
-        "docs/technical/PPL_D14_SECURITY_REPRO_20261024.md; two zero-cost alternatives and guards compared"
+        "docs/technical/PPL_D14_SECURITY_REPRO_20261024.md; two zero-cost alternatives and guards compared",
+        "GitHub Actions 40079069519 @ 624c5ff49a70: 179/179 Node PASS including guard + tracked-secret signature check; real Chromium loopback E2E PASS",
+        "GitHub Actions 40079069519 @ 624c5ff49a70: 18-day MASTER_PROGRESS --check PASS, Node 179 PASS, Chromium PASS. First attempt 40079004250 178/179 FAIL stale D14 assumption, fixed",
+        "src/demo_rate_limit.mjs; tests/public_secret_scan.test.mjs; docs/JUDGE_REPRODUCTION_EN.md; docs/VIDEO_STORYBOARD_EN.md"
       ],
-      "verified_sha": null,
+      "verified_sha": "624c5ff49a7061c58aebfcf67219bfd9ecfab2d6",
       "blocker": "공개 OSI LICENSE 종류에 대한 사용자 승인 대기",
       "recovery_date_kst": null,
       "recovery_condition": "MIT 또는 Apache-2.0 등 라이선스 선택 후 루트 LICENSE 반영/검증",
-      "advance_note": "10/24 D14 오프라인 보안·영문 초안 선행; 원격 CI 및 공개 라이선스 선택 미완료.",
-      "status": "D14_DESIGN_READY_CI_PENDING_LICENSE_APPROVAL",
-      "actual_elapsed_note": "NOT_MEASURED; local security implementation and tests committed for CI; licensing approval pending",
+      "advance_note": "10/24 D14 보안·영문 초안 및 179 Node+Chromium PASS; 공개 LICENSE 최종 승인은 보류.",
+      "status": "D14_OFFLINE_SECURITY_AND_CI_PASS_LICENSE_PENDING",
+      "actual_elapsed_note": "NOT_MEASURED; planned remaining work estimates only. External license approval wait UNKNOWN.",
       "carryover": [
-        "Root LICENSE selection is a rights-grant decision for the owner; no license file published",
-        "New security/reviewer-guide tests require fresh GitHub Actions proof before calling them verified",
-        "Real PayPal Sandbox and real AI remain D03/D04 external blockers"
+        "Public root LICENSE pending owner decision. Without approved legal grant do not mark D14 100%.",
+        "Production-grade auth and provider integration remain separate external tasks D03/D04/D15/D16",
+        "First CI d6dd022 178/179 fail on stale test; corrected commit 624c5ff passed 179/179 + Chromium"
       ],
       "limitations": [
-        "Single-process localhost rate limiting, not production anti-abuse",
-        "No real PayPal/AI, no production account/session or public URL",
-        "Heuristic scan does not prove absence of every possible secret"
+        "Loopback-only process-scoped 360 GET/HEAD + 60 other / 60s, not distributed production throttling",
+        "Heuristic tracked secret signature scan PASS is not comprehensive security proof",
+        "Real PayPal, real AI, production identity, public deployment and Devpost NOT_TESTED"
       ],
       "checklist": [
         {
@@ -921,19 +924,19 @@
           "id": "IMPLEMENTATION",
           "weight_pct": 40,
           "state": "PENDING",
-          "evidence": "src/demo_rate_limit.mjs; src/offline_demo_server.mjs; reviewer guide + storyboard; root LICENSE remains pending owner license selection"
+          "evidence": "Loopback limiter and English reproducer committed and CI-passed; root OSI LICENSE not published until owner approval"
         },
         {
           "id": "AUTOMATED_VERIFICATION",
           "weight_pct": 30,
-          "state": "PENDING",
-          "evidence": "tests/demo_rate_limit.test.mjs; tests/offline_demo_server.test.mjs; tests/public_secret_scan.test.mjs; remote CI pending"
+          "state": "VERIFIED",
+          "evidence": "GitHub Actions 40079069519 @ 624c5ff49a70: 179/179 Node PASS including guard + tracked-secret signature check; real Chromium loopback E2E PASS"
         },
         {
           "id": "CI_HANDOFF",
           "weight_pct": 10,
-          "state": "PENDING",
-          "evidence": "D14 work committed; GitHub Actions for new HEAD pending"
+          "state": "VERIFIED",
+          "evidence": "GitHub Actions 40079069519 @ 624c5ff49a70: 18-day MASTER_PROGRESS --check PASS, Node 179 PASS, Chromium PASS. First attempt 40079004250 178/179 FAIL stale D14 assumption, fixed"
         }
       ]
     },

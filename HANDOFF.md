@@ -1,6 +1,6 @@
 # PayPal HANDOFF — D13 verified, D14 next (2026-10-24)
-<!-- resume: day_id=PPL-D14; percent=20; est_h=3; safe_h=8 -->
-> **D14 2026-10-24 진행 20% (CI 판정 대기):** 로컬 fixed-window rate guard + 429/Retry-After, Node 단위/HTTP 회귀 테스트, Git 추적 텍스트 서명 검사, 영문 reviewer 재현/영상 시나리오 초안 작성. 원격 새 HEAD의 Node/Chromium CI는 **PENDING/NOT_VERIFIED**. LICENSE는 사용자 선택 전 발행하지 않음. D03 실 Sandbox·D04 실 AI·Production/Devpost 미검증. 기본 잔여 계획 3h / 안전 확보 8h; 실측 NOT_MEASURED. [D14 기록](docs/technical/PPL_D14_SECURITY_REPRO_20261024.md).
+<!-- resume: day_id=PPL-D14; percent=60; est_h=2; safe_h=4 -->
+> **D14 2026-10-24 진행 60% (로컬 CI 검증):** 로컬 fixed-window rate guard + 429/Retry-After, Node 단위/HTTP 회귀 테스트, Git 추적 텍스트 서명 검사, 영문 reviewer 재현/영상 시나리오 초안 작성. 원격 새 HEAD의 Node/Chromium CI는 **179/179 Node+Chromium PASS, GitHub Actions 40079069519 @ 624c5ff49a70**. LICENSE는 사용자 선택 전 발행하지 않음. D03 실 Sandbox·D04 실 AI·Production/Devpost 미검증. 기본 잔여 계획 2h / 안전 확보 4h; 실측 NOT_MEASURED. [D14 기록](docs/technical/PPL_D14_SECURITY_REPRO_20261024.md).
 
 
 **원격 기준:** `hibi89/hibi89-paypal-ai-hackathon`, 개발·총괄 `lead/paypal`. 재개 명령 `[페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈]` / `ㄱ` / `r`. 반드시 최신 GitHub HEAD → `CHAT_BOOTSTRAP.md` → `docs/roles/lead/LEAD_ACTIVE_WORK.md` → `data/paypal_daily_progress.json` 순으로 재확인.
@@ -14,7 +14,7 @@
 - [D13 기술/판정](docs/technical/PPL_D13_INTEGRATION_FREEZE_20261024.md) · [18일 마스터](MASTER_PROGRESS.md).
 
 ## NEXT READY — D14 (11/07 예정, 선행 가능)
-- **D14 20%/100%, 기본 잔여 3h / 안전 확보 8h, 실측 NOT_MEASURED**.
+- **D14 60%/100%, 기본 잔여 2h / 안전 확보 4h, 실측 NOT_MEASURED**.
 - 보안/권한/Rate 제한·LICENSE·영문 자료 초안: 공용 저장소 비밀 노출 0 검증, 남용·CSRF·XSS·Origin·reviewer 역할, 공개 서버 배포 차단, rate limit 및 Node/SQLite 로컬 반례 확인, 심사위원 로컬 재현 README와 3분 미만 영상 시나리오. **운영 배포·실 계정 인증으로 확대하지 말 것.**
 - D03 **0% BLOCKED** 실 PayPal Sandbox Business/Personal + 무료 AI 계정 접근, 남은 기본 3h / 안전 8h + 외부대기 UNKNOWN. D04 **80%**, 실제 무료 AI Provider 20% BLOCKED, 남은 기본 2h / 안전 4h. D15 Deploy·D16 심사위원 URL/브라우저·D17 영상·D18 Devpost 제출 모두 미완료.
 - 공식 PayPal 제출 **2026-11-13 05:00 KST**, 내부 목표 **11/11**. 승인 없는 Live/신규 요금/개인정보/secret 공개·Public 원격 서버 연결·force push 금지. 타 2대회 저장소와 혼동 금지.
@@ -27,11 +27,17 @@
 ## D14 handoff checkpoints (2026-10-24 KST)
 1. Goal: offline abuse resistance and English judge reproduction, with no real money/auth/AI.
 2. Changes: src/demo_rate_limit.mjs + server guard; unit, HTTP and tracked-secret signature tests; draft English guide/video and licensing decision.
-3. Tests: source/tests authored; new commit Node/Chromium CI is PENDING, not claimed PASS. Browser/real PayPal/real AI/Production/Devpost NOT_TESTED.
-4. State: PPL-D14 PARTIAL 20%; remaining 3h baseline + 5h extra safety = 8h safety allocation. D03 BLOCKED, D04 PARTIAL.
+3. Tests: source/tests authored; CI run 40079069519 for 624c5ff passed 179 Node tests and Chromium; newest document-sync commit must be checked separately. Browser/real PayPal/real AI/Production/Devpost NOT_TESTED.
+4. State: PPL-D14 PARTIAL 60%; remaining 2h baseline + 2h extra safety = 4h safety allocation. D03 BLOCKED, D04 PARTIAL.
 5. Failure/retry: Git clone from tool container failed due DNS restriction; GitHub connector + GitHub Actions used instead. No repeated clone attempts. No runtime failure claimed before CI.
 6. Repo/branch: hibi89/hibi89-paypal-ai-hackathon `lead/paypal`; prior HEAD 4098eb6663317a1d00c737d23253c5c26cb38c72; D14 commit SHA resolved by GitHub after commit; paths in D14 technical note.
 7. Deploy: none; local command `npm run demo`; local Node22, SQLite builtin; public URL / Vercel not configured.
 8. Original/backups: all prior blobs retained in immutable commit 4098eb6663317a1d00c737d23253c5c26cb38c72; no tokens, real accounts or sensitive fixtures intentionally introduced; no history rewriting.
 9. Next: verify exact HEAD GitHub Actions. Correct actual failures. Obtain user's license choice; then create root LICENSE, verify; external D03 account gate remains distinct.
 10. Written 2026-10-24 KST; verification: remote source/static contract only, CI pending; this note's basis is pre-commit 4098eb6663317a1d00c737d23253c5c26cb38c72.
+
+### D14 CI correction & release boundary
+- Initial run [40079004250](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40079004250) 178 PASS / 1 FAIL: `tests/daily_progress.test.mjs` incorrectly hard-coded D14 0% status.
+- Corrected test commit `624c5ff49a7061c58aebfcf67219bfd9ecfab2d6`, follow-up run [40079069519](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40079069519) **179/179 Node, 18-day dashboard check, Chromium E2E PASS**.
+- D14 60% PARTIAL: published security code/test/English drafts proven by local CI; root LICENSE pending user decision; real Sandbox/AI/browser Production and submission NOT_TESTED.
+- Fresh document commit may trigger a new CI; do not attribute prior CI to that SHA.
