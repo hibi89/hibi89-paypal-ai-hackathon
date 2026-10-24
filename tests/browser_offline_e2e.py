@@ -137,7 +137,39 @@ try:
                     for method,url in requests+review_requests)==0
             finally:
                 context.close()
-            print("CHROMIUM_BROWSER_E2E_PASS: quote+contract, server-bound reviewer, reject/resubmit/accept, no payment POST")
+            # D12 subscription lifecycle is a separate, server-owned local
+            # scenario. F5/GET only reads; no provider/API/payment calls.
+            expect(page.locator("#subscription-state")).to_have_text("NOT_STARTED")
+            expect(page.locator("#subscription-payment")).to_have_text("NOT_VERIFIED")
+            before_sub=sum(method=="POST" for method,_ in requests)
+            page.reload()
+            expect(page.locator("#subscription-message")).to_contain_text("Subscription OFFLINE scenario ready")
+            page.locator("#subscription-refresh").click()
+            assert sum(method=="POST" for method,_ in requests)==before_sub
+            page.locator("#subscription-start").click()
+            expect(page.locator("#subscription-state")).to_have_text("ACTIVE")
+            expect(page.locator("#subscription-payment")).to_have_text("NOT_VERIFIED")
+            page.locator("#subscription-fail").click()
+            expect(page.locator("#subscription-state")).to_have_text("RECOVERY_REQUIRED")
+            assert page.locator("#subscription-recover").is_enabled()
+            page.reload()
+            expect(page.locator("#subscription-state")).to_have_text("RECOVERY_REQUIRED")
+            page.locator("#subscription-recover").click()
+            expect(page.locator("#subscription-state")).to_have_text("ACTIVE")
+            expect(page.locator("#subscription-message")).to_contain_text("NO actual provider GET")
+            page.locator("#subscription-cancel").click()
+            expect(page.locator("#subscription-state")).to_have_text("CANCELLED")
+            assert page.locator("#subscription-start").is_disabled()
+            assert page.locator("#subscription-recover").is_disabled()
+            assert page.locator("#subscription-cancel").is_disabled()
+            page.reload()
+            expect(page.locator("#subscription-state")).to_have_text("CANCELLED")
+            assert sum(method=="POST" and "/api/demo/subscription/actions/" in url
+                for method,url in requests)==4
+            assert not any(method=="POST" and "/v1/billing" in url for method,url in requests)
+            assert not any(method=="POST" and "/orders" in url for method,url in requests)
+            expect(page.locator("#contract-payment")).to_have_text("NOT_CAPTURED")
+            print("CHROMIUM_BROWSER_E2E_PASS: quote+contract+subscription synthetic failure/recover/cancel, no provider or payment POST")
         finally:
             browser.close()
 finally:
