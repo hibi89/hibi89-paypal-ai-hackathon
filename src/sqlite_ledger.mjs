@@ -109,6 +109,23 @@ export function createSqliteLedger({ filename } = {}) {
     return {quote,cents};
   }
   const contractStore = createContractMilestoneStore({db,transaction,lockedApprovedQuote,reject});
+
+  // Defense in depth: the private PayPal transport verifies its GET results,
+  // but the persistent ledger must reject incomplete/foreign proof independently.
+  // A browser redirect or a detached capture JSON is never payment evidence.
+  function verifiedGetOrderUnit({quote,cents,merchantId,order,statuses}) {
+    const units=order?.purchase_units;
+    const unit=Array.isArray(units)&&units.length===1?units[0]:null;
+    reject(!idOk(order?.id)||order?.intent!=='CAPTURE'||
+      !statuses.includes(order?.status)||!unit||
+      unit.reference_id!==quote.id||
+      unit.payee?.merchant_id!==merchantId||
+      unit.amount?.currency_code!==quote.currency||
+      unit.amount?.value!==(cents/100).toFixed(2),
+    'ORDER_PROOF_MISMATCH',409);
+    return unit;
+  }
+
   const api = {
     ...contractStore,
     async get(id) { return convertQuote(getRow(id)); },
@@ -267,16 +284,8 @@ export function createSqliteLedger({ filename } = {}) {
     async recordCreatedOrderFromGet({quoteId,actorId,merchantId,order}) {
       return transaction(() => {
         const {quote,cents}=lockedApprovedQuote(quoteId,actorId,merchantId);
-        const unit=order?.purchase_units?.[0];
-        reject(!idOk(order?.id) ||
-          !['CREATED','APPROVED'].includes(order.status) ||
-          !Array.isArray(order.purchase_units) || order.purchase_units.length!==1 ||
-          unit?.reference_id!==quoteId ||
-          unit?.amount?.currency_code!=='USD' ||
-          unit?.amount?.value!==(cents/100).toFixed(2) ||
-          (unit?.payee?.merchant_id !== undefined &&
-            unit.payee.merchant_id !== merchantId),
-        'ORDER_PROOF_MISMATCH',409);
+        verifiedGetOrderUnit({quote,cents,merchantId,order,
+          statuses:['CREATED','APPROVED']});
         const rid=requestKey(quote,'create');
         const prior=attemptRow(rid);
         reject(!prior || prior.merchant_id!==merchantId ||
@@ -298,13 +307,7 @@ export function createSqliteLedger({ filename } = {}) {
     async recordApprovedOrderFromGet({quoteId,actorId,merchantId,order}) {
       return transaction(() => {
         const {quote,cents}=lockedApprovedQuote(quoteId,actorId,merchantId);
-        const expected=(cents/100).toFixed(2);
-        const unit=order?.purchase_units?.[0];
-        reject(!dbSafeText(order?.id) || order.status !== 'APPROVED' ||
-          !Array.isArray(order.purchase_units) || order.purchase_units.length !== 1 ||
-          unit?.reference_id !== quoteId || unit?.amount?.currency_code !== 'USD' ||
-          unit?.amount?.value !== expected,
-        'ORDER_PROOF_MISMATCH',409);
+        verifiedGetOrderUnit({quote,cents,merchantId,order,statuses:['APPROVED']});
         const rid=requestKey(quote,'create');
         const previous=attemptRow(rid);
         reject(!previous || previous.merchant_id !== merchantId ||
@@ -322,13 +325,26 @@ export function createSqliteLedger({ filename } = {}) {
     async recordCaptureFromGet({quoteId,actorId,merchantId,order,capture}) {
       return transaction(() => {
         const {quote,cents}=lockedApprovedQuote(quoteId,actorId,merchantId);
+        const unit=verifiedGetOrderUnit({quote,cents,merchantId,order,
+          statuses:['COMPLETED']});
+        const nested=unit.payments?.captures;
+        const confirmed=Array.isArray(nested)&&nested.length===1?nested[0]:null;
+        reject(!confirmed || !idOk(confirmed.id)||
+          confirmed.id!==capture?.id||
+          confirmed.status!=='COMPLETED'||
+          confirmed.amount?.currency_code!==quote.currency||
+          confirmed.amount?.value!==(cents/100).toFixed(2),
+          'CAPTURE_PROOF_MISMATCH',409);
         const create=attemptRow(requestKey(quote,'create'));
         const rid=requestKey(quote,'capture');
         const attempt=attemptRow(rid);
         reject(!create || create.state !== 'APPROVED' ||
           !create.remote_id || create.remote_id !== order?.id ||
+          create.merchant_id !== merchantId ||
+          create.amount_minor !== cents || create.currency !== quote.currency ||
           !attempt || attempt.merchant_id !== merchantId ||
-          attempt.amount_minor !== cents,'CAPTURE_ATTEMPT_REQUIRED',409);
+          attempt.amount_minor !== cents || attempt.currency !== quote.currency,
+          'CAPTURE_ATTEMPT_REQUIRED',409);
         let proof;
         try { proof=reconcileCapture(quote,order,capture); }
         catch { throw new QuoteApiError('CAPTURE_PROOF_MISMATCH',409); }

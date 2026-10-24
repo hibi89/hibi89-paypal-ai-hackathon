@@ -21,8 +21,13 @@ async function approve(db,id='q1',amountMinor=1500) {
 const claim=(operation='create',extra={})=>({
   quoteId:'q1',actorId:'owner',merchantId:'merchant',operation,...extra
 });
-const order=()=>({id:'ORDER001',status:'APPROVED',
-  purchase_units:[{reference_id:'q1',amount:{currency_code:'USD',value:'15.00'}}]});
+const order=(status='APPROVED')=>({id:'ORDER001',intent:'CAPTURE',status,
+  purchase_units:[{reference_id:'q1',payee:{merchant_id:'merchant'},
+    amount:{currency_code:'USD',value:'15.00'},
+    ...(status==='COMPLETED'?{payments:{captures:[{
+      id:'CAP001',status:'COMPLETED',
+      amount:{currency_code:'USD',value:'15.00'}
+    }]}}:{})}]});
 const capture=()=>({id:'CAP001',orderId:'ORDER001',status:'COMPLETED',
   amount:{currency_code:'USD',value:'15.00'}});
 function withDb(fn) {
@@ -162,7 +167,7 @@ test('synthetic capture cannot be PAID without matching order/amount proof',with
   await db.claimOperation(claim());
   await db.recordApprovedOrderFromGet({...claim(),order:order()});
   await db.claimOperation(claim('capture'));
-  await assert.rejects(db.recordCaptureFromGet({...claim(),order:order(),
+  await assert.rejects(db.recordCaptureFromGet({...claim(),order:order('COMPLETED'),
     capture:{...capture(),amount:{currency_code:'USD',value:'99.00'}}}),
     {code:'CAPTURE_PROOF_MISMATCH'});
   assert.notEqual((await db.listAttempts('q1')).find(x=>x.operation==='capture').state,'PAID');
@@ -172,7 +177,7 @@ test('synthetic correct order and capture evidence can mark PAID, durable after 
   let db=e.open(); await seed(db); await approve(db);
   await db.claimOperation(claim()); await db.recordApprovedOrderFromGet({...claim(),order:order()});
   await db.claimOperation(claim('capture'));
-  const paid=await db.recordCaptureFromGet({...claim(),order:{...order(),status:'COMPLETED'},capture:capture()});
+  const paid=await db.recordCaptureFromGet({...claim(),order:order('COMPLETED'),capture:capture()});
   assert.equal(paid.state,'PAID');
   assert.equal(paid.remoteId,'CAP001');
   db.close(); db=e.open();
@@ -229,4 +234,55 @@ test('approval HTTP API writes to disk but payment POST remains 503',withDb(asyn
   assert.equal((await db.get('q1')).approval.amountMinor,1500);
   assert.equal((await db.listAttempts('q1')).length,0);
   db.close();
+}));
+
+test('created order GET proof requires intent, bound payee and matching reference',withDb(async e=>{
+ const db=e.open();try{
+  await seed(db);await approve(db);await db.claimOperation(claim());
+  const bad=[
+   {...order('CREATED'),intent:undefined},
+   {...order('CREATED'),purchase_units:[{...order().purchase_units[0],payee:null}]},
+   {...order('CREATED'),purchase_units:[{...order().purchase_units[0],
+     payee:{merchant_id:'foreign'}}]},
+   {...order('CREATED'),purchase_units:[{...order().purchase_units[0],reference_id:'other'}]}
+  ];
+  for(const data of bad)
+   await assert.rejects(db.recordCreatedOrderFromGet({...claim(),order:data}),
+     {code:'ORDER_PROOF_MISMATCH'});
+  assert.equal((await db.listAttempts('q1'))[0].remoteId,null);
+ }finally{db.close();}
+}));
+test('approved order GET does not upgrade persisted attempt on omitted intent or wrong payee',withDb(async e=>{
+ const db=e.open();try{
+  await seed(db);await approve(db);await db.claimOperation(claim());
+  for(const poisoned of [
+   {...order(),intent:null},
+   {...order(),purchase_units:[{...order().purchase_units[0],
+     payee:{merchant_id:'foreign'}}]},
+   {...order(),purchase_units:[{...order().purchase_units[0],payee:undefined}]},
+  ]) await assert.rejects(db.recordApprovedOrderFromGet({...claim(),order:poisoned}),
+   {code:'ORDER_PROOF_MISMATCH'});
+  assert.equal((await db.listAttempts('q1'))[0].state,'IN_FLIGHT');
+ }finally{db.close();}
+}));
+test('capture GET cannot persist PAID without nested matching capture proof',withDb(async e=>{
+ const db=e.open();try{
+  await seed(db);await approve(db);await db.claimOperation(claim());
+  await db.recordApprovedOrderFromGet({...claim(),order:order()});
+  await db.claimOperation(claim('capture'));
+  const completed=order('COMPLETED');
+  for(const changed of [
+   {...completed,intent:undefined},
+   {...completed,purchase_units:[{...completed.purchase_units[0],
+     payee:{merchant_id:'foreign'}}]},
+   {...completed,purchase_units:[{...completed.purchase_units[0],payments:{captures:[]}}]},
+   {...completed,purchase_units:[{...completed.purchase_units[0],payments:{captures:[{
+     ...completed.purchase_units[0].payments.captures[0],id:'FOREIGN'}]}}]},
+   {...completed,purchase_units:[{...completed.purchase_units[0],payments:{captures:[{
+     ...completed.purchase_units[0].payments.captures[0],status:'PENDING'}]}}]},
+  ])await assert.rejects(db.recordCaptureFromGet({...claim(),order:changed,
+   capture:capture()}));
+  assert.equal((await db.listAttempts('q1')).find(x=>x.operation==='capture').state,
+    'IN_FLIGHT');
+ }finally{db.close();}
 }));
