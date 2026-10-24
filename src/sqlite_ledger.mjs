@@ -151,7 +151,7 @@ export function createSqliteLedger({ filename } = {}) {
             'REMOTE_ORDER_APPROVAL_REQUIRED',409);
         }
         stmt('INSERT INTO payment_attempts(request_id,quote_id,quote_version,merchant_id,' +
-          'operation,state,amount_minor,currency) VALUES(?,?,?,?,\'IN_FLIGHT\',?,?,?)')
+          'operation,state,amount_minor,currency) VALUES(?,?,?,?,?,\'IN_FLIGHT\',?,?)')
           .run(rid,quote.id,quote.version,merchantId,operation,cents,quote.currency);
         return {action:'FIRST_CLAIM_ONLY_NO_PROVIDER_CALL',attempt:convertAttempt(attemptRow(rid))};
       });
