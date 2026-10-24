@@ -51,3 +51,13 @@
 - 현재 발행 작업 **PPL-001 / READY / `feature/quote-payment`**: 실 Sandbox+무료 모델 가용성 및 견적·결제 구현안 2개/데이터 계약 검토. 추후 `PPL-002`는 큐에만 있으며 **착수 금지**.
 - 핵심 보호: 추가 지출 0원, Sandbox only, 코드/테스트 PASS 실증 필요, 역할별 보고는 선택된 feature `TO_PAYPAL_LEAD.md`, 총괄 메시지는 `lead/paypal`. 자동 실행·GitHub 웹훅·작업자 연락/알림 없음.
 - 작업자 채팅은 **아직 실제 생성·착수 검증 전**, 실 Sandbox 인증/호출, 앱/CI/배포/Devpost 제출 성과는 그대로 미완료·미검증. 이번 변경은 운영 체계 설정 및 다음 작업 지시 발행.
+
+## 2026-10-24 — 공통 작업자 라우터 공시 후 feature HEAD 검수
+| feature 브랜치 | 최신 원격 HEAD | 적용 확인 |
+|---|---|---|
+| `feature/quote-payment` | `e5b70e0376628dc9e6237d69234f56648c849ca8` | README/AGENTS에 단일 worker 지시서 우선 조회/목표 브랜치 확인 공시 |
+| `feature/delivery` | `77dc5327b69432d3f64a320dea8a1ae0c2f427ce` | 동일 공시; **ACTIVE_TASK 지정 전 작업 금지** |
+| `feature/subscriptions` | `9d77f9029d9dfb571f14f5d10289f97015ba6f4f` | 동일 공시; **ACTIVE_TASK 지정 전 작업 금지** |
+
+- 세 브랜치 **운영 문서만 갱신**, 기능 코드/실 API/CI 변경·개발 착수 없음. `lead/paypal:docs/dispatch/ACTIVE_TASK.md` = PPL-001 READY `feature/quote-payment`.
+- 총괄이 현 활성 작업을 바꾼 뒤에는 다시 세 브랜치 HEAD/TO_PAYPAL_LEAD을 직접 읽고 새로운 값을 기록한다. 채팅 자동 알림 불가.
