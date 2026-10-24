@@ -1,5 +1,7 @@
 # PayPal AI 역할 및 공통 운영 규칙
 
+> **[2026-10-24 최신 운영] PayPal 통합 개발자 채팅 1개 / 현재 지시 기반 동적 브랜치 전환.** 이 브랜치는 역할 소유용이지 별도 작업자 채팅을 뜻하지 않는다. 항상 총괄 `lead/paypal`의 [WORKER_START_HERE.md](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/lead/paypal/WORKER_START_HERE.md) → [ACTIVE_TASK.md](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/lead/paypal/docs/dispatch/ACTIVE_TASK.md) → [PROTOCOL.md](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/lead/paypal/docs/dispatch/PROTOCOL.md)를 원격 조회. **현재 ACTIVE_TASK의 target_branch가 `feature/quote-payment`가 아니면 이 브랜치 개발·수정 금지.** 같은 작업자 채팅이 총괄 검수 후 다음 브랜치로 이동한다. 비용 0원/Sandbox only/민감정보 공개 금지. 초기 ACTIVE_TASK는 quote-payment 대상으로 발행되었으나 **최신 원격 지시 재확인이 필수**.
+
 - 실제 참가자: 사용자 **1명**. AI 담당자들은 각자 독립 대화와 GitHub 브랜치에서 작업한다.
 - 대회 총괄(`lead/paypal`)이 제출·아키텍처·검수·통합·개발 지시 책임을 진다. 기능 담당자는 `feature/quote-payment`, `feature/delivery`, `feature/subscriptions`만 수정한다. 최상위 해커톤 총괄은 전체 일정·위험·공식 성과만 감독한다.
 - 다른 브랜치의 소스/메시지/기능은 사용자 승인 없이 수정하지 않는다. `main`은 검증된 통합 기준이다.
