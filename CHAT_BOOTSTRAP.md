@@ -1,3 +1,5 @@
+> **2026-10-24 19:12 KST 통합 총괄 최신 전달문 — 매 작업 시작 전 필독:** [docs/FROM_HACKATHON_COMMAND.md](docs/FROM_HACKATHON_COMMAND.md)의 **[ACTIVE]** 지시가 이전 감독 이력보다 우선한다. **P0 실제 PayPal Sandbox + 실제 AI 연결 증빙**을 최우선 외부 게이트로 관리하고, 기존 독립 선행 개발은 계속하되 대회 실증과 합성 테스트를 혼동하지 말라. 각 조치·차단·사용자 필요사항·테스트/원격 SHA를 `docs/roles/lead/TO_HACKATHON_LEAD.md`에 답신. 현행 정본 JSON·최신 HEAD/CI에서 진도 재확인, 무단 계정변경·비용·공식 제출 금지.
+
 # PayPal — one-command resume
 <!-- resume: day_id=PPL-D15; percent=20; est_h=5; safe_h=10 -->
 > **최신 D15 (2026-10-24):** `src/offline_sandbox_d1_harness.mjs`로 Sandbox transport + D1 CAS + 주입된 신원 확인을 **네트워크 없는 합성 HTTP**에서 결합. 신규 13테스트, [Actions #40084869412](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40084869412) @ `b308fad345c8`: **Node 232/232, 로컬 Chromium, 18일 원장 PASS**. 최초 2개 테스트 비교 오류는 수정 후 재검증. **실 PayPal/AI/D1/Cloudflare 미실행**. D15 **20%** / 잔여 기본 **5h**·안전 확보 **10h** / 실측 NOT_MEASURED. [상세](docs/technical/PPL_D15_OFFLINE_TRANSPORT_COMPOSITION_20261024.md).
