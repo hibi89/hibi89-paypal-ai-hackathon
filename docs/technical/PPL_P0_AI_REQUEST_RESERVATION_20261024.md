@@ -17,3 +17,8 @@ Alternative A: ephemeral process lock/cache (cheap, but unsafe after restart or 
 
 ## Evidence and next stage
 Tests cover concurrent submits, replay, durable crash reservation, quota, wrong actor/version, provider error sanitization, mock fallback, approval hold, and forged source. Await GitHub Actions after commit and record exact SHA/results. Future work: explicit, separately authorized single real provider probe; genuine Free Tier + Business/Personal Sandbox receipts. Production must use centrally enforced budget and trusted identity; never deploy the local synthetic server as-is.
+
+## Confirmed offline acceptance
+- Implemented at SHA `dac161b150bb3486f8b4c0871172e750b6dcd278`; [GitHub Actions #40094382302](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40094382302): Node 278/278 PASS (0 failures), Chromium localhost E2E PASS, MASTER_PROGRESS 18/18 PASS.
+- This verifies synthetic fixtures, SQLite and browser localhost only; actual Gemini tokens/charges, PayPal orders, third-party quota and public operation are not verified.
+- Every future production environment needs a centrally enforced budget, scoped service identity, explicit user consent, and provider-tier verification. The SQLite one-attempt cap is not a global account quota.
