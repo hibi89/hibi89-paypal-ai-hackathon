@@ -1,6 +1,7 @@
 // Local, synthetic, read-only evidence for contest demonstration.
 // NOT DBVORA standalone; NOT a signed SOVIA event log; NOT PayPal provider evidence.
 import { DatabaseSync } from 'node:sqlite';
+import { verifyLocalAudit } from './ledger_audit.mjs';
 
 const safeIdentity = value => typeof value === 'string' &&
   value.length > 0 && value.length <= 128;
@@ -19,6 +20,7 @@ export function inspectLocalEvidence({filename,actorId,merchantId}={}) {
     db.exec('PRAGMA busy_timeout = 1000');
     const integrity=db.prepare('PRAGMA quick_check').get();
     const integrityOk=Object.values(integrity ?? {}).every(v=>v==='ok');
+    const audit=verifyLocalAudit(db,{actorId,merchantId});
     const known=['quotes','payment_attempts','ai_draft_attempts'];
     const tableNames=db.prepare(
       "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('quotes','payment_attempts','ai_draft_attempts') ORDER BY name"
@@ -48,6 +50,8 @@ export function inspectLocalEvidence({filename,actorId,merchantId}={}) {
     const unknown=asCount(attempts.unresolved),aiUnknown=asCount(drafts.unresolved);
     const checks=[
       {rule:'DB_QUICK_CHECK',status:integrityOk?'PASS':'NEEDS_REVIEW',basis:'SQLITE_QUICK_CHECK'},
+      {rule:'LOCAL_AUDIT_HASH_CHAIN',status:audit.integrity,
+        basis:'UNSIGNED_LEDGER_METADATA_NOT_EXTERNAL_ATTESTATION'},
       {rule:'PAYMENT_OUTCOME_UNRESOLVED',status:unknown?'NEEDS_REVIEW':'CLEAR',
         count:unknown,basis:'PERSISTED_LOCAL_CLAIMS'},
       {rule:'AI_DRAFT_OUTCOME_UNRESOLVED',status:aiUnknown?'NEEDS_REVIEW':'CLEAR',
@@ -65,9 +69,10 @@ export function inspectLocalEvidence({filename,actorId,merchantId}={}) {
         note:'Read-only SQLite inspection only; no independent DBVORA runtime or backup/restore.',
       },
       soviaStyle:{
-        type:'CURRENT_STATE_POLICY_PROJECTION_NOT_APPEND_ONLY_EVENT_LOG',
+        audit,
+        type:'LOCAL_SQLITE_HASH_CHAIN_WITH_CURRENT_STATE_PROJECTION',
         checks,source:'PERSISTED_LEDGER_COUNTS',
-        note:'Not a signed audit, real-time fraud defense or independently integrated SOVIA service.',
+        note:'SHA256 metadata chain for new SQLite mutations only; not signed, separately anchored, legacy backfilled, or independently integrated SOVIA.',
       },
       businessIntelligence:{
         population:'SYNTHETIC_DEMO_ONLY',

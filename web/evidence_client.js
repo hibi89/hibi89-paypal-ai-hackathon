@@ -15,6 +15,8 @@ async function readLocalEvidence(){
     evidenceOutput.textContent=
       'DBVORA-inspired SQLite integrity: '+data.dbvoraInspired.integrity+
       ' (read-only; backup not verified).\n'+
+      'SOVIA-style local audit chain: '+data.soviaStyle.audit.integrity+
+      ' ('+data.soviaStyle.audit.ownerEvents+' owner-scoped events, SHA256 not signed).\n'+
       'SOVIA-style policy snapshot: '+
       data.soviaStyle.checks.map(c=>c.rule+'='+c.status).join('; ')+'\n'+
       'Synthetic BI: quotes '+bi.quotes.total+', approved '+bi.quotes.approved+
@@ -22,7 +24,7 @@ async function readLocalEvidence(){
       ', local payment claims '+bi.paymentAttempts.total+
       ', unresolved '+bi.paymentAttempts.unresolved+
       '.\nProvider transactions measured: NO. Market demand measured: NO. '+
-      'No signed event-log or independently deployed services.';
+      'Local hash chain has no external anchor; no independently deployed services.';
   }catch(e){
     evidenceOutput.textContent='Read-only evidence unavailable: '+
       (e?.message||'EVIDENCE_READ_FAILED');

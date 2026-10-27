@@ -50,6 +50,7 @@ try:
             page.reload()
             assert sum(method=="POST" for method,_ in requests)==before_match+1
             expect(page.locator("#evidence-details")).to_contain_text("SQLite integrity: PASS")
+            expect(page.locator("#evidence-details")).to_contain_text("local audit chain: PASS")
             expect(page.locator("#evidence-details")).to_contain_text("approved 0")
             before_evidence=sum(method=="POST" for method,_ in requests)
             page.locator("#evidence-refresh").click()
@@ -95,6 +96,7 @@ try:
             expect(page.locator("#quote-view")).to_contain_text("$17.55")
             page.locator("#evidence-refresh").click()
             expect(page.locator("#evidence-details")).to_contain_text("approved 1")
+            expect(page.locator("#evidence-details")).to_contain_text("local audit chain: PASS")
             assert sum(method=="POST" and url.endswith("/approve")
                 for method,url in requests)==1
             total=sum(method=="POST" for method,_ in requests)

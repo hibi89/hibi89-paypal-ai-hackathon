@@ -4,6 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { createContractMilestoneStore } from './contract_milestones.mjs';
 import { approvedAmount, requestKey, reconcileCapture } from './payment_contract.mjs';
 import { QuoteApiError } from './quote_api.mjs';
+import { installLocalAudit } from './ledger_audit.mjs';
 
 const reject = (condition, code, http = 400) => {
   if (condition) throw new QuoteApiError(code, http);
@@ -78,6 +79,9 @@ export function createSqliteLedger({ filename } = {}) {
   if (!columns.includes('scope_text')) db.exec('ALTER TABLE quotes ADD COLUMN scope_text TEXT');
   if (!columns.includes('suggestion_source'))
     db.exec('ALTER TABLE quotes ADD COLUMN suggestion_source TEXT');
+  // Triggers write inside each existing SQLite transaction, including preexisting
+  // code paths; legacy rows are intentionally NOT backfilled as audit evidence.
+  installLocalAudit(db);
   const stmt = sql => db.prepare(sql);
   function transaction(fn) {
     db.exec('BEGIN IMMEDIATE');
