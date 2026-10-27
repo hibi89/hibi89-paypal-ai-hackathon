@@ -5,6 +5,7 @@ import {createHash} from 'node:crypto';
 import {DatabaseSync} from 'node:sqlite';
 import {lstatSync} from 'node:fs';
 import {join} from 'node:path';
+import {pathToFileURL} from 'node:url';
 import {inspectOwnerMvpLocalState} from './owner_mvp_local_status.mjs';
 import {verifyLocalAudit} from './ledger_audit.mjs';
 import {MARKETPLACE_SKILL_NAMES} from './marketplace_match.mjs';
@@ -22,9 +23,15 @@ function checkedRead(directory,name,read){
   catch{fail('PRIVATE_RECEIPT_FILE_UNAVAILABLE')}
   if(!info.isFile()||info.size>MAX_DB_BYTES)
     fail('PRIVATE_RECEIPT_FILE_UNSAFE');
+  for(const suffix of ['-wal','-shm']){
+    let sidecar;
+    try{sidecar=lstatSync(file+suffix)}
+    catch(e){if(e?.code!=='ENOENT')fail('PRIVATE_RECEIPT_FILE_UNSAFE')}
+    if(sidecar)fail('PRIVATE_RECEIPT_ACTIVE_WAL_REVIEW_REQUIRED');
+  }
   let db;
   try {
-    db=new DatabaseSync(file,{readOnly:true});
+    db=new DatabaseSync(pathToFileURL(file).href+'?immutable=1',{readOnly:true});
     db.exec('PRAGMA query_only=ON');
     return read(db);
   }finally{try{db?.close()}catch{}}

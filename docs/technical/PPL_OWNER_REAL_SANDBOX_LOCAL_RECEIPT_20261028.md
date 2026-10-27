@@ -44,3 +44,10 @@ those private database files to "reset" the experiment. Immediately rotate
 credentials earlier entered into chat; keep replacements solely local. Never
 upload private SQLite snapshots to GitHub. This command cannot refund,
 recapture, revoke consent or confirm current remote status.
+
+
+**SQLite no-sidecar safety:** The reader uses SQLite URI `immutable=1` and
+will not manufacture `-wal` / `-shm` siblings in the original private
+directory. Because immutable readers ignore active WAL journals, any
+pre-existing `-wal` or `-shm` blocks receipt/restart inspection rather than
+allow a stale and unsafe new payment attempt. Do not remove WAL files manually.

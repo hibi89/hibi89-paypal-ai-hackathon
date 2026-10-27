@@ -107,6 +107,17 @@ fixture(async dir=>{
  r=inspectOwnerMvpLocalState({directory:dir});
  assert.equal(r.status,'UNREADABLE_PRIVATE_STATE_REVIEW_REQUIRED');
 }));
+test('uncheckpointed WAL refuses potentially stale previous owner attempts',
+fixture(async dir=>{
+ const file=join(dir,'checkout.sqlite');
+ const db=new DatabaseSync(file);
+ db.exec("PRAGMA journal_mode=WAL;CREATE TABLE quotes (id TEXT PRIMARY KEY,status TEXT); INSERT INTO quotes VALUES('operator_mvp_01','APPROVED')");
+ const r=inspectOwnerMvpLocalState({directory:dir});
+ assert.equal(r.status,'UNREADABLE_PRIVATE_STATE_REVIEW_REQUIRED');
+ assert.equal(r.safeToStartNewAttempt,false);
+ assert.equal(r.paymentRetryAllowed,false);
+ db.close();
+}));
 test('CLI prints sanitized read-only status with no provider credentials',
 fixture(async dir=>{
  const {spawnSync}=await import('node:child_process');

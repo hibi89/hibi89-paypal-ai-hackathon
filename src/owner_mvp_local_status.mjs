@@ -4,6 +4,7 @@
 import {DatabaseSync} from 'node:sqlite';
 import {lstatSync} from 'node:fs';
 import {join} from 'node:path';
+import {pathToFileURL} from 'node:url';
 
 const QUOTE_ID='operator_mvp_01';
 const allowed=new Set(['PROPOSED','APPROVED','IN_FLIGHT','UNKNOWN',
@@ -30,9 +31,15 @@ function sealedDb(directory,basename,fn){
   }
   if(!stat.isFile()||stat.size>64*1024*1024)
     return {kind:'UNREADABLE',data:null};
+  // An active WAL may contain committed records absent from the main DB.
+  // immutable mode ignores WAL, so refuse potentially stale reads.
+  for(const suffix of ['-wal','-shm']){
+    try{lstatSync(filename+suffix);return {kind:'UNREADABLE',data:null}}
+    catch(e){if(e?.code!=='ENOENT')return {kind:'UNREADABLE',data:null}}
+  }
   let db;
   try{
-    db=new DatabaseSync(filename,{readOnly:true});
+    db=new DatabaseSync(pathToFileURL(filename).href+'?immutable=1',{readOnly:true});
     // Never open writeable DB or run schema migrations.
     db.exec('PRAGMA query_only=ON');
     const data=fn(db);
