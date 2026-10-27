@@ -22,7 +22,7 @@
     "mvp:review": "node --experimental-sqlite scripts/run_owner_mvp_review.mjs"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.5.0"
   },
   "license": "MIT"
 }
