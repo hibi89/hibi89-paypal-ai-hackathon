@@ -34,7 +34,7 @@ async function seed(directory,{paid=true,ai=true}={}){
  if(paid){
    await ledger.claimOperation({...inputs,operation:'capture'});
    await ledger.recordCaptureFromGet({...inputs,order:order('COMPLETED'),
-    capture:{id:'SYNTHETIC_CAPTURE_1',status:'COMPLETED',
+    capture:{id:'SYNTHETIC_CAPTURE_1',orderId:'SYNTHETIC_ORDER_1',status:'COMPLETED',
       amount:{currency_code:'USD',value:'1.50'}}});
  }
  ledger.close();
