@@ -1,0 +1,1191 @@
+{
+  "schema_version": 1,
+  "updated_kst": "2026-10-25",
+  "scope": "Per-day verified acceptance; NOT entire PayPal hackathon project percent",
+  "active_day_id": "PPL-D15",
+  "reporting_mode": "mandatory_after_each_actual_work_session",
+  "days": [
+    {
+      "day_id": "PPL-D01",
+      "scheduled_date_kst": "2026-10-25",
+      "executed_date_kst": "2026-10-24",
+      "scope": "Quote read-only GET; explicit human-approved POST; offline API security validation",
+      "status": "DAY1_OFFLINE_ACCEPTED",
+      "estimated_total_hours": 4,
+      "safe_total_hours": 8,
+      "percent_complete": 100,
+      "estimated_remaining_hours": 0,
+      "safe_remaining_hours": 0,
+      "actual_elapsed_hours": null,
+      "actual_elapsed_note": "NOT_MEASURED",
+      "carryover": [],
+      "limitations": [
+        "single-process fixture, not durable database",
+        "real PayPal Sandbox, AI, browser, production NOT_TESTED"
+      ],
+      "checklist": [
+        {
+          "id": "READ_ONLY_GET",
+          "weight_pct": 25,
+          "state": "VERIFIED",
+          "evidence": "src/quote_api.mjs @ 9fa2084e27995ec7d77e5907c2390246f13f4150; tests/quote_api.test.mjs"
+        },
+        {
+          "id": "HUMAN_APPROVAL_POST",
+          "weight_pct": 35,
+          "state": "VERIFIED",
+          "evidence": "src/quote_api.mjs @ 9fa2084e27995ec7d77e5907c2390246f13f4150; tests/quote_api.test.mjs"
+        },
+        {
+          "id": "PAYMENT_GATE_CLOSED",
+          "weight_pct": 15,
+          "state": "VERIFIED",
+          "evidence": "src/quote_api.mjs @ 9fa2084e27995ec7d77e5907c2390246f13f4150; no PayPal HTTP"
+        },
+        {
+          "id": "OFFLINE_CI",
+          "weight_pct": 25,
+          "state": "VERIFIED",
+          "evidence": "GitHub Actions run 40063789450 completed success, npm test success; 23 new and 11 existing offline cases"
+        }
+      ],
+      "progress_state": "DONE",
+      "evidence": [
+        "src/quote_api.mjs @ 9fa2084e27995ec7d77e5907c2390246f13f4150; tests/quote_api.test.mjs",
+        "src/quote_api.mjs @ 9fa2084e27995ec7d77e5907c2390246f13f4150; tests/quote_api.test.mjs",
+        "src/quote_api.mjs @ 9fa2084e27995ec7d77e5907c2390246f13f4150; no PayPal HTTP",
+        "GitHub Actions run 40063789450 completed success, npm test success; 23 new and 11 existing offline cases"
+      ],
+      "verified_sha": null,
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": "예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도."
+    },
+    {
+      "day_id": "PPL-D02",
+      "scheduled_date_kst": "2026-10-26",
+      "executed_date_kst": "2026-10-24",
+      "scope": "Durable DB and unique/atomic payment operation claims",
+      "status": "DAY2_SQLITE_OFFLINE_ACCEPTED",
+      "estimated_total_hours": 5,
+      "safe_total_hours": 9,
+      "percent_complete": 100,
+      "estimated_remaining_hours": 0,
+      "safe_remaining_hours": 0,
+      "actual_elapsed_hours": null,
+      "actual_elapsed_note": "NOT_MEASURED; budget 5h/9h was not measured execution time",
+      "carryover": [],
+      "limitations": [
+        "Durable local Node SQLite only; no D1 adapter or production persistence test",
+        "Two SQLite connections tested; separate physical processes and actual provider traffic not tested",
+        "recordApprovedOrderFromGet and recordCaptureFromGet accept synthetic trusted-backend-provided evidence; no actual PayPal GET adapter",
+        "All HTTP payment routes still fail closed; no actual PayPal Sandbox OAuth/Orders",
+        "First implementation CI 40064603053 failed (SQL placeholders); corrected CI 40064652611 succeeded"
+      ],
+      "checklist": [
+        {
+          "id": "DURABLE_SCHEMA",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "src/sqlite_ledger.mjs & tests/sqlite_ledger.test.mjs @ 0c07306bb9633183358f0a1c86a8a3d28653d15e; SQLite file persists close/open; UNIQUE quote/remote IDs"
+        },
+        {
+          "id": "APPROVAL_CAS",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "src/sqlite_ledger.mjs @ 0c07306bb9633183358f0a1c86a8a3d28653d15e; BEGIN IMMEDIATE transaction/conditional UPDATE; two-connection conflict tests"
+        },
+        {
+          "id": "PAYMENT_ATTEMPT_LEDGER",
+          "weight_pct": 25,
+          "state": "VERIFIED",
+          "evidence": "src/sqlite_ledger.mjs @ 0c07306bb9633183358f0a1c86a8a3d28653d15e; stable create/capture request ids, UNIQUE quote/merchant/version/operation, UNKNOWN GET-first, synthetic proof guards"
+        },
+        {
+          "id": "CONCURRENCY_RESTART",
+          "weight_pct": 25,
+          "state": "VERIFIED",
+          "evidence": "tests/sqlite_ledger.test.mjs @ 0c07306bb9633183358f0a1c86a8a3d28653d15e; 19 tests include two handles, DB reopen, interrupted operation recovery"
+        },
+        {
+          "id": "CI_HANDOFF",
+          "weight_pct": 10,
+          "state": "VERIFIED",
+          "evidence": "GitHub Actions run 40064652611 completed/success on 0c07306bb9633183358f0a1c86a8a3d28653d15e; docs/technical/PPL_002_DAY2_SQLITE_LEDGER.md and current STATUS/HANDOFF"
+        }
+      ],
+      "progress_state": "DONE",
+      "evidence": [
+        "src/sqlite_ledger.mjs & tests/sqlite_ledger.test.mjs @ 0c07306bb9633183358f0a1c86a8a3d28653d15e; SQLite file persists close/open; UNIQUE quote/remote IDs",
+        "src/sqlite_ledger.mjs @ 0c07306bb9633183358f0a1c86a8a3d28653d15e; BEGIN IMMEDIATE transaction/conditional UPDATE; two-connection conflict tests",
+        "src/sqlite_ledger.mjs @ 0c07306bb9633183358f0a1c86a8a3d28653d15e; stable create/capture request ids, UNIQUE quote/merchant/version/operation, UNKNOWN GET-first, synthetic proof guards",
+        "tests/sqlite_ledger.test.mjs @ 0c07306bb9633183358f0a1c86a8a3d28653d15e; 19 tests include two handles, DB reopen, interrupted operation recovery",
+        "GitHub Actions run 40064652611 completed/success on 0c07306bb9633183358f0a1c86a8a3d28653d15e; docs/technical/PPL_002_DAY2_SQLITE_LEDGER.md and current STATUS/HANDOFF"
+      ],
+      "verified_sha": null,
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": "예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도."
+    },
+    {
+      "day_id": "PPL-D03",
+      "scheduled_date_kst": "2026-10-27",
+      "executed_date_kst": "2026-10-25",
+      "scope": "Access feasibility: actual PayPal Sandbox and free AI external API (no credential disclosure)",
+      "status": "OWNER_REAL_PROVIDER_PROBES_PASS_CHECKOUT_NOT_TESTED",
+      "estimated_total_hours": 3,
+      "safe_total_hours": 8,
+      "percent_complete": 65,
+      "estimated_remaining_hours": 2,
+      "safe_remaining_hours": 5,
+      "actual_elapsed_hours": null,
+      "actual_elapsed_note": "NOT_MEASURED; owner-observed Sandbox OAuth and Gemini one-shot actual calls 2026-10-25",
+      "carryover": [
+        "Authorize and execute one safe Sandbox Orders v2 CREATE -> buyer approval -> remote GET -> one CAPTURE -> proof GET; ensure merchant link and trusted HTTPS callback/session before enablement.",
+        "Confirm Gemini separate key actually belongs to eligible Free-tier project; recorded model response does not attest billing or quote-flow integration."
+      ],
+      "limitations": [
+        "Actual owner CLI output: PayPal sandbox OAuth 200 status SANDBOX_OAUTH_REACHED, one call; OAuth does not prove seller/payee or checkout.",
+        "Actual owner CLI output: gemini-3.5-flash-lite generateContent 200 status GEMINI_TEXT_GENERATED, one synthetic sentence; not quote workflow or zero-cost billing receipt.",
+        "Owner screenshots show Sandbox REST app plus Business and Personal accounts, Gemini project Free tier; secret values intentionally absent.",
+        "Actual Orders CREATE/GET, buyer approval, CAPTURE/GET, HTTPS verified callback, production and Devpost NOT_TESTED.",
+        "One-shot markers persist in owner's home; never retry or remove marker after ambiguous error without manual review."
+      ],
+      "checklist": [
+        {
+          "id": "PAYPAL_ACCOUNT_PRECHECK",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "Owner screenshots show Sandbox REST app and Business+Personal test accounts 2026-10-25; docs/technical/PPL_P0_OWNER_UI_ACCESS_20261025.md"
+        },
+        {
+          "id": "SANDBOX_OAUTH_ACTUAL",
+          "weight_pct": 25,
+          "state": "VERIFIED",
+          "evidence": "Owner-operated single Sandbox OAuth call HTTP 200, SANDBOX_OAUTH_REACHED 2026-10-25; sanitized output; no order or capture"
+        },
+        {
+          "id": "SANDBOX_ORDER_BUYER_FLOW",
+          "weight_pct": 35,
+          "state": "BLOCKED",
+          "evidence": null
+        },
+        {
+          "id": "FREE_AI_ACTUAL_CALL",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "Owner-operated one gemini-3.5-flash-lite text generation HTTP 200 GEMINI_TEXT_GENERATED 2026-10-25; owner confirmed Free tier flag; no independent billing attestation"
+        }
+      ],
+      "progress_state": "PARTIAL",
+      "evidence": [
+        "User-supplied sanitized PowerShell output 2026-10-25: PayPal sandbox OAuth /v1/oauth2/token status=SANDBOX_OAUTH_REACHED httpStatus=200 networkCalls=1 externalEvidence=true; Gemini generateContent gemini-3.5-flash-lite status=GEMINI_TEXT_GENERATED httpStatus=200 networkCalls=1 externalEvidence=true; private credential values not disclosed. docs/technical/PPL_P0_REAL_PROVIDER_FIRST_SUCCESS_20261025.md",
+        "P0 owner-gated one-shot probe PREPARED ONLY: src/p0_one_shot_probe.mjs; scripts/p0_one_shot_probe.mjs; tests/p0_one_shot_probe.test.mjs; docs/technical/PPL_P0_OWNER_ONE_SHOT_REAL_API_PROBE_20261024.md. CI 40087887623 @ efeb9a9e587cb6eddae52dfeeb045acaf05c1571: Node 251/251 + local Chromium PASS. Provider calls 0; PayPal/Gemini real responses, free-tier and Sandbox accounts NOT_TESTED.",
+        "2026-10-24 P0 account-unblock prep: docs/technical/PPL_P0_REAL_PROVIDER_UNBLOCK_20261024.md; src/p0_provider_readiness.mjs; scripts/check_p0_provider_readiness.mjs; tests/p0_provider_readiness.test.mjs. Actions #40086442379 @ 491183ca51f06bb3f71206bbbe44b7e7684fa330: 240/240 Node + local Chromium PASS. Presence-only NO network/credential output; actual PayPal Sandbox/AI NOT_TESTED."
+      ],
+      "verified_sha": null,
+      "blocker": "Sandbox Order CREATE → 구매자 승인 → GET/캡처 영수증 미실증. 실제 무료 요금 청구 여부·AI 견적 UI 통합 별도 미검증.",
+      "recovery_date_kst": null,
+      "recovery_condition": "실 Sandbox buyer flow 결제 승인/GET 및 one-shot CAPTURE를 별도 범위 승인·검증 후 D03 100 재평가",
+      "advance_note": "2026-10-25 사용자 로컬에서 PayPal Sandbox OAuth HTTP 200 및 Gemini 실제 생성 HTTP 200, 각 1회. 실 주문/캡처·견적 UI/무료 청구 보증 아님."
+    },
+    {
+      "day_id": "PPL-D04",
+      "scheduled_date_kst": "2026-10-28",
+      "executed_date_kst": "2026-10-24",
+      "scope": "AI quote draft and explicit human approval UI; mock-only forward development",
+      "status": "OFFLINE_IMPL_PASS_REAL_AI_BLOCKED",
+      "estimated_total_hours": 4,
+      "safe_total_hours": 8,
+      "percent_complete": 80,
+      "estimated_remaining_hours": 2,
+      "safe_remaining_hours": 4,
+      "actual_elapsed_hours": null,
+      "actual_elapsed_note": "NOT_MEASURED. Remaining hands-on time only after a validated free AI account; waiting UNKNOWN.",
+      "carryover": [
+        "Owner's actual Gemini one-shot text generated HTTP 200 (separate non-quote prompt), but actual Gemini-generated quote draft + human approval UI needs real-provider integration and response evaluation.",
+        "Confirm separate key/project model quota and Free tier in owner dashboard; no paid fallback."
+      ],
+      "limitations": [
+        "Local quote UI and human approval tests use offline mock; real Gemini-generated quote data were not pushed into approved quote UI.",
+        "Actual Gemini API text generation HTTP 200 confirmed by owner 2026-10-25, but it was a single synthetic one-sentence prompt, not quote integration or billing attestation.",
+        "Production authenticated host/callback not verified."
+      ],
+      "checklist": [
+        {
+          "id": "MOCK_DRAFT_PROVIDER",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "src/quote_draft.mjs; src/quote_api.mjs @ ee0427e8a6c4ef22904e671f70cfa59120c009dc; synthetic tests"
+        },
+        {
+          "id": "VERSIONED_APPROVAL_INVALIDATION",
+          "weight_pct": 30,
+          "state": "VERIFIED",
+          "evidence": "src/sqlite_ledger.mjs + tests/quote_draft.test.mjs @ ee0427e8a6c4ef22904e671f70cfa59120c009dc; old approval reset, edits blocked after payment claim"
+        },
+        {
+          "id": "LOOPBACK_UI_HTTP_E2E",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "web/offline_demo.html, web/demo_client.js, src/offline_demo_server.mjs; tests/offline_demo_server.test.mjs @ 3765bf20ce627031ec097c2f95c85de5a8eda361"
+        },
+        {
+          "id": "MOCK_CI_VERIFIED",
+          "weight_pct": 10,
+          "state": "VERIFIED",
+          "evidence": "GitHub Actions 40065235436 success; 40065142461 first failed due to Host test then corrected"
+        },
+        {
+          "id": "REAL_FREE_AI_PROVIDER",
+          "weight_pct": 20,
+          "state": "BLOCKED",
+          "evidence": "One real Gemini text response HTTP 200, but quote-specific generation/accuracy/bounds and integration with human-approved quote UI remain NOT_TESTED (see 2026-10-25 real-provider note)."
+        }
+      ],
+      "progress_state": "PARTIAL",
+      "evidence": [
+        "Owner real Gemini one-shot 2026-10-25: gemini-3.5-flash-lite HTTP 200 GEMINI_TEXT_GENERATED, synthetic landing-page sentence only; NOT actual AI quote workflow.",
+        "src/quote_draft.mjs; src/quote_api.mjs @ ee0427e8a6c4ef22904e671f70cfa59120c009dc; synthetic tests",
+        "src/sqlite_ledger.mjs + tests/quote_draft.test.mjs @ ee0427e8a6c4ef22904e671f70cfa59120c009dc; old approval reset, edits blocked after payment claim",
+        "web/offline_demo.html, web/demo_client.js, src/offline_demo_server.mjs; tests/offline_demo_server.test.mjs @ 3765bf20ce627031ec097c2f95c85de5a8eda361",
+        "GitHub Actions 40065235436 success; 40065142461 first failed due to Host test then corrected"
+      ],
+      "verified_sha": null,
+      "blocker": "실 AI 단발 생성 200 확인; 실제 견적 입력·AI 응답·인간 승인 통합 및 이용한도 검증은 미완료",
+      "recovery_date_kst": null,
+      "recovery_condition": "실 Gemini 견적 generation + 검증 + 승인 UI 통합 테스트 후 D04 잔여20 재평가",
+      "advance_note": "예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도."
+    },
+    {
+      "day_id": "PPL-D05",
+      "scheduled_date_kst": "2026-10-29",
+      "executed_date_kst": "2026-10-24",
+      "scope": "PayPal Sandbox-only OAuth/Orders create/GET/capture adapter; real API access remains blocked",
+      "status": "DAY5_OFFLINE_LEDGER_TRANSPORT_ACCEPTED",
+      "estimated_total_hours": 5,
+      "safe_total_hours": 10,
+      "percent_complete": 100,
+      "estimated_remaining_hours": 0,
+      "safe_remaining_hours": 0,
+      "actual_elapsed_hours": null,
+      "actual_elapsed_note": "NOT_MEASURED. Planned 5h/10h was not elapsed duration.",
+      "carryover": [
+        "Actual real PayPal Sandbox OAuth/merchant/buyer approval/capture/GET evidence remains PPL-D03 blocked",
+        "Production authenticated payment endpoint, tested merchant credentials and public deployment deferred to later integration; payment HTTP routes remain 503"
+      ],
+      "limitations": [
+        "100% means D05 local synthetic transport-ledger orchestration acceptance ONLY, not real Sandbox verification",
+        "Actual PayPal Sandbox OAuth/Orders/merchant/buyer/payment NOT_TESTED, lives in D03",
+        "Mock injected fetch supplies signed-in-like order/capture data; real merchant consent, real GET provenance and remote reliability unverified",
+        "Payment HTTP routes deliberately remain 503 and orchestrator is internal-only, no real card/charges",
+        "Create POST timeout before saving remote order ID remains UNKNOWN requiring manual operator reconciliation; never blind POST retry",
+        "Local SQLite/Node only; D1/Production hosted migration, real auth/session & browser proof not tested",
+        "Actual elapsed wall-clock NOT_MEASURED"
+      ],
+      "checklist": [
+        {
+          "id": "SANDBOX_OAUTH_ALLOWLIST",
+          "weight_pct": 15,
+          "state": "VERIFIED",
+          "evidence": "src/paypal_sandbox_transport.mjs @ 7e1b7ee8de5a6cdfee7f21560ff97f0d3c6760b2; cannot select live URL; mock OAuth auth"
+        },
+        {
+          "id": "CREATE_ORDER_WITH_FIRST_CLAIM",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "tests/paypal_sandbox_transport.test.mjs @ 7e1b7ee8de5a6cdfee7f21560ff97f0d3c6760b2; request ID, amount; no calls without injected claim"
+        },
+        {
+          "id": "ORDER_GET_AND_LINK_GUARDS",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "tests/paypal_sandbox_transport.test.mjs; amount/reference mismatch and non-Sandbox approval link rejected"
+        },
+        {
+          "id": "CAPTURE_AND_AMBIGUOUS_NO_RETRY",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "tests/paypal_sandbox_transport.test.mjs; payer approved by GET, distinct capture request ID; timeout unknown, no blind retry"
+        },
+        {
+          "id": "END_TO_END_LEDGER_RECONCILIATION",
+          "weight_pct": 25,
+          "state": "VERIFIED",
+          "evidence": "src/payment_orchestrator.mjs & tests/payment_orchestrator.test.mjs @ bfd7f641183d150a685ccb11a30b3b796af6414a; create→persist→GET reconcile→capture once→GET proof→PAID; GitHub Actions 40065874692 95/95 PASS (mock)"
+        }
+      ],
+      "progress_state": "DONE",
+      "evidence": [
+        "src/paypal_sandbox_transport.mjs @ 7e1b7ee8de5a6cdfee7f21560ff97f0d3c6760b2; cannot select live URL; mock OAuth auth",
+        "tests/paypal_sandbox_transport.test.mjs @ 7e1b7ee8de5a6cdfee7f21560ff97f0d3c6760b2; request ID, amount; no calls without injected claim",
+        "tests/paypal_sandbox_transport.test.mjs; amount/reference mismatch and non-Sandbox approval link rejected",
+        "tests/paypal_sandbox_transport.test.mjs; payer approved by GET, distinct capture request ID; timeout unknown, no blind retry",
+        "src/payment_orchestrator.mjs & tests/payment_orchestrator.test.mjs @ bfd7f641183d150a685ccb11a30b3b796af6414a; create→persist→GET reconcile→capture once→GET proof→PAID; GitHub Actions 40065874692 95/95 PASS (mock)"
+      ],
+      "verified_sha": null,
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": "예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도."
+    },
+    {
+      "day_id": "PPL-D06",
+      "scheduled_date_kst": "2026-10-30",
+      "executed_date_kst": "2026-10-24",
+      "scope": "Quote→human approval→payment-safe user flow validation; browser and security adapter gap review",
+      "status": "DAY6_OFFLINE_BROWSER_E2E_ACCEPTED",
+      "estimated_total_hours": 5,
+      "safe_total_hours": 9,
+      "estimated_remaining_hours": 0,
+      "safe_remaining_hours": 0,
+      "actual_elapsed_hours": null,
+      "actual_elapsed_note": "NOT_MEASURED; Day6 5h initial expected / 9h reserve were not measured work duration.",
+      "percent_complete": 100,
+      "carryover": [
+        "Production login, hosted app/browser and real PayPal Sandbox remain separately unverified D03/D15/D16, not counted here"
+      ],
+      "limitations": [
+        "Real Chromium/browser test is on 127.0.0.1 local synthetic UI only, no real AI or PayPal API",
+        "Server is synthetic fixed identity and CSRF session for loopback, not production authentication; never publicly deploy",
+        "Payment HTTP POST continues fail-closed 503; no actual PayPal order/capture",
+        "Offsite/production browser and free deployment untested, scheduled separate day15/day16",
+        "Actual wall clock NOT_MEASURED"
+      ],
+      "checklist": [
+        {
+          "id": "BROWSER_USER_JOURNEY",
+          "weight_pct": 25,
+          "state": "VERIFIED",
+          "evidence": "tests/browser_offline_e2e.py & .github/workflows/test.yml @ 04c57a4c39767835940ed9dc3a42ca2793b47643; GitHub CI 40066792213 browser Chromium PASS with local UI draft, approval, quote revision"
+        },
+        {
+          "id": "REFRESH_AND_DOUBLE_CLICK",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "web/demo_client.js, tests/demo_client.test.mjs, tests/browser_offline_e2e.py; CI 40066792213 GET-only F5/refresh; one POST on synchronized double-submit, persisted approval after reload"
+        },
+        {
+          "id": "SESSION_OWNER_SECURITY",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "tests/quote_api.test.mjs ownership 401/404/CSRF and origin; tests/offline_demo_server.test.mjs forged Host/origin forbidden; GitHub CI 40066792213 PASS. Synthetic demo session only, no production login."
+        },
+        {
+          "id": "PAYMENT_FAIL_CLOSED_IN_UI",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "tests/browser_offline_e2e.py payment status sends GET and no /orders POST; tests/offline_demo_server.test.mjs /orders 503; CI 40066792213 PASS"
+        },
+        {
+          "id": "CI_HANDOFF",
+          "weight_pct": 15,
+          "state": "VERIFIED",
+          "evidence": "Node npm test 102/102 PASS + Python real Chromium 127.0.0.1 UI E2E PASS in GitHub Actions 40066792213; docs/technical/PPL_D06_BROWSER_E2E_20261024.md; prior VM suite run 40066459542 failed before harness correction 40066534103 passed"
+        }
+      ],
+      "progress_state": "DONE",
+      "evidence": [
+        "tests/browser_offline_e2e.py & .github/workflows/test.yml @ 04c57a4c39767835940ed9dc3a42ca2793b47643; GitHub CI 40066792213 browser Chromium PASS with local UI draft, approval, quote revision",
+        "web/demo_client.js, tests/demo_client.test.mjs, tests/browser_offline_e2e.py; CI 40066792213 GET-only F5/refresh; one POST on synchronized double-submit, persisted approval after reload",
+        "tests/quote_api.test.mjs ownership 401/404/CSRF and origin; tests/offline_demo_server.test.mjs forged Host/origin forbidden; GitHub CI 40066792213 PASS. Synthetic demo session only, no production login.",
+        "tests/browser_offline_e2e.py payment status sends GET and no /orders POST; tests/offline_demo_server.test.mjs /orders 503; CI 40066792213 PASS",
+        "Node npm test 102/102 PASS + Python real Chromium 127.0.0.1 UI E2E PASS in GitHub Actions 40066792213; docs/technical/PPL_D06_BROWSER_E2E_20261024.md; prior VM suite run 40066459542 failed before harness correction 40066534103 passed"
+      ],
+      "verified_sha": null,
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": "예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도."
+    },
+    {
+      "day_id": "PPL-D07",
+      "scheduled_date_kst": "2026-10-31",
+      "executed_date_kst": "2026-10-24",
+      "scope": "Contract, milestone, and delivery schema with ownership, separated settlement vs fulfillment and append-only history",
+      "status": "DAY7_SQLITE_CONTRACT_OFFLINE_ACCEPTED",
+      "estimated_total_hours": 4,
+      "safe_total_hours": 8,
+      "estimated_remaining_hours": 0,
+      "safe_remaining_hours": 0,
+      "percent_complete": 100,
+      "actual_elapsed_hours": null,
+      "actual_elapsed_note": "NOT_MEASURED. CI time is not developer elapsed wall time.",
+      "carryover": [
+        "D08 server-side authenticated contract/fulfillment HTTP endpoints not implemented",
+        "Production D1 schema migration, real reviewer session, PayPal Sandbox and AI integration NOT_TESTED"
+      ],
+      "limitations": [
+        "Local Node SQLite only; not Cloudflare D1 / production persistence",
+        "Contract and milestone operations are backend-only; actorId and merchantId must originate from trusted auth middleware",
+        "Reviewer acceptance is role-bound to designated reviewer ID but no production identity provider is integrated",
+        "Payment capture and delivery acceptance states remain distinct; no real PayPal evidence generated",
+        "Real PayPal Sandbox, live hosting, free AI API, Devpost NOT_TESTED"
+      ],
+      "checklist": [
+        {
+          "id": "CONTRACT_MILESTONE_SCHEMA",
+          "weight_pct": 25,
+          "state": "VERIFIED",
+          "evidence": "src/contract_milestones.mjs + src/sqlite_ledger.mjs; tests/contract_milestones.test.mjs (D07 CI 40069063023, SHA e682d6dd): schema, FK, snapshot sum, strict ordering, legacy migration"
+        },
+        {
+          "id": "PAYMENT_VS_DELIVERY_STATE",
+          "weight_pct": 25,
+          "state": "VERIFIED",
+          "evidence": "src/contract_milestones.mjs; role-bound PENDING→SUBMITTED→ACCEPTED/REJECTED, paymentState read only; 121 Node tests in CI 40069063023"
+        },
+        {
+          "id": "OWNER_AND_VERSION_GUARDS",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "tests/contract_milestones.test.mjs; trusted principal fields, version CAS, wrong actor/merchant, duplicate create, revision blocked after contract; CI 40069063023"
+        },
+        {
+          "id": "APPEND_ONLY_HISTORY_TESTS",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "DB triggers forbid UPDATE/DELETE to contract_events; composite contract/milestone FK, unique event/version; restart/race/negative cases; CI 40069063023"
+        },
+        {
+          "id": "CI_DOCS_HANDOFF",
+          "weight_pct": 10,
+          "state": "VERIFIED",
+          "evidence": "GitHub Actions 40069063023 completed/success for e682d6dd: 121/121 Node PASS + local real Chromium offline UI PASS; STATUS/HANDOFF/ACTIVE/BOOTSTRAP/lead report sync commit follows"
+        }
+      ],
+      "progress_state": "DONE",
+      "evidence": [
+        "src/contract_milestones.mjs + src/sqlite_ledger.mjs; tests/contract_milestones.test.mjs (D07 CI 40069063023, SHA e682d6dd): schema, FK, snapshot sum, strict ordering, legacy migration",
+        "src/contract_milestones.mjs; role-bound PENDING→SUBMITTED→ACCEPTED/REJECTED, paymentState read only; 121 Node tests in CI 40069063023",
+        "tests/contract_milestones.test.mjs; trusted principal fields, version CAS, wrong actor/merchant, duplicate create, revision blocked after contract; CI 40069063023",
+        "DB triggers forbid UPDATE/DELETE to contract_events; composite contract/milestone FK, unique event/version; restart/race/negative cases; CI 40069063023",
+        "GitHub Actions 40069063023 completed/success for e682d6dd: 121/121 Node PASS + local real Chromium offline UI PASS; STATUS/HANDOFF/ACTIVE/BOOTSTRAP/lead report sync commit follows"
+      ],
+      "verified_sha": null,
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": "예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도."
+    },
+    {
+      "day_id": "PPL-D08",
+      "scheduled_date_kst": "2026-11-01",
+      "executed_date_kst": "2026-10-24",
+      "scope": "Authenticated server API for contract, milestones, delivery submission and reviewer acceptance/rejection",
+      "status": "DAY8_CONTRACT_HTTP_OFFLINE_ACCEPTED",
+      "estimated_total_hours": 4,
+      "safe_total_hours": 8,
+      "estimated_remaining_hours": 0,
+      "safe_remaining_hours": 0,
+      "percent_complete": 100,
+      "actual_elapsed_hours": null,
+      "actual_elapsed_note": "NOT_MEASURED; planned 4h/8h is not an elapsed wall-clock measurement",
+      "carryover": [
+        "D09 synthetic local delivery/review user interface and payment-status separation E2E pending",
+        "Production identity provider, public authenticated server, Cloudflare D1, real PayPal Sandbox and real AI remain external/production gates"
+      ],
+      "limitations": [
+        "Local Node SQLite and 127.0.0.1 synthetic owner session only; no production authenticated identity or real buyer/reviewer session",
+        "Contract HTTP review identity verified only through trusted resolveSession injection in Node tests, not a public browser login",
+        "New D08 contract HTTP endpoints are offline demonstration endpoints; NOT safe for public deployment",
+        "Actual PayPal order/capture/GET and real free AI calls NOT_TESTED; payment HTTP POST remains 503",
+        "Actions actual Chromium PASS covers previous quote/draft/approval UI regression, while contract HTTP integration is tested by Node actual-loopback fetch",
+        "Initial CI run 40070147386: 130 PASS / 1 FAIL due to incorrect test expectation self-reviewer 404 vs domain 400; corrected test run 40070199115 PASS"
+      ],
+      "checklist": [
+        {
+          "id": "CONTRACT_READ_AND_CREATE_API",
+          "weight_pct": 25,
+          "state": "VERIFIED",
+          "evidence": "src/contract_api.mjs creates/reads contract and events via trusted session context; Node actual 127.0.0.1 API test, CI 40070199115 @ 17b804e"
+        },
+        {
+          "id": "DELIVERY_SUBMISSION_API",
+          "weight_pct": 25,
+          "state": "VERIFIED",
+          "evidence": "src/contract_api.mjs POST /api/contracts/:id/milestones/:mid/submit, expectedState+version CAS and evidence note; tests/contract_api.test.mjs, CI 40070199115"
+        },
+        {
+          "id": "REVIEWER_DECISION_API",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "src/contract_api.mjs accept/reject with reviewer role only; injected verified session negative/positive cases in tests/contract_api.test.mjs, CI 40070199115"
+        },
+        {
+          "id": "AUTH_CSRF_IDEMPOTENCY_TESTS",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "src/quote_api.mjs shares bounded JSON/no-store helper; contract API uses verified actor+merchant from resolver, CSRF/Origin, ID/body size, replay conflict; payment POST remains 503; CI 40070199115"
+        },
+        {
+          "id": "CI_DOCS_HANDOFF",
+          "weight_pct": 10,
+          "state": "VERIFIED",
+          "evidence": "GitHub Actions 40070199115 success @ 17b804eb: npm test 131/131 PASS and local Chromium existing quote UI E2E PASS; all progress/handoff documents synchronized in subsequent atomic commit"
+        }
+      ],
+      "progress_state": "DONE",
+      "evidence": [
+        "src/contract_api.mjs creates/reads contract and events via trusted session context; Node actual 127.0.0.1 API test, CI 40070199115 @ 17b804e",
+        "src/contract_api.mjs POST /api/contracts/:id/milestones/:mid/submit, expectedState+version CAS and evidence note; tests/contract_api.test.mjs, CI 40070199115",
+        "src/contract_api.mjs accept/reject with reviewer role only; injected verified session negative/positive cases in tests/contract_api.test.mjs, CI 40070199115",
+        "src/quote_api.mjs shares bounded JSON/no-store helper; contract API uses verified actor+merchant from resolver, CSRF/Origin, ID/body size, replay conflict; payment POST remains 503; CI 40070199115",
+        "GitHub Actions 40070199115 success @ 17b804eb: npm test 131/131 PASS and local Chromium existing quote UI E2E PASS; all progress/handoff documents synchronized in subsequent atomic commit"
+      ],
+      "verified_sha": null,
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": "예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도."
+    },
+    {
+      "day_id": "PPL-D09",
+      "scheduled_date_kst": "2026-11-02",
+      "executed_date_kst": "2026-10-24",
+      "scope": "Contract/delivery UI and separated payment status local E2E; real PayPal Sandbox dependent tests remain D03 external blocked",
+      "status": "DAY9_LOCAL_CONTRACT_BROWSER_E2E_ACCEPTED",
+      "estimated_total_hours": 5,
+      "safe_total_hours": 9,
+      "estimated_remaining_hours": 0,
+      "safe_remaining_hours": 0,
+      "percent_complete": 100,
+      "actual_elapsed_hours": null,
+      "actual_elapsed_note": "NOT_MEASURED; planned 5h and safe 9h are estimates, not actual elapsed time.",
+      "carryover": [
+        "D10 PayPal subscriptions/webhook regional capability and free-account availability must be independently verified with current official sources",
+        "Production identity provider and public reviewer authentication remain unimplemented",
+        "Cloudflare/D1 production database, real Sandbox and real AI are separate blocked/untested gates"
+      ],
+      "limitations": [
+        "D09 browser E2E is actual Chromium on localhost/127.0.0.1 and uses only synthetic quotes, contracts, user roles and payments",
+        "The reviewer cookie is random and server-bound but enabled only when a local test harness explicitly opts in; there is no real customer/reviewer login",
+        "Browser page GET/F5 only reads contract; create/submit/reject/accept require explicit user-initiated POST and CAS",
+        "Separate displays: contract paymentState remains NOT_CAPTURED even after milestone ACCEPTED; no real payment was attempted",
+        "D09 browser runner writes ephemeral reviewer fixture cookie to owner-only local temporary file (mode 0600), deletes on stop; do not use as production auth",
+        "Live PayPal / actual Sandbox OAuth and purchase, real free AI, D1 deployment, public browser validation and Devpost NOT_TESTED"
+      ],
+      "checklist": [
+        {
+          "id": "CONTRACT_UI_AND_READONLY_SUMMARY",
+          "weight_pct": 25,
+          "state": "VERIFIED",
+          "evidence": "web/offline_demo.html and web/contract_client.js: contract creation from approved quote, read-only GET quote/contract, D09 Chromium real loopback E2E in CI 40071015803 @ 9e3ee79a"
+        },
+        {
+          "id": "DELIVERY_REVIEW_INTERACTION",
+          "weight_pct": 25,
+          "state": "VERIFIED",
+          "evidence": "web/contract_client.js plus src/offline_demo_server.mjs reviewer test-session resolver; Chromium owner submit, reviewer reject, owner resubmit, reviewer accept in CI 40071015803"
+        },
+        {
+          "id": "PAYMENT_VS_FULFILLMENT_UI",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "Separate #contract-payment NOT_CAPTURED and #contract-fulfillment state, never auto-pay on delivery; Chromium assert ACCEPTED while NOT_CAPTURED, CI 40071015803"
+        },
+        {
+          "id": "BROWSER_E2E_AND_SECURITY",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "tests/browser_offline_e2e.py verifies explicit POST only, refresh/F5 no POST, duplicate form submit once, server-bound reviewer, payment POST zero; tests/offline_demo_server.test.mjs forgery/owner denial/review audit; CI 40071015803"
+        },
+        {
+          "id": "CI_DOCS_HANDOFF",
+          "weight_pct": 10,
+          "state": "VERIFIED",
+          "evidence": "GitHub Actions 40071015803 completed/success @ 9e3ee79a: Node 133/133 PASS, Chromium D09 browser E2E PASS; documentation/JSON same-checkpoint sync CI separately checked"
+        }
+      ],
+      "progress_state": "DONE",
+      "evidence": [
+        "web/offline_demo.html and web/contract_client.js: contract creation from approved quote, read-only GET quote/contract, D09 Chromium real loopback E2E in CI 40071015803 @ 9e3ee79a",
+        "web/contract_client.js plus src/offline_demo_server.mjs reviewer test-session resolver; Chromium owner submit, reviewer reject, owner resubmit, reviewer accept in CI 40071015803",
+        "Separate #contract-payment NOT_CAPTURED and #contract-fulfillment state, never auto-pay on delivery; Chromium assert ACCEPTED while NOT_CAPTURED, CI 40071015803",
+        "tests/browser_offline_e2e.py verifies explicit POST only, refresh/F5 no POST, duplicate form submit once, server-bound reviewer, payment POST zero; tests/offline_demo_server.test.mjs forgery/owner denial/review audit; CI 40071015803",
+        "GitHub Actions 40071015803 completed/success @ 9e3ee79a: Node 133/133 PASS, Chromium D09 browser E2E PASS; documentation/JSON same-checkpoint sync CI separately checked"
+      ],
+      "verified_sha": null,
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": "예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도."
+    },
+    {
+      "day_id": "PPL-D10",
+      "scheduled_date_kst": "2026-11-03",
+      "executed_date_kst": "2026-10-24",
+      "scope": "Official PayPal Subscriptions and Webhooks support/region/cost feasibility; offline subscription state-machine contract",
+      "status": "DAY10_DOCUMENTED_FEASIBILITY_AND_OFFLINE_STATE_CONTRACT_ACCEPTED",
+      "estimated_total_hours": 3,
+      "safe_total_hours": 7,
+      "estimated_remaining_hours": 0,
+      "safe_remaining_hours": 0,
+      "percent_complete": 100,
+      "actual_elapsed_hours": null,
+      "actual_elapsed_note": "NOT_MEASURED. 3h/7h planned hours are not wall-clock measurements.",
+      "carryover": [
+        "D11 signed Webhook HTTP receiver, durable deduplication, malformed/replayed/out-of-order protection, signature tests",
+        "Real PayPal Sandbox merchant KR subscriptions entitlement, buyer approval and webhook delivery blocked without private account access",
+        "Real PayPal API calls, AI, D1, production auth, deployment, Devpost not tested"
+      ],
+      "limitations": [
+        "Subscriptions REST and Webhooks existence is officially documented; KR is a general REST country code, NOT proof a particular KR merchant is eligible for subscriptions",
+        "D10 local pure planner accepts trusted=true only as an explicit internal test/integration boundary; it is NOT cryptographic webhook signature verification",
+        "No actual PayPal developer account, Business/Personal Sandbox pair or event webhook ID, cert, OAuth, HTTPS endpoint used",
+        "Pure event ID array is not durable and stops at 200; SQLite UNIQUE event ledger/atomic ack required for D11",
+        "Subscription lifecycle notifications never prove a specific payment was captured; all money observation requires provider reconciliation",
+        "First D10 CI 40072290586 failed two invalid synthetic event IDs; corrected at 1c852b75 (146/146 PASS); failure evidence preserved",
+        "No added paid costs, no real PayPal/Live calls, no production deployment, no Devpost submission"
+      ],
+      "checklist": [
+        {
+          "id": "OFFICIAL_SUBSCRIPTIONS_REGION_FEASIBILITY",
+          "weight_pct": 25,
+          "state": "VERIFIED",
+          "evidence": "Official PayPal https://developer.paypal.com/api/subscriptions/v1, /api/subscriptions/v1/definitions/subscription/, /subscriptions/webhooks/ and /reference/country-codes researched 2026-10-24; region account eligibility NOT_TESTED; docs/technical/PPL_D10_SUBSCRIPTIONS_FEASIBILITY_20261024.md"
+        },
+        {
+          "id": "WEBHOOK_VERIFICATION_OFFICIAL_RESEARCH",
+          "weight_pct": 25,
+          "state": "VERIFIED",
+          "evidence": "Official PayPal https://developer.paypal.com/api/rest/webhooks/rest/ CRC32 decimal original-body self verification or /v1/notifications/verify-webhook-signature, app webhook ID, HTTPS listener/retries; research document; no actual signature verified"
+        },
+        {
+          "id": "SUBSCRIPTION_STATE_CONTRACT",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "src/subscription_contract.mjs pure planTrustedSubscriptionEvent and tests/subscription_contract.test.mjs; approved/active/suspend/resume/cancel/expire and duplicate/out-of-order/unknown/payment separation; CI 40072332710"
+        },
+        {
+          "id": "FREE_ACCOUNT_COST_AND_ACCESS_GATES",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "Official sandbox accounts/testing and Korean fees docs cited in research; no live calls/charges/account eligibility claims; D03 and real KR merchant checks remain BLOCKED/NOT_TESTED"
+        },
+        {
+          "id": "CI_DOCS_HANDOFF",
+          "weight_pct": 10,
+          "state": "VERIFIED",
+          "evidence": "GitHub Actions 40072332710 completed/success at 1c852b75: Node 146/146 PASS, Chromium offline E2E PASS. D10 JSON/handoff sync new CI checked separately."
+        }
+      ],
+      "progress_state": "DONE",
+      "evidence": [
+        "Official PayPal https://developer.paypal.com/api/subscriptions/v1, /api/subscriptions/v1/definitions/subscription/, /subscriptions/webhooks/ and /reference/country-codes researched 2026-10-24; region account eligibility NOT_TESTED; docs/technical/PPL_D10_SUBSCRIPTIONS_FEASIBILITY_20261024.md",
+        "Official PayPal https://developer.paypal.com/api/rest/webhooks/rest/ CRC32 decimal original-body self verification or /v1/notifications/verify-webhook-signature, app webhook ID, HTTPS listener/retries; research document; no actual signature verified",
+        "src/subscription_contract.mjs pure planTrustedSubscriptionEvent and tests/subscription_contract.test.mjs; approved/active/suspend/resume/cancel/expire and duplicate/out-of-order/unknown/payment separation; CI 40072332710",
+        "Official sandbox accounts/testing and Korean fees docs cited in research; no live calls/charges/account eligibility claims; D03 and real KR merchant checks remain BLOCKED/NOT_TESTED",
+        "GitHub Actions 40072332710 completed/success at 1c852b75: Node 146/146 PASS, Chromium offline E2E PASS. D10 JSON/handoff sync new CI checked separately."
+      ],
+      "verified_sha": null,
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": "예정일 앞당겨 독립 수락범위 검증. 실제 PayPal/AI/배포 조건은 별도."
+    },
+    {
+      "day_id": "PPL-D11",
+      "scheduled_date_kst": "2026-11-04",
+      "executed_date_kst": "2026-10-24",
+      "scope": "Offline webhook ingress, signature verification boundary, SQLite event-id idempotency and out-of-order fail closed with synthetic signature tests; real PayPal Sandbox remains blocked",
+      "status": "DAY11_OFFLINE_SIGNATURE_SQLITE_ACCEPTED",
+      "estimated_total_hours": 5,
+      "safe_total_hours": 10,
+      "estimated_remaining_hours": 0,
+      "safe_remaining_hours": 0,
+      "percent_complete": 100,
+      "actual_elapsed_hours": null,
+      "actual_elapsed_note": "NOT_MEASURED; CI 40075690681 success (actual human/developer elapsed unknown).",
+      "carryover": [
+        "Actual PayPal app Webhook ID, PayPal-signed Sandbox events/certificate trust and external HTTPS callback NOT_TESTED; real provider deployment remains separate gate",
+        "Local Node SQLite repository is not production D1; review persistence and customer identity binding before any public deployment"
+      ],
+      "limitations": [
+        "No real PayPal merchant/app credential, app registered webhookId, PayPal certificate or listener deployed; real PayPal signature verification NOT_TESTED",
+        "RSA public key and certificate URL are configured locally, *not* fetched from untrusted headers; passes only with synthetic fixture signatures",
+        "Local SQLite on disk, NOT Cloudflare D1; no public HTTP endpoint and no outgoing PayPal provider API calls",
+        "Subscription activated event NEVER proves payment; payment evidence is NOT_VERIFIED",
+        "Unmatched subscription event returns non-2xx fail-closed rather than acknowledging or routing to guessed merchant; durable GET reconciliation only for bound subscriptions",
+        "In-memory pure planner 200-event cap is bounded by SQLite unbounded unique IDs (recent 199), but live multi-process concurrency not proved"
+      ],
+      "checklist": [
+        {
+          "id": "AUTHENTIC_WEBHOOK_BOUNDARY_AND_PARSER",
+          "weight_pct": 25,
+          "state": "VERIFIED",
+          "evidence": "src/webhook_ingress.mjs @ 8e4d6503: original raw body CRC32(decimal), pinned sandbox cert URL, off-line-only RSA-SHA256 Fetch handler, no automatic service wiring; 17 fixture tests @ 6f5cc754"
+        },
+        {
+          "id": "SIGNATURE_VALIDATION_NEGATIVE_TESTS",
+          "weight_pct": 25,
+          "state": "VERIFIED",
+          "evidence": "src/webhook_ingress.mjs @ 8e4d6503 and tests/webhook_ingress.test.mjs @ 6f5cc754: forged signature/raw body/webhook ID/URL/headers/oversize fail closed, synthetic RSA fixtures only"
+        },
+        {
+          "id": "DURABLE_EVENT_ID_DEDUP_ATOMICITY",
+          "weight_pct": 25,
+          "state": "VERIFIED",
+          "evidence": "src/webhook_inbox.mjs @ 8e4d6503 and tests/webhook_ingress.test.mjs @ 6f5cc754: local Node SQLite BEGIN IMMEDIATE, unique event/transmission IDs, immutable event log, reopen and replay fixture tests"
+        },
+        {
+          "id": "ORDERING_REPLAY_AND_GET_FIRST_GUARDS",
+          "weight_pct": 15,
+          "state": "VERIFIED",
+          "evidence": "src/subscription_contract.mjs + src/webhook_inbox.mjs: old/same-time lifecycle, failed payment/sale, terminal-state contradictions -> queued GET_FIRST; 17 new offline assertions @ 6f5cc754"
+        },
+        {
+          "id": "CI_DOCS_HANDOFF",
+          "weight_pct": 10,
+          "state": "VERIFIED",
+          "evidence": "GitHub Actions 40075690681 completed/success @ 1fbbb56357b3243c2ff45c19f549d49780491ada; Node 163/163 PASS, Chromium quote/contract journey PASS, Python master JSON/MD integrity PASS"
+        }
+      ],
+      "progress_state": "DONE",
+      "evidence": [
+        "src/webhook_ingress.mjs @ 8e4d6503: original raw body CRC32(decimal), pinned sandbox cert URL, off-line-only RSA-SHA256 Fetch handler, no automatic service wiring; 17 fixture tests @ 6f5cc754",
+        "src/webhook_ingress.mjs @ 8e4d6503 and tests/webhook_ingress.test.mjs @ 6f5cc754: forged signature/raw body/webhook ID/URL/headers/oversize fail closed, synthetic RSA fixtures only",
+        "src/webhook_inbox.mjs @ 8e4d6503 and tests/webhook_ingress.test.mjs @ 6f5cc754: local Node SQLite BEGIN IMMEDIATE, unique event/transmission IDs, immutable event log, reopen and replay fixture tests",
+        "src/subscription_contract.mjs + src/webhook_inbox.mjs: old/same-time lifecycle, failed payment/sale, terminal-state contradictions -> queued GET_FIRST; 17 new offline assertions @ 6f5cc754",
+        "GitHub Actions 40075690681 completed/success @ 1fbbb56357b3243c2ff45c19f549d49780491ada; Node 163/163 PASS, Chromium quote/contract journey PASS, Python master JSON/MD integrity PASS"
+      ],
+      "verified_sha": "1fbbb56357b3243c2ff45c19f549d49780491ada",
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": "2026-10-24 선행: 오프라인 합성 RSA Webhook·SQLite 중복 원장·재전송/GET-first 17개 신규 테스트 및 전체 163/163 Node, Chromium CI PASS. 실제 PayPal 서명·HTTPS 수신 NOT_TESTED."
+    },
+    {
+      "day_id": "PPL-D12",
+      "scheduled_date_kst": "2026-11-05",
+      "scope": "구독 UI 및 실패·취소·복구 시나리오",
+      "acceptance": "3기능 UI 결합, 실패 시 유료/Live 우회 없음",
+      "estimated_total_hours": 5,
+      "safe_total_hours": 9,
+      "estimated_remaining_hours": 0,
+      "safe_remaining_hours": 0,
+      "progress_state": "DONE",
+      "percent_complete": 100,
+      "executed_date_kst": "2026-10-24",
+      "actual_elapsed_hours": null,
+      "evidence": [
+        "D12 design/guards: src/subscription_demo_store.mjs + src/subscription_demo_api.mjs; synthetic-only lifecycle with NOT_VERIFIED payment, version CAS/CSRF/trusted owner and forbidden CANCELLED recovery",
+        "D12 implementation: web/subscription_client.js + web/offline_demo.html + src/offline_demo_server.mjs; single local quote/contract/subscription UI; isolated owner-only POST actions, no provider GET/POST; GitHub @ e4836412",
+        "D12 tests: tests/subscription_demo.test.mjs adds 8 Node cases incl SQLite persistence/role isolation, tests/browser_offline_e2e.py full start→fail→recover→cancel/F5/no-payment. CI 40077024670 @ 80bb6c84: Node 171/171 PASS and Chromium real local browser PASS",
+        "D12 final evidence: GitHub Actions 40077024670 completed/success @ 80bb6c8442e02bde8247980537cc1efbc05e6698; Node 171/171, Chromium PASS, master schedule check PASS; JSON/MD same-commit sync validation is separately repeated"
+      ],
+      "verified_sha": "80bb6c8442e02bde8247980537cc1efbc05e6698",
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": "2026-10-24 선행: 구독 모의 UI(활성·실패·복구·취소) SQLite·권한/CSRF 및 실제 로컬 Chromium 171 Node CI PASS. 실제 PayPal 구독/거래/GET 미검증.",
+      "status": "DAY12_OFFLINE_SUBSCRIPTION_BROWSER_E2E_ACCEPTED",
+      "actual_elapsed_note": "NOT_MEASURED; 5h estimate/9h safe budget not actual measured execution",
+      "carryover": [
+        "Real subscription API/merchant eligibility and live webhook signature evidence remain blocked with D03; D12 mock acceptance must never be re-labeled real",
+        "D13 cross-feature integration regression, freeze candidate, security and remaining failure scenarios"
+      ],
+      "limitations": [
+        "Synthetic local browser transitions only. No merchant/buyer PayPal Sandbox, subscription plan, actual provider GET, charge, subscription purchase or webhook delivered",
+        "Recovery is SYNTHETIC_GET_FIXTURE_ONLY_NOT_PAYPAL and subscription paymentEvidence remains NOT_VERIFIED even if UI state ACTIVE",
+        "CANCELLED state is terminal in this synthetic scenario, invalid/stale/forged role or CSRF requests rejected",
+        "Mock local SQLite is ephemeral per launched demo instance and not production D1; server bound to 127.0.0.1; real account authentication absent",
+        "No real AI provider, merchant KR eligibility, D1 public deployment, Devpost, external reviewer access"
+      ],
+      "checklist": [
+        {
+          "id": "REQUIREMENTS_AND_DESIGN",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "D12 design/guards: src/subscription_demo_store.mjs + src/subscription_demo_api.mjs; synthetic-only lifecycle with NOT_VERIFIED payment, version CAS/CSRF/trusted owner and forbidden CANCELLED recovery"
+        },
+        {
+          "id": "IMPLEMENTATION",
+          "weight_pct": 40,
+          "state": "VERIFIED",
+          "evidence": "D12 implementation: web/subscription_client.js + web/offline_demo.html + src/offline_demo_server.mjs; single local quote/contract/subscription UI; isolated owner-only POST actions, no provider GET/POST; GitHub @ e4836412"
+        },
+        {
+          "id": "AUTOMATED_VERIFICATION",
+          "weight_pct": 30,
+          "state": "VERIFIED",
+          "evidence": "D12 tests: tests/subscription_demo.test.mjs adds 8 Node cases incl SQLite persistence/role isolation, tests/browser_offline_e2e.py full start→fail→recover→cancel/F5/no-payment. CI 40077024670 @ 80bb6c84: Node 171/171 PASS and Chromium real local browser PASS"
+        },
+        {
+          "id": "CI_HANDOFF",
+          "weight_pct": 10,
+          "state": "VERIFIED",
+          "evidence": "D12 final evidence: GitHub Actions 40077024670 completed/success @ 80bb6c8442e02bde8247980537cc1efbc05e6698; Node 171/171, Chromium PASS, master schedule check PASS; JSON/MD same-commit sync validation is separately repeated"
+        }
+      ]
+    },
+    {
+      "day_id": "PPL-D13",
+      "scheduled_date_kst": "2026-11-06",
+      "scope": "전체 기능 통합 회귀·주요 결함 수정",
+      "acceptance": "자동테스트·보안·기능 동결 후보, 실패 시 동결 보류",
+      "estimated_total_hours": 6,
+      "safe_total_hours": 11,
+      "estimated_remaining_hours": 0,
+      "safe_remaining_hours": 0,
+      "progress_state": "DONE",
+      "percent_complete": 100,
+      "executed_date_kst": "2026-10-24",
+      "actual_elapsed_hours": null,
+      "evidence": [
+        "D13 design: src/local_integration_readiness.mjs explicitly evaluates approved quote/version/owner/merchant/amount+accepted milestone+synthetic subscription ACTIVE; status LOCAL_DEMO_CANDIDATE only, realPayPal/AI/deployment NOT_TESTED",
+        "D13 implementation: src/offline_demo_server.mjs GET-only /api/demo/integration with trusted synthetic owner and 404 reviewer, web/integration_client.js + web/offline_demo.html read-only summary and role isolation",
+        "D13 regression: tests/local_integration_readiness.test.mjs 4 tests, Node existing 171+4=175 passed; full quote approval→contract amount lock→reviewer acceptance→subscription failure/recovery/cancel, forged reviewer denied, zero real charge; tests/browser_offline_e2e.py Chromium PASS, CI run 40077804576",
+        "CI 40077804576 completed success at 673f47a1e47b25197e2a51f1b949024e356d3a25: Node 175/175 PASS, Chromium local browser PASS, generated 18-day schedule --check PASS; D13 handoff/schedule final commit CI will be checked separately"
+      ],
+      "verified_sha": "673f47a1e47b25197e2a51f1b949024e356d3a25",
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": "2026-10-24 선행: 견적→계약·납품→구독 합성 E2E 통합검증과 read-only 로컬 freeze 후보 판정, Node 175/175+Chromium PASS. 실 PayPal·AI·공개배포/제출 미검증.",
+      "status": "DAY13_OFFLINE_CROSS_FEATURE_FREEZE_CANDIDATE_ACCEPTED",
+      "actual_elapsed_note": "NOT_MEASURED. 6h/11h are original planning estimates, not actual measured time.",
+      "carryover": [
+        "D14 security and release checklist: public secrets, permissions, rate limiting, license, and English/demo reproducibility evidence",
+        "D15 deploy is not authorized or proven. D03 real PayPal/AI access and D04 free AI part remain blocked",
+        "D13 UI synthetic cross-feature audit is not a production compliance/security certification"
+      ],
+      "limitations": [
+        "D13 acceptance is LOCAL_SYNTHETIC_FREEZE_CANDIDATE, NOT real PayPal production feature freeze or deploy-ready status",
+        "All 3 user flows run on 127.0.0.1 only; user role synthetic; no provider credentials, API calls, hosted authentication, real payments or buyer approval tested",
+        "Real PayPal/AI account region/entitlement still externally blocked by D03 and D04; user approval required for official integration",
+        "Two local SQLite files are separate fixtures; no Cloudflare D1 schema/production multi-process integration or global atomic commit tested",
+        "Local integrations never claim payments from contract acceptance or synthetic subscription activation; real PayPal and production auth remain NOT_TESTED",
+        "No GitHub/Devpost deployment or submission evidence, no real work time measurements"
+      ],
+      "checklist": [
+        {
+          "id": "REQUIREMENTS_AND_DESIGN",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "D13 design: src/local_integration_readiness.mjs explicitly evaluates approved quote/version/owner/merchant/amount+accepted milestone+synthetic subscription ACTIVE; status LOCAL_DEMO_CANDIDATE only, realPayPal/AI/deployment NOT_TESTED"
+        },
+        {
+          "id": "IMPLEMENTATION",
+          "weight_pct": 40,
+          "state": "VERIFIED",
+          "evidence": "D13 implementation: src/offline_demo_server.mjs GET-only /api/demo/integration with trusted synthetic owner and 404 reviewer, web/integration_client.js + web/offline_demo.html read-only summary and role isolation"
+        },
+        {
+          "id": "AUTOMATED_VERIFICATION",
+          "weight_pct": 30,
+          "state": "VERIFIED",
+          "evidence": "D13 regression: tests/local_integration_readiness.test.mjs 4 tests, Node existing 171+4=175 passed; full quote approval→contract amount lock→reviewer acceptance→subscription failure/recovery/cancel, forged reviewer denied, zero real charge; tests/browser_offline_e2e.py Chromium PASS, CI run 40077804576"
+        },
+        {
+          "id": "CI_HANDOFF",
+          "weight_pct": 10,
+          "state": "VERIFIED",
+          "evidence": "CI 40077804576 completed success at 673f47a1e47b25197e2a51f1b949024e356d3a25: Node 175/175 PASS, Chromium local browser PASS, generated 18-day schedule --check PASS; D13 handoff/schedule final commit CI will be checked separately"
+        }
+      ]
+    },
+    {
+      "day_id": "PPL-D14",
+      "scheduled_date_kst": "2026-11-07",
+      "scope": "보안/권한/Rate 제한·LICENSE·영문 자료 초안",
+      "acceptance": "공개 비밀 0건, 심사 재현/영상 시나리오 초안",
+      "estimated_total_hours": 4,
+      "safe_total_hours": 10,
+      "estimated_remaining_hours": 0,
+      "safe_remaining_hours": 0,
+      "progress_state": "DONE",
+      "percent_complete": 100,
+      "executed_date_kst": "2026-10-24",
+      "actual_elapsed_hours": null,
+      "evidence": [
+        "LICENSE + package.json SPDX MIT + tests/license.test.mjs @ d45b8d5a055cdf236a9a004e165a090d21d467db",
+        "GitHub Actions 40079691820 Node 180/180, Chromium PASS, 18-day progress PASS",
+        "src/demo_rate_limit.mjs; tests/public_secret_scan.test.mjs; docs/JUDGE_REPRODUCTION_EN.md; docs/VIDEO_STORYBOARD_EN.md"
+      ],
+      "verified_sha": "d45b8d5a055cdf236a9a004e165a090d21d467db",
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": "10/24 선행 완료: 사용자 MIT 승인, 루트 LICENSE·무결성 테스트, Node 180/180·로컬 Chromium CI PASS; 외부 API/배포 미검증.",
+      "status": "DAY14_OFFLINE_SECURITY_MIT_LICENSE_ACCEPTED",
+      "actual_elapsed_note": "NOT_MEASURED; planned hours are not actual work time",
+      "carryover": [
+        "Real PayPal Sandbox Business+Personal and AI provider remain blocked D03/D04",
+        "Production login, external deployment, actual video and Devpost remain NOT_TESTED"
+      ],
+      "limitations": [
+        "D14 100% is local scope only",
+        "License on lead/paypal; main release not updated",
+        "No actual PayPal/AI/Production proof"
+      ],
+      "checklist": [
+        {
+          "id": "REQUIREMENTS_AND_DESIGN",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "docs/technical/PPL_D14_SECURITY_REPRO_20261024.md; two zero-cost alternatives and guards compared"
+        },
+        {
+          "id": "IMPLEMENTATION",
+          "weight_pct": 40,
+          "state": "VERIFIED",
+          "evidence": "Owner-approved root MIT LICENSE + package.json SPDX + tests/license.test.mjs; GitHub Actions 40079691820 at d45b8d5a055cdf236a9a004e165a090d21d467db 180/180 Node+Chromium PASS"
+        },
+        {
+          "id": "AUTOMATED_VERIFICATION",
+          "weight_pct": 30,
+          "state": "VERIFIED",
+          "evidence": "GitHub Actions 40079303005 @ 55c0c50a89e094f07e6bc2dec3cb608062aee733: 179/179 Node tests PASS, Chromium loopback E2E PASS, Git tracked secret signature scanner PASS"
+        },
+        {
+          "id": "CI_HANDOFF",
+          "weight_pct": 10,
+          "state": "VERIFIED",
+          "evidence": "GitHub Actions 40079303005 @ 55c0c50a89e094f07e6bc2dec3cb608062aee733: 18-day dashboard --check, Node 179/179, real local Chromium E2E PASS. Prior 40079004250 failed stale day test; 40079230840 failed flaky async browser assertion; both corrected"
+        }
+      ]
+    },
+    {
+      "day_id": "PPL-D15",
+      "scheduled_date_kst": "2026-11-08",
+      "scope": "무료 호스팅·D1·실제 데모 배포/복구",
+      "acceptance": "Production URL HTTP·React·API/권한·무료 한도 확인",
+      "estimated_total_hours": 6,
+      "safe_total_hours": 12,
+      "estimated_remaining_hours": 5,
+      "safe_remaining_hours": 10,
+      "progress_state": "PARTIAL",
+      "percent_complete": 20,
+      "executed_date_kst": "2026-10-24",
+      "actual_elapsed_hours": null,
+      "evidence": [
+        "D15 private integration: src/offline_sandbox_d1_harness.mjs + tests/offline_sandbox_d1_harness.test.mjs (13 new tests); docs/technical/PPL_D15_OFFLINE_TRANSPORT_COMPOSITION_20261024.md; GitHub Actions 40084869412 @ b308fad345c810917bd4736bc9d4b24f87cf2b79: 232/232 Node, local Chromium and 18-day master PASS; real Sandbox/D1/AI/Cloudflare NOT_TESTED",
+        "migrations/d1/0001_payment_claims.sql; src/d1_claim.mjs; tests/d1_claim.test.mjs: 9 offline D1-shaped contract tests (not remote D1)",
+        "src/hosting_preflight.mjs; tests/hosting_preflight.test.mjs: no-deploy static report",
+        "src/d1_recovery.mjs; tests/d1_recovery.test.mjs: authenticated tenant-bound read-only inspection, privileged 5m stale UNKNOWN, 11 offline tests. Actions #40082429683 @ 949eb8b25645d29f43e22669bf757c15e347ce49: 204/204 Node + local Chromium PASS",
+        "Initial Actions 40084818417 @ 38c5fc0d7505a66e19f7a3bce89976e660c47f6f failed 2/232 due Node SQLite null-prototype comparison; fixed test assertion only in b308fad345c810917bd4736bc9d4b24f87cf2b79, final CI 232/232 PASS."
+      ],
+      "verified_sha": "b308fad345c810917bd4736bc9d4b24f87cf2b79",
+      "blocker": "Cloudflare Free 계정/기존 호스팅 접근 및 공개 배포·운영 인증 승인 미확보; D03 실제 PayPal Sandbox·D04 실 AI도 미확보",
+      "recovery_date_kst": null,
+      "recovery_condition": "사용자가 외부 계정·공개 배포를 별도 승인하고 계정 무료 한도/실 인증·D1·실 API를 검증한 경우에만 운영 작업 재개",
+      "advance_note": "10/24 D15 선행: preflight, D1 점유·복구·GET CAS, 실제 Sandbox transport를 내장 모의 서버/세션에 조합. 13개 신규 테스트, Actions 232/232 Node+로컬 Chromium PASS. 실 PayPal/D1/AI/외부 배포 없음.",
+      "status": "D15_OFFLINE_TRANSPORT_COMPOSITION_VERIFIED_REMOTE_BLOCKED",
+      "actual_elapsed_note": "NOT_MEASURED; estimated remaining work budgets (not elapsed time) + unbounded external account/approval wait",
+      "carryover": [
+        "Never publish 127.0.0.1 synthetic server as real app; Node sqlite stub on Workers, use D1 binding instead",
+        "D15 static design 20% only; deployment implementation 40%, real deployment verification 30%, production CI handoff 10% all PENDING",
+        "D03 real Sandbox and D04 AI external gates not solved; owner approval required before Cloudflare creation/deploy",
+        "D1 claim prototype has no remote binding/HTTP/provider. Migration is NOT APPLIED to Cloudflare; implement verified GET reconciliation and real authentication before any hosted use.",
+        "D1 recovery inspection/maintenance simulated only; user authentication provider and PayPal authenticated GET verifier still absent. Do NOT expose recovery as public HTTP.",
+        "Sandbox GET/CAS requires backend-injected trusted authenticated PayPal transport and D1 primary session; 15 fixture tests do not authenticate real PayPal or certify hosted status.",
+        "Offline composition uses a fixed in-process fake fetch and synthetic token. Real auth provider, PayPal Sandbox account/OAuth/GET, D1, and production hosting are not verified; prioritize external P0 blocker after explicit authorization.",
+        "Chief ACTIVE 19:12 P0 priority: do not extend mock Cloudflare/D1 ahead of real Sandbox+AI account feasibility. One-shot local readiness command npm run preflight:p0 is non-authorizing and always exit 2.",
+        "Chief 19:12 P0: OAuth + real AI evidence outrank further D1 fixture expansion. Owner-gated one-shot CLI ready, no real calls. Keep D15 20% until remote accepted."
+      ],
+      "limitations": [
+        "No Cloudflare/D1 account connector or owned resource was inspected; documentation limits not account verification",
+        "No production URL, identity, real payment or AI integration tested",
+        "Preflight exits 2 by design; passing Node tests verify blocker detection, not deployment availability",
+        "Node SQLite shim is not a real Cloudflare D1 integration, despite SQL compatibility and offline tests",
+        "Local SQLite D1-shaped shim does not prove real D1 Sessions/replication or provider provenance",
+        "GET/CAS test transport is a private synthetic SANDBOX_ONLY-mode stub; source provenance and real PayPal OAuth were never tested",
+        "No production session provider, real PayPal OAuth, external GET, D1 binding, or public endpoint; harness uses synthetic client credentials and local HTTP simulator only"
+      ],
+      "checklist": [
+        {
+          "id": "REQUIREMENTS_AND_DESIGN",
+          "weight_pct": 20,
+          "state": "VERIFIED",
+          "evidence": "D15 private integration: src/offline_sandbox_d1_harness.mjs + tests/offline_sandbox_d1_harness.test.mjs (13 new tests); docs/technical/PPL_D15_OFFLINE_TRANSPORT_COMPOSITION_20261024.md; GitHub Actions 40084869412 @ b308fad345c810917bd4736bc9d4b24f87cf2b79: 232/232 Node, local Chromium and 18-day master PASS; real Sandbox/D1/AI/Cloudflare NOT_TESTED"
+        },
+        {
+          "id": "IMPLEMENTATION",
+          "weight_pct": 40,
+          "state": "PENDING",
+          "evidence": "Offline D1 claim/read/recovery/GET CAS and a real Sandbox transport under injected in-memory simulator verified locally (13 further tests). Production identity provider/real Sandbox/D1/Worker/app implementation still NOT_IMPLEMENTED or NOT_TESTED."
+        },
+        {
+          "id": "AUTOMATED_VERIFICATION",
+          "weight_pct": 30,
+          "state": "PENDING",
+          "evidence": "Actions 40084869412 Node 232/232+local Chromium PASS. Actual PayPal OAuth/GET, hosted D1/Worker, HTTPS and external browser verification PENDING."
+        },
+        {
+          "id": "CI_HANDOFF",
+          "weight_pct": 10,
+          "state": "PENDING",
+          "evidence": "Source CI 40084869412 PASS; production release/CI approval and remote environment NOT_TESTED."
+        }
+      ]
+    },
+    {
+      "day_id": "PPL-D16",
+      "scheduled_date_kst": "2026-11-09",
+      "scope": "실제 브라우저 E2E·심사위원 접근 검수",
+      "acceptance": "작동·오류 로그·Sandbox/Mock 차이를 명시",
+      "estimated_total_hours": 5,
+      "safe_total_hours": 10,
+      "estimated_remaining_hours": 5,
+      "safe_remaining_hours": 10,
+      "progress_state": "NOT_STARTED",
+      "percent_complete": 0,
+      "executed_date_kst": null,
+      "actual_elapsed_hours": null,
+      "evidence": [],
+      "verified_sha": null,
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": null,
+      "status": "NOT_STARTED",
+      "actual_elapsed_note": "NOT_STARTED/NOT_MEASURED",
+      "carryover": [
+        "Submission preflight implemented 2026-10-24 (src/submission_evidence_gate.mjs, scripts/check_submission_evidence.mjs, 8 local tests). Reviewer guide corrected and runnable; production browser/auth and real Sandbox+AI NOT_TESTED. This is independent advance preparation, not D16 completion."
+      ],
+      "limitations": [
+        "Not implemented or tested yet; no real provider or production completion claimed"
+      ],
+      "checklist": [
+        {
+          "id": "REQUIREMENTS_AND_DESIGN",
+          "weight_pct": 20,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "IMPLEMENTATION",
+          "weight_pct": 40,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "AUTOMATED_VERIFICATION",
+          "weight_pct": 30,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "CI_HANDOFF",
+          "weight_pct": 10,
+          "state": "PENDING",
+          "evidence": null
+        }
+      ]
+    },
+    {
+      "day_id": "PPL-D17",
+      "scheduled_date_kst": "2026-11-10",
+      "scope": "영문 Devpost 안내·3분 미만 영상 촬영/편집",
+      "acceptance": "공개 영상 URL·README·실제 시연 흐름 검증",
+      "estimated_total_hours": 6,
+      "safe_total_hours": 11,
+      "estimated_remaining_hours": 6,
+      "safe_remaining_hours": 11,
+      "progress_state": "NOT_STARTED",
+      "percent_complete": 0,
+      "executed_date_kst": null,
+      "actual_elapsed_hours": null,
+      "evidence": [],
+      "verified_sha": null,
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": null,
+      "status": "NOT_STARTED",
+      "actual_elapsed_note": "NOT_STARTED/NOT_MEASURED",
+      "carryover": [
+        "English video storyboard exists but footage/owner-approved public link does not. Submission preflight explicitly distinguishes DRAFT_ONLY from a submitted video."
+      ],
+      "limitations": [
+        "Not implemented or tested yet; no real provider or production completion claimed"
+      ],
+      "checklist": [
+        {
+          "id": "REQUIREMENTS_AND_DESIGN",
+          "weight_pct": 20,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "IMPLEMENTATION",
+          "weight_pct": 40,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "AUTOMATED_VERIFICATION",
+          "weight_pct": 30,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "CI_HANDOFF",
+          "weight_pct": 10,
+          "state": "PENDING",
+          "evidence": null
+        }
+      ]
+    },
+    {
+      "day_id": "PPL-D18",
+      "scheduled_date_kst": "2026-11-11",
+      "scope": "Devpost 제출·링크/권한·접수증 검수",
+      "acceptance": "제출 완료 증거 확보, 미완료면 즉시 차단 보고",
+      "estimated_total_hours": 3,
+      "safe_total_hours": 7,
+      "estimated_remaining_hours": 3,
+      "safe_remaining_hours": 7,
+      "progress_state": "NOT_STARTED",
+      "percent_complete": 0,
+      "executed_date_kst": null,
+      "actual_elapsed_hours": null,
+      "evidence": [],
+      "verified_sha": null,
+      "blocker": null,
+      "recovery_date_kst": null,
+      "recovery_condition": null,
+      "advance_note": null,
+      "status": "NOT_STARTED",
+      "actual_elapsed_note": "NOT_STARTED/NOT_MEASURED",
+      "carryover": [
+        "Devpost submission/receipt NOT_SUBMITTED; offline code and documentation cannot authorize official submission. Owner approval and genuine link/receipt required."
+      ],
+      "limitations": [
+        "Not implemented or tested yet; no real provider or production completion claimed"
+      ],
+      "checklist": [
+        {
+          "id": "REQUIREMENTS_AND_DESIGN",
+          "weight_pct": 20,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "IMPLEMENTATION",
+          "weight_pct": 40,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "AUTOMATED_VERIFICATION",
+          "weight_pct": 30,
+          "state": "PENDING",
+          "evidence": null
+        },
+        {
+          "id": "CI_HANDOFF",
+          "weight_pct": 10,
+          "state": "PENDING",
+          "evidence": null
+        }
+      ]
+    }
+  ],
+  "project_name": "PayPal AI Hackathon",
+  "expected_days": 18,
+  "original_plan": "docs/DAILY_CAPACITY_PLAN_20261024.md"
+}

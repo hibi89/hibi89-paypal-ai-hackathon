@@ -1,18 +1,9 @@
-# PayPal 요구사항 — 2026-10-24 스냅샷
+# PayPal AI Hackathon — 확정 요구 (2026-10-24 최신)
 
-## 확정된 운영 제약
-- 참가 신청 완료 화면 사용자 제공(2026-10-24). Devpost 제출 프로젝트 생성과 공식 최종 제출은 **미완료**.
-- 공식 제출 마감: **2026-11-13 05:00 KST**. 대회 공식 규정: https://paypalaihackathon.devpost.com/rules
-- PayPal + AI 핵심 사용; PayPal Sandbox 실거래 없이 검증; 동작하는 프로그램, 재현 가이드 또는 데모, 공개 오픈소스 라이선스, 3분 미만 공개 YouTube 영상, 영어 Devpost 설명을 제출한다.
-- 실제 참가자 1명, AI 총괄 1명+기능 작업자 3명, `main` 통합 코드·분리 브랜치.
-
-## 주제·기능 (아직 사용자 최종 확정 아님)
-- 잠정 제품: **AI 프리랜서 계약·결제 자동화 Agent (잠정)**.
-1. 견적·결제 (`feature/quote-payment`): 구체 데이터 계약/구현 세부/가용성은 담당 총괄이 검증 후 설계한다.
-2. 납품·단계 관리 (`feature/delivery`): 구체 데이터 계약/구현 세부/가용성은 담당 총괄이 검증 후 설계한다.
-3. 구독 청구 이상 탐지 (`feature/subscriptions`): 구체 데이터 계약/구현 세부/가용성은 담당 총괄이 검증 후 설계한다.
-- 대회 총괄은 **완성 가능한 핵심 MVP 1개 우선** vs **세 기능 동시 구현**을 비교(기술성·기간·심사·운영비)하고 최종 사용자에게 결정을 요청한다. 사용자 승인 전 기능 범위를 확정하거나 축소하지 않는다.
-
-## 보안·상태
-- 공식 규정/SDK 최신 확인, 외부 서비스 계정/API 허용 범위·비용·Rate, 로컬/원격 실행 환경을 선검토한다.
-- **현재 실제 기능·테스트·API·배포 0건/미검증**; 문서만 마련된 단계. 실 PayPal Developer/Sandbox 계정 접근과 국가별 API 지원 미검증. 주제·모듈 확정 미완료. 공개 LICENSE 선택도 미완료.
+- **제품:** AI 프리랜서 계약·견적·PayPal 결제 Agent 출품작 하나. ① AI 구조화 견적→사람 승인→Sandbox OAuth/Orders v2 create/approve/capture/GET ② 계약·마일스톤·납품/검수(결제와 상태 분리) ③ 구독/실패·취소/Webhook 서명·중복 이벤트.
+- **실행자:** PayPal 총괄 채팅 1개가 설계·코딩·테스트·검수·통합까지 직접 진행. 작업 `lead/paypal`; `main` 릴리스, 과거 세 feature 브랜치는 증빙 보존. 기능 축소 아님.
+- **0원 신규 현금 하드캡:** Cloudflare Workers/D1 Free, 실제 사용 가능한 무료 AI, PayPal Sandbox 후보. API/국가/무료 계정·Rate 확인 전 실제 동작·무료 제공 보장 주장 금지. Live·카드·유료 서비스/실 고객 정보 금지.
+- **금전 안전:** 인증된 인간 승인 및 quote version/금액/통화/merchant 재검증. 멱등 키+DB unique/원자 전이, UNKNOWN 시 추가 캡처 차단·PayPal GET, 웹훅 서명·event ID, GET/F5/redirect에서 결제 생성·캡처 금지.
+- **제출:** 내부 2026-11-11, 공식 **11/13 05:00 KST**. 실제 PayPal+AI 기능, 공개 오픈소스 소스와 루트 LICENSE, 영문 Devpost/실행 안내, 3분 미만 공개 YouTube, 안전한 심사위원 접속 또는 재현 경로. [공식 규정](https://paypalaihackathon.devpost.com/rules).
+- **검증 구분:** PPL-001 합성 Node 계약 11/11 PASS는 실 PayPal 결제 성공이 아님. Sandbox credentials/Business·Personal buyer, 무료 AI, D1·브라우저·Production/제출 영수증은 미검증.
+- [현재 작업](docs/roles/lead/LEAD_ACTIVE_WORK.md) · [예산 수칙](docs/ZERO_COST_STACK_AND_GUARDRAILS.md)

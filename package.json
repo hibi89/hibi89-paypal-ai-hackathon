@@ -1,0 +1,19 @@
+{
+  "name": "paypal-freelancer-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-sqlite --test tests/*.test.mjs",
+    "demo": "node --experimental-sqlite scripts/run_demo.mjs",
+    "preflight:hosting": "node scripts/check_hosting_preflight.mjs",
+    "preflight:p0": "node scripts/check_p0_provider_readiness.mjs",
+    "preflight:submission": "node scripts/check_submission_evidence.mjs",
+    "preflight:reviewer": "node --experimental-sqlite scripts/check_reviewer_repro.mjs",
+    "pilot:gemini": "node --experimental-sqlite scripts/run_owner_gemini_pilot.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT"
+}
