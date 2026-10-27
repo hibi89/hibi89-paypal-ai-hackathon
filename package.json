@@ -9,7 +9,8 @@
     "preflight:hosting": "node scripts/check_hosting_preflight.mjs",
     "preflight:p0": "node scripts/check_p0_provider_readiness.mjs",
     "preflight:submission": "node scripts/check_submission_evidence.mjs",
-    "preflight:reviewer": "node --experimental-sqlite scripts/check_reviewer_repro.mjs"
+    "preflight:reviewer": "node --experimental-sqlite scripts/check_reviewer_repro.mjs",
+    "pilot:gemini": "node --experimental-sqlite scripts/run_owner_gemini_pilot.mjs"
   },
   "engines": {
     "node": ">=22"
