@@ -87,13 +87,13 @@ test('D13: synthetic contract payment state cannot impersonate verified PayPal s
  assert.equal(evaluateLocalIntegration({quote,contract:{...contract,paymentState:'NOT_CAPTURED'},subscription}).contractPayment,'NOT_CAPTURED');
 });
 test('D13: arbitrary subscription states are not treated as verified scenarios',()=>{
- for(const state of ['PAID','SETTLED','ACTIVE_VERIFIED','',42]){
+ for(const state of ['PAID','SETTLED','ACTIVE_VERIFIED','PAUSED','FAILED','',42]){
    const result=evaluateLocalIntegration({subscription:{mode:'OFFLINE_SCENARIO_NO_PROVIDER',
      paymentEvidence:'NOT_VERIFIED',state}});
    assert.equal(result.subscription,'NOT_VERIFIED_SCENARIO');
    assert.equal(result.status,'LOCAL_DEMO_INCOMPLETE');
  }
- for(const state of ['NOT_STARTED','ACTIVE','PAUSED','FAILED','CANCELLED']){
+ for(const state of ['NOT_STARTED','ACTIVE','RECOVERY_REQUIRED','CANCELLED']){
    const result=evaluateLocalIntegration({subscription:{mode:'OFFLINE_SCENARIO_NO_PROVIDER',
      paymentEvidence:'NOT_VERIFIED',state}});
    assert.equal(result.subscription,state);
