@@ -55,6 +55,7 @@ function fixture({createLost=false,captureLost=false,badMerchant=false}={}){
  });
  const authorizeAction=async action=>{
    authorizations.push(action);
+   if(typeof state.onAuthorize==='function')await state.onAuthorize(action);
    return state.authorize!==false;
  };
  let proof,token;
@@ -187,4 +188,36 @@ test('wrong merchant in provider GET never persists approval or false payment',
    assert.equal((await f.ledger.listAttempts('owner-pilot'))[0].remoteId,null);
    assert.equal((await s.openOwnerOrder(f.input())).status,'UNKNOWN');
    assert.equal(f.count('POST','/v2/checkout/orders'),1);
+ }));
+
+test('quote reapproval during order consent cannot borrow stale owner proof',
+ withFixture({},async f=>{
+   const s=f.service();
+   f.state.onAuthorize=async action=>{
+     assert.equal(action.operation,'CREATE_SANDBOX_ORDER');
+     await f.ledger.revise({id:'owner-pilot',actorId:'owner',
+       expectedVersion:2,scope:'Scope was revised during checkout consent',
+       suggestedMinor:150,suggestionSource:'OFFLINE_MOCK'});
+     await f.ledger.approve({id:'owner-pilot',actorId:'owner',
+       expectedVersion:3,amountMinor:150});
+   };
+   await assert.rejects(s.openOwnerOrder(f.input()),
+     {code:'OWNER_PILOT_APPROVAL_CHANGED_DURING_AUTHORIZATION'});
+   assert.equal((await f.ledger.get('owner-pilot')).version,3);
+   assert.equal(f.calls.length,0);
+   assert.deepEqual(await f.ledger.listAttempts('owner-pilot'),[]);
+ }));
+
+test('checkout token revoked inside capture consent prevents provider POST',
+ withFixture({},async f=>{
+   const s=f.service();
+   await s.openOwnerOrder(f.input());
+   f.state.buyerApproved=true;
+   f.state.onAuthorize=async action=>{
+     if(action.operation==='CAPTURE_SANDBOX_ORDER')await f.revoke();
+   };
+   await assert.rejects(s.captureOwnerOrder(f.input()),
+     {code:'PILOT_SESSION_NOT_VERIFIED'});
+   assert.equal(f.count('POST','/v2/checkout/orders/OWNERPILOT1/capture'),0);
+   assert.equal((await f.ledger.listAttempts('owner-pilot')).length,1);
  }));
