@@ -32,6 +32,7 @@ function fixture({createLost=false,captureLost=false,badMerchant=false}={}){
      })};
    }
    if(path==='/v2/checkout/orders/OWNERPILOT1'&&options.method==='GET'){
+     if(typeof state.onOrderGet==='function')await state.onOrderGet();
      const status=state.captured?'COMPLETED':state.buyerApproved?'APPROVED':'PAYER_ACTION_REQUIRED';
      return {status:200,json:async()=>({
        id:'OWNERPILOT1',intent:'CAPTURE',status,
@@ -68,7 +69,7 @@ function fixture({createLost=false,captureLost=false,badMerchant=false}={}){
   token=sessions.issue({quote,principal}).token;
   proof=sessions.verify({token,quote,principal});
  }
- function service(){return createOwnerPilotCheckoutCoordinator({ledger,transport,authorizeAction})}
+ function service(overrideLedger=ledger){return createOwnerPilotCheckoutCoordinator({ledger:overrideLedger,transport,authorizeAction})}
  function input(){return {...ctx,sessionProof:proof}}
  function count(method,path){return calls.filter(c=>c.method===method&&c.path===path).length}
  return {ledger,sessions,calls,authorizations,state,seed,service,input,count,
@@ -220,4 +221,47 @@ test('checkout token revoked inside capture consent prevents provider POST',
      {code:'PILOT_SESSION_NOT_VERIFIED'});
    assert.equal(f.count('POST','/v2/checkout/orders/OWNERPILOT1/capture'),0);
    assert.equal((await f.ledger.listAttempts('owner-pilot')).length,1);
+ }));
+
+test('session revoked during slow provider APPROVED GET prevents capture claim and POST',
+ withFixture({},async f=>{
+   const s=f.service();
+   await s.openOwnerOrder(f.input());
+   f.state.buyerApproved=true;
+   f.state.onOrderGet=async()=>{
+     f.state.onOrderGet=null;
+     await f.revoke();
+   };
+   await assert.rejects(s.captureOwnerOrder(f.input()),
+     {code:'PILOT_SESSION_NOT_VERIFIED'});
+   assert.equal(f.count('POST','/v2/checkout/orders/OWNERPILOT1/capture'),0);
+   assert.equal((await f.ledger.listAttempts('owner-pilot')).length,1);
+ }));
+
+test('session revoked just after capture claim remains UNKNOWN without provider POST',
+ withFixture({},async f=>{
+   const s0=f.service();
+   await s0.openOwnerOrder(f.input());
+   f.state.buyerApproved=true;
+   const ledgerProxy=new Proxy(f.ledger,{
+     get(target,name){
+       if(name==='claimOperation')return async args=>{
+         const claim=await target.claimOperation(args);
+         if(args.operation==='capture')await f.revoke();
+         return claim;
+       };
+       return Reflect.get(target,name);
+     }
+   });
+   const s=f.service(ledgerProxy);
+   const result=await s.captureOwnerOrder(f.input());
+   assert.equal(result.status,'UNKNOWN');
+   assert.equal(result.retryPost,false);
+   assert.equal(f.count('POST','/v2/checkout/orders/OWNERPILOT1/capture'),0);
+   const attempts=await f.ledger.listAttempts('owner-pilot');
+   assert.equal(attempts.length,2);
+   assert.equal(attempts.find(a=>a.operation==='capture').state,'UNKNOWN');
+   await assert.rejects(s.captureOwnerOrder(f.input()),
+     {code:'PILOT_SESSION_NOT_VERIFIED'});
+   assert.equal(f.count('POST','/v2/checkout/orders/OWNERPILOT1/capture'),0);
  }));
