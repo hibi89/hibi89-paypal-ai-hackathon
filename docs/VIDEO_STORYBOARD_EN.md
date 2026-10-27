@@ -1,4 +1,4 @@
-# Draft reviewer video storyboard (target 2:40, NOT filmed)
+> **2026-10-27 owner update:** This is the earlier unfilmed **required judging video** draft, not the optional 30–60-second email introduction. The approved [new video production plan](PAYPAL_VIDEO_PRODUCTION_PLAN_20261027.md) explains the face-free UI-led proposal, two separate formats, updated product vision and proof gates. Do not film mock/placeholder stages as real.\n\n# Draft reviewer video storyboard (target 2:40, NOT filmed)
 
 **Do not publish as a claim of real PayPal/AI activity while D03/D04 remain blocked.**
 
