@@ -132,7 +132,10 @@ export function createSandboxPaymentOrchestrator({ledger,transport}={}) {
       // Recheck after durable claim too: a session can be revoked while the
       // SQLite claim is acquired. A denied claim remains UNKNOWN, never retried.
       if(beforeCapturePost)await beforeCapturePost();
-      await transport.captureOnce(quote,claim,create.remoteId);
+      // Transport performs its own asynchronous GET and OAuth. Pass the
+      // trusted session guard through to the final pre-HTTP-POST boundary.
+      await transport.captureOnce(quote,claim,create.remoteId,
+        {beforeProviderPost:beforeCapturePost});
     } catch {
       // No automatic retry, whether host proof was revoked or provider failed.
     }
