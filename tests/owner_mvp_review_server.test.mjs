@@ -111,3 +111,11 @@ test('no candidate worksheet or GET authorization when local records are unverif
   }
  }finally{await app.close();}
 });
+
+// Regression: the browser must be permitted to submit the local GET worksheet.
+test('CSP permits same-origin GET worksheet without enabling payment POST',withApp(async app=>{
+ const response=await fetch(app.url);
+ assert.match(response.headers.get('content-security-policy'),/form-action 'self'/);
+ assert.equal((await fetch(app.url+'?candidate=synthetic-web&ack=1')).status,200);
+ assert.equal((await fetch(app.url,{method:'POST',body:'capture'})).status,405);
+}));
