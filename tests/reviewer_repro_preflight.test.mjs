@@ -56,6 +56,7 @@ test('CLI actually starts isolated loopback server, reads four paths and closes 
  assert.equal(r.status,'REVIEWER_LOCAL_READY');
  assert.equal(r.ready,true);
  assert.equal(r.readOnlyRequests,4);
+ assert.equal(r.blockedMutationRequests,1);
  assert.equal(r.paymentPostRequests,0);
  assert.equal(r.providerNetworkCalls,0);
  assert.equal(r.externalProviderEvidence,false);
