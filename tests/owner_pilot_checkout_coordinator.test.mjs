@@ -301,3 +301,23 @@ test('owner proof revoked during transport OAuth before CAPTURE POST never sends
    const attempts=await f.ledger.listAttempts('owner-pilot');
    assert.equal(attempts.find(a=>a.operation==='capture').state,'UNKNOWN');
  }));
+
+
+test('owner session revoked during CREATE OAuth blocks Orders POST after durable claim',
+ withFixture({},async f=>{
+   f.state.onOauth=async()=>{
+     f.state.onOauth=null;
+     await f.revoke();
+   };
+   const result=await f.service().openOwnerOrder(f.input());
+   assert.equal(result.status,'UNKNOWN');
+   assert.equal(result.retryPost,false);
+   assert.equal(f.count('POST','/v2/checkout/orders'),0);
+   const attempts=await f.ledger.listAttempts('owner-pilot');
+   assert.equal(attempts.length,1);
+   assert.equal(attempts[0].operation,'create');
+   assert.equal(attempts[0].state,'UNKNOWN');
+   await assert.rejects(f.service().openOwnerOrder(f.input()),
+     {code:'PILOT_SESSION_NOT_VERIFIED'});
+   assert.equal(f.count('POST','/v2/checkout/orders'),0);
+ }));
