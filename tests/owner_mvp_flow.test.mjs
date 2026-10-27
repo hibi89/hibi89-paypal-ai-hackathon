@@ -84,6 +84,10 @@ test('bounded one-process MVP: Gemini skills -> explicit quote -> Sandbox buyer 
  const match=await s.classify();
  assert.deepEqual(match.skills,['web','payments','qa']);
  assert.equal(match.priceSource,'HUMAN_FIXED_SYNTHETIC_AMOUNT_NOT_AI');
+ assert.equal(match.selectedSyntheticProfile,'synthetic-web');
+ assert.equal(match.selectedProfileEligible,false);
+ assert.deepEqual(match.missingSkills,['qa']);
+ assert.deepEqual(match.eligibleProfiles,[]);
  assert.equal(match.paypalActionPerformed,false);
  await assert.rejects(s.createOrder(),{code:'MVP_HUMAN_APPROVAL_REQUIRED'});
  const approved=await s.approveQuote();

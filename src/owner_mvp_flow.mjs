@@ -68,9 +68,14 @@ export function createOwnerMvpFlow({
       merchantId,version:1});
     matches=await ai.classify({sessionHandle:handle,brief});
     if(matches.requestedSkills.length===0)reject('MVP_AI_SKILLS_EMPTY');
-    if(!matches.profiles.some(x=>x.eligible))
-      reject('MVP_NO_MATCHING_SYNTHETIC_PROFILE');
+    // Fictional profiles may only partially match a real task. Never claim
+    // eligibility for missing skills; require a human to review the gap.
+    const selected=matches.profiles.find(p=>p.matchedSkills.length>0);
+    if(!selected)reject('MVP_NO_SKILL_OVERLAP');
     return Object.freeze({skills:matches.requestedSkills,
+      selectedSyntheticProfile:selected.id,
+      selectedProfileEligible:selected.eligible,
+      missingSkills:selected.missingSkills,
       eligibleProfiles:matches.profiles.filter(p=>p.eligible).map(p=>p.id),
       priceSource:'HUMAN_FIXED_SYNTHETIC_AMOUNT_NOT_AI',
       paypalActionPerformed:false});
@@ -83,7 +88,9 @@ export function createOwnerMvpFlow({
       reject('MVP_QUOTE_CHANGED');
     const ok=await approve({action:'APPROVE_SYNTHETIC_USD_1_50',
       actorId,merchantId,quoteId,quoteVersion:quote.version,
-      amountMinor:MVP_AMOUNT_MINOR,currency:'USD'});
+      amountMinor:MVP_AMOUNT_MINOR,currency:'USD',
+      selectedProfileId:matches.profiles.find(p=>p.matchedSkills.length>0)?.id,
+      missingSkills:matches.profiles.find(p=>p.matchedSkills.length>0)?.missingSkills??[]});
     if(!ok)reject('MVP_PRICE_HUMAN_APPROVAL_REQUIRED');
     // CAS atomic approval; the AI suggestion never owns the payment amount.
     await ledger.approve({id:quoteId,expectedVersion:1,

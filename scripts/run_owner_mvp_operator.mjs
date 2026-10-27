@@ -82,7 +82,8 @@ if(flags.length!==required.length||set.size!==required.length||
         const match=await flow.classify();
         publicState='GEMINI_SKILLS_VERIFIED';
         stderr.write('Validated skills: '+match.skills.join(', ')+
-          '; synthetic matches: '+match.eligibleProfiles.join(', ')+'\n');
+          '; selected SYNTHETIC profile: '+match.selectedSyntheticProfile+
+          '; missing skills: '+(match.missingSkills.join(', ')||'none')+'\n');
         await flow.approveQuote();
         const order=await flow.createOrder();
         publicState=order.status;
