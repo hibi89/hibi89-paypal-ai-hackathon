@@ -16,33 +16,47 @@ const PROFILES = Object.freeze([
   Object.freeze({ id:'synthetic-data', displayName:'Demo Data Analyst', skills:Object.freeze(['data','automation','qa']), language:'en', source:'SYNTHETIC_PROFILE' }),
 ]);
 const error=(code,status=400)=>Object.assign(new Error(code),{code,status});
-export function matchSyntheticMarketplaceBrief(brief) {
-  if (typeof brief!=='string' || brief.length<8 || brief.length>500 ||
-      /[\u0000-\u001f\u007f]/u.test(brief) || brief.trim().length<8)
-    throw error('INVALID_SYNTHETIC_BRIEF');
-  const requestedSkills=SKILLS.filter(([,pattern])=>pattern.test(brief)).map(([name])=>name);
+// A closed skill taxonomy is used by both regex-only and AI-assisted matching.
+export const MARKETPLACE_SKILL_NAMES=Object.freeze(SKILLS.map(([name])=>name));
+export function matchSyntheticMarketplaceSkills(requestedSkills,{source='OFFLINE_REGEX'}={}) {
+  if(!Array.isArray(requestedSkills)||requestedSkills.length>MARKETPLACE_SKILL_NAMES.length ||
+     !requestedSkills.every(skill=>typeof skill==='string'&&MARKETPLACE_SKILL_NAMES.includes(skill))||
+     new Set(requestedSkills).size!==requestedSkills.length ||
+     !['OFFLINE_REGEX','GEMINI_API'].includes(source))throw error('INVALID_MATCH_SKILLS');
+  const canonical=MARKETPLACE_SKILL_NAMES.filter(skill=>requestedSkills.includes(skill));
+  const mode=source==='GEMINI_API'?'GEMINI_ASSISTED_SYNTHETIC_PROFILES':'OFFLINE_SYNTHETIC_NO_AI';
   const profiles=PROFILES.map((profile,index)=>{
-    const matchedSkills=requestedSkills.filter(skill=>profile.skills.includes(skill));
-    const missingSkills=requestedSkills.filter(skill=>!profile.skills.includes(skill));
+    const matchedSkills=canonical.filter(skill=>profile.skills.includes(skill));
+    const missingSkills=canonical.filter(skill=>!profile.skills.includes(skill));
     return {
       id:profile.id, displayName:profile.displayName, source:profile.source,
       language:profile.language, skills:[...profile.skills],
       matchedSkills, missingSkills,
-      eligible:requestedSkills.length>0 && missingSkills.length===0,
-      score:requestedSkills.length>0 ? matchedSkills.length/requestedSkills.length : 0,
-      reason:requestedSkills.length===0?'NEEDS_SKILL_CLARIFICATION':
+      eligible:canonical.length>0 && missingSkills.length===0,
+      score:canonical.length>0 ? matchedSkills.length/canonical.length : 0,
+      reason:canonical.length===0?'NEEDS_SKILL_CLARIFICATION':
         missingSkills.length===0?'MATCHES_REQUESTED_SKILLS':'MISSING_REQUIRED_SKILLS',
       order:index,
     };
   }).sort((a,b)=>Number(b.eligible)-Number(a.eligible)||b.score-a.score||a.order-b.order)
     .map(({order,...publicProfile})=>publicProfile);
   return {
-    mode:'OFFLINE_SYNTHETIC_NO_AI', profileCount:PROFILES.length,
-    requestedSkills, needsClarification:requestedSkills.length===0,
-    profiles, price:{status:'DATA_INSUFFICIENT',source:'NO_VERIFIED_COMPARABLE_TRANSACTIONS',amountMinor:null},
+    mode,skillSource:source,profileCount:PROFILES.length,
+    requestedSkills:canonical,needsClarification:canonical.length===0,
+    profiles,price:{status:'DATA_INSUFFICIENT',source:'NO_VERIFIED_COMPARABLE_TRANSACTIONS',amountMinor:null},
     paypal:{status:'NOT_CONNECTED',capturePerformed:false},
-    statement:'Fictional examples only. No real opt-in sellers, AI request, or PayPal transaction.',
+    statement:source==='GEMINI_API'?
+      'Model-classified skills, deterministic matching to fictional profiles. No real opt-in sellers, price evidence or PayPal transaction.':
+      'Fictional examples only. No real opt-in sellers, AI request, or PayPal transaction.',
   };
+}
+export function matchSyntheticMarketplaceBrief(brief) {
+  if (typeof brief!=='string' || brief.length<8 || brief.length>500 ||
+      /[\u0000-\u001f\u007f]/u.test(brief) || brief.trim().length<8)
+    throw error('INVALID_SYNTHETIC_BRIEF');
+  const requestedSkills=SKILLS.filter(([,pattern])=>pattern.test(brief)).map(([name])=>name);
+  return matchSyntheticMarketplaceSkills(requestedSkills);
+
 }
 export function createMarketplaceDemoApi({resolveSession}={}) {
   if(typeof resolveSession!=='function') throw new TypeError('VERIFIED_SESSION_REQUIRED');
