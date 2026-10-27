@@ -68,7 +68,10 @@ if(flags.length!==required.length||set.size!==required.length||
             if(action.action==='GEMINI_SKILL_CLASSIFICATION_ONCE')
               return confirm('SEND SYNTHETIC GEMINI','Gemini Free-tier one-shot skills classification.');
             if(action.action==='APPROVE_SYNTHETIC_USD_1_50')
-              return confirm('APPROVE USD 1.50','Approve synthetic quote, not AI price.');
+              return confirm('APPROVE USD 1.50',
+                'Approve $1.50 human-set quote for '+action.selectedProfileId+
+                ', missing skills: '+(action.missingSkills?.join(', ')||'none')+
+                '. Price is NOT AI predicted.');
             if(action.action==='ISSUE_OWNER_SANDBOX_CHECKOUT_SESSION')
               return confirm('ISSUE SANDBOX SESSION','Create a private 15-minute checkout proof.');
             if(action.operation==='CREATE_SANDBOX_ORDER')

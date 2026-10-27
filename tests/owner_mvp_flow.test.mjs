@@ -92,6 +92,9 @@ test('bounded one-process MVP: Gemini skills -> explicit quote -> Sandbox buyer 
  await assert.rejects(s.createOrder(),{code:'MVP_HUMAN_APPROVAL_REQUIRED'});
  const approved=await s.approveQuote();
  assert.equal(approved.amountMinor,150);
+ const consent=f.authorizations.find(x=>x.action==='APPROVE_SYNTHETIC_USD_1_50');
+ assert.equal(consent.selectedProfileId,'synthetic-web');
+ assert.deepEqual(consent.missingSkills,['qa']);
  assert.equal((await f.ledger.get('operator_mvp_01')).approval.amountMinor,150);
  const order=await s.createOrder();
  assert.equal(order.status,'BUYER_APPROVAL_PENDING');
@@ -161,3 +164,19 @@ test('fail closed with unsafe callback or forged merchant before provider networ
    authorizeStage:async()=>true}),{code:'MVP_OPERATOR_CONFIGURATION_REQUIRED'});
  assert.equal(f.calls.length,0);
 }));
+
+test('operator CLI without flags is a dry run and reads no private credentials',async()=>{
+ const {spawnSync}=await import('node:child_process');
+ const cli=new URL('../scripts/run_owner_mvp_operator.mjs',import.meta.url);
+ const run=spawnSync(process.execPath,['--experimental-sqlite',cli.pathname],{
+  encoding:'utf8',env:{...process.env,GEMINI_API_KEY:'PRIVATE_DO_NOT_REPORT',
+    PAYPAL_SANDBOX_CLIENT_SECRET:'PRIVATE_DO_NOT_REPORT'},timeout:10000
+ });
+ assert.equal(run.status,2);
+ const report=JSON.parse(run.stdout.trim());
+ assert.equal(report.status,'DRY_RUN_EXPLICIT_FLAGS_AND_TTY_REQUIRED');
+ assert.equal(report.providerCalls,0);
+ assert.equal(report.paymentPosts,0);
+ assert.ok(!run.stdout.includes('PRIVATE_DO_NOT_REPORT'));
+ assert.ok(!run.stderr.includes('PRIVATE_DO_NOT_REPORT'));
+});
