@@ -171,3 +171,56 @@ test('remote failure remains un-restorable UNKNOWN after process restart',withFi
  assert.equal(view.status,'UNAVAILABLE');
  assert.equal(f.calls.length,1);
 }));
+
+test('persist rejects unexpected skill and does not transition RESERVED',withFixture({},async f=>{
+ const claim=f.store().claim(body);
+ assert.equal(claim.state,'RESERVED');
+ assert.throws(()=>f.store().commit({...body,skills:['unsupported-skill']}),
+  {code:'AI_MARKETPLACE_SCHEMA_INVALID'});
+ assert.equal(f.store().status(body).state,'RESERVED');
+ assert.throws(()=>f.store().commit({...body,actorId:'other',skills:['web']}),
+  {code:'MARKETPLACE_AI_CLAIM_NOT_FOUND'});
+ assert.equal(f.store().commit({...body,skills:['payments','web']}).state,'COMMITTED');
+ assert.deepEqual(f.store().readResult(body).skills,['web','payments']);
+ assert.throws(()=>f.store().commit({...body,skills:['qa']}),
+  {code:'MARKETPLACE_AI_RESULT_ALREADY_FINAL'});
+ assert.equal(f.store().markUnknown(body).state,'COMMITTED');
+ assert.equal(f.calls.length,0);
+}));
+test('pending reservation read never returns a cached AI classification',withFixture({},async f=>{
+ f.store().claim(body);
+ const before=await f.service().readSaved({sessionHandle:'trusted',brief});
+ assert.equal(before.status,'UNAVAILABLE');
+ assert.equal(before.reservationState,'RESERVED');
+ assert.equal(before.autoRetry,false);
+ assert.equal(Object.hasOwn(before,'result'),false);
+ f.reopen();
+ const after=await f.service().readSaved({sessionHandle:'trusted',brief});
+ assert.equal(after.status,'UNAVAILABLE');
+ assert.equal(after.autoRetry,false);
+ assert.equal(f.calls.length,0);
+}));
+test('legacy committed reservation migrates without fabricating classification',async()=>{
+ const {DatabaseSync}=await import('node:sqlite');
+ const {createHash}=await import('node:crypto');
+ const folder=mkdtempSync(join(tmpdir(),'paypal-legacy-ai-cache-'));
+ const filename=join(folder,'legacy.sqlite');
+ let store;
+ try{
+  const original=new DatabaseSync(filename);
+  original.exec("CREATE TABLE marketplace_ai_attempts (id INTEGER PRIMARY KEY CHECK(id=1),"+
+    "actor_id TEXT NOT NULL,merchant_id TEXT NOT NULL,brief_hash TEXT NOT NULL,"+
+    "state TEXT NOT NULL CHECK(state IN ('RESERVED','UNKNOWN','COMMITTED')),"+
+    "created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)");
+  original.prepare("INSERT INTO marketplace_ai_attempts "+
+    "(id,actor_id,merchant_id,brief_hash,state) VALUES(1,?,?,?,'COMMITTED')").run(
+    body.actorId,body.merchantId,createHash('sha256').update(brief).digest('hex'));
+  original.close();
+  store=createMarketplaceAiBudgetStore({filename});
+  const x=store.readResult(body);
+  assert.equal(x.state,'COMMITTED');
+  assert.equal(x.restorable,false);
+  assert.equal(x.reason,'LEGACY_RESULT_UNAVAILABLE');
+  assert.throws(()=>store.claim(body),{code:'MARKETPLACE_AI_BUDGET_USED'});
+ }finally{store?.close();rmSync(folder,{recursive:true,force:true});}
+});
