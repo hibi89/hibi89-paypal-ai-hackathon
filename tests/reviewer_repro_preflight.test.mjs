@@ -63,3 +63,10 @@ test('CLI actually starts isolated loopback server, reads four paths and closes 
  assert.equal(child.stdout.includes('SYNTHETIC_DO_NOT_PRINT'),false);
  assert.equal(r.checks.loopback,'READY');
 });
+
+test('manifest must declare the minimum SQLite-capable Node version',()=>{
+ const old={...manifest,engines:{node:'>=22'}};
+ const result=inspect({manifest:old});
+ assert.equal(result.ready,false);
+ assert.equal(result.checks.scripts,'MISSING_OR_UNEXPECTED_NPM_SCRIPTS');
+});
