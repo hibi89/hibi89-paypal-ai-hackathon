@@ -75,6 +75,20 @@ if(!report.ready){
        evidence.businessIntelligence?.paymentAttempts?.localPaidRecords!==0||
        evidence.soviaStyle?.checks?.find(x=>x.rule==='PAYPAL_PROVIDER_NOT_CONNECTED')?.status!=='NOT_TESTED')
       throw new Error('LOCAL_EVIDENCE_CLAIMS_INVALID');
+    // The evidence inspector must remain read-only even when sent a mutation.
+    const deniedEvidence=await fetch(server.url+'/api/demo/evidence',{
+      method:'POST',redirect:'error',signal:AbortSignal.timeout(5000),
+      headers:{'content-type':'application/json'},body:'{}'
+    });
+    outcome.blockedMutationRequests++;
+    if(deniedEvidence.status!==405||deniedEvidence.headers.get('allow')!=='GET')
+      throw new Error('LOCAL_EVIDENCE_ACCEPTED_MUTATION');
+    const evidenceAfter=await (await get('/api/demo/evidence')).json();
+    // Snapshot time is observational, not ledger mutation evidence.
+    delete evidence.observedAt;
+    delete evidenceAfter.observedAt;
+    if(JSON.stringify(evidenceAfter)!==JSON.stringify(evidence))
+      throw new Error('LOCAL_EVIDENCE_CHANGED_AFTER_REJECTED_POST');
     // Negative probe only against synthetic local read-model; never a payment endpoint.
     const forbidden=await fetch(server.url+'/api/demo/integration',{
       method:'POST',redirect:'error',signal:AbortSignal.timeout(5000),
