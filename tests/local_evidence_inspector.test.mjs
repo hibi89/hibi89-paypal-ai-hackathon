@@ -146,6 +146,8 @@ test('audit tenant summary cannot enumerate other merchants',async()=>{
   const other=inspectLocalEvidence({filename,actorId:'u3',merchantId:'m3'});
   assert.equal(own.soviaStyle.audit.ownerEvents,1);
   assert.equal(other.soviaStyle.audit.ownerEvents,0);
+  assert.equal(own.soviaStyle.audit.verifiedEvents,1);
+  assert.equal(other.soviaStyle.audit.verifiedEvents,0);
   assert.equal(own.soviaStyle.audit.integrity,'PASS');
   assert.equal(JSON.stringify(own).includes('qa2'),false);
   assert.equal(JSON.stringify(own).includes('u2'),false);

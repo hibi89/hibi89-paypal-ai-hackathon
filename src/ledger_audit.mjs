@@ -87,5 +87,7 @@ export function verifyLocalAudit(db,{actorId,merchantId}={}){
     seq=row.seq; prev=row.event_hash;
   }
   return {integrity:'PASS',reason:total?'LOCAL_CHAIN_RECOMPUTED':'NO_NEW_EVENTS',
-    ownerEvents,kind:'LOCAL_HASH_CHAIN_NOT_SIGNED',verifiedEvents:total};
+    ownerEvents,kind:'LOCAL_HASH_CHAIN_NOT_SIGNED',
+    // Aggregate verification is global but observable volume is tenant-scoped.
+    verifiedEvents:ownerScope?ownerEvents:total};
 }
