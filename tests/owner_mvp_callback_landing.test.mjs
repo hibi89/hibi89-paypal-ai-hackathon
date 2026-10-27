@@ -41,15 +41,20 @@ test('no POST, capture, webhook or payment endpoint; only exact allowlisted GETs
   });
 });
 test('untrusted hosts are rejected even when a fake forwarded origin is attached',async()=>{
+  // Native fetch may normalize the Host header. Use a raw node:http request.
+  const {request}=await import('node:http');
+  const status=async(localUrl,headers)=>new Promise((resolve,reject)=>{
+    const r=request(localUrl+'/checkout/paypal/return',{method:'GET',
+      headers},res=>{res.resume();res.once('end',()=>resolve(res.statusCode))});
+    r.once('error',reject);r.end();
+  });
   await withLanding(async s=>{
-    const x=await fetch(s.localUrl+'/checkout/paypal/return',{
-      headers:{host:'attacker.invalid','x-forwarded-host':'checkout.example.org',
-        'x-forwarded-proto':'https'}});
-    assert.equal(x.status,403);
-    const z=await fetch(s.localUrl+'/checkout/paypal/return',{headers:{
-      host:'checkout.example.org'
-    }});
-    assert.equal(z.status,200);
+    assert.equal(await status(s.localUrl,{
+      Host:'attacker.invalid',
+      'X-Forwarded-Host':'checkout.example.org',
+      'X-Forwarded-Proto':'https'
+    }),403);
+    assert.equal(await status(s.localUrl,{Host:'checkout.example.org'}),200);
   });
 });
 test('invalid insecure callback and ports fail before binding',async()=>{
