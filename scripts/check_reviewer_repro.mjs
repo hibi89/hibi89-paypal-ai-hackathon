@@ -53,6 +53,9 @@ if(!report.ready){
        integration.subscriptionPayment!=='NOT_VERIFIED'||
        integration.realPayPal!=='NOT_TESTED'||
        integration.realAI!=='NOT_TESTED'||
+       integration.realWebhook!=='NOT_TESTED'||
+       integration.productionAuth!=='NOT_CONFIGURED'||
+       integration.dataContract!=='NOT_CREATED'||
        integration.publicDeployment!=='NOT_TESTED')
       throw new Error('LOCAL_INTEGRATION_INVALID');
     // Negative probe only against synthetic local read-model; never a payment endpoint.
