@@ -26,6 +26,16 @@ strong{font-weight:700}.meta{color:#485972;font-size:.9rem}
 <p class="warning"><strong>Offline demonstration — NOT REAL AI OR PAYPAL.</strong> The price is a deterministic placeholder. No external model or payment is called. This example uses a synthetic user in a loopback-only server; do not deploy it publicly.</p>
 </header>
 <main id="demo-main" aria-busy="false">
+<section class="panel" id="marketplace-panel" aria-labelledby="marketplace-heading">
+<h2 id="marketplace-heading">0. AI Work Marketplace — matching fixture</h2>
+<p class="meta">Three fictional freelancer profiles. Deterministic eligibility only; no real sellers, Gemini API, market pricing dataset or PayPal checkout. Input synthetic briefs only.</p>
+<form id="marketplace-form">
+<label for="marketplace-brief">Synthetic client project request</label>
+<textarea id="marketplace-brief" rows="3" minlength="8" maxlength="500" required>Build an ecommerce website with PayPal checkout</textarea>
+<button type="submit" id="marketplace-submit">Match 3 synthetic profiles (no AI)</button>
+</form>
+<div id="marketplace-results" role="status" aria-live="polite">Click Match to inspect fictional skills and eligibility. Reference price: DATA_INSUFFICIENT.</div>
+</section>
 <section class="panel" id="quote-panel" aria-labelledby="current-heading">
 <h2 id="current-heading">Current quote</h2>
 <p id="quote-view">Loading local example…</p>
@@ -111,6 +121,7 @@ strong{font-weight:700}.meta{color:#485972;font-size:.9rem}
 </section>
 <p id="message" role="status" aria-live="polite"></p>
 </main>
+<script src="/demo/marketplace.js" defer></script>
 <script src="/demo/client.js" defer></script>
 <script src="/demo/contract.js" defer></script>
 <script src="/demo/subscription.js" defer></script>
