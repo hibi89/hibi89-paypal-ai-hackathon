@@ -110,7 +110,9 @@ export function createSandboxPaymentOrchestrator({ledger,transport}={}) {
     }
   }
 
-  async function captureApproved(ctx) {
+  async function captureApproved(ctx,{beforeCapturePost}={}) {
+    demand(beforeCapturePost===undefined||typeof beforeCapturePost==='function',
+      'CAPTURE_PREPOST_GUARD_INVALID');
     const quote=await check(ctx);
     const existing=await ledger.getAttempt(requestKey(quote,'capture'));
     // A capture idempotency entry is authoritative even after process restart.
@@ -120,13 +122,19 @@ export function createSandboxPaymentOrchestrator({ledger,transport}={}) {
       return {status:checked.status,paymentState:'NOT_PAID',retryPost:false};
     const create=await ledger.getAttempt(requestKey(quote,'create'));
     demand(orderIdValid(create?.remoteId),'APPROVED_ORDER_ID_REQUIRED');
+    // GET can take time. Revalidate owner session before allocating a CAPTURE claim.
+    // This callback is trusted server code, never a request-body flag.
+    if(beforeCapturePost)await beforeCapturePost();
     const claim=await ledger.claimOperation(args(ctx,'capture'));
     if(claim.action!=='FIRST_CLAIM_ONLY_NO_PROVIDER_CALL')
       return reconcileCapture(ctx);
     try {
+      // Recheck after durable claim too: a session can be revoked while the
+      // SQLite claim is acquired. A denied claim remains UNKNOWN, never retried.
+      if(beforeCapturePost)await beforeCapturePost();
       await transport.captureOnce(quote,claim,create.remoteId);
     } catch {
-      // Do not issue second POST, regardless of ambiguous HTTP failure.
+      // No automatic retry, whether host proof was revoked or provider failed.
     }
     // Assume unknown until a fresh PayPal GET demonstrates the matching capture.
     await ledger.markUnknown(claim.attempt.requestId);
