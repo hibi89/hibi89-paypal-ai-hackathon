@@ -14,7 +14,8 @@ export function inspectReviewerPrereqs({nodeVersion,manifest,files}={}){
   const runtime=parts.length===3 && parts.every(Number.isInteger) &&
     (parts[0]>22||(parts[0]===22&&parts[1]>=5));
   const scripts=manifest?.scripts;
-  const runnable=manifest?.type==='module' &&
+  const declaredRuntime=manifest?.engines?.node==='>=22.5.0';
+  const runnable=declaredRuntime && manifest?.type==='module' &&
     typeof scripts?.demo==='string' &&
     scripts.demo==='node --experimental-sqlite scripts/run_demo.mjs' &&
     typeof scripts?.['preflight:reviewer']==='string' &&
