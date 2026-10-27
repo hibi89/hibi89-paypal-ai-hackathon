@@ -1,3 +1,7 @@
+> **2026-10-28 해총 최종 공통 개발·검증 지시 / 소유자 최신 결정:** [전 프로젝트 공식 운영 정본](https://github.com/hibi89/hackathon-command-center-2026/blob/main/docs/DEV_ACCELERATION_AND_VERIFICATION_20261028.md). **활성 슬롯=KIC(+DL), PayPal, UGREEN, LA 총 4개**, 일반 구현·검증은 GPT-6 **Instant**, 최초 설계/복잡한 고위험 문제·해총 독립 감독만 높은 추론. 기능 목표→구현+집중 테스트→실패 수정→기능 단위 커밋→필요 통합 CI→최소 문서. GitHub 파일별 호출·HEAD 반복·STATUS/HANDOFF 중복·동일 CI 반복 금지. 사용자 로컬 전용 검증은 안전한 한 명령 스크립트/로컬 Codex에 맡기고 **실제 실행 SHA/PASS·FAIL·SKIP**로 보고. `TO_HAECHONG.md` 재작성은 큰 개선이 있을 때만. 기존 설계·비공개 정보·외부 승인·보안·복구/대회 게이트 보존.
+>
+> **PayPal 활성 슬롯:** Instant에서 가장 가까운 최우선 미완료 핵심 기능 1개씩 구현한다. 기존 승인받지 않은 실제 Gemini API·PayPal Sandbox CREATE/Capture·Live 결제·공개 배포·고객 정보 처리 금지. 합성 CI와 실제 결제 실증을 구별해 기록.
+
 > **2026-10-28 최상위 개발 가속 원칙:** 기능 단위 일괄 구현·핵심 검증·단일 커밋·필요 시 전체 CI 검증을 기본으로 한다. 반복 조회/문서 복제 금지, 외부 결제·권한·고객 데이터/Live 보안 승인 절대 유지. 로컬 1회 검증 `verify_local.ps1`/`npm run verify:local`, 새 CLI `mvp:fast`는 사용자가 사전 승인한 무해한 GET·로컬 세션 단계만 결합하며 PayPal CREATE/Capture와 Gemini는 각각 별도 승인이다. 상세 및 증거: [단일 개발 프로토콜](docs/DEV_ACCELERATION_PROTOCOL_20261028.md).
 
 > **2026-10-25 조직 고정 — 해총/스총:** 해총은 [해커톤 상황실](https://github.com/hibi89/hackathon-command-center-2026) 통합감독, 스총은 Private SMAX² 제품총괄. 이 저장소 실개발은 기존 **PayPal `lead/paypal` 총괄**이 담당. [역할·최신 우선순위](docs/HAECHONG_STECHONG_ROLE_BOUNDARY_20261025.md)를 참고. 기존 한 줄 복원명령은 변경하지 않음.
