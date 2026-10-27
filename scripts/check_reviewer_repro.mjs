@@ -63,6 +63,10 @@ if(!report.ready){
     outcome.blockedMutationRequests++;
     if(forbidden.status!==405||forbidden.headers.get('allow')!=='GET')
       throw new Error('LOCAL_READ_MODEL_ACCEPTED_MUTATION');
+    // Confirm the rejected POST did not alter the same synthetic read model.
+    const afterForbidden=await (await get('/api/demo/integration')).json();
+    if(JSON.stringify(afterForbidden)!==JSON.stringify(integration))
+      throw new Error('LOCAL_READ_MODEL_CHANGED_AFTER_REJECTED_POST');
     outcome={...outcome,status:'REVIEWER_LOCAL_READY',ready:true,
       loopbackHttpVerified:true,checks:{...outcome.checks,loopback:'READY'}};
   }catch{
