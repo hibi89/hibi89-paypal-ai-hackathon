@@ -35,6 +35,20 @@ try:
             page.on("request",lambda r:requests.append((r.method,r.url)))
             page.goto(address)
             expect(page.locator("#message")).to_contain_text("Offline demo ready")
+            # Real Chromium click exercises the fictional matcher UI and API.
+            expect(page.locator("#marketplace-results")).to_contain_text("DATA_INSUFFICIENT")
+            before_match=sum(method=="POST" for method,_ in requests)
+            page.locator("#marketplace-brief").fill(
+                "Build an ecommerce website with PayPal checkout")
+            page.locator("#marketplace-submit").click()
+            expect(page.locator("#marketplace-results")).to_contain_text("Demo Web Specialist")
+            expect(page.locator("#marketplace-results")).to_contain_text("eligible demo match")
+            expect(page.locator("#marketplace-results")).to_contain_text("DATA_INSUFFICIENT")
+            assert sum(method=="POST" and url.endswith("/api/demo/marketplace")
+                for method,url in requests)==1
+            assert sum(method=="POST" for method,_ in requests)==before_match+1
+            page.reload()
+            assert sum(method=="POST" for method,_ in requests)==before_match+1
             expect(page.locator("#quote-view")).to_contain_text("Version 1")
             page.reload()
             expect(page.locator("#message")).to_contain_text("Offline demo ready")
@@ -182,7 +196,7 @@ try:
             page.reload()
             expect(page.locator("#integration-state")).to_have_text("LOCAL_DEMO_INCOMPLETE")
             assert sum(method=="POST" for method,_ in requests)==before_integration
-            print("CHROMIUM_BROWSER_E2E_PASS: quote+contract+subscription+integration read-only local gate, no provider or payment POST")
+            print("CHROMIUM_BROWSER_E2E_PASS: marketplace+quote+contract+subscription+integration, no provider/payment POST")
         finally:
             browser.close()
 finally:
