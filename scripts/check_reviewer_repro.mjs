@@ -43,6 +43,12 @@ if(!report.ready){
     if(value.quote?.id!=='sample-project'||value.quote?.version!==1||
        value.quote?.status!=='PROPOSED')
       throw new Error('LOCAL_QUOTE_INVALID');
+    const subscriptionValue=await (await get('/api/demo/subscription')).json();
+    if(subscriptionValue.mode!=='OFFLINE_SCENARIO_NO_PROVIDER'||
+       subscriptionValue.subscription?.state!=='NOT_STARTED'||
+       subscriptionValue.subscription?.version!==1||
+       subscriptionValue.subscription?.paymentEvidence!=='NOT_VERIFIED')
+      throw new Error('LOCAL_SUBSCRIPTION_INVALID');
     const integrationResponse=await get('/api/demo/integration');
     if(integrationResponse.headers.get('cache-control')!=='no-store'||
        integrationResponse.headers.get('x-content-type-options')!=='nosniff')
