@@ -15,6 +15,7 @@ import { evaluateLocalIntegration } from './local_integration_readiness.mjs';
 import { createDemoRateLimiter } from './demo_rate_limit.mjs';
 import { createPaypalBuyerReturnBoundary } from './paypal_buyer_return_boundary.mjs';
 import { createMarketplaceDemoApi } from './marketplace_match.mjs';
+import { inspectLocalEvidence } from './local_evidence_inspector.mjs';
 
 const html = readFileSync(new URL('../web/offline_demo.html', import.meta.url), 'utf8');
 const onlyLoopback = address => address === '127.0.0.1' ||
@@ -23,7 +24,8 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false } 
   if (!Number.isInteger(port) || port < 0 || port > 65535)
     throw new TypeError('INVALID_LOCAL_PORT');
   const folder = mkdtempSync(join(tmpdir(), 'paypal-local-demo-'));
-  const ledger = createSqliteLedger({ filename: join(folder, 'demo.sqlite') });
+  const demoLedgerPath=join(folder,'demo.sqlite');
+  const ledger = createSqliteLedger({ filename:demoLedgerPath });
   const subscriptionStore=createSubscriptionScenarioStore({
     filename:join(folder,'subscription_scenarios.sqlite')
   });
@@ -114,12 +116,13 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false } 
         res.end(html);
         return;
       }
-      if (req.method === 'GET' && (path === '/demo/client.js' || path === '/demo/contract.js' || path === '/demo/subscription.js' || path === '/demo/integration.js' || path === '/demo/marketplace.js')) {
+      if (req.method === 'GET' && (path === '/demo/client.js' || path === '/demo/contract.js' || path === '/demo/subscription.js' || path === '/demo/integration.js' || path === '/demo/marketplace.js' || path === '/demo/evidence.js')) {
         const js = readFileSync(new URL(
           path === '/demo/client.js' ? '../web/demo_client.js' :
           path === '/demo/contract.js' ? '../web/contract_client.js' :
           path === '/demo/subscription.js' ? '../web/subscription_client.js' :
           path === '/demo/marketplace.js' ? '../web/marketplace_client.js' :
+          path === '/demo/evidence.js' ? '../web/evidence_client.js' :
           '../web/integration_client.js', import.meta.url));
         res.writeHead(200, {
           'content-type': 'text/javascript; charset=utf-8',
@@ -137,6 +140,39 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false } 
         res.end(JSON.stringify({ csrfToken, quoteId, mode: 'OFFLINE_MOCK',
           role,contractId:'demo-contract',milestoneId:'demo-milestone',reviewerId,
           subscriptionId }));
+        return;
+      }
+      // Owner-scoped read-only evidence; no PayPal API, mutation or provider authority.
+      if (path === '/api/demo/evidence') {
+        if (req.method !== 'GET') {
+          res.writeHead(405,{'cache-control':'no-store',
+            'content-type':'application/json','allow':'GET'});
+          res.end(JSON.stringify({error:'METHOD_NOT_ALLOWED'}));
+          return;
+        }
+        const session=await resolveSession(new Request(
+          'http://127.0.0.1:'+listenPort+'/api/demo/evidence',{headers:req.headers}));
+        if (!session || session.verified!==true ||
+            session.actorId!==actorId || session.merchantId!=='synthetic-merchant') {
+          res.writeHead(404,{'cache-control':'no-store',
+            'content-type':'application/json','x-content-type-options':'nosniff'});
+          res.end(JSON.stringify({error:'EVIDENCE_NOT_FOUND'}));
+          return;
+        }
+        let evidence;
+        try {
+          evidence=inspectLocalEvidence({
+            filename:demoLedgerPath,actorId:session.actorId,merchantId:session.merchantId
+          });
+        } catch {
+          res.writeHead(503,{'cache-control':'no-store',
+            'content-type':'application/json','x-content-type-options':'nosniff'});
+          res.end(JSON.stringify({error:'EVIDENCE_UNAVAILABLE'}));
+          return;
+        }
+        res.writeHead(200,{'cache-control':'no-store',
+          'content-type':'application/json','x-content-type-options':'nosniff'});
+        res.end(JSON.stringify(evidence));
         return;
       }
       // Read-only same-origin integration projection. Never route to PayPal.

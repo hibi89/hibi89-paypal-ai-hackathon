@@ -49,6 +49,12 @@ try:
             assert sum(method=="POST" for method,_ in requests)==before_match+1
             page.reload()
             assert sum(method=="POST" for method,_ in requests)==before_match+1
+            expect(page.locator("#evidence-details")).to_contain_text("SQLite integrity: PASS")
+            expect(page.locator("#evidence-details")).to_contain_text("approved 0")
+            before_evidence=sum(method=="POST" for method,_ in requests)
+            page.locator("#evidence-refresh").click()
+            expect(page.locator("#evidence-details")).to_contain_text("Provider transactions measured: NO")
+            assert sum(method=="POST" for method,_ in requests)==before_evidence
             expect(page.locator("#quote-view")).to_contain_text("Version 1")
             page.reload()
             expect(page.locator("#message")).to_contain_text("Offline demo ready")
@@ -75,6 +81,8 @@ try:
             }""")
             expect(page.locator("#quote-view")).to_contain_text("APPROVED")
             expect(page.locator("#quote-view")).to_contain_text("$17.55")
+            page.locator("#evidence-refresh").click()
+            expect(page.locator("#evidence-details")).to_contain_text("approved 1")
             assert sum(method=="POST" and url.endswith("/approve")
                 for method,url in requests)==1
             total=sum(method=="POST" for method,_ in requests)
