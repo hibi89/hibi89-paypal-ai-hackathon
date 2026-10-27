@@ -44,7 +44,16 @@ if(!report.ready){
        value.quote?.status!=='PROPOSED')
       throw new Error('LOCAL_QUOTE_INVALID');
     const integration=await (await get('/api/demo/integration')).json();
-    if(!integration||typeof integration!=='object'||Array.isArray(integration))
+    if(!integration||typeof integration!=='object'||Array.isArray(integration)||
+       integration.mode!=='SYNTHETIC_LOOPBACK_ONLY'||
+       integration.status!=='LOCAL_DEMO_INCOMPLETE'||
+       integration.quote!=='HUMAN_APPROVAL_REQUIRED'||
+       integration.contract!=='NO_CONTRACT'||
+       integration.contractPayment!=='NOT_CAPTURED'||
+       integration.subscriptionPayment!=='NOT_VERIFIED'||
+       integration.realPayPal!=='NOT_TESTED'||
+       integration.realAI!=='NOT_TESTED'||
+       integration.publicDeployment!=='NOT_TESTED')
       throw new Error('LOCAL_INTEGRATION_INVALID');
     outcome={...outcome,status:'REVIEWER_LOCAL_READY',ready:true,
       loopbackHttpVerified:true,checks:{...outcome.checks,loopback:'READY'}};
