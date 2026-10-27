@@ -12,7 +12,7 @@ const report=inspectReviewerPrereqs({nodeVersion:process.versions.node,manifest,
 let outcome={
   mode:'OFFLINE_LOCAL_ONLY',status:report.status,ready:false,
   submissionEligible:false,externalProviderEvidence:false,providerNetworkCalls:0,
-  paymentPostRequests:0,readOnlyRequests:0,checks:report.checks,
+  paymentPostRequests:0,readOnlyRequests:0,blockedMutationRequests:0,checks:report.checks,
   missingAssets:report.missingAssets,
 };
 if(!report.ready){
@@ -55,6 +55,14 @@ if(!report.ready){
        integration.realAI!=='NOT_TESTED'||
        integration.publicDeployment!=='NOT_TESTED')
       throw new Error('LOCAL_INTEGRATION_INVALID');
+    // Negative probe only against synthetic local read-model; never a payment endpoint.
+    const forbidden=await fetch(server.url+'/api/demo/integration',{
+      method:'POST',redirect:'error',signal:AbortSignal.timeout(5000),
+      headers:{'content-type':'application/json'},body:'{}'
+    });
+    outcome.blockedMutationRequests++;
+    if(forbidden.status!==405||forbidden.headers.get('allow')!=='GET')
+      throw new Error('LOCAL_READ_MODEL_ACCEPTED_MUTATION');
     outcome={...outcome,status:'REVIEWER_LOCAL_READY',ready:true,
       loopbackHttpVerified:true,checks:{...outcome.checks,loopback:'READY'}};
   }catch{
