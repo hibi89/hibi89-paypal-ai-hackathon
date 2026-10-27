@@ -26,7 +26,7 @@ export function evaluateLocalIntegration({quote,contract,subscription}={}){
   const subState=subscription?.state??'UNAVAILABLE';
   const subValid=subscription?.mode==='OFFLINE_SCENARIO_NO_PROVIDER' &&
     subscription?.paymentEvidence==='NOT_VERIFIED' &&
-    ['NOT_STARTED','ACTIVE','PAUSED','FAILED','CANCELLED'].includes(subState);
+    ['NOT_STARTED','ACTIVE','RECOVERY_REQUIRED','CANCELLED'].includes(subState);
   const status=approved&&delivered&&subValid&&subState==='ACTIVE'
     ? 'LOCAL_DEMO_CANDIDATE' : 'LOCAL_DEMO_INCOMPLETE';
   return Object.freeze({
