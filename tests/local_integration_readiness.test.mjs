@@ -72,6 +72,19 @@ test('D13: missing tenant identity or invalid quote version cannot qualify',()=>
    assert.equal(result.status,'LOCAL_DEMO_INCOMPLETE');
  }
 });
+test('D13: synthetic contract payment state cannot impersonate verified PayPal settlement',()=>{
+ const quote={id:'q',ownerId:'o',merchantId:'m',currency:'USD',version:1,
+   status:'APPROVED',approval:{actorId:'o',quoteVersion:1,amountMinor:1200}};
+ const contract={quoteId:'q',quoteVersion:1,ownerId:'o',merchantId:'m',currency:'USD',
+   amountMinor:1200,milestones:[{amountMinor:1200,state:'ACCEPTED'}]};
+ const subscription={mode:'OFFLINE_SCENARIO_NO_PROVIDER',paymentEvidence:'NOT_VERIFIED',state:'ACTIVE'};
+ for(const paymentState of ['PAID','CAPTURED','SANDBOX_PAYMENT_VERIFIED_BY_PROVIDER_GET','SUCCESS']){
+   const result=evaluateLocalIntegration({quote,contract:{...contract,paymentState},subscription});
+   assert.equal(result.contractPayment,'NOT_VERIFIED');
+   assert.equal(result.realPayPal,'NOT_TESTED');
+ }
+ assert.equal(evaluateLocalIntegration({quote,contract:{...contract,paymentState:'NOT_CAPTURED'},subscription}).contractPayment,'NOT_CAPTURED');
+});
 test('D13: local integration GET-only before quote approval, cross feature session isolated',async()=>{
   const app=await startOfflineDemo({testReviewSessions:true});
   try{
