@@ -30,8 +30,8 @@ export function assessSubmissionEvidence({ledger,files}={}){
  ];
  const external=[
   info('PAYPAL_SANDBOX_BUSINESS_PERSONAL','NOT_VERIFIED','Independent real merchant/buyer account proof required'),
-  info('PAYPAL_OAUTH_ORDERS_CAPTURE_GET','NOT_TESTED','Actual order, buyer approval and capture GET receipts required'),
-  info('FREE_TIER_AI_GENERATION','NOT_TESTED','Approved Free tier and one real generated response required'),
+  info('PAYPAL_OAUTH_ORDERS_CAPTURE_GET','OWNER_LOCAL_SANDBOX_E2E_REPORTED','2026-10-28 owner terminal reported actual Sandbox order, buyer approval, capture and provider GET; not independently replayed or judge-accessible'),
+  info('FREE_TIER_AI_GENERATION','OWNER_LOCAL_GEMINI_REPORTED','Owner terminal reported Gemini skill classification; quote UI integration and eligible zero-charge tier not independently verified'),
   info('PRODUCTION_OR_REVIEWER_ACCESS','NOT_TESTED','Reviewer access and real integration environment require verification'),
   info('VIDEO_PUBLIC_LINK','NOT_SUBMITTED','Recorded English walkthrough and owner-approved public link required'),
   info('DEVPOST_SUBMISSION_RECEIPT','NOT_SUBMITTED','Final owner-approved submission receipt required'),
@@ -49,6 +49,6 @@ export function assessSubmissionEvidence({ledger,files}={}){
   blockers:Object.freeze(blockers),
   progress:Object.freeze(Object.fromEntries(ids.map(id=>
    [id,Object.freeze({percentComplete:days.get(id).percent_complete,state:days.get(id).progress_state})]))),
-  note:'Local CI and drafts do not prove PayPal, AI, production, video or Devpost completion'
+  note:'Owner-reported local Sandbox E2E is not independent CI or judge-facing proof; local CI and drafts do not prove production, public video or Devpost completion'
  });
 }

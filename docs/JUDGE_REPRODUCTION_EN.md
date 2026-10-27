@@ -1,6 +1,6 @@
 # PayPal Freelancer Agent — Reviewer Reproduction Guide (Draft)
 
-**This is an honest OFFLINE/SYNTHETIC demonstration, NOT a completed real PayPal + generative AI contest entry.** The browser shows a local proof of the quote/approval, contract/milestone and subscription *interface*. The real PayPal Sandbox Business/Personal and actual AI generator are still awaiting independent verification. Do not interpret local tests as payment confirmation.
+**This browser demo remains strictly OFFLINE/SYNTHETIC, not a public real-provider application.** Separately, the owner ran one private Windows terminal Gemini skill-classification → Sandbox USD 1.50 buyer approval → Capture → fresh GET on 2026-10-28 and provided output `SANDBOX_PAYMENT_VERIFIED_BY_PROVIDER_GET`. The run is owner-observed evidence, **NOT independently reproduced in GitHub CI**, not a production authenticated marketplace, not a public judge experience, and not a video/Devpost submission. The price was manually approved, **not AI-generated**, and the browser demo still uses offline mock quote drafting. Never confuse localhost synthetic browser outcomes with live third-party payment evidence. The private SQLite receipt can be reviewed safely via `npm run mvp:receipt`, but must NOT be uploaded or reset.
 
 ## Current verified scope
 
@@ -68,8 +68,8 @@ The [one-shot owner probe instructions](technical/PPL_P0_OWNER_ONE_SHOT_REAL_API
 | Gate | Reality as of 2026-10-24 | Proof needed |
 |---|---|---|
 | MIT license / offline instructions | Root license and guide available | Reviewer repeats clone/commands |
-| Real PayPal Sandbox OAuth + Business/Personal | BLOCKED / NOT_TESTED | Privately approved authenticated Sandbox result, plus buyer flow, create/approval/capture and independently verified GET |
-| Genuine AI response | NOT_TESTED | Free-eligible account/model, one actual generated text response integrated into approved quote flow |
+| Real PayPal Sandbox OAuth + Business/Personal | OWNER-REPORTED SANDBOX E2E 2026-10-28 | One local Sandbox buyer/create/capture/GET success was owner-observed; independent reviewer-safe confirmation still needed |
+| Genuine AI response | OWNER-REPORTED REAL SKILLS CLASSIFICATION | Real Gemini skill extraction succeeded in private CLI; quote draft UI, actual free billing and judge integration still pending |
 | Public/reviewer authenticated production path | NOT_TESTED | Real identity, data durability, secure roles, restart/refresh and remote browser evidence, **if deployment is chosen** |
 | Final video | NOT_FILMED | Owner-reviewed under-three-minute English video and public link |
 | Devpost entry | NOT_SUBMITTED | Owner-approved submission and receipt/link |

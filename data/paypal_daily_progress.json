@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_kst": "2026-10-25",
+  "updated_kst": "2026-10-28",
   "scope": "Per-day verified acceptance; NOT entire PayPal hackathon project percent",
   "active_day_id": "PPL-D15",
   "reporting_mode": "mandatory_after_each_actual_work_session",
@@ -132,26 +132,27 @@
     {
       "day_id": "PPL-D03",
       "scheduled_date_kst": "2026-10-27",
-      "executed_date_kst": "2026-10-25",
+      "executed_date_kst": "2026-10-28",
       "scope": "Access feasibility: actual PayPal Sandbox and free AI external API (no credential disclosure)",
-      "status": "OWNER_REAL_PROVIDER_PROBES_PASS_CHECKOUT_NOT_TESTED",
+      "status": "OWNER_LOCAL_SANDBOX_E2E_PASS_REVIEWER_PROOF_PENDING",
       "estimated_total_hours": 3,
       "safe_total_hours": 8,
-      "percent_complete": 65,
-      "estimated_remaining_hours": 2,
-      "safe_remaining_hours": 5,
+      "percent_complete": 100,
+      "estimated_remaining_hours": 0,
+      "safe_remaining_hours": 0,
       "actual_elapsed_hours": null,
-      "actual_elapsed_note": "NOT_MEASURED; owner-observed Sandbox OAuth and Gemini one-shot actual calls 2026-10-25",
+      "actual_elapsed_note": "NOT_MEASURED; owner-reported private Sandbox/E2E actual integration 2026-10-28; no CI access to third-party credentials",
       "carryover": [
-        "Authorize and execute one safe Sandbox Orders v2 CREATE -> buyer approval -> remote GET -> one CAPTURE -> proof GET; ensure merchant link and trusted HTTPS callback/session before enablement.",
-        "Confirm Gemini separate key actually belongs to eligible Free-tier project; recorded model response does not attest billing or quote-flow integration."
+        "Do NOT recreate the same USD 1.50 payment or delete ~/.paypal-ai-mvp-private; preserve local one-shot idempotency and use npm run mvp:receipt to read it without provider calls.",
+        "Convert this owner-operated localhost one-shot into a safe judge reproduction path and authorized authentication/deployment strategy; no Live/payments/production inference.",
+        "Review Gemini project Free-tier billing separately (model response was observed; actual zero invoice not independently certified)."
       ],
       "limitations": [
-        "Actual owner CLI output: PayPal sandbox OAuth 200 status SANDBOX_OAUTH_REACHED, one call; OAuth does not prove seller/payee or checkout.",
-        "Actual owner CLI output: gemini-3.5-flash-lite generateContent 200 status GEMINI_TEXT_GENERATED, one synthetic sentence; not quote workflow or zero-cost billing receipt.",
-        "Owner screenshots show Sandbox REST app plus Business and Personal accounts, Gemini project Free tier; secret values intentionally absent.",
-        "Actual Orders CREATE/GET, buyer approval, CAPTURE/GET, HTTPS verified callback, production and Devpost NOT_TESTED.",
-        "One-shot markers persist in owner's home; never retry or remove marker after ambiguous error without manual review."
+        "Owner-operated local PowerShell screenshot demonstrates Sandbox Orders CREATE → separate Personal buyer approval → Capture → authenticated provider GET status; GitHub Actions and this ledger did NOT independently contact PayPal.",
+        "Owner-operated real Gemini classified synthetic skills, NOT an AI-predicted price; separate quote draft/approval UI is still offline mock (D04).",
+        "Temporary Cloudflare Quick Tunnel callback worked locally, NOT production authenticated hosting or D1 deployment (D15).",
+        "Reported zero real money: Sandbox only; free-tier billing, third-party attestations, Devpost and public judge URL remain unverified.",
+        "Real secrets were entered in chat earlier: rotate Gemini key and PayPal Sandbox Secret before deploying or sharing credentials."
       ],
       "checklist": [
         {
@@ -169,8 +170,8 @@
         {
           "id": "SANDBOX_ORDER_BUYER_FLOW",
           "weight_pct": 35,
-          "state": "BLOCKED",
-          "evidence": null
+          "state": "VERIFIED",
+          "evidence": "Owner-local 2026-10-28 PowerShell screenshot shows SANDBOX_PAYMENT_VERIFIED_BY_PROVIDER_GET and status from actual Sandbox-only GET, after buyer approval and one Capture; no order/token/merchant IDs retained; independently replayable judge evidence pending"
         },
         {
           "id": "FREE_AI_ACTUAL_CALL",
@@ -179,17 +180,18 @@
           "evidence": "Owner-operated one gemini-3.5-flash-lite text generation HTTP 200 GEMINI_TEXT_GENERATED 2026-10-25; owner confirmed Free tier flag; no independent billing attestation"
         }
       ],
-      "progress_state": "PARTIAL",
+      "progress_state": "DONE",
       "evidence": [
+        "Owner-provided 2026-10-28 KST PowerShell local one-shot output (source lead/paypal@e741904): real Gemini skill classification web/payments/qa; Cloudflare two HTTPS callback routes checked; PayPal SANDBOX_ONLY synthetic USD 1.50 Orders CREATE, distinct Sandbox Personal buyer approval, separate CAPTURE; terminal status SANDBOX_PAYMENT_VERIFIED_BY_PROVIDER_GET, paymentState VERIFIED_BY_GET, providerGetVerified true, realMoneyUsed false, autoRetry false. User screenshot evidence, NOT independently rerun by CI, NOT Live/production or free-tier billing verification. See docs/technical/PPL_OWNER_REAL_SANDBOX_LOCAL_RECEIPT_20261028.md.",
         "User-supplied sanitized PowerShell output 2026-10-25: PayPal sandbox OAuth /v1/oauth2/token status=SANDBOX_OAUTH_REACHED httpStatus=200 networkCalls=1 externalEvidence=true; Gemini generateContent gemini-3.5-flash-lite status=GEMINI_TEXT_GENERATED httpStatus=200 networkCalls=1 externalEvidence=true; private credential values not disclosed. docs/technical/PPL_P0_REAL_PROVIDER_FIRST_SUCCESS_20261025.md",
         "P0 owner-gated one-shot probe PREPARED ONLY: src/p0_one_shot_probe.mjs; scripts/p0_one_shot_probe.mjs; tests/p0_one_shot_probe.test.mjs; docs/technical/PPL_P0_OWNER_ONE_SHOT_REAL_API_PROBE_20261024.md. CI 40087887623 @ efeb9a9e587cb6eddae52dfeeb045acaf05c1571: Node 251/251 + local Chromium PASS. Provider calls 0; PayPal/Gemini real responses, free-tier and Sandbox accounts NOT_TESTED.",
         "2026-10-24 P0 account-unblock prep: docs/technical/PPL_P0_REAL_PROVIDER_UNBLOCK_20261024.md; src/p0_provider_readiness.mjs; scripts/check_p0_provider_readiness.mjs; tests/p0_provider_readiness.test.mjs. Actions #40086442379 @ 491183ca51f06bb3f71206bbbe44b7e7684fa330: 240/240 Node + local Chromium PASS. Presence-only NO network/credential output; actual PayPal Sandbox/AI NOT_TESTED."
       ],
-      "verified_sha": null,
-      "blocker": "Sandbox Order CREATE → 구매자 승인 → GET/캡처 영수증 미실증. 실제 무료 요금 청구 여부·AI 견적 UI 통합 별도 미검증.",
+      "verified_sha": "e741904cc3082ab3eee2b1e1e10f686102ed6d9e",
+      "blocker": null,
       "recovery_date_kst": null,
-      "recovery_condition": "실 Sandbox buyer flow 결제 승인/GET 및 one-shot CAPTURE를 별도 범위 승인·검증 후 D03 100 재평가",
-      "advance_note": "2026-10-25 사용자 로컬에서 PayPal Sandbox OAuth HTTP 200 및 Gemini 실제 생성 HTTP 200, 각 1회. 실 주문/캡처·견적 UI/무료 청구 보증 아님."
+      "recovery_condition": null,
+      "advance_note": "2026-10-28 owner operated local private Gemini→USD 1.50 Sandbox buyer→Capture→GET full E2E. Per-day provider feasibility 100% OWNER-ATTESTED, NOT independent production/reviewer acceptance. No repeat payment."
     },
     {
       "day_id": "PPL-D04",
@@ -206,12 +208,14 @@
       "actual_elapsed_note": "NOT_MEASURED. Remaining hands-on time only after a validated free AI account; waiting UNKNOWN.",
       "carryover": [
         "Owner's actual Gemini one-shot text generated HTTP 200 (separate non-quote prompt), but actual Gemini-generated quote draft + human approval UI needs real-provider integration and response evaluation.",
-        "Confirm separate key/project model quota and Free tier in owner dashboard; no paid fallback."
+        "Confirm separate key/project model quota and Free tier in owner dashboard; no paid fallback.",
+        "2026-10-28 owner-local Gemini classify produced web/payments/qa and human manually fixed USD 1.50; this is skill-only inference, NOT actual AI quote draft/price evaluation or judge-facing real-provider UI."
       ],
       "limitations": [
         "Local quote UI and human approval tests use offline mock; real Gemini-generated quote data were not pushed into approved quote UI.",
         "Actual Gemini API text generation HTTP 200 confirmed by owner 2026-10-25, but it was a single synthetic one-sentence prompt, not quote integration or billing attestation.",
-        "Production authenticated host/callback not verified."
+        "Production authenticated host/callback not verified.",
+        "Owner-local Gemini skills classification succeeded as part of private CLI on 2026-10-28; quote UI remains local mock, so D04 REAL_FREE_AI_PROVIDER last 20% not automatically satisfied."
       ],
       "checklist": [
         {
@@ -962,6 +966,7 @@
       "executed_date_kst": "2026-10-24",
       "actual_elapsed_hours": null,
       "evidence": [
+        "Owner-local 2026-10-28 temporary Cloudflare Quick Tunnel routed two callback GETs and received buyer return in a private CLI; does NOT constitute hosted authenticated app, D1 binding, permanent URL or remote judge deployment.",
         "D15 private integration: src/offline_sandbox_d1_harness.mjs + tests/offline_sandbox_d1_harness.test.mjs (13 new tests); docs/technical/PPL_D15_OFFLINE_TRANSPORT_COMPOSITION_20261024.md; GitHub Actions 40084869412 @ b308fad345c810917bd4736bc9d4b24f87cf2b79: 232/232 Node, local Chromium and 18-day master PASS; real Sandbox/D1/AI/Cloudflare NOT_TESTED",
         "migrations/d1/0001_payment_claims.sql; src/d1_claim.mjs; tests/d1_claim.test.mjs: 9 offline D1-shaped contract tests (not remote D1)",
         "src/hosting_preflight.mjs; tests/hosting_preflight.test.mjs: no-deploy static report",
@@ -993,7 +998,8 @@
         "Node SQLite shim is not a real Cloudflare D1 integration, despite SQL compatibility and offline tests",
         "Local SQLite D1-shaped shim does not prove real D1 Sessions/replication or provider provenance",
         "GET/CAS test transport is a private synthetic SANDBOX_ONLY-mode stub; source provenance and real PayPal OAuth were never tested",
-        "No production session provider, real PayPal OAuth, external GET, D1 binding, or public endpoint; harness uses synthetic client credentials and local HTTP simulator only"
+        "No production session provider, real PayPal OAuth, external GET, D1 binding, or public endpoint; harness uses synthetic client credentials and local HTTP simulator only",
+        "Quick Tunnel public callback was owner-operated and verified for two navigation-only URLs on 2026-10-28, but was not a production authenticated host or public app."
       ],
       "checklist": [
         {
