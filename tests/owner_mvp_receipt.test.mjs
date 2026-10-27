@@ -65,7 +65,7 @@ test('matching local SQLite records produce sanitized receipt without remote rec
  await seed(directory);
  const before=readdirSync(directory).sort();
  const r=inspectOwnerMvpReceipt({directory});
- assert.equal(r.status,'LOCAL_PROVIDER_RESULT_RECORDED_NOT_FRESH_GET');
+ assert.equal(r.status,'LOCAL_PROVIDER_RESULT_RECORDED_NOT_FRESH_GET',JSON.stringify(r));
  assert.equal(r.localStates.capture,'PAID');
  assert.equal(r.localAuditIntegrity,'PASS');
  assert.ok(r.localAuditEvents>=4);
