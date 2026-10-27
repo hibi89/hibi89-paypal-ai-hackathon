@@ -243,4 +243,4 @@ test('AI authorization rejects revoked session or switched merchant before quota
   {code:'MARKETPLACE_AI_SCOPE_CHANGED_DURING_CONSENT'});
  assert.equal(f.store().status(body),null);
  assert.equal(f.calls.length,0);
-});
+}));
