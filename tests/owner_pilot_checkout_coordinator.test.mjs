@@ -21,8 +21,10 @@ function fixture({createLost=false,captureLost=false,badMerchant=false}={}){
   async fetchImpl(url,options){
    const path=new URL(url).pathname;
    calls.push({path,method:options.method,body:options.body});
-   if(path==='/v1/oauth2/token')return {status:200,
-     json:async()=>({access_token:'FAKE_TOKEN',token_type:'Bearer'})};
+   if(path==='/v1/oauth2/token'){
+     if(typeof state.onOauth==='function')await state.onOauth();
+     return {status:200,json:async()=>({access_token:'FAKE_TOKEN',token_type:'Bearer'})};
+   }
    if(path==='/v2/checkout/orders'&&options.method==='POST'){
      if(state.createLost)throw Error('SIMULATED_UNKNOWN_POST');
      return {status:201,json:async()=>({
@@ -264,4 +266,38 @@ test('session revoked just after capture claim remains UNKNOWN without provider 
    await assert.rejects(s.captureOwnerOrder(f.input()),
      {code:'PILOT_SESSION_NOT_VERIFIED'});
    assert.equal(f.count('POST','/v2/checkout/orders/OWNERPILOT1/capture'),0);
+ }));
+
+
+test('owner proof revoked during transport OAuth before CAPTURE POST never sends Capture', 
+ withFixture({},async f=>{
+   const first=f.service();
+   await first.openOwnerOrder(f.input());
+   f.state.buyerApproved=true;
+   const proxied=new Proxy(f.ledger,{
+     get(target,name){
+       if(name==='claimOperation')return async args=>{
+         const claim=await target.claimOperation(args);
+         if(args.operation==='capture'){
+           f.state.oauthAfterClaim=0;
+           f.state.onOauth=async()=>{
+             f.state.oauthAfterClaim++;
+             if(f.state.oauthAfterClaim===2){
+               f.state.onOauth=null;
+               await f.revoke();
+             }
+           };
+         }
+         return claim;
+       };
+       return Reflect.get(target,name);
+     }
+   });
+   const result=await f.service(proxied).captureOwnerOrder(f.input());
+   assert.equal(f.state.oauthAfterClaim,2);
+   assert.equal(result.status,'UNKNOWN');
+   assert.equal(result.retryPost,false);
+   assert.equal(f.count('POST','/v2/checkout/orders/OWNERPILOT1/capture'),0);
+   const attempts=await f.ledger.listAttempts('owner-pilot');
+   assert.equal(attempts.find(a=>a.operation==='capture').state,'UNKNOWN');
  }));
