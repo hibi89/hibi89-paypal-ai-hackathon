@@ -127,10 +127,13 @@ export function createSandboxTransport(options={}) {
     const data=await fetchJson('/v2/checkout/orders/'+encodeURIComponent(id),{token});
     return verifiedOrder(quote,data,id);
   }
-  async function createFromPlan(quote,planned) {
+  async function createFromPlan(quote,planned,{beforeProviderPost}={}) {
     // This helper is never exported. Only an explicit, validated first-claim
     // call from the two entrypoints below can reach provider OAuth/Orders.
     const token=await accessToken();
+    // Owner session can expire or be revoked while OAuth is in flight.
+    // Recheck its privately branded SQLite proof before ANY Orders POST.
+    if(beforeProviderPost)await beforeProviderPost();
     const created=await fetchJson(planned.path,{
       method:'POST',token,body:JSON.stringify(planned.body),requestId:planned.requestId,
     });
@@ -156,7 +159,9 @@ export function createSandboxTransport(options={}) {
     const serverSession=boundServerSessionFromStoredProof(sessionProof,quote);
     claimValidated(quote,claim,'create');
     const plan=planOwnerSandboxPilotCheckout({quote,publicOrigin,serverSession});
-    return createFromPlan(quote,plan);
+    return createFromPlan(quote,plan,{
+      beforeProviderPost:()=>boundServerSessionFromStoredProof(sessionProof,quote)
+    });
   }
   async function captureOnce(quote,claim,orderId,{beforeProviderPost}={}) {
     // The internal trusted host may recheck session revocation after the
