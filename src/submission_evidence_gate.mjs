@@ -22,7 +22,7 @@ export function assessSubmissionEvidence({ledger,files}={}){
    guide.includes('NOT')?'LOCAL_DRAFT_VERIFIED':'LOCAL_DRAFT_MISSING_OR_INVALID',
    'English instructions for synthetic loopback reproduction; not real API proof'),
   info('VIDEO_STORYBOARD',video.includes('NOT filmed')&&
-   video.includes('PLACEHOLDER')?'DRAFT_ONLY':'DRAFT_MISSING',
+   (video.includes('PLACEHOLDER')||video.includes('OWNER-OBSERVED'))?'DRAFT_ONLY':'DRAFT_MISSING',
    'Storyboard only, no recording or video submission receipt'),
   info('PROJECT_README',readme.includes('lead/paypal')&&
    readme.includes('CHAT_BOOTSTRAP')?'LOCAL_FILE_VERIFIED':'LOCAL_FILE_MISSING_OR_INVALID',
