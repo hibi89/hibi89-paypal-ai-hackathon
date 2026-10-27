@@ -62,6 +62,19 @@ if(!report.ready){
        integration.dataContract!=='NOT_CREATED'||
        integration.publicDeployment!=='NOT_TESTED')
       throw new Error('LOCAL_INTEGRATION_INVALID');
+    const evidenceResponse=await get('/api/demo/evidence');
+    if(evidenceResponse.headers.get('cache-control')!=='no-store'||
+       evidenceResponse.headers.get('x-content-type-options')!=='nosniff')
+      throw new Error('LOCAL_EVIDENCE_HEADERS_UNSAFE');
+    const evidence=await evidenceResponse.json();
+    if(evidence.mode!=='OFFLINE_SYNTHETIC'||
+       evidence.source!=='READONLY_LOCAL_SQLITE'||
+       evidence.dbvoraInspired?.readOnly!==true||
+       evidence.businessIntelligence?.providerTransactionsMeasured!==false||
+       evidence.businessIntelligence?.paymentAttempts?.total!==0||
+       evidence.businessIntelligence?.paymentAttempts?.localPaidRecords!==0||
+       evidence.soviaStyle?.checks?.find(x=>x.rule==='PAYPAL_PROVIDER_NOT_CONNECTED')?.status!=='NOT_TESTED')
+      throw new Error('LOCAL_EVIDENCE_CLAIMS_INVALID');
     // Negative probe only against synthetic local read-model; never a payment endpoint.
     const forbidden=await fetch(server.url+'/api/demo/integration',{
       method:'POST',redirect:'error',signal:AbortSignal.timeout(5000),
