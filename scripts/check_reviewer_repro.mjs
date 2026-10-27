@@ -70,6 +70,11 @@ if(!report.ready){
     if(evidence.mode!=='OFFLINE_SYNTHETIC'||
        evidence.source!=='READONLY_LOCAL_SQLITE'||
        evidence.dbvoraInspired?.readOnly!==true||
+       evidence.dbvoraInspired?.integrity!=='PASS'||
+       evidence.soviaStyle?.audit?.integrity!=='PASS'||
+       evidence.soviaStyle?.audit?.kind!=='LOCAL_HASH_CHAIN_NOT_SIGNED'||
+       evidence.businessIntelligence?.quotes?.total!==1||
+       evidence.businessIntelligence?.quotes?.approved!==0||
        evidence.businessIntelligence?.providerTransactionsMeasured!==false||
        evidence.businessIntelligence?.paymentAttempts?.total!==0||
        evidence.businessIntelligence?.paymentAttempts?.localPaidRecords!==0||
