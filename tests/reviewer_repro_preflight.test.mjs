@@ -44,7 +44,7 @@ test('missing loopback script or local license is a concrete blocker',()=>{
  assert.equal(inspect({files:{...files,LICENSE:'proprietary'}}).checks.license,
   'LOCAL_LICENSE_MISSING');
 });
-test('CLI actually starts isolated loopback server, reads six paths, rejects POST and closes it',()=>{
+test('CLI actually starts isolated loopback server, reads seven paths, rejects two POSTs and closes it',()=>{
  const cmd=fileURLToPath(new URL('../scripts/check_reviewer_repro.mjs',import.meta.url));
  const child=spawnSync(process.execPath,['--experimental-sqlite',cmd],{
   encoding:'utf8',timeout:15000,
@@ -55,8 +55,8 @@ test('CLI actually starts isolated loopback server, reads six paths, rejects POS
  const r=JSON.parse(child.stdout);
  assert.equal(r.status,'REVIEWER_LOCAL_READY');
  assert.equal(r.ready,true);
- assert.equal(r.readOnlyRequests,6);
- assert.equal(r.blockedMutationRequests,1);
+ assert.equal(r.readOnlyRequests,7);
+ assert.equal(r.blockedMutationRequests,2);
  assert.equal(r.paymentPostRequests,0);
  assert.equal(r.providerNetworkCalls,0);
  assert.equal(r.externalProviderEvidence,false);
