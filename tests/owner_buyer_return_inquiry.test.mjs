@@ -72,7 +72,9 @@ async function setup(){
  const getCount=()=>calls.filter(c=>c.method==='GET'&&c.pathname.includes('/v2/checkout/orders/')).length;
  const begin=()=>coordinator.openOwnerOrder({quoteId,actorId:'owner',merchantId,
    publicOrigin:origin,sessionProof:proof});
- return {gateway,execute,begin,coordinator,ledger,sessions,calls,readHandles,
+ const capture=()=>coordinator.captureOwnerOrder({quoteId,actorId:'owner',merchantId,
+   publicOrigin:origin,sessionProof:proof});
+ return {gateway,execute,begin,capture,coordinator,ledger,sessions,calls,readHandles,
   postCount,getCount,
   setBuyerApproved:()=>{buyerApproved=true},
   setMerchantWrong:()=>{merchantWrong=true},
@@ -193,8 +195,22 @@ test('refresh callback can observe PAID only after separate authorized capture w
  // Direct calls without proof stay blocked.
  assert.equal(paid.code,'PILOT_SESSION_NOT_VERIFIED');
  assert.equal(f.captured,false);
+ const prior=await f.execute('return');
+ const before=await prior.json();
+ assert.equal(before.providerState,'ORDER_APPROVED');
+ assert.equal(before.paymentState,'NOT_CONFIRMED');
+ const captured=await f.capture();
+ assert.equal(captured.status,'PAID');
+ assert.equal(captured.paymentState,'VERIFIED_BY_GET');
+ const posts=f.postCount();
+ assert.equal(posts,2); // one owner Order POST + one separately owner-approved Capture
  const r=await f.execute('return');
  const b=await r.json();
- assert.equal(b.paymentState,'NOT_CONFIRMED');
- assert.equal(b.paymentVerifiedByTrustedGet,false);
+ assert.equal(b.paymentState,'VERIFIED_PAID_BY_BACKEND_GET');
+ assert.equal(b.paymentVerifiedByTrustedGet,true);
+ assert.equal(b.buyerApprovedByTrustedGet,true);
+ assert.equal(b.callbackIsPaymentProof,false);
+ assert.equal(b.providerPostPerformed,false);
+ assert.equal(b.capturePerformedByCallback,false);
+ assert.equal(f.postCount(),posts); // callback never POSTs
 }));
