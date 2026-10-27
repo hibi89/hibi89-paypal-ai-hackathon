@@ -132,3 +132,42 @@ test('offline local demo remains AI-disabled and PayPal write-disabled',async()=
   assert.equal((await fetch(app.url+'/api/demo/marketplace/ai')).status,404);
  }finally{await app.close();}
 });
+
+test('consented skill result restores after SQLite restart with no extra provider request',withFixture({},async f=>{
+ const svc=f.service();
+ assert.equal((await svc.readSaved({sessionHandle:'trusted',brief})).status,'NOT_STARTED');
+ await svc.classify({sessionHandle:'trusted',brief});
+ const original=await svc.readSaved({sessionHandle:'trusted',brief});
+ assert.equal(original.status,'RESTORED');
+ assert.equal(original.providerPostPerformed,false);
+ assert.deepEqual(original.result.requestedSkills,['web','payments']);
+ assert.equal(original.result.ai.paymentAuthority,false);
+ assert.equal(f.calls.length,1);
+ assert.equal(f.actions.length,1);
+ f.reopen();
+ const again=await f.service().readSaved({sessionHandle:'trusted',brief});
+ assert.equal(again.status,'RESTORED');
+ assert.deepEqual(again.result.requestedSkills,original.result.requestedSkills);
+ assert.equal(f.calls.length,1);
+ assert.equal(f.actions.length,1);
+}));
+test('stored skill read rejects invalid identity and different project scope',withFixture({},async f=>{
+ await f.service().classify({sessionHandle:'trusted',brief});
+ assert.equal((await f.service().readSaved({sessionHandle:'trusted',
+  brief:'Another dashboard request for analytics'})).status,'NOT_STARTED');
+ await assert.rejects(f.service().readSaved({sessionHandle:'not-trusted',brief}),
+  {code:'VERIFIED_MARKETPLACE_OWNER_REQUIRED'});
+ assert.equal(f.calls.length,1);
+}));
+test('remote failure remains un-restorable UNKNOWN after process restart',withFixture({failure:true},async f=>{
+ await assert.rejects(f.service().classify({sessionHandle:'trusted',brief}),
+  {code:'MARKETPLACE_AI_RESULT_UNKNOWN_NO_AUTO_RETRY'});
+ let view=await f.service().readSaved({sessionHandle:'trusted',brief});
+ assert.equal(view.status,'UNAVAILABLE');
+ assert.equal(view.reservationState,'UNKNOWN');
+ assert.equal(view.autoRetry,false);
+ f.reopen();
+ view=await f.service().readSaved({sessionHandle:'trusted',brief});
+ assert.equal(view.status,'UNAVAILABLE');
+ assert.equal(f.calls.length,1);
+}));
