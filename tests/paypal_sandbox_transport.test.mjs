@@ -252,3 +252,29 @@ test('OAuth token failure is distinguishable from uncertain payment POST',async(
    {code:'SANDBOX_OAUTH_NETWORK_ERROR'});
  assert.equal(calls.filter(x=>x.method==='POST'&&x.url.endsWith('/v2/checkout/orders')).length,0);
 });
+
+
+test('trusted guard runs after transport GET and OAuth and prevents Capture HTTP POST',async()=>{
+  const {transport,calls}=stub({getStatus:'APPROVED'});
+  let checked=0;
+  await assert.rejects(transport.captureOnce(q,claim('capture'),'ORDER0001',{
+    beforeProviderPost:async()=>{
+      checked++;
+      assert.ok(calls.some(x=>x.method==='GET'&&x.url.endsWith('/v2/checkout/orders/ORDER0001')));
+      assert.ok(calls.filter(x=>x.url.endsWith('/v1/oauth2/token')).length>=2);
+      const error=new Error('PILOT_SESSION_NOT_VERIFIED');
+      error.code='PILOT_SESSION_NOT_VERIFIED';
+      throw error;
+    }
+  }),{code:'PILOT_SESSION_NOT_VERIFIED'});
+  assert.equal(checked,1);
+  assert.equal(calls.filter(x=>x.method==='POST'&&x.url.endsWith('/capture')).length,0);
+});
+test('capture transport rejects untrusted pre-POST flag before any network',async()=>{
+  const {transport,calls}=stub({getStatus:'APPROVED'});
+  await assert.rejects(
+    transport.captureOnce(q,claim('capture'),'ORDER0001',{beforeProviderPost:true}),
+    {code:'CAPTURE_PREPOST_GUARD_INVALID'}
+  );
+  assert.equal(calls.length,0);
+});
