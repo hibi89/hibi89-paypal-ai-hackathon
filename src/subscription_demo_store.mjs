@@ -18,7 +18,7 @@ export function createSubscriptionScenarioStore({filename}={}){
     filename.startsWith('file:')||filename.includes('?'),
     'DURABLE_DEMO_DB_REQUIRED',400);
   const db=new DatabaseSync(filename);
-  db.exec('PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;');
+  db.exec('PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;');
   db.exec("CREATE TABLE IF NOT EXISTS demo_subscriptions("+
     "id TEXT PRIMARY KEY,owner_id TEXT NOT NULL,merchant_id TEXT NOT NULL,"+
     "version INTEGER NOT NULL CHECK(version>=1),"+
