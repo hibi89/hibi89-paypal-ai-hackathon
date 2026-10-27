@@ -6,6 +6,7 @@ import {join} from 'node:path';
 import {DatabaseSync} from 'node:sqlite';
 import {createSqliteLedger} from '../src/sqlite_ledger.mjs';
 import {createMarketplaceAiBudgetStore} from '../src/marketplace_ai_budget.mjs';
+import {createPilotCheckoutSessionStore} from '../src/pilot_checkout_session_store.mjs';
 import {inspectOwnerMvpReceipt} from '../src/owner_mvp_receipt.mjs';
 
 const ID='operator_mvp_01',ACTOR='local_operator',MERCHANT='A1B2C3D4E5F6G';
@@ -19,6 +20,12 @@ async function seed(directory,{paid=true,ai=true}={}){
  const ledger=createSqliteLedger({filename:join(directory,'checkout.sqlite')});
  await ledger.insertQuote({id:ID,ownerId:ACTOR,merchantId:MERCHANT});
  await ledger.approve({id:ID,actorId:ACTOR,expectedVersion:1,amountMinor:150});
+ const quote=await ledger.get(ID);
+ const session=createPilotCheckoutSessionStore({
+  filename:join(directory,'checkout_sessions.sqlite')
+ });
+ session.issue({quote,principal:{verified:true,actorId:ACTOR,merchantId:MERCHANT}});
+ session.close();
  const inputs={quoteId:ID,actorId:ACTOR,merchantId:MERCHANT};
  await ledger.claimOperation({...inputs,operation:'create'});
  const order=(status='APPROVED')=>({
