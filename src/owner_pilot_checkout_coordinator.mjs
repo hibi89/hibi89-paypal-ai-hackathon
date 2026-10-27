@@ -105,9 +105,21 @@ export function createOwnerPilotCheckoutCoordinator({ledger,transport,authorizeA
   }
   async function captureOwnerOrder(input){
     const {ctx}=await check(input,'CAPTURE_SANDBOX_ORDER');
-    // The existing orchestrator validates fresh provider APPROVED GET,
-    // persisted first claim and fresh GET of completed capture before PAID.
-    return payment.captureApproved(ctx);
+    // Buyer APPROVED GET may be slow. Revalidate the *current* durable proof
+    // before claiming and immediately before outbound CAPTURE POST. The proof
+    // can be revoked while the provider GET is in progress.
+    const beforeCapturePost=async()=>{
+      const current=await ledger.get(ctx.quoteId);
+      if(!current||current.id!==ctx.quoteId||
+         current.ownerId!==ctx.actorId||current.merchantId!==ctx.merchantId||
+         current.status!=='APPROVED'||current.approval?.actorId!==ctx.actorId)
+        deny('OWNER_PILOT_APPROVED_QUOTE_REQUIRED');
+      const bound=boundServerSessionFromStoredProof(input.sessionProof,current);
+      if(bound.actorId!==ctx.actorId||bound.merchantId!==ctx.merchantId)
+        deny('OWNER_PILOT_SCOPE_REQUIRED');
+    };
+    // Provider APPROVED GET is still mandatory; UNKNOWN never re-POSTs.
+    return payment.captureApproved(ctx,{beforeCapturePost});
   }
   async function reconcileOwnerCapture(input){
     const {ctx}=await check(input);
