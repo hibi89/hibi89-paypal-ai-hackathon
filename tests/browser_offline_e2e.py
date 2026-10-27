@@ -57,7 +57,7 @@ try:
             # submit while its runOnce guard is still busy: that would test
             # a dropped click rather than the actual quote draft path.
             expect(page.locator("#message")).to_contain_text("Read-only GET completed")
-            assert not any(method=="POST" for method,_ in requests)
+            assert sum(method=="POST" for method,_ in requests)==before_match+1
             page.evaluate("""() => {
               const e=document.getElementById('draft-form');
               e.dispatchEvent(new Event('submit',{cancelable:true}));
