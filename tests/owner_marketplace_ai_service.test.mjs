@@ -29,7 +29,7 @@ function fixture({result={skills:['web','payments']},failure=false,authorized=tr
   resolveTrustedActor:async handle=>handle==='trusted'?identity:null,
   authorizeRequest:async action=>{actions.push(action);return authorized;}
  });
- return {folder,calls,actions,service,store:()=>store,filename,
+ return {folder,calls,actions,provider,service,store:()=>store,filename,
   reopen(){store.close();store=createMarketplaceAiBudgetStore({filename});},
   close(){store.close();rmSync(folder,{recursive:true,force:true})}};
 }
@@ -223,4 +223,24 @@ test('legacy committed reservation migrates without fabricating classification',
   assert.equal(x.reason,'LEGACY_RESULT_UNAVAILABLE');
   assert.throws(()=>store.claim(body),{code:'MARKETPLACE_AI_BUDGET_USED'});
  }finally{store?.close();rmSync(folder,{recursive:true,force:true});}
+});
+
+test('AI authorization rejects revoked session or switched merchant before quota claim',withFixture({},async f=>{
+ let current=identity;
+ let transition=()=>{current=null;};
+ const svc=()=>createOwnerMarketplaceAiService({
+  store:f.store(),provider:f.provider,
+  resolveTrustedActor:async()=>current,
+  authorizeRequest:async()=>{transition();return true;}
+ });
+ await assert.rejects(svc().classify({sessionHandle:'trusted',brief}),
+  {code:'VERIFIED_MARKETPLACE_OWNER_REQUIRED'});
+ assert.equal(f.store().status(body),null);
+ assert.equal(f.calls.length,0);
+ current=identity;
+ transition=()=>{current={...identity,merchantId:'other-merchant'};};
+ await assert.rejects(svc().classify({sessionHandle:'trusted',brief}),
+  {code:'MARKETPLACE_AI_SCOPE_CHANGED_DURING_CONSENT'});
+ assert.equal(f.store().status(body),null);
+ assert.equal(f.calls.length,0);
 });

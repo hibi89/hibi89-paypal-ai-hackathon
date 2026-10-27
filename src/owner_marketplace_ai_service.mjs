@@ -36,6 +36,11 @@ export function createOwnerMarketplaceAiService({store,provider,
       briefHash:createHash('sha256').update(brief).digest('hex')
     }));
     if(permitted!==true)deny('MARKETPLACE_AI_CONSENT_REQUIRED');
+    // Consent can await an external UI. Recheck the trusted host session after
+    // that await, before spending the one-shot budget or sending model text.
+    const current=await checkedScope(sessionHandle,brief);
+    if(current.actorId!==scope.actorId||current.merchantId!==scope.merchantId)
+      deny('MARKETPLACE_AI_SCOPE_CHANGED_DURING_CONSENT');
     store.claim(scope);
     try{
       const result=await provider({brief});
