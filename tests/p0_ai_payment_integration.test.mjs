@@ -62,7 +62,8 @@ function fixture(){
  const fakeGemini=async()=>{aiCalls++;return {source:'GEMINI_API',suggestedMinor:9900};};
  Object.defineProperty(fakeGemini,'requiresExternalConsent',{value:true});
  const api=createQuoteApi({repository:db,
-  resolveSession:async()=>({verified:true,actorId:'owner',csrfToken:'local-csrf'}),
+  resolveSession:async()=>({verified:true,actorId:'owner',merchantId:'merchant',csrfToken:'local-csrf'}),
+  authorizeExternalAi:async()=>true,allowAiPricingExperiment:true,
   draftProvider:fakeGemini});
  return {db,api,calls,state,get aiCalls(){return aiCalls;},
   payment:()=>createSandboxPaymentOrchestrator({ledger:db,transport}),
