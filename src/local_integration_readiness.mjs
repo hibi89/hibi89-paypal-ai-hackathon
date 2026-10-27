@@ -2,6 +2,10 @@
 // No money, identities, production readiness or PayPal state are inferred here.
 export function evaluateLocalIntegration({quote,contract,subscription}={}){
   const approved=quote?.status==='APPROVED' &&
+    typeof quote.ownerId==='string' && quote.ownerId.length>0 &&
+    typeof quote.merchantId==='string' && quote.merchantId.length>0 &&
+    typeof quote.currency==='string' && quote.currency.length===3 &&
+    Number.isSafeInteger(quote.version) && quote.version>0 &&
     quote.approval?.actorId===quote.ownerId &&
     quote.approval?.quoteVersion===quote.version &&
     Number.isSafeInteger(quote.approval?.amountMinor) &&
@@ -10,6 +14,7 @@ export function evaluateLocalIntegration({quote,contract,subscription}={}){
     contract.quoteVersion===quote.version&&contract.ownerId===quote.ownerId&&
     contract.merchantId===quote.merchantId&&
     contract.currency===quote.currency&&
+    Number.isSafeInteger(contract.amountMinor)&&contract.amountMinor>0&&
     contract.amountMinor===quote.approval.amountMinor);
   const milestones=Array.isArray(contract?.milestones)?contract.milestones:[];
   const validMilestones=milestones.length>0&&milestones.every(m=>
