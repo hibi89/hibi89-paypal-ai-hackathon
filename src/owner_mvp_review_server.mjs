@@ -114,10 +114,13 @@ export async function startOwnerMvpReview({receipt,port=0}={}){
    }
    const entries=[...url.searchParams.keys()];
    const unknown=entries.some(k=>!['candidate','ack'].includes(k));
+   // Preserve the existing GET-only endpoint contract: unknown URLs are 404.
+   // Malformed values for explicitly recognized worksheet fields are 400.
+   if(unknown){res.writeHead(404,headers);res.end('NOT_FOUND');return;}
    const duplicates=new Set(entries).size!==entries.length;
    const candidate=url.searchParams.get('candidate');
    const ack=url.searchParams.get('ack');
-   if(unknown||duplicates||(ack!==null&&ack!=='1')||
+   if(duplicates||(ack!==null&&ack!=='1')||
       (candidate===null&&ack!==null)||
       (candidate!==null&&!/^synthetic-(?:web|automation|data)$/.test(candidate))){
      res.writeHead(400,headers);res.end('INVALID_REVIEW_SELECTION');return;

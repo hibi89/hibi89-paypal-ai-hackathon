@@ -90,11 +90,15 @@ withApp(async app=>{
 test('malformed and forged selection rejects early with no payment authority',
 withApp(async app=>{
  for(const q of ['?candidate=real-person','?candidate=synthetic-web&candidate=synthetic-data',
-  '?ack=1','?ack=true&candidate=synthetic-web','?token=pay',
-  '?candidate=synthetic-web&ack=1&merchant=forged']){
+  '?ack=1','?ack=true&candidate=synthetic-web']){
    const res=await fetch(app.url+q);
    assert.equal(res.status,400,q);
    assert.equal(await res.text(),'INVALID_REVIEW_SELECTION');
+ }
+ for(const q of ['?token=pay','?candidate=synthetic-web&ack=1&merchant=forged']){
+   const res=await fetch(app.url+q);
+   assert.equal(res.status,404,q);
+   assert.equal(await res.text(),'NOT_FOUND');
  }
 }));
 test('no candidate worksheet or GET authorization when local records are unverified',async()=>{
