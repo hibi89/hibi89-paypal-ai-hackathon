@@ -13,11 +13,11 @@ export function evaluateLocalIntegration({quote,contract,subscription}={}){
     contract.amountMinor===quote.approval.amountMinor);
   const milestones=Array.isArray(contract?.milestones)?contract.milestones:[];
   const validMilestones=milestones.length>0&&milestones.every(m=>
-    Number.isSafeInteger(m.amountMinor)&&m.amountMinor>0);
+    Number.isSafeInteger(m?.amountMinor)&&m.amountMinor>0);
   const amountTotal=validMilestones?milestones.reduce((sum,m)=>sum+m.amountMinor,0):null;
   const amountConsistent=linked&&validMilestones&&Number.isSafeInteger(amountTotal)&&
     amountTotal===contract.amountMinor;
-  const delivered=amountConsistent&&milestones.every(m=>m.state==='ACCEPTED');
+  const delivered=amountConsistent&&milestones.every(m=>m?.state==='ACCEPTED');
   const subState=subscription?.state??'UNAVAILABLE';
   const subValid=subscription?.mode==='OFFLINE_SCENARIO_NO_PROVIDER' &&
     subscription?.paymentEvidence==='NOT_VERIFIED';
