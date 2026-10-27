@@ -13,6 +13,7 @@ import {createGeminiMarketplaceSkillProvider} from '../src/gemini_marketplace_pr
 import {createSandboxTransport} from '../src/paypal_sandbox_transport.mjs';
 import {createOwnerMvpFlow,MVP_BRIEF} from '../src/owner_mvp_flow.mjs';
 import {validateMarketplaceBrief} from '../src/gemini_marketplace_provider.mjs';
+import {startOwnerMvpCallbackLanding} from '../src/owner_mvp_callback_landing.mjs';
 
 const required=['--execute','--owner-authorized','--free-tier-confirmed',
   '--sandbox-only','--buyer-is-sandbox-personal'];
@@ -48,14 +49,28 @@ if(flags.length!==required.length||set.size!==required.length||
     }else{
       // One durable fixed quote/order per private project directory.
       const folder=join(homedir(),'.paypal-ai-mvp-private');
-      let ledger=null,sessionStore=null,aiStore=null;
+      let ledger=null,sessionStore=null,aiStore=null,landing=null;
       let publicState='NOT_STARTED';
       try{
         const supplied=await rl.question(
           'FICTIONAL task description, 8-500 chars (Enter = fixed synthetic demo): ');
         const brief=supplied.trim()?supplied:MVP_BRIEF;
         validateMarketplaceBrief(brief);
-        // No SQLite allocations before validating user-entered fictional text.
+        const configuredPort=env.PAYPAL_PILOT_CALLBACK_PORT??'8787';
+        if(!/^(?:0|[1-9][0-9]{0,4})$/.test(configuredPort)||
+          Number(configuredPort)<1024||Number(configuredPort)>65535)
+          throw Error('INVALID_CALLBACK_LOCAL_PORT');
+        landing=await startOwnerMvpCallbackLanding({
+          port:Number(configuredPort),publicOrigin:origin
+        });
+        stderr.write('Local navigation callback: '+landing.localUrl+'\n');
+        stderr.write('Public HTTPS return/cancel must proxy to local callback:\n'+
+          origin+'/checkout/paypal/return\n'+
+          origin+'/checkout/paypal/cancel\n');
+        if(!await confirm('PUBLIC HTTPS CALLBACK READY',
+          'Confirm BOTH HTTPS URLs above open the navigation-only page. No buyer approval is implied.'))
+          throw Error('CALLBACK_REACHABILITY_NOT_CONFIRMED');
+        // No SQLite allocations before brief validation or callback preflight.
         mkdirSync(folder,{recursive:true,mode:0o700});
         ledger=createSqliteLedger({filename:join(folder,'checkout.sqlite')});
         sessionStore=createPilotCheckoutSessionStore({
@@ -131,6 +146,7 @@ if(flags.length!==required.length||set.size!==required.length||
         try{sessionStore?.close()}catch{}
         try{aiStore?.close()}catch{}
         try{ledger?.close()}catch{}
+        try{await landing?.close()}catch{}
       }
     }
   }
