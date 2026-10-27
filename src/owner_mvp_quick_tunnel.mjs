@@ -4,7 +4,7 @@ import {spawn} from 'node:child_process';
 const fail=code=>{const e=new Error(code);e.code=code;throw e;};
 export function parseOwnerQuickTunnelOrigin(text){
   if(typeof text!=='string')return null;
-  const candidates=text.match(/https:\/\/[a-z0-9-]+\.trycloudflare\.com\b/gi)||[];
+  const candidates=text.match(/https:\/\/[a-z0-9-]+\.trycloudflare\.com(?![a-z0-9.-])/gi)||[];
   for(const value of candidates){
     try{
       const url=new URL(value);
