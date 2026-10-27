@@ -215,3 +215,35 @@ withFixture(async f=>{
  assert.equal(f.calls.length,0);
  assert.equal(await f.ledger.get('operator_mvp_01'),null);
 }));
+
+
+test('PayPal buyer return landing never authorizes capture; provider GET and human approval still required',withFixture(async f=>{
+  const {startOwnerMvpCallbackLanding}=await import('../src/owner_mvp_callback_landing.mjs');
+  const landing=await startOwnerMvpCallbackLanding({
+    port:0,publicOrigin:'https://checkout.example.org'
+  });
+  try{
+    const operator=f.create();
+    await operator.classify();
+    await operator.approveQuote();
+    const order=await operator.createOrder();
+    assert.equal(order.status,'BUYER_APPROVAL_PENDING');
+    const forged=await fetch(landing.localUrl+'/checkout/paypal/return'+
+      '?token=MVPORDER1&PayerID=FAKE&status=COMPLETED');
+    assert.equal(forged.status,200);
+    assert.match(await forged.text(),/navigation landing only/);
+    assert.equal((await operator.refresh()).status,'BUYER_APPROVAL_PENDING');
+    const blocked=await operator.capture();
+    assert.equal(blocked.status,'BUYER_APPROVAL_PENDING');
+    assert.equal(posts(f.calls,'/v2/checkout/orders/MVPORDER1/capture'),0);
+    f.state.buyerApproved=true;
+    f.state.canCapture=false;
+    await assert.rejects(operator.capture(),{code:'OWNER_EXPLICIT_ACTION_AUTHORIZATION_REQUIRED'});
+    assert.equal(posts(f.calls,'/v2/checkout/orders/MVPORDER1/capture'),0);
+    f.state.canCapture=true;
+    const paid=await operator.capture();
+    assert.equal(paid.status,'PAID');
+    assert.equal(paid.paymentState,'VERIFIED_BY_GET');
+    assert.equal(posts(f.calls,'/v2/checkout/orders/MVPORDER1/capture'),1);
+  }finally{await landing.close()}
+}));
