@@ -73,6 +73,7 @@ test('D13: missing tenant identity or invalid quote version cannot qualify',()=>
  }
 });
 test('D13: synthetic contract payment state cannot impersonate verified PayPal settlement',()=>{
+ assert.equal(evaluateLocalIntegration({}).contractPayment,'NOT_CAPTURED');
  const quote={id:'q',ownerId:'o',merchantId:'m',currency:'USD',version:1,
    status:'APPROVED',approval:{actorId:'o',quoteVersion:1,amountMinor:1200}};
  const contract={quoteId:'q',quoteVersion:1,ownerId:'o',merchantId:'m',currency:'USD',
