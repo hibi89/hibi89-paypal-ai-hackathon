@@ -1,37 +1,54 @@
-> **[현재 운영 안내 — 2026-10-24] 새 ChatGPT 채팅방에는 다음 한 문장만 입력:** `[페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈]`.  
-> **PayPal 총괄 겸 개발자는** [`lead/paypal` 최신 시작 문서](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/lead/paypal/CHAT_BOOTSTRAP.md) → [현재 작업 포인터](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/lead/paypal/docs/roles/lead/LEAD_ACTIVE_WORK.md) → [검증·진행률 원장](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/lead/paypal/data/paypal_daily_progress.json)을 보고 해당 NEXT 작업을 직접 구현·검수·GitHub 기록한다.  
-> **`main`은 과거 릴리스/문서 스냅샷이며, 아래 오래된 4채팅/기능별 worker 구조 및 작업 미착수 설명은 역사적 기록이다.** 작업용 지시는 반드시 `lead/paypal`을 우선한다. 최근 확인 기준 NEXT D07 0%/100%·잔여 예상 4h/안전 8h, D03 Sandbox/AI 접근 차단·D04 실제 AI 미검증. 배경 자동 개발/커밋은 아니다.
+> **2026-10-27 CURRENT PRODUCT NORTH STAR:** **Global AI Commerce Community**, not a freelancer-only destination. The AI freelancer marketplace is the first contest-targeted transaction vertical (real Sandbox E2E is still unverified). [Read the owner-approved market/community thesis and PayPal sponsor opportunity recommendation](docs/architecture/GLOBAL_AI_COMMERCE_COMMUNITY_NORTH_STAR_20261027.md) for user-generated expansion candidates, risk-adjusted market selection and economic caveats. **Strategy only; the 2026-11-13 contest submission freeze and real PayPal Sandbox + AI E2E obligations still control implementation.** No second vertical or sponsor partnership has been launched or authorized.
 
-> **2026-10-24 새 채팅 한 줄 재개:** `[해커톤총괄 깃헙 레포지토리 확인하고 작업하셈]`  
-> `PayPal AI Hackathon`의 현행 총괄 겸 직접 개발자 업무는 [lead/paypal 브랜치의 CHAT_BOOTSTRAP.md](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/lead/paypal/CHAT_BOOTSTRAP.md)에서 복원한다. **현재 작업은 `main`이 아닌 `lead/paypal`의 `docs/roles/lead/LEAD_ACTIVE_WORK.md`가 기준**이다. 통합 상황실: [CHAT_BOOTSTRAP.md](https://github.com/hibi89/hackathon-command-center-2026/blob/main/CHAT_BOOTSTRAP.md). 별도 작업자 채팅/옛 디스패처는 이력만 보존.
+> **2026-10-27 LATEST USER CLARIFICATION — EXACT NAMED TOOLCHAIN LOCKED (PayPal):** First read [concrete software/API/DB/model/deploy/QA tools](docs/architecture/FINAL_TOOLCHAIN_20261027.md). No extra features before initial submission; prior [submission freeze](SUBMISSION_SCOPE_FREEZE_20261027.md) still applies. This documentation does not prove functionality, model training, a deployed app, submitted entry or authorization for external payments/data.
 
-# PayPal AI Hackathon
-> **3개 대회 전체 일정·충돌·제출 마감:** [docs/COMPETITION_SCHEDULE.md](docs/COMPETITION_SCHEDULE.md) (**2026-10-24 KST 공시**). 이 브랜치에서 작업을 시작할 때 마감과 내부 조기 제출 목표를 확인하며 공식 변경 시 대회 총괄에게 보고한다.
+> **2026-10-25 최신 P0 영속 Checkout Session 보안 검증 — IMPLEMENTED_VERIFIED (OFFLINE):** 구매자 승인 예정 주문 호출 전에 사용자 제공 `{verified:true}` 객체가 통과하던 위험을 제거. `src/pilot_checkout_session_store.mjs` on-disk SQLite(무작위 bearer SHA-256만 저장), 15분 만료·철회·재시작 검증·견적/판매자/금액 결합, 비공개 WeakMap 브랜드 proof; `createOwnerPilotOrderOnce`는 유효한 영속 세션 proof 필수, 잘못된 세션이면 OAuth/Orders **0회**. 실 외부 PayPal/Gemini 호출·주문·캡처·공개배포 **0회**. 신규 9개 Node 테스트, CI 첫 `cb412a7` 실패(검증 헬퍼 범위 참조) → 수정 [`ed8fe928`](https://github.com/hibi89/hibi89-paypal-ai-hackathon/commit/ed8fe9280916b48ba5a3a14b65176765bf3ae69a), [Actions #40112289191](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40112289191) **347/347 Node + Chromium + 18일 원장 PASS**. 이것은 실제 서버 로그인/실 HTTPS 콜백이나 PayPal Business merchant ↔ OAuth 앱 소유권 증거가 아니므로 **D03 65% PARTIAL**, **D04 80% PARTIAL**, **D15 20% PARTIAL**(활성 계획 기본 잔여 5h/안전 10h), 18일 DONE12/PARTIAL3/BLOCKED0/NOT_STARTED3 유지. 별도 주문/캡처/AI 호출은 사용자 추가 승인 전 금지. [상세](docs/technical/PPL_P0_PERSISTED_CHECKOUT_SESSION_PROOF_20261025.md).
 
+> **2026-10-25 P0 OWNER PILOT TRANSPORT BRIDGE — 최신 완료:** 실 PayPal Sandbox OAuth·Gemini 생성은 이전 사용자 1회씩 HTTP 200 검증. 이번 기능에서는 **외부 API/결제/배포 요청 0회**. `src/paypal_sandbox_transport.mjs`에 명시적 내부 `createOwnerPilotOrderOnce` 추가: 검증된 영속 첫-claim → 안전한 판매자·세션·가상 $1~$2·HTTPS callback 계획 → Sandbox OAuth/Orders CREATE 1회 → 주문/수취인/금액/승인 상태 GET 증명. 공개 HTTP 노출·자동 Capture 없음; POST 불명확 시 `UNKNOWN`·재POST 금지. [기능 `293c0bb`](https://github.com/hibi89/hibi89-paypal-ai-hackathon/commit/293c0bb07ba625a226d2ab079598664b1bac827f) [CI #40111106248](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40111106248) **338/338 Node PASS, Chromium 로컬 E2E PASS, 18일 원장 PASS**. 실제 판매자·REST 앱 결합, 인증된 HTTPS callback 실서비스, 가상 주문·구매자 승인·캡처 **NOT_TESTED**. **D03 65% PARTIAL**(기본 잔여 2h/안전 포함 5h), **D04 80% PARTIAL**, 활성 **D15 20% PARTIAL**(기본 5h/안전 10h), 실제 투입 시간 미계측, 전체 DONE12/PARTIAL3/BLOCKED0/NOT_STARTED3 유지. **NEXT:** 별도 owner 승인·실 인증/merchant 검증 없이는 Sandbox 주문/캡처/AI 추가호출 금지. [상세](docs/technical/PPL_P0_SANDBOX_PILOT_TRANSPORT_BRIDGE_20261025.md).
 
-> 참가자는 **1명**, 개발 역할은 독립된 AI 채팅방 4개(대회 총괄 1 + 기능 담당 3). **2026-10-24 KST 초기 구조**. 이 저장소는 사용자가 생성한 **Public** 저장소다.
+> **2026-10-25 P0 Sandbox buyer checkout payload PLANNED_OFFLINE (최신):** 실 OAuth·Gemini 생성 각 1회 HTTP 200은 이전 사용자 로컬 증거. 이번 작업은 **외부 요청 0회**로 승인 견적·13자 PayPal 판매자·서버 검증 세션·정상 HTTPS 복귀/취소 URL·가상 USD $1–$2 상한을 묶어 Orders v2 `payment_source.paypal.experience_context` 요청을 구성하는 순수 모듈 및 **7개 신규 회귀 테스트**. 기능 SHA [`ee7bd380`](https://github.com/hibi89/hibi89-paypal-ai-hackathon/commit/ee7bd3807c50734764432598de8e3e5280920c04), [CI #40110489991](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40110489991) **332/332 Node + Chromium + 18일 원장 PASS**. **실 API CREATE/BUYER/CAPTURE 불실행**, 콜백 서버/세션 영속 검증·가맹점과 OAuth 앱 실제 연결 미확보. D03 **65% PARTIAL**(기본 잔여 2h/예비 포함 5h), D04 **80% PARTIAL**, D15 **20% PARTIAL**(기본 잔여 5h/예비 포함 10h), 실투입시간 미계측·18일 DONE12/PARTIAL3/NOT_STARTED3 유지. **NEXT:** 별도 owner 승인 전까지 신규 Sandbox 주문/캡처·AI 호출·운영 배포 금지; 인증된 HTTPS 세션·가맹점 결합 확보 후 단발 실 거래 검증. [구현/검증/차단 명세](docs/technical/PPL_P0_SANDBOX_PILOT_ORDER_PLAN_20261025.md).
 
-- 대회 목표(잠정): **AI 프리랜서 계약·결제 자동화 Agent (잠정)**. 주제와 기능 범위는 사용자 승인 전 확정하지 않는다.
-- 제출 마감: **2026-11-13 05:00 KST**.
-- 전체 일정·상위 보고: [2026 통합 해커톤 상황실](https://github.com/hibi89/hackathon-command-center-2026/blob/main/START_HERE.md).
-- 초기 단계: **브랜치 5개·운영 문서 구축 및 원격 존재 검증 완료**, 코드·실 API·제품·제출물 구현은 미착수.
+> **2026-10-25 actual provider success, owner-operated:** PayPal Sandbox OAuth HTTP 200 and Gemini gemini-3.5-flash-lite generation HTTP 200, one call each. D03=65% PARTIAL (Orders/approval/capture 35% outstanding); D04=80% PARTIAL (real AI quote integration not yet verified); D15=20%. 18-day DONE12/PARTIAL3/BLOCKED0/NOT_STARTED3. No secrets or real payments; rerun one-shot disallowed; checkout needs separately scoped consent. [Proof](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/lead/paypal/docs/technical/PPL_P0_REAL_PROVIDER_FIRST_SUCCESS_20261025.md).
 
-## 역할 브랜치
-- `main`: 검증된 코드·최종 통합 기준.
-- `lead/paypal`: 대회 총괄, 설계/검수/기획/제출/상위 보고.
-- `feature/quote-payment`: 기능 개발 담당 1.
-- `feature/delivery`: 기능 개발 담당 2.
-- `feature/subscriptions`: 기능 개발 담당 3.
+# PayPal AI Hackathon — Freelancer Payment Agent
 
-## 역할별 새 채팅 진입점
-**[docs/ROLE_COORDINATION.md](docs/ROLE_COORDINATION.md)**에서 총괄 및 기능 담당 3명의 전담 브랜치·인수인계·메시지함을 바로 연다. 이 안내서는 `main`에만 존재하며 역할별 최신 상태는 각 기능 브랜치에 있다.
+**새 채팅 한 문장:** [페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈]. 기준 lead/paypal → [CHAT_BOOTSTRAP](CHAT_BOOTSTRAP.md), [HANDOFF](HANDOFF.md), [STATUS](STATUS.md), [CURRENT TASK](docs/roles/lead/LEAD_ACTIVE_WORK.md), [18일 JSON](data/paypal_daily_progress.json).
 
-## 읽을 문서
-새 AI 담당자는 자기 **브랜치**에서 `HANDOFF.md` → `STATUS.md` → `AGENTS.md` → `REQUIREMENTS.md` → 역할별 `docs/roles/<role>/OPERATIONS.md`를 읽는다. 역할별 문서가 다른 브랜치에도 있다고 가정하지 않는다.
+**2026-10-24:** DONE12/PARTIAL2/BLOCKED1/NOT_STARTED3. D14 100% (오프라인 보안+승인된 MIT LICENSE+영문 재현 초안), [CI 40079691820](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40079691820) Node 180/180 + 로컬 Chromium PASS. 현재 PPL-D15 20%/기본 5h/안전 10h.
 
-- [공통 규칙](AGENTS.md)
-- [요구 사항](REQUIREMENTS.md)
-- [진행 현황](STATUS.md)
-- [브랜치 운영](docs/BRANCH_WORKFLOW.md)
+제품: 모의 견적→인간 승인→계약·마일스톤·납품/검수→합성 구독, GET-only 통합 로컬 데모. 현재 127.0.0.1 전용이며 **실제 결제·실제 AI·공개 서비스·제출 성공이 아님**. 실 PayPal 주문/캡처 POST는 503 차단, 구독도 합성.
 
-**중요:** 어떤 비밀값·고객 개인정보도 공개 저장소에 저장하지 않는다. 개발·범위·권한·비용 확장은 사전 승인 대상이다.
+실행: Node 22.5 이상, **npm run preflight:reviewer** (로컬 GET 4개/외부API 0/정상 종료0) → npm test → npm run demo. **npm run preflight:submission** 은 실증/영상/제출 증거가 없어 현재 의도적으로 종료2(실패 아님). python3 render_master_progress.py --check. [English reviewer guide](docs/JUDGE_REPRODUCTION_EN.md) · [video draft](docs/VIDEO_STORYBOARD_EN.md) · [MIT license](LICENSE) · [license decision](docs/LICENSING_DECISION.md). User approved MIT with Copyright (c) 2026 hibi89; package.json SPDX MIT.
+
+브랜치: lead/paypal 개발 정본, main 별도 릴리스, 3개 feature 이력 브랜치 보존. [AGENTS](AGENTS.md), [REQUIREMENTS](REQUIREMENTS.md), [MASTER_PROGRESS](MASTER_PROGRESS.md). 이전 문서/코드의 전체 이력은 Git SHA 31a89d12dad680627c0cefd92ce61928dc6fb337 및 관련 technical 문서로 복원.
+
+D03 실 Business/Personal Sandbox+실 무료 AI 계정 BLOCKED; D04 실 AI 부분 미완료. D15 정적/로컬 사전점검 Node 184 PASS, 외부 호스팅 사용자 별도 승인 필요. D16–D18 운영 검증·영상·Devpost 아직 미완료. 공식 2026-11-13 05:00 KST 마감, 내부 11/11 목표. 유료/Live/실고객/공개 배포를 무단 진행하지 않음.
+
+## D15 hosting preflight (offline only)
+- [Cloudflare vs local decision and evidence](docs/technical/PPL_D15_HOSTING_PREFLIGHT_20261024.md).
+- `npm run preflight:hosting`: emits explicit blocker inventory and exits **2** on expected no-deploy condition. This does NOT host or configure a service.
+- [GitHub Actions #40080872405](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40080872405): 184 Node PASS + Chromium local PASS; no Production URL evidence.
+
+## D15 offline D1 payment idempotency prototype
+[SQL migration candidate](migrations/d1/0001_payment_claims.sql) · [safe internal claim helper](src/d1_claim.mjs) · [9 offline Node tests](tests/d1_claim.test.mjs) · [design and unsatisfied release gates](docs/technical/PPL_D15_D1_CLAIM_FENCE_20261024.md). [GitHub Actions #40081717845](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40081717845) Node 193/193 and local Chromium PASS. **No actual D1/PayPal/AI or public deployment proof.**
+
+### D15 internal claim-recovery boundary (offline)
+[Read-only/authenticated-tenant recovery prototype](src/d1_recovery.mjs) · [11 local regression tests](tests/d1_recovery.test.mjs) · [assurance and remaining gaps](docs/technical/PPL_D15_D1_RECOVERY_AUTH_20261024.md). [Actions #40082429683](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40082429683) Node 204/204 + Chromium localhost PASS. Explicitly NOT actual D1, real PayPal GET or public authentication.
+
+### D15 local Sandbox GET proof / D1 CAS (not remote PayPal)
+[Private GET reconciliation](src/d1_sandbox_get_reconcile.mjs) · [15 synthetic tests](tests/d1_sandbox_get_reconcile.test.mjs) · [verification and blockers](docs/technical/PPL_D15_SANDBOX_GET_CAS_20261024.md). [Actions #40083028520](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40083028520) Node **219/219**, local Chromium PASS, zero real PayPal/D1 calls. D15 remains 20% because Production acceptance is not met.
+
+### Latest D15 offline transport composition (2026-10-24)
+[Code](src/offline_sandbox_d1_harness.mjs) · [13 regression tests](tests/offline_sandbox_d1_harness.test.mjs) · [verified boundaries & next action](docs/technical/PPL_D15_OFFLINE_TRANSPORT_COMPOSITION_20261024.md) · [Actions #40084869412](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40084869412) Node **232/232**, Chromium localhost PASS. No real PayPal, AI, Cloudflare D1 or public deployment. D15 20% PARTIAL.
+
+## P0 REAL provider access readiness — owner action, no external calls
+**The actual contest blocker is real PayPal Sandbox + one truly free AI generation, NOT more mock D1 tests.** Follow [owner-only PayPal/Gemini setup & non-secret evidence guide](docs/technical/PPL_P0_REAL_PROVIDER_UNBLOCK_20261024.md). Run `npm run preflight:p0`: it checks *only names/presence* of private local variables, never performs OAuth or a provider call, never prints secrets and exits 2 while external evidence is missing. [Actions #40086442379](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40086442379) Node 240/240 and local Chromium PASS; real PayPal/AI/D1 still NOT_TESTED. No payments, Live, paid AI, public deploy or keys in GitHub/chat.
+
+## P0 owner-only single-call real provider evidence probe (prepared, NOT executed)
+[Safe execution and limitations](docs/technical/PPL_P0_OWNER_ONE_SHOT_REAL_API_PROBE_20261024.md) · `src/p0_one_shot_probe.mjs` · `scripts/p0_one_shot_probe.mjs`. By default this exits 2 with zero network. Optional owner-authorized sandbox OAuth or one free-confirmed Gemini synthetic text call requires explicit CLI flags and private environment variables; **neither was run**. [GitHub CI #40087887623](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40087887623) 251 Node pass and local Chromium pass (fixture only). D03 0% BLOCKED, D04 80% PARTIAL, D15 20% PARTIAL until real receipts.
+
+## Reviewer/source-release preflight (2026-10-24)
+[Corrected English reproduction guide](docs/JUDGE_REPRODUCTION_EN.md) · [static submission evidence auditor](src/submission_evidence_gate.mjs) · `npm run preflight:submission` (intentionally exits **2** because real Sandbox/AI/browser/video/Devpost evidence is missing; zero external API calls). [GitHub Actions #40088755056](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40088755056) — **259/259 Node tests**, localhost Chromium and 18-day schedule PASS. Root MIT LICENSE already exists. This is **not** official release or submission acceptance.
+
+### P0 Gemini new-project model availability (2026-10-24)
+The two protected private Gemini adapters now pin `gemini-3.5-flash-lite` via `src/gemini_p0_model.mjs` because Google restricts legacy 2.5 access for new projects. A public Free Tier price listing is **not** owner account proof. Real provider calls, paid fallback and deployment remain forbidden without separate approval. [Audit](docs/technical/PPL_P0_GEMINI_NEW_PROJECT_MODEL_20261024.md).

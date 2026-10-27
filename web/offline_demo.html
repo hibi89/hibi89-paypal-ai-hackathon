@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Freelancer Quote Agent — Offline Demo</title>
+<style>
+:root{font:16px/1.5 system-ui,sans-serif;background:#f4f6fa;color:#16243a}
+*{box-sizing:border-box}body{max-width:760px;margin:0 auto;padding:28px 18px}
+h1{margin:0 0 8px}.hint{font-size:.9rem;color:#455368}
+.warning{background:#fff2cc;border:1px solid #b8801a;border-radius:10px;padding:12px 16px}
+main{display:grid;gap:16px;margin-top:18px}.panel{background:#fff;border:1px solid #d6dfed;border-radius:14px;padding:20px}
+label{display:block;font-weight:650;margin:8px 0 4px}
+textarea,input{display:block;width:100%;padding:10px;border:1px solid #8492a5;border-radius:8px;font:inherit}
+button{cursor:pointer;font:inherit;border:0;border-radius:8px;padding:10px 14px;background:#1e4582;color:white;margin:10px 6px 0 0}
+button:disabled{opacity:.45;cursor:not-allowed}
+[hidden]{display:none!important}.delivery-status{font-weight:700}.contract-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.contract-grid p{margin:4px 0}.contract-actions{display:flex;flex-wrap:wrap;gap:6px}
+code{background:#e8edf5;padding:2px 5px;border-radius:4px}
+#message{min-height:2em}#message[role=status]{white-space:pre-wrap}
+strong{font-weight:700}.meta{color:#485972;font-size:.9rem}
+</style>
+</head>
+<body>
+<header>
+<h1>Freelancer Quote Agent</h1>
+<p class="warning"><strong>Offline demonstration — NOT REAL AI OR PAYPAL.</strong> The price is a deterministic placeholder. No external model or payment is called. This example uses a synthetic user in a loopback-only server; do not deploy it publicly.</p>
+</header>
+<main id="demo-main" aria-busy="false">
+<section class="panel" id="marketplace-panel" aria-labelledby="marketplace-heading">
+<h2 id="marketplace-heading">0. AI Work Marketplace — matching fixture</h2>
+<p class="meta">Three fictional freelancer profiles. Deterministic eligibility only; no real sellers, Gemini API, market pricing dataset or PayPal checkout. Input synthetic briefs only.</p>
+<form id="marketplace-form">
+<label for="marketplace-brief">Synthetic client project request</label>
+<textarea id="marketplace-brief" rows="3" minlength="8" maxlength="500" required>Build an ecommerce website with PayPal checkout</textarea>
+<button type="submit" id="marketplace-submit">Match 3 synthetic profiles (no AI)</button>
+</form>
+<div id="marketplace-results" role="status" aria-live="polite">Click Match to inspect fictional skills and eligibility. Reference price: DATA_INSUFFICIENT.</div>
+<p class="meta" id="marketplace-selection-status" role="status" aria-live="polite">No candidate selected. Quote and payment unchanged.</p>
+</section>
+<section class="panel" id="quote-panel" aria-labelledby="current-heading">
+<h2 id="current-heading">Current quote</h2>
+<p id="quote-view">Loading local example…</p>
+<button type="button" id="refresh">Refresh quote (GET only)</button>
+</section>
+<section class="panel" id="draft-panel">
+<h2>1. Suggest a scope and a demo estimate</h2>
+<form id="draft-form">
+<label for="scope">Project scope (synthetic data only)</label>
+<textarea id="scope" rows="3" minlength="8" maxlength="500" required>Build an accessible and responsive freelancer portfolio landing page</textarea>
+<button type="submit" id="draft-submit">Generate OFFLINE MOCK draft</button>
+</form>
+<p class="meta">Editing or replacing a proposal increments the quote version and invalidates previous approval. If a payment was ever claimed for a quote, revisions are blocked.</p>
+</section>
+<section class="panel" id="approval-panel">
+<h2>2. Explicit human approval</h2>
+<form id="approve-form">
+<label for="dollars">Approved amount (USD; human chosen, not AI)</label>
+<input id="dollars" type="number" min="1" max="10000" step="0.01" value="50.00" required>
+<label><input id="confirm" type="checkbox" required style="display:inline;width:auto"> I approve this quote version and amount.</label>
+<button type="submit" id="approve-submit">Approve current quote</button>
+</form>
+<p class="meta">PayPal order and capture POST remain disabled until actual Sandbox verification.</p>
+</section>
+<section class="panel" id="payment-panel">
+<h2>3. Payment safety status</h2>
+<p><strong>Payment is DISABLED.</strong> No Live transactions, no Sandbox charges, no deployed provider integration.</p>
+<button type="button" id="payment-status">Check payment status (GET)</button>
+</section>
+<section class="panel" aria-labelledby="contract-heading" id="contract-panel">
+<h2 id="contract-heading">4. Contract &amp; delivery — OFFLINE MOCK</h2>
+<p class="meta" id="session-role">Synthetic session loading…</p>
+<p class="meta">A signed-off quote is not a paid or delivered contract. The reviewer is a separate server-bound synthetic session, not a browser-selectable role.</p>
+<div class="contract-grid">
+<div><p>Payment status</p><p id="contract-payment" class="delivery-status">NOT_CAPTURED</p></div>
+<div><p>Fulfillment status</p><p id="contract-fulfillment" class="delivery-status">NO_CONTRACT</p></div>
+</div>
+<p id="contract-view" role="status" aria-live="polite">Contract not yet created.</p>
+<div class="contract-actions">
+<button type="button" id="contract-create">Create contract from approved quote</button>
+<button type="button" id="contract-refresh">Refresh contract (GET only)</button>
+</div>
+<form id="delivery-form" hidden>
+<label for="delivery-note">Delivery evidence (synthetic only)</label>
+<textarea id="delivery-note" minlength="8" maxlength="1000" rows="2" required>Uploaded the completed synthetic deliverables</textarea>
+<button type="submit" id="delivery-submit">Submit milestone for review</button>
+</form>
+<div id="review-actions" hidden>
+<label for="review-note">Rejection reason (required for rejection)</label>
+<textarea id="review-note" rows="2" minlength="8" maxlength="1000">Missing requested synthetic assets</textarea>
+<button type="button" id="review-accept">Accept delivery</button>
+<button type="button" id="review-reject">Reject delivery</button>
+</div>
+<p id="contract-message" role="status" aria-live="polite"></p>
+</section>
+<section class="panel" id="subscription-panel" aria-labelledby="subscription-heading">
+<h2 id="subscription-heading">5. Subscription recovery — OFFLINE SYNTHETIC ONLY</h2>
+<p class="meta">No PayPal plans, subscriptions, billing, charges, webhooks or provider GETs are invoked. Each transition is a local training scenario. Cancellation is terminal for this synthetic subscription.</p>
+<div class="contract-grid">
+<div><p>Subscription lifecycle</p><p class="delivery-status" id="subscription-state">NOT_STARTED</p></div>
+<div><p>Payment evidence</p><p class="delivery-status" id="subscription-payment">NOT_VERIFIED</p></div>
+</div>
+<p id="subscription-details" role="status" aria-live="polite">Local subscription loading…</p>
+<div class="contract-actions">
+<button type="button" id="subscription-start">Simulate activation</button>
+<button type="button" id="subscription-fail">Simulate renewal failure</button>
+<button type="button" id="subscription-recover">Simulate GET-first recovery</button>
+<button type="button" id="subscription-cancel">Simulate cancellation</button>
+<button type="button" id="subscription-refresh">Read state (GET only)</button>
+</div>
+<p id="subscription-message" role="status" aria-live="polite"></p>
+</section>
+<section class="panel" id="evidence-panel" aria-labelledby="evidence-heading">
+<h2 id="evidence-heading">7. Trust &amp; data evidence — LOCAL SQLITE ONLY</h2>
+<p class="meta">SOVIA-style policy snapshot, DBVORA-inspired SQLite read-only integrity and synthetic BI counts. These are real reads from the local demo database, including SHA-256 chained local change metadata (not independently signed/anchored). No live PayPal transactions, real market demand or independent product integration.</p>
+<p id="evidence-details" role="status" aria-live="polite">Loading local read-only evidence…</p>
+<button type="button" id="evidence-refresh">Refresh local evidence (GET only)</button>
+</section>
+<section class="panel" id="integration-panel" aria-labelledby="integration-heading">
+<h2 id="integration-heading">6. Cross-feature readiness — synthetic only</h2>
+<p class="meta">This read-only local projection checks quote/contract/subscription consistency. A local demo candidate is NEVER a real PayPal integration, charge, production deployment or submitted entry.</p>
+<div class="contract-grid">
+<div><p>Local demo integration</p><p class="delivery-status" id="integration-state">CHECKING</p></div>
+<div><p>Real PayPal provider</p><p class="delivery-status" id="integration-paypal">NOT_TESTED</p></div>
+</div>
+<p id="integration-detail" role="status" aria-live="polite">Loading synthetic consistency…</p>
+<button type="button" id="integration-refresh">Review integration (GET only)</button>
+<p id="integration-message" role="status" aria-live="polite"></p>
+</section>
+<p id="message" role="status" aria-live="polite"></p>
+</main>
+<script src="/demo/marketplace.js" defer></script>
+<script src="/demo/client.js" defer></script>
+<script src="/demo/contract.js" defer></script>
+<script src="/demo/subscription.js" defer></script>
+<script src="/demo/integration.js" defer></script>
+<script src="/demo/evidence.js" defer></script>
+</body>
+</html>
