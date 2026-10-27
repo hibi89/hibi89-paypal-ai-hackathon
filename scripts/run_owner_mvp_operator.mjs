@@ -14,13 +14,16 @@ import {createSandboxTransport} from '../src/paypal_sandbox_transport.mjs';
 import {createOwnerMvpFlow,MVP_BRIEF} from '../src/owner_mvp_flow.mjs';
 import {validateMarketplaceBrief} from '../src/gemini_marketplace_provider.mjs';
 import {startOwnerMvpCallbackLanding} from '../src/owner_mvp_callback_landing.mjs';
+import {startOwnerMvpQuickTunnel} from '../src/owner_mvp_quick_tunnel.mjs';
 import {inspectOwnerMvpLocalState} from '../src/owner_mvp_local_status.mjs';
 
 const required=['--execute','--owner-authorized','--free-tier-confirmed',
   '--sandbox-only','--buyer-is-sandbox-personal'];
 const flags=argv.slice(2),set=new Set(flags);
-if(flags.length!==required.length||set.size!==required.length||
-   !required.every(x=>set.has(x))||!stdin.isTTY||!stderr.isTTY){
+const quick=set.has('--quick-tunnel');
+const allowed=quick?[...required,'--quick-tunnel']:required;
+if(flags.length!==allowed.length||set.size!==allowed.length||
+   !allowed.every(x=>set.has(x))||!stdin.isTTY||!stderr.isTTY){
   stdout.write(JSON.stringify({status:'DRY_RUN_EXPLICIT_FLAGS_AND_TTY_REQUIRED',
     providerCalls:0,paymentPosts:0})+'\n');
   process.exitCode=2;
@@ -38,19 +41,19 @@ if(flags.length!==required.length||set.size!==required.length||
     process.exitCode=2;
   }else{
     const id=env.PAYPAL_SANDBOX_MERCHANT_ID;
-    const origin=env.PAYPAL_PILOT_PUBLIC_ORIGIN;
+    let origin=env.PAYPAL_PILOT_PUBLIC_ORIGIN;
     const cid=env.PAYPAL_SANDBOX_CLIENT_ID;
     const sec=env.PAYPAL_SANDBOX_CLIENT_SECRET;
     const apiKey=env.GEMINI_API_KEY;
     if(!/^[A-Za-z0-9]{13}$/.test(id??'')||
-       !cid||!sec||!apiKey||!origin){
+       !cid||!sec||!apiKey||(!quick&&!origin)){
       stdout.write(JSON.stringify({status:'PRIVATE_PROVIDER_CONFIG_MISSING',
         providerCalls:0,paymentPosts:0})+'\n');
       process.exitCode=2;
     }else{
       // One durable fixed quote/order per private project directory.
       const folder=join(homedir(),'.paypal-ai-mvp-private');
-      let ledger=null,sessionStore=null,aiStore=null,landing=null;
+      let ledger=null,sessionStore=null,aiStore=null,landing=null,tunnel=null;
       let publicState='NOT_STARTED';
       try{
         // PRIVATE durable state must be read without mutation before external
@@ -68,6 +71,20 @@ if(flags.length!==required.length||set.size!==required.length||
         if(!/^(?:0|[1-9][0-9]{0,4})$/.test(configuredPort)||
           Number(configuredPort)<1024||Number(configuredPort)>65535)
           throw Error('INVALID_CALLBACK_LOCAL_PORT');
+        if(quick){
+          // Cloudflare assigns its random HTTPS hostname AFTER the local
+          // listener is up. Bootstrap serves only inert GET navigation pages.
+          if(!await confirm('OPEN TEMP HTTPS TUNNEL',
+            'Publish ONLY two inert buyer-return navigation pages through Cloudflare Quick Tunnel.'))
+            throw Error('QUICK_TUNNEL_OWNER_DECLINED');
+          landing=await startOwnerMvpCallbackLanding({
+            port:Number(configuredPort),publicOrigin:'https://bootstrap.invalid'
+          });
+          tunnel=await startOwnerMvpQuickTunnel({port:Number(configuredPort)});
+          origin=tunnel.publicOrigin;
+          await landing.close();
+          landing=null;
+        }
         landing=await startOwnerMvpCallbackLanding({
           port:Number(configuredPort),publicOrigin:origin
         });
@@ -159,6 +176,7 @@ if(flags.length!==required.length||set.size!==required.length||
         try{aiStore?.close()}catch{}
         try{ledger?.close()}catch{}
         try{await landing?.close()}catch{}
+        try{await tunnel?.close()}catch{}
       }
     }
   }

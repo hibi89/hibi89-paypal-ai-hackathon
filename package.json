@@ -14,7 +14,8 @@
     "mvp:operator": "node --experimental-sqlite scripts/run_owner_mvp_operator.mjs",
     "mvp:callback": "node --experimental-sqlite scripts/run_owner_mvp_callback.mjs",
     "mvp:simulate": "node --experimental-sqlite scripts/run_mvp_mock_smoke.mjs",
-    "mvp:status": "node --experimental-sqlite scripts/check_owner_mvp_local_status.mjs"
+    "mvp:status": "node --experimental-sqlite scripts/check_owner_mvp_local_status.mjs",
+    "mvp:quick": "node --experimental-sqlite scripts/run_owner_mvp_operator.mjs --quick-tunnel"
   },
   "engines": {
     "node": ">=22"
