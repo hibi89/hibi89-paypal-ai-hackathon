@@ -16,12 +16,14 @@ import {validateMarketplaceBrief} from '../src/gemini_marketplace_provider.mjs';
 import {startOwnerMvpCallbackLanding} from '../src/owner_mvp_callback_landing.mjs';
 import {startOwnerMvpQuickTunnel} from '../src/owner_mvp_quick_tunnel.mjs';
 import {inspectOwnerMvpLocalState} from '../src/owner_mvp_local_status.mjs';
+import {createOwnerMvpOperatorConsent} from '../src/owner_mvp_operator_consent.mjs';
 
 const required=['--execute','--owner-authorized','--free-tier-confirmed',
   '--sandbox-only','--buyer-is-sandbox-personal'];
 const flags=argv.slice(2),set=new Set(flags);
 const quick=set.has('--quick-tunnel');
-const allowed=quick?[...required,'--quick-tunnel']:required;
+const fast=set.has('--fast-operator');
+const allowed=quick?[...required,'--quick-tunnel',...(fast?['--fast-operator']:[])]:required;
 if(flags.length!==allowed.length||set.size!==allowed.length||
    !allowed.every(x=>set.has(x))||!stdin.isTTY||!stderr.isTTY){
   stdout.write(JSON.stringify({status:'DRY_RUN_EXPLICIT_FLAGS_AND_TTY_REQUIRED',
@@ -33,6 +35,7 @@ if(flags.length!==allowed.length||set.size!==allowed.length||
     const line=await rl.question(message+' Type '+phrase+': ');
     return line===phrase;
   };
+  const ownerConsent=createOwnerMvpOperatorConsent({confirm,fast});
   // Require real interactive consent BEFORE reading private environment.
   let approved=await confirm('START PRIVATE MVP',
     'No Live payments. Real Gemini API and virtual PayPal Sandbox requests follow separate confirmations.');
@@ -74,8 +77,7 @@ if(flags.length!==allowed.length||set.size!==allowed.length||
         if(quick){
           // Cloudflare assigns its random HTTPS hostname AFTER the local
           // listener is up. Bootstrap serves only inert GET navigation pages.
-          if(!await confirm('OPEN TEMP HTTPS TUNNEL',
-            'Publish ONLY two inert buyer-return navigation pages through Cloudflare Quick Tunnel.'))
+          if(!await ownerConsent.authorizeTunnel())
             throw Error('QUICK_TUNNEL_OWNER_DECLINED');
           landing=await startOwnerMvpCallbackLanding({
             port:Number(configuredPort),publicOrigin:'https://bootstrap.invalid'
@@ -92,8 +94,7 @@ if(flags.length!==allowed.length||set.size!==allowed.length||
         stderr.write('Public HTTPS return/cancel must proxy to local callback:\n'+
           origin+'/checkout/paypal/return\n'+
           origin+'/checkout/paypal/cancel\n');
-        if(!await confirm('PROBE OWNER HTTPS CALLBACK',
-          'Send two read-only HTTPS GET probes to the configured public return/cancel URLs (no Gemini/PayPal calls).'))
+        if(!await ownerConsent.authorizeProbe())
           throw Error('CALLBACK_PROBE_NOT_AUTHORIZED');
         const proof=await landing.verifyPublicIngress({fetchImpl:globalThis.fetch});
         if(proof.returnAndCancelReachable!==true)
@@ -114,23 +115,7 @@ if(flags.length!==allowed.length||set.size!==allowed.length||
         const flow=createOwnerMvpFlow({
           ledger,sessionStore,aiStore,geminiProvider:provider,
           paypalTransport:transport,merchantId:id,publicOrigin:origin,
-          brief,authorizeStage:async action=>{
-            if(action.action==='GEMINI_SKILL_CLASSIFICATION_ONCE')
-              return confirm('SEND SYNTHETIC GEMINI','Gemini Free-tier one-shot skills classification.');
-            if(action.action==='APPROVE_SYNTHETIC_USD_1_50')
-              return confirm('APPROVE USD 1.50',
-                'Approve $1.50 human-set quote for '+action.selectedProfileId+
-                ', missing skills: '+(action.missingSkills?.join(', ')||'none')+
-                '. Price is NOT AI predicted.');
-            if(action.action==='ISSUE_OWNER_SANDBOX_CHECKOUT_SESSION')
-              return confirm('ISSUE SANDBOX SESSION','Create a private 15-minute checkout proof.');
-            if(action.operation==='CREATE_SANDBOX_ORDER')
-              return confirm('CREATE SANDBOX ORDER','Send ONE virtual USD 1.50 Orders CREATE.');
-            if(action.operation==='CAPTURE_SANDBOX_ORDER')
-              return confirm('CAPTURE SANDBOX USD 1.50',
-                'Buyer must have approved in distinct Sandbox Personal account.');
-            return false;
-          }
+          brief,authorizeStage:action=>ownerConsent.authorizeStage(action)
         });
         const match=await flow.classify();
         publicState='GEMINI_SKILLS_VERIFIED';
