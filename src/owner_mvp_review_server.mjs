@@ -19,7 +19,7 @@ function render(receipt,{selectedProfileId=null,acknowledgeGaps=false}={}){
  // Explicit user selection is a local GET-only worksheet state, not payment authority.
  const candidate=profiles.find(p=>p.id===selectedProfileId)||
    (selectedProfileId===null?profiles.find(p=>p.matchedSkills.length>0):null);
- const reviewed=Boolean(selectedProfileId&&candidate&&acknowledgeGaps);
+ const reviewed=Boolean(recorded&&selectedProfileId&&candidate&&acknowledgeGaps);
  const tags=items=>items.length?items.map(v=>'<span class="tag">'+esc(v)+'</span>').join(' '):'<em>None</em>';
  const rows=profiles.map(p=>
   '<label class="candidate"><input type="radio" name="candidate" value="'+esc(p.id)+'" '+
