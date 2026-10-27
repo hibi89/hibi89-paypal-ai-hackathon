@@ -63,3 +63,13 @@ test('script always exits 2 until external verification and submission',()=>{
  assert.equal(data.status,'SUBMISSION_BLOCKED_EXTERNAL_EVIDENCE');
  assert.equal(data.providerNetworkCalls,0);
 });
+
+test('owner sandbox run is labeled local-attested, never automatically submission verified',()=>{
+ const r=assessSubmissionEvidence({ledger,files});
+ assert.equal(r.externalGates.find(x=>x.name==='PAYPAL_OAUTH_ORDERS_CAPTURE_GET').status,
+  'OWNER_LOCAL_SANDBOX_E2E_REPORTED');
+ assert.equal(r.externalGates.find(x=>x.name==='FREE_TIER_AI_GENERATION').status,
+  'OWNER_LOCAL_GEMINI_REPORTED');
+ assert.equal(r.submissionEligible,false);
+ assert.ok(r.blockers.includes('PAYPAL_OAUTH_ORDERS_CAPTURE_GET'));
+});

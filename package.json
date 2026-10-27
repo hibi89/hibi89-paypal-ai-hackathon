@@ -10,7 +10,13 @@
     "preflight:p0": "node scripts/check_p0_provider_readiness.mjs",
     "preflight:submission": "node scripts/check_submission_evidence.mjs",
     "preflight:reviewer": "node --experimental-sqlite scripts/check_reviewer_repro.mjs",
-    "pilot:gemini": "node --experimental-sqlite scripts/run_owner_gemini_pilot.mjs"
+    "pilot:gemini": "node --experimental-sqlite scripts/run_owner_gemini_pilot.mjs",
+    "mvp:operator": "node --experimental-sqlite scripts/run_owner_mvp_operator.mjs",
+    "mvp:callback": "node --experimental-sqlite scripts/run_owner_mvp_callback.mjs",
+    "mvp:simulate": "node --experimental-sqlite scripts/run_mvp_mock_smoke.mjs",
+    "mvp:status": "node --experimental-sqlite scripts/check_owner_mvp_local_status.mjs",
+    "mvp:quick": "node --experimental-sqlite scripts/run_owner_mvp_operator.mjs --quick-tunnel",
+    "mvp:receipt": "node --experimental-sqlite scripts/print_owner_mvp_receipt.mjs"
   },
   "engines": {
     "node": ">=22"
