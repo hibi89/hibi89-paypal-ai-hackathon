@@ -158,7 +158,11 @@ export function createSandboxTransport(options={}) {
     const plan=planOwnerSandboxPilotCheckout({quote,publicOrigin,serverSession});
     return createFromPlan(quote,plan);
   }
-  async function captureOnce(quote,claim,orderId) {
+  async function captureOnce(quote,claim,orderId,{beforeProviderPost}={}) {
+    // The internal trusted host may recheck session revocation after the
+    // transport's asynchronous GET and OAuth. Never accept a browser flag.
+    reject(beforeProviderPost!==undefined && typeof beforeProviderPost!=='function',
+      'CAPTURE_PREPOST_GUARD_INVALID');
     claimValidated(quote,claim,'capture');
     // Verification precedes capture. Browser return params do not count as APPROVED.
     const checked=await getOrder(quote,orderId);
@@ -166,6 +170,9 @@ export function createSandboxTransport(options={}) {
     reject(planned.action!=='CAPTURE_ONCE',
       'SANDBOX_CAPTURE_NOT_AUTHORIZED');
     const token=await accessToken();
+    // Last async boundary before the actual payment POST: a revoked or
+    // expired owner session must not be able to capture after an OAuth delay.
+    if(beforeProviderPost)await beforeProviderPost();
     const payload=await fetchJson(planned.path,{
       method:'POST',token,requestId:planned.requestId,body:'{}',
     });
