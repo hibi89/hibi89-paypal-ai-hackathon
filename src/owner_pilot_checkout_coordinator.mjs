@@ -49,8 +49,19 @@ export function createOwnerPilotCheckoutCoordinator({ledger,transport,authorizeA
         currency:quote.currency,amountMinor:cents,
       }));
       if(approved!==true)deny('OWNER_EXPLICIT_ACTION_AUTHORIZATION_REQUIRED');
-      // Consent callbacks may be slow; revalidate session expiration/revocation.
-      boundServerSessionFromStoredProof(input.sessionProof,quote);
+      // A human consent callback can outlive the approved quote snapshot.
+      // Even a newly approved version with the SAME amount must need fresh
+      // checkout-session proof and fresh human consent, not the old snapshot.
+      const current=await ledger.get(quote.id);
+      if(!current||current.id!==quote.id||
+         current.ownerId!==input.actorId||current.merchantId!==input.merchantId||
+         current.status!=='APPROVED'||current.approval?.actorId!==input.actorId||
+         current.version!==quote.version||current.currency!==quote.currency||
+         current.approval?.quoteVersion!==quote.approval?.quoteVersion||
+         current.approval?.amountMinor!==quote.approval?.amountMinor)
+        deny('OWNER_PILOT_APPROVAL_CHANGED_DURING_AUTHORIZATION');
+      // The branded SQLite proof also checks revocation and TTL AFTER consent.
+      boundServerSessionFromStoredProof(input.sessionProof,current);
     }
     return {quote,bound,ctx:{quoteId:quote.id,actorId:input.actorId,
       merchantId:input.merchantId}};
