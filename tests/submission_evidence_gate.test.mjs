@@ -85,3 +85,11 @@ test('video draft recognition is fail-closed without explicit unfilmed disclosur
   assert.equal(result.submissionEligible,false);
  }
 });
+
+test('invalid reproduction guide is a submission blocker even when other assets exist',()=>{
+ const result=assessSubmissionEvidence({ledger,files:{...files,'docs/JUDGE_REPRODUCTION_EN.md':''}});
+ assert.equal(result.localAssets.find(x=>x.name==='REPRODUCTION_GUIDE').status,'LOCAL_DRAFT_MISSING_OR_INVALID');
+ assert.ok(result.blockers.includes('REPRODUCTION_GUIDE'));
+ assert.equal(result.submissionEligible,false);
+ assert.equal(result.providerNetworkCalls,0);
+});
