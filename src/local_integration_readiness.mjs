@@ -4,15 +4,19 @@ export function evaluateLocalIntegration({quote,contract,subscription}={}){
   const approved=quote?.status==='APPROVED' &&
     quote.approval?.actorId===quote.ownerId &&
     quote.approval?.quoteVersion===quote.version &&
-    Number.isSafeInteger(quote.approval?.amountMinor);
+    Number.isSafeInteger(quote.approval?.amountMinor) &&
+    quote.approval.amountMinor>0;
   const linked=!!(approved&&contract&&contract.quoteId===quote.id&&
     contract.quoteVersion===quote.version&&contract.ownerId===quote.ownerId&&
     contract.merchantId===quote.merchantId&&
     contract.currency===quote.currency&&
     contract.amountMinor===quote.approval.amountMinor);
   const milestones=Array.isArray(contract?.milestones)?contract.milestones:[];
-  const amountTotal=milestones.reduce((sum,m)=>sum+(Number.isSafeInteger(m.amountMinor)?m.amountMinor:0),0);
-  const amountConsistent=linked&&milestones.length>0&&amountTotal===contract.amountMinor;
+  const validMilestones=milestones.length>0&&milestones.every(m=>
+    Number.isSafeInteger(m.amountMinor)&&m.amountMinor>0);
+  const amountTotal=validMilestones?milestones.reduce((sum,m)=>sum+m.amountMinor,0):null;
+  const amountConsistent=linked&&validMilestones&&Number.isSafeInteger(amountTotal)&&
+    amountTotal===contract.amountMinor;
   const delivered=amountConsistent&&milestones.every(m=>m.state==='ACCEPTED');
   const subState=subscription?.state??'UNAVAILABLE';
   const subValid=subscription?.mode==='OFFLINE_SCENARIO_NO_PROVIDER' &&
