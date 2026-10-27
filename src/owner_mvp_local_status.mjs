@@ -75,11 +75,13 @@ export function inspectOwnerMvpLocalState({directory,now=Date.now()}={}){
       status:!newest?'ABSENT':newest.revoked===1?'REVOKED':
         newest.expires_at_ms>now?'ACTIVE':'EXPIRED'};
   });
-  const states={quote:checkout.data?.quote??'UNAVAILABLE',
-    create:checkout.data?.create??'UNAVAILABLE',
-    capture:checkout.data?.capture??'UNAVAILABLE',
-    gemini:ai.data?.attempt??'UNAVAILABLE',
-    session:session.data?.status??'UNAVAILABLE'};
+  const observed=(file,key)=>file.kind==='ABSENT'?'ABSENT':
+    file.kind==='PRESENT'?(file.data?.[key]??'UNAVAILABLE'):'UNAVAILABLE';
+  const states={quote:observed(checkout,'quote'),
+    create:observed(checkout,'create'),
+    capture:observed(checkout,'capture'),
+    gemini:observed(ai,'attempt'),
+    session:observed(session,'status')};
   const files={checkout:checkout.kind,gemini:ai.kind,session:session.kind};
   // A used AI one-shot reservation or any session/quote means restart must be
   // inspected, NOT bypassed by deleting SQLite or silently repeating POST.

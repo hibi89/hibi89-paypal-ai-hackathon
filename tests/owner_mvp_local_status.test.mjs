@@ -20,6 +20,10 @@ fixture(async dir=>{
  assert.equal(r.safeToStartNewAttempt,true);
  assert.equal(r.networkRequests,0);
  assert.equal(r.secretsRead,false);
+ assert.deepEqual(r.states,{
+  quote:'ABSENT',create:'ABSENT',capture:'ABSENT',
+  gemini:'ABSENT',session:'ABSENT'
+ });
  assert.deepEqual(readdirSync(dir),before);
 }));
 test('owner config reports presence and format only, never secret values',
