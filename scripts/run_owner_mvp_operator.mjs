@@ -11,7 +11,8 @@ import {createPilotCheckoutSessionStore} from '../src/pilot_checkout_session_sto
 import {createMarketplaceAiBudgetStore} from '../src/marketplace_ai_budget.mjs';
 import {createGeminiMarketplaceSkillProvider} from '../src/gemini_marketplace_provider.mjs';
 import {createSandboxTransport} from '../src/paypal_sandbox_transport.mjs';
-import {createOwnerMvpFlow} from '../src/owner_mvp_flow.mjs';
+import {createOwnerMvpFlow,MVP_BRIEF} from '../src/owner_mvp_flow.mjs';
+import {validateMarketplaceBrief} from '../src/gemini_marketplace_provider.mjs';
 
 const required=['--execute','--owner-authorized','--free-tier-confirmed',
   '--sandbox-only','--buyer-is-sandbox-personal'];
@@ -50,6 +51,11 @@ if(flags.length!==required.length||set.size!==required.length||
       let ledger=null,sessionStore=null,aiStore=null;
       let publicState='NOT_STARTED';
       try{
+        const supplied=await rl.question(
+          'FICTIONAL task description, 8-500 chars (Enter = fixed synthetic demo): ');
+        const brief=supplied.trim()?supplied:MVP_BRIEF;
+        validateMarketplaceBrief(brief);
+        // No SQLite allocations before validating user-entered fictional text.
         mkdirSync(folder,{recursive:true,mode:0o700});
         ledger=createSqliteLedger({filename:join(folder,'checkout.sqlite')});
         sessionStore=createPilotCheckoutSessionStore({
@@ -64,7 +70,7 @@ if(flags.length!==required.length||set.size!==required.length||
         const flow=createOwnerMvpFlow({
           ledger,sessionStore,aiStore,geminiProvider:provider,
           paypalTransport:transport,merchantId:id,publicOrigin:origin,
-          authorizeStage:async action=>{
+          brief,authorizeStage:async action=>{
             if(action.action==='GEMINI_SKILL_CLASSIFICATION_ONCE')
               return confirm('SEND SYNTHETIC GEMINI','Gemini Free-tier one-shot skills classification.');
             if(action.action==='APPROVE_SYNTHETIC_USD_1_50')

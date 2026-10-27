@@ -180,3 +180,38 @@ test('operator CLI without flags is a dry run and reads no private credentials',
  assert.ok(!run.stdout.includes('PRIVATE_DO_NOT_REPORT'));
  assert.ok(!run.stderr.includes('PRIVATE_DO_NOT_REPORT'));
 });
+
+test('bounded operator-supplied fictional brief reaches model, not a hardcoded only fixture',withFixture(async f=>{
+ const custom='Please build a fictional web storefront with PayPal checkout and QA';
+ const original=f.create;
+ const service=createOwnerMvpFlow({
+  ledger:f.ledger,sessionStore:f.sessionStore,aiStore:f.aiStore,
+  geminiProvider:createGeminiMarketplaceSkillProvider({
+    apiKey:'SYNTHETIC_NON_SECRET',ownerAuthorized:true,freeTierConfirmed:true,
+    fetchImpl:async()=>({status:200,json:async()=>({candidates:[{
+      finishReason:'STOP',content:{parts:[{text:'{"skills":["web","payments"]}'}]}
+    }]})})
+  }),
+  paypalTransport:createSandboxTransport({
+    clientId:'FAKE_CLIENT',clientSecret:'FAKE_SECRET',
+    fetchImpl:async()=>{throw Error('PAYPAL_SHOULD_NOT_BE_CALLED')}}),
+  merchantId,publicOrigin:'https://checkout.example.org',
+  authorizeStage:async()=>true,brief:custom
+ });
+ const result=await service.classify();
+ assert.deepEqual(result.skills,['web','payments']);
+ assert.equal(f.aiStore.status({actorId:'local_operator',merchantId,brief:custom}).state,
+   'COMMITTED');
+ assert.equal(f.calls.length,0);
+}));
+test('malformed custom project request is rejected before any external or durable quote action',
+withFixture(async f=>{
+ assert.throws(()=>createOwnerMvpFlow({
+  ledger:f.ledger,aiStore:f.aiStore,sessionStore:f.sessionStore,
+  geminiProvider:async()=>{},paypalTransport:{createOwnerPilotOrderOnce(){}},
+  merchantId,publicOrigin:'https://checkout.example.org',
+  authorizeStage:async()=>true,brief:'short'
+ }),{code:'INVALID_MARKETPLACE_AI_BRIEF'});
+ assert.equal(f.calls.length,0);
+ assert.equal(await f.ledger.get('operator_mvp_01'),null);
+}));

@@ -13,8 +13,10 @@ const reject=code=>{const e=new Error(code);e.code=code;throw e;};
 
 export function createOwnerMvpFlow({
   ledger,aiStore,sessionStore,geminiProvider,paypalTransport,
-  merchantId,publicOrigin,authorizeStage
+  merchantId,publicOrigin,authorizeStage,brief=MVP_BRIEF
 }={}){
+  // Only bounded fictional briefs; never persist or echo raw text in logs.
+  validateMarketplaceBrief(brief);
   if(typeof ledger?.insertQuote!=='function'||
     typeof ledger?.approve!=='function'||typeof ledger?.get!=='function'||
     typeof aiStore?.claim!=='function'||typeof sessionStore?.issue!=='function'||
@@ -60,7 +62,6 @@ export function createOwnerMvpFlow({
   };
   async function classify(){
     if(matches)reject('MVP_AI_ALREADY_CLASSIFIED');
-    const brief=validateMarketplaceBrief(MVP_BRIEF);
     const existing=await ledger.get(quoteId);
     if(existing)reject('MVP_EXISTING_QUOTE_REVIEW_REQUIRED');
     // Quote is persistent: one fixed quote per private ledger, even across runs.
