@@ -43,7 +43,11 @@ if(!report.ready){
     if(value.quote?.id!=='sample-project'||value.quote?.version!==1||
        value.quote?.status!=='PROPOSED')
       throw new Error('LOCAL_QUOTE_INVALID');
-    const integration=await (await get('/api/demo/integration')).json();
+    const integrationResponse=await get('/api/demo/integration');
+    if(integrationResponse.headers.get('cache-control')!=='no-store'||
+       integrationResponse.headers.get('x-content-type-options')!=='nosniff')
+      throw new Error('LOCAL_READ_MODEL_CACHE_OR_MIME_UNSAFE');
+    const integration=await integrationResponse.json();
     if(!integration||typeof integration!=='object'||Array.isArray(integration)||
        integration.mode!=='SYNTHETIC_LOOPBACK_ONLY'||
        integration.status!=='LOCAL_DEMO_INCOMPLETE'||
