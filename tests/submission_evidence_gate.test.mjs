@@ -73,3 +73,15 @@ test('owner sandbox run is labeled local-attested, never automatically submissio
  assert.equal(r.submissionEligible,false);
  assert.ok(r.blockers.includes('PAYPAL_OAUTH_ORDERS_CAPTURE_GET'));
 });
+
+test('video draft recognition is fail-closed without explicit unfilmed disclosure',()=>{
+ const file='docs/VIDEO_STORYBOARD_EN.md';
+ const baseline=assessSubmissionEvidence({ledger,files});
+ assert.equal(baseline.localAssets.find(x=>x.name==='VIDEO_STORYBOARD').status,'DRAFT_ONLY');
+ for(const body of ['OWNER-OBSERVED', 'NOT filmed', '']){
+  const result=assessSubmissionEvidence({ledger,files:{...files,[file]:body}});
+  assert.equal(result.localAssets.find(x=>x.name==='VIDEO_STORYBOARD').status,'DRAFT_MISSING');
+  assert.ok(result.blockers.includes('VIDEO_STORYBOARD'));
+  assert.equal(result.submissionEligible,false);
+ }
+});
