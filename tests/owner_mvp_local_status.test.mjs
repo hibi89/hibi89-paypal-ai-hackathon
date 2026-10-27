@@ -27,7 +27,7 @@ test('owner config reports presence and format only, never secret values',
  const env={
   GEMINI_API_KEY:'SENTINEL_GEMINI_DO_NOT_ECHO',
   PAYPAL_SANDBOX_CLIENT_ID:'SENTINEL_CLIENT_DO_NOT_ECHO',
-  PAYPAL_SANDBOX_CLIENT_SECRET:'SENTINEL_SECRET_DO_NOT_ECHO',
+  PAYPAL_SANDBOX_CLIENT_SECRET:'NOT_A_REAL_SECRET',
   PAYPAL_SANDBOX_MERCHANT_ID:merchant,
   PAYPAL_PILOT_PUBLIC_ORIGIN:'https://sandbox-checkout.example.org'
  };
@@ -40,7 +40,7 @@ test('owner config reports presence and format only, never secret values',
  assert.ok(!rendered.includes('SENTINEL'));
  assert.ok(!rendered.includes(merchant));
  assert.ok(!rendered.includes('sandbox-checkout.example.org'));
-}));
+});
 test('persisted quote and previously consumed AI prevent one-shot replay',
 fixture(async dir=>{
  const db=createSqliteLedger({filename:join(dir,'checkout.sqlite')});
@@ -108,14 +108,14 @@ fixture(async dir=>{
  const {spawnSync}=await import('node:child_process');
  const cmd=new URL('../scripts/check_owner_mvp_local_status.mjs',import.meta.url);
  const env={...process.env,HOME:dir,USERPROFILE:dir,
-  GEMINI_API_KEY:'SENTINEL_VALUE_ONLY_IN_ENV',
-  PAYPAL_SANDBOX_CLIENT_SECRET:'SENTINEL_VALUE_ONLY_IN_ENV'};
+  GEMINI_API_KEY:'NOT_A_REAL_SECRET',
+  PAYPAL_SANDBOX_CLIENT_SECRET:'NOT_A_REAL_SECRET'};
  const result=spawnSync(process.execPath,['--experimental-sqlite',cmd.pathname],{
    env,encoding:'utf8',timeout:12000});
  assert.equal(result.status,0,result.stderr);
  const summary=JSON.parse(result.stdout.trim());
  assert.equal(summary.local.networkRequests,0);
  assert.equal(summary.local.safeToStartNewAttempt,true);
- assert.ok(!result.stdout.includes('SENTINEL_VALUE_ONLY_IN_ENV'));
- assert.ok(!result.stderr.includes('SENTINEL_VALUE_ONLY_IN_ENV'));
+ assert.ok(!result.stdout.includes('NOT_A_REAL_SECRET'));
+ assert.ok(!result.stderr.includes('NOT_A_REAL_SECRET'));
 }));
