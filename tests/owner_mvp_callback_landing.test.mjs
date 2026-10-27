@@ -68,3 +68,60 @@ test('invalid insecure callback and ports fail before binding',async()=>{
    port:65536,publicOrigin:'https://checkout.example.org'
  }),{code:'CALLBACK_LOOPBACK_PORT_REQUIRED'});
 });
+
+test('owner HTTPS ingress probe checks return AND cancel via unpredictable live listener proof',async()=>{
+  await withLanding(async landing=>{
+    const targets=[];
+    const proxy=async(url,options)=>{
+      const u=new URL(url);
+      targets.push({url:u,method:options.method,redirect:options.redirect});
+      assert.equal(u.origin,'https://checkout.example.org');
+      assert.equal(options.method,'GET');
+      assert.equal(options.redirect,'error');
+      // Simulated trusted reverse proxy: real network stays inside loopback.
+      return fetch(landing.localUrl+u.pathname+u.search);
+    };
+    const result=await landing.verifyPublicIngress({fetchImpl:proxy});
+    assert.equal(result.returnAndCancelReachable,true);
+    assert.equal(result.paymentVerified,false);
+    assert.equal(result.capturePerformed,false);
+    assert.equal(result.providerCalls,0);
+    assert.deepEqual(targets.map(x=>x.url.pathname),
+      ['/checkout/paypal/return','/checkout/paypal/cancel']);
+    assert.equal(targets[0].url.searchParams.get('pilot_probe').length,43);
+    const attack=await fetch(landing.localUrl+
+      '/checkout/paypal/return?token=FORGED&pilot_probe=FORGED');
+    assert.equal(attack.headers.get('x-owner-mvp-callback-proof'),null);
+  });
+});
+test('fake static CDN 200 or only one working callback path cannot pass ingress probe',async()=>{
+  await withLanding(async landing=>{
+    let calls=0;
+    const mismatched=async()=>new Response('FAKE STATIC 200',{
+      status:200,headers:{'x-owner-mvp-callback-proof':'FORGED'}});
+    await assert.rejects(landing.verifyPublicIngress({fetchImpl:mismatched}),
+      {code:'CALLBACK_PUBLIC_HTTPS_PROOF_MISMATCH'});
+    const onePath=async(url)=>{
+      calls++;
+      const u=new URL(url);
+      if(u.pathname.endsWith('/return'))
+        return fetch(landing.localUrl+u.pathname+u.search);
+      return new Response('not routed',{status:404});
+    };
+    await assert.rejects(landing.verifyPublicIngress({fetchImpl:onePath}),
+      {code:'CALLBACK_PUBLIC_HTTPS_PROOF_MISMATCH'});
+    assert.equal(calls,2);
+  });
+});
+test('probe never uses implicit fetch and treats TLS/redirect failures as blocked',async()=>{
+  await withLanding(async landing=>{
+    await assert.rejects(landing.verifyPublicIngress(),
+      {code:'CALLBACK_EXPLICIT_VERIFY_TRANSPORT_REQUIRED'});
+    await assert.rejects(landing.verifyPublicIngress({
+      fetchImpl:async()=>{throw Error('SIMULATED_TLS_FAILURE')},
+    }),{code:'CALLBACK_PUBLIC_HTTPS_NOT_REACHABLE'});
+    await assert.rejects(landing.verifyPublicIngress({
+      fetchImpl:async()=>new Response(null,{status:302,headers:{location:'https://elsewhere.example'}})
+    }),{code:'CALLBACK_PUBLIC_HTTPS_PROOF_MISMATCH'});
+  });
+});

@@ -67,9 +67,13 @@ if(flags.length!==required.length||set.size!==required.length||
         stderr.write('Public HTTPS return/cancel must proxy to local callback:\n'+
           origin+'/checkout/paypal/return\n'+
           origin+'/checkout/paypal/cancel\n');
-        if(!await confirm('PUBLIC HTTPS CALLBACK READY',
-          'Confirm BOTH HTTPS URLs above open the navigation-only page. No buyer approval is implied.'))
-          throw Error('CALLBACK_REACHABILITY_NOT_CONFIRMED');
+        if(!await confirm('PROBE OWNER HTTPS CALLBACK',
+          'Send two read-only HTTPS GET probes to the configured public return/cancel URLs (no Gemini/PayPal calls).'))
+          throw Error('CALLBACK_PROBE_NOT_AUTHORIZED');
+        const proof=await landing.verifyPublicIngress({fetchImpl:globalThis.fetch});
+        if(proof.returnAndCancelReachable!==true)
+          throw Error('CALLBACK_PUBLIC_HTTPS_NOT_REACHABLE');
+        stderr.write('Verified BOTH HTTPS paths route to this local listener; NOT buyer or payment proof.\n');
         // No SQLite allocations before brief validation or callback preflight.
         mkdirSync(folder,{recursive:true,mode:0o700});
         ledger=createSqliteLedger({filename:join(folder,'checkout.sqlite')});

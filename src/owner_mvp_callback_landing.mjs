@@ -3,6 +3,7 @@
 // proxy/tunnel MUST route the two URLs to this port. No provider/API requests.
 // Browser query/cookies/headers are NEVER evidence of buyer payment approval.
 import {createServer} from 'node:http';
+import {randomBytes,timingSafeEqual} from 'node:crypto';
 
 const deny=code=>{const error=new Error(code);error.code=code;throw error;};
 const safeHeaders=Object.freeze({
@@ -42,6 +43,10 @@ export async function startOwnerMvpCallbackLanding({port=8787,publicOrigin}={}){
   const remote=checkedOrigin(publicOrigin);
   if(!Number.isSafeInteger(port)||port<0||port>65535)
     deny('CALLBACK_LOOPBACK_PORT_REQUIRED');
+  // Secret challenge proves both externally proxied paths reach THIS live
+  // listener, rather than a CDN/static error page. It is NEVER payment proof.
+  const probeToken=randomBytes(32).toString('base64url');
+  const proofHeader='x-owner-mvp-callback-proof';
   let server;
   server=createServer((req,res)=>{
     // Untrusted incoming query strings, token, PayerID, cookies, Host and
@@ -58,15 +63,20 @@ export async function startOwnerMvpCallbackLanding({port=8787,publicOrigin}={}){
     if(typeof req.url!=='string'||req.url.length>2048){
       res.writeHead(414,{'cache-control':'no-store'}).end();return;
     }
-    let path;
-    try{path=new URL(req.url,'http://127.0.0.1:'+actualPort).pathname}
+    let incoming;
+    try{incoming=new URL(req.url,'http://127.0.0.1:'+actualPort)}
     catch{res.writeHead(400,{'cache-control':'no-store'}).end();return}
-    const page=ROUTES[path];
+    const page=ROUTES[incoming.pathname];
     if(!page){res.writeHead(404,{'cache-control':'no-store'}).end();return;}
     if(req.method!=='GET'){
       res.writeHead(405,{'cache-control':'no-store',allow:'GET'}).end();return;
     }
-    res.writeHead(200,safeHeaders).end(page);
+    const supplied=incoming.searchParams.getAll('pilot_probe');
+    const isProbe=supplied.length===1 && incoming.searchParams.size===1 &&
+      /^[A-Za-z0-9_-]{43}$/.test(supplied[0]) &&
+      timingSafeEqual(Buffer.from(supplied[0]),Buffer.from(probeToken));
+    res.writeHead(200,isProbe?
+      {...safeHeaders,[proofHeader]:probeToken}:safeHeaders).end(page);
   });
   try{
     await new Promise((resolve,reject)=>{
@@ -75,8 +85,34 @@ export async function startOwnerMvpCallbackLanding({port=8787,publicOrigin}={}){
     });
   }catch(e){server.close();deny('CALLBACK_LOOPBACK_BIND_FAILED')}
   const boundPort=server.address().port;
+  async function verifyPublicIngress({fetchImpl}={}){
+    // This sends exactly two GETs to an OWNER-CONFIGURED HTTPS hostname.
+    // Injected transport is required: no implicit traffic from library/test use.
+    if(typeof fetchImpl!=='function')deny('CALLBACK_EXPLICIT_VERIFY_TRANSPORT_REQUIRED');
+    for(const path of Object.keys(ROUTES)){
+      const url=remote.origin+path+'?pilot_probe='+encodeURIComponent(probeToken);
+      let response;
+      try{
+        response=await fetchImpl(url,{
+          method:'GET',redirect:'error',cache:'no-store',
+          headers:{accept:'text/html'},
+          signal:AbortSignal.timeout(8000)
+        });
+      }catch{deny('CALLBACK_PUBLIC_HTTPS_NOT_REACHABLE')}
+      if(response?.status!==200||
+         response.headers?.get(proofHeader)!==probeToken)
+        deny('CALLBACK_PUBLIC_HTTPS_PROOF_MISMATCH');
+      // Discard response bytes if supported; no callback payload becomes authority.
+      try{await response.body?.cancel?.()}catch{}
+    }
+    return Object.freeze({mode:'OWNER_HTTPS_PROXY_TWO_PATH_PROBE',
+      returnAndCancelReachable:true,
+      buyerApproved:false,paymentVerified:false,
+      providerCalls:0,capturePerformed:false});
+  }
   return Object.freeze({
     localUrl:'http://127.0.0.1:'+boundPort,
+    verifyPublicIngress,
     publicOrigin:remote.origin,
     mode:'LOOPBACK_BUYER_NAVIGATION_ONLY',
     publicHttpsConfiguredByThisServer:false,
