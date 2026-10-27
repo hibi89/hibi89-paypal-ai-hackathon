@@ -18,7 +18,8 @@
     "mvp:quick": "node --experimental-sqlite scripts/run_owner_mvp_operator.mjs --quick-tunnel",
     "mvp:receipt": "node --experimental-sqlite scripts/print_owner_mvp_receipt.mjs",
     "verify:local": "node scripts/verify_local.mjs",
-    "mvp:fast": "node --experimental-sqlite scripts/run_owner_mvp_operator.mjs --quick-tunnel --fast-operator"
+    "mvp:fast": "node --experimental-sqlite scripts/run_owner_mvp_operator.mjs --quick-tunnel --fast-operator",
+    "mvp:review": "node --experimental-sqlite scripts/run_owner_mvp_review.mjs"
   },
   "engines": {
     "node": ">=22"
