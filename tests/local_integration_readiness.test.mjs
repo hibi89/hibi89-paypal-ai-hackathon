@@ -60,6 +60,18 @@ test('D13: nonpositive and overflowed milestones cannot qualify as accepted deli
    assert.equal(result.dataContract,'MISMATCH');
  }
 });
+test('D13: missing tenant identity or invalid quote version cannot qualify',()=>{
+ const quote={id:'q',ownerId:'o',merchantId:'m',currency:'USD',version:1,
+   status:'APPROVED',approval:{actorId:'o',quoteVersion:1,amountMinor:1200}};
+ const contract={quoteId:'q',quoteVersion:1,ownerId:'o',merchantId:'m',currency:'USD',
+   amountMinor:1200,milestones:[{amountMinor:1200,state:'ACCEPTED'}]};
+ const subscription={mode:'OFFLINE_SCENARIO_NO_PROVIDER',paymentEvidence:'NOT_VERIFIED',state:'ACTIVE'};
+ for(const patch of [{ownerId:''},{merchantId:''},{version:0},{version:1.5},
+   {currency:''},{currency:'US'}]){
+   const result=evaluateLocalIntegration({quote:{...quote,...patch},contract,subscription});
+   assert.equal(result.status,'LOCAL_DEMO_INCOMPLETE');
+ }
+});
 test('D13: local integration GET-only before quote approval, cross feature session isolated',async()=>{
   const app=await startOfflineDemo({testReviewSessions:true});
   try{
