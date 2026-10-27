@@ -57,3 +57,53 @@ test('malicious skill value is never inserted as HTML',async()=>{
   assert.ok(!html.includes('LOCAL GET RESULT'));
  }finally{await app.close()}
 });
+
+test('human can switch between all three fictional profiles without a provider call or DB write',
+withApp(async app=>{
+ const initial=await (await fetch(app.url)).text();
+ assert.ok(initial.includes('Demo Web Specialist'));
+ assert.ok(initial.includes('Demo Workflow Builder'));
+ assert.ok(initial.includes('Demo Data Analyst'));
+ assert.ok(initial.includes('AWAITING EXPLICIT SCOPE REVIEW'));
+ const choose=await fetch(app.url+'?candidate=synthetic-data');
+ assert.equal(choose.status,200);
+ const html=await choose.text();
+ assert.ok(html.includes('Demo Data Analyst'));
+ assert.ok(html.includes('Matched:'));
+ assert.ok(html.includes('Missing:'));
+ assert.ok(html.includes('AWAITING EXPLICIT SCOPE REVIEW'));
+ assert.ok(!html.includes('HUMAN SCOPE REVIEW RECORDED'));
+ assert.ok(!html.includes('SECRET_ORDER'));
+ assert.equal(choose.headers.get('cache-control'),'no-store');
+}));
+test('skill-gap acknowledgment creates preview only and never approves a transaction',
+withApp(async app=>{
+ const confirmed=await fetch(app.url+'?candidate=synthetic-web&ack=1');
+ assert.equal(confirmed.status,200);
+ const html=await confirmed.text();
+ assert.ok(html.includes('HUMAN SCOPE REVIEW RECORDED IN THIS PAGE ONLY'));
+ assert.ok(html.includes('not a new quote approval'));
+ assert.ok(html.includes('USD 1.50'));
+ assert.ok(html.includes('No new GET or POST'));
+ assert.equal((await fetch(app.url,{method:'POST',body:'capture'})).status,405);
+}));
+test('malformed and forged selection rejects early with no payment authority',
+withApp(async app=>{
+ for(const q of ['?candidate=real-person','?candidate=synthetic-web&candidate=synthetic-data',
+  '?ack=1','?ack=true&candidate=synthetic-web','?token=pay',
+  '?candidate=synthetic-web&ack=1&merchant=forged']){
+   const res=await fetch(app.url+q);
+   assert.equal(res.status,400,q);
+   assert.equal(await res.text(),'INVALID_REVIEW_SELECTION');
+ }
+}));
+test('no candidate worksheet or GET authorization when local records are unverified',async()=>{
+ const app=await startOwnerMvpReview({receipt:{...saved,status:'LOCAL_EVIDENCE_REVIEW_REQUIRED'}});
+ try {
+  for(const url of [app.url,app.url+'?candidate=synthetic-web&ack=1']){
+   const html=await (await fetch(url)).text();
+   assert.ok(html.includes('candidate decisions are disabled'));
+   assert.ok(!html.includes('HUMAN SCOPE REVIEW RECORDED'));
+  }
+ }finally{await app.close();}
+});

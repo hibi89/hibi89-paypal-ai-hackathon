@@ -5,7 +5,7 @@ import {randomBytes} from 'node:crypto';
 import {matchSyntheticMarketplaceSkills,MARKETPLACE_SKILL_NAMES} from './marketplace_match.mjs';
 const esc=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const loopback=addr=>addr==='127.0.0.1'||addr==='::ffff:127.0.0.1';
-function render(receipt){
+function render(receipt,{selectedProfileId=null,acknowledgeGaps=false}={}){
  const skills=receipt?.classifiedSkills;
  const valid=Array.isArray(skills)&&skills.length>0&&
    skills.every(x=>typeof x==='string'&&MARKETPLACE_SKILL_NAMES.includes(x))&&
@@ -15,8 +15,28 @@ function render(receipt){
    receipt?.localAuditIntegrity==='PASS'&&valid&&
    receipt?.localStates?.capture==='PAID'&&receipt?.localStates?.gemini==='COMMITTED';
  const matches=recorded?matchSyntheticMarketplaceSkills(skills,{source:'GEMINI_API'}):null;
- const candidate=matches?.profiles.find(x=>x.matchedSkills.length>0);
+ const profiles=matches?.profiles??[];
+ // Explicit user selection is a local GET-only worksheet state, not payment authority.
+ const candidate=profiles.find(p=>p.id===selectedProfileId)||
+   (selectedProfileId===null?profiles.find(p=>p.matchedSkills.length>0):null);
+ const reviewed=Boolean(selectedProfileId&&candidate&&acknowledgeGaps);
  const tags=items=>items.length?items.map(v=>'<span class="tag">'+esc(v)+'</span>').join(' '):'<em>None</em>';
+ const rows=profiles.map(p=>
+  '<label class="candidate"><input type="radio" name="candidate" value="'+esc(p.id)+'" '+
+   (candidate?.id===p.id?'checked ':'')+'required> <strong>'+esc(p.displayName)+'</strong>'+
+   ' — '+p.matchedSkills.length+'/'+matches.requestedSkills.length+' required skills'+
+   (p.eligible?' (complete skill match)':' (missing: '+esc(p.missingSkills.join(', ')||'none')+')')+
+   '</label>').join('');
+ const worksheet=recorded?
+  '<form method="GET"><p>Select a fictional candidate to review the real, previously saved model skill taxonomy.</p>'+
+   rows+'<label class="review-check"><input type="checkbox" name="ack" value="1" '+
+   (acknowledgeGaps?'checked ':'')+
+   '> I reviewed the selected candidate’s skill gaps and understand this selection has NO payment authority.</label>'+
+   '<button type="submit">Review selected scope (GET only)</button></form>'+
+   '<p class="label">'+(reviewed?'HUMAN SCOPE REVIEW RECORDED IN THIS PAGE ONLY':
+    'AWAITING EXPLICIT SCOPE REVIEW')+'</p>'+
+   '<p>Review is an ephemeral preview, not a new quote approval, contract or payment authorization.</p>':
+  '<p>Private Gemini classification unavailable; candidate decisions are disabled.</p>';
  const ai=recorded?'<p>Saved model-classified skills (no new Gemini call):</p>'+tags(matches.requestedSkills):
   '<p>No complete, consistent local AI and payment record is available for this review.</p>';
  const worker=candidate?
@@ -39,7 +59,12 @@ function render(receipt){
   'border-radius:5px;font-size:.9rem;margin:2px}',
   '.metric{font-size:1.4rem;font-weight:700}.grid{display:grid;',
   'grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}',
-  '.label{font-weight:700;font-size:.8rem}</style></head><body>',
+  '.label{font-weight:700;font-size:.8rem}.candidate,.review-check{display:block;',
+ 'margin:8px 0;cursor:pointer}.candidate input,.review-check input{margin-right:6px}',
+ 'button{padding:10px 14px;background:#1d4ed8;border:0;border-radius:6px;',
+ 'color:#fff;cursor:pointer;margin:8px 0}button:hover{background:#1e40af}',
+ '.candidate{padding:9px;border:1px solid #e2e8f0;border-radius:6px}',
+ '</style></head><body>',
   '<header><h1>PayPal AI Marketplace — Owner MVP Review</h1>',
   '<div class="label">',recorded?'LOCAL RESULT RECORDED':'REVIEW REQUIRED','</div>',
   '<p>Private, read-only snapshot from an earlier owner-operated Sandbox CLI.</p></header>',
@@ -48,14 +73,15 @@ function render(receipt){
   ' create, charge, capture or replay any payment. NOT a production service.</div>',
   '<section class="panel"><h2>1. Gemini-assisted skill review</h2>',ai,'</section>',
   '<section class="panel"><h2>2. Synthetic freelancer match</h2>',worker,'</section>',
-  '<div class="grid"><section class="panel"><h2>3. Human-approved quote</h2>',
+  '<section class="panel"><h2>3. Explicit human scope review</h2>',worksheet,'</section>',
+  '<div class="grid"><section class="panel"><h2>4. Previously human-approved quote</h2>',
   '<div class="metric">',recorded?'USD 1.50':'NOT VERIFIED','</div>',
   '<p>Fixed by a person, not AI-predicted market pricing.</p></section>',
-  '<section class="panel"><h2>4. Sandbox payment evidence</h2>',
+  '<section class="panel"><h2>5. Sandbox payment evidence</h2>',
   '<div class="metric">',recorded?'LOCAL GET RESULT':'NOT VERIFIED','</div>',
   '<p>',recorded?'Local SQLite records a previous provider-GET-verified Sandbox capture.':
    'No complete local capture result is available.', ' No new GET or POST was performed here.</p>',
-  '</section></div><section class="panel"><h2>5. Audit integrity</h2><p>',
+  '</section></div><section class="panel"><h2>6. Audit integrity</h2><p>',
   'Unsigned local SQLite hash chain: <strong>',
   recorded?'PASS':'NOT VERIFIED','</strong>. No external attestation.</p></section>',
   '<footer><small>127.0.0.1 only • GET only • no merchant or order IDs',
@@ -77,12 +103,29 @@ export async function startOwnerMvpReview({receipt,port=0}={}){
    if(!loopback(req.socket.remoteAddress)||req.headers.host!==host){
      res.writeHead(403,headers);res.end('FORBIDDEN');return;
    }
-   if(req.url!=='/review/'+capability){res.writeHead(404,headers);res.end('NOT_FOUND');return;}
+   let url;
+   try{url=new URL(req.url,'http://'+host)}
+   catch{res.writeHead(400,headers);res.end('INVALID_REVIEW_URL');return;}
+   if(url.pathname!=='/review/'+capability){
+     res.writeHead(404,headers);res.end('NOT_FOUND');return;
+   }
    if(req.method!=='GET'){
      res.writeHead(405,{...headers,allow:'GET'});res.end('METHOD_NOT_ALLOWED');return;
    }
+   const entries=[...url.searchParams.keys()];
+   const unknown=entries.some(k=>!['candidate','ack'].includes(k));
+   const duplicates=new Set(entries).size!==entries.length;
+   const candidate=url.searchParams.get('candidate');
+   const ack=url.searchParams.get('ack');
+   if(unknown||duplicates||(ack!==null&&ack!=='1')||
+      (candidate===null&&ack!==null)||
+      (candidate!==null&&!/^synthetic-(?:web|automation|data)$/.test(candidate))){
+     res.writeHead(400,headers);res.end('INVALID_REVIEW_SELECTION');return;
+   }
+   const page=candidate===null&&ack===null?html:
+     render(receipt,{selectedProfileId:candidate,acknowledgeGaps:ack==='1'});
    res.writeHead(200,{...headers,'content-type':'text/html; charset=utf-8'});
-   res.end(html);
+   res.end(page);
  });
  await new Promise((resolve,reject)=>{
    server.once('error',reject);
