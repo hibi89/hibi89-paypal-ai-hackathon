@@ -36,7 +36,7 @@ export function assessSubmissionEvidence({ledger,files}={}){
   info('VIDEO_PUBLIC_LINK','NOT_SUBMITTED','Recorded English walkthrough and owner-approved public link required'),
   info('DEVPOST_SUBMISSION_RECEIPT','NOT_SUBMITTED','Final owner-approved submission receipt required'),
  ];
- const blockers=[...local.filter(x=>['LOCAL_FILE_MISSING_OR_INVALID','LOCAL_DRAFT_MISSING'].includes(x.status)).map(x=>x.name),
+ const blockers=[...local.filter(x=>['LOCAL_FILE_MISSING_OR_INVALID','LOCAL_DRAFT_MISSING','DRAFT_MISSING'].includes(x.status)).map(x=>x.name),
  ...external.map(x=>x.name)];
  return Object.freeze({
   status:'SUBMISSION_BLOCKED_EXTERNAL_EVIDENCE',
