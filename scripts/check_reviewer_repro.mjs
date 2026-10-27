@@ -78,6 +78,10 @@ if(!report.ready){
        evidence.businessIntelligence?.providerTransactionsMeasured!==false||
        evidence.businessIntelligence?.paymentAttempts?.total!==0||
        evidence.businessIntelligence?.paymentAttempts?.localPaidRecords!==0||
+       evidence.businessIntelligence?.aiDraftAttempts?.total!==0||
+       evidence.businessIntelligence?.aiDraftAttempts?.unresolved!==0||
+       evidence.businessIntelligence?.marketDemandMeasured!==false||
+       evidence.dbvoraInspired?.backupsVerified!==false||
        evidence.soviaStyle?.checks?.find(x=>x.rule==='PAYPAL_PROVIDER_NOT_CONNECTED')?.status!=='NOT_TESTED')
       throw new Error('LOCAL_EVIDENCE_CLAIMS_INVALID');
     // The evidence inspector must remain read-only even when sent a mutation.
