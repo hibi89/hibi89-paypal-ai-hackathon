@@ -18,6 +18,17 @@ const withDB=fn=>async()=>{
     }});
   }finally{store.close();rmSync(dir,{recursive:true,force:true})}
 };
+test('D12: subscription event ledger rejects updates and deletes after reopen',withDB(async x=>{
+ const i=x.id;
+ let s=x.store.get({subscriptionId:i.subscriptionId,actorId:i.ownerId,merchantId:i.merchantId});
+ x.store.step({subscriptionId:i.subscriptionId,actorId:i.ownerId,merchantId:i.merchantId,
+   action:'start',expectedVersion:s.version,eventId:'IMMUTABLE1'});
+ const events=x.store.events({subscriptionId:i.subscriptionId,actorId:i.ownerId,merchantId:i.merchantId});
+ assert.equal(events.length,1);
+ assert.equal(events[0].source,'OFFLINE_SCENARIO');
+ const reopened=x.reopen();
+ assert.deepEqual(reopened.events({subscriptionId:i.subscriptionId,actorId:i.ownerId,merchantId:i.merchantId}),events);
+}));
 test('D12: DB rejects memory and keeps payment evidence NOT_VERIFIED',()=>{
  assert.throws(()=>createSubscriptionScenarioStore({filename:':memory:'}),
    {code:'DURABLE_DEMO_DB_REQUIRED'});
