@@ -39,6 +39,25 @@ test('D13: inconsistent amount/version/owner/merchant or fulfillment cannot pass
   assert.equal(evaluateLocalIntegration({quote,contract,
     subscription:{...subscription,paymentEvidence:'PAID'}}).status,'LOCAL_DEMO_INCOMPLETE');
 });
+test('D13: nonpositive and overflowed milestones cannot qualify as accepted delivery',()=>{
+ const quote={id:'q',ownerId:'o',merchantId:'m',status:'APPROVED',version:1,
+   currency:'USD',approval:{actorId:'o',quoteVersion:1,amountMinor:1200}};
+ const base={quoteId:'q',quoteVersion:1,ownerId:'o',merchantId:'m',currency:'USD',
+   amountMinor:1200,paymentState:'NOT_CAPTURED'};
+ const subscription={mode:'OFFLINE_SCENARIO_NO_PROVIDER',state:'ACTIVE',paymentEvidence:'NOT_VERIFIED'};
+ for(const milestones of [
+   [{amountMinor:1300,state:'ACCEPTED'},{amountMinor:-100,state:'ACCEPTED'}],
+   [{amountMinor:1200,state:'ACCEPTED'},{amountMinor:0,state:'ACCEPTED'}],
+   [{amountMinor:1200,state:'ACCEPTED'},{amountMinor:NaN,state:'ACCEPTED'}],
+   [{amountMinor:1200,state:'ACCEPTED'},{amountMinor:1.5,state:'ACCEPTED'}],
+   [{amountMinor:Number.MAX_SAFE_INTEGER,state:'ACCEPTED'},
+    {amountMinor:Number.MAX_SAFE_INTEGER,state:'ACCEPTED'}]
+ ]){
+   const result=evaluateLocalIntegration({quote,contract:{...base,milestones},subscription});
+   assert.equal(result.status,'LOCAL_DEMO_INCOMPLETE');
+   assert.equal(result.dataContract,'MISMATCH');
+ }
+});
 test('D13: local integration GET-only before quote approval, cross feature session isolated',async()=>{
   const app=await startOfflineDemo({testReviewSessions:true});
   try{
