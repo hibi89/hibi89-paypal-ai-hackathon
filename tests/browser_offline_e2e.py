@@ -64,12 +64,24 @@ try:
             # a dropped click rather than the actual quote draft path.
             expect(page.locator("#message")).to_contain_text("Read-only GET completed")
             assert sum(method=="POST" for method,_ in requests)==before_match+1
+            # Second deliberate match after reload is safe. Candidate choice
+            # only prepares local scope; it does NOT post draft or approve.
+            page.locator("#marketplace-submit").click()
+            expect(page.locator("#marketplace-choose-synthetic-web")).to_be_visible()
+            before_prepare=sum(method=="POST" for method,_ in requests)
+            page.locator("#marketplace-choose-synthetic-web").click()
+            expect(page.locator("#scope")).to_have_value(
+                re.compile(r"ecommerce website with PayPal checkout.*Synthetic candidate: synthetic-web"))
+            expect(page.locator("#marketplace-selection-status")).to_contain_text(
+                "No quote submitted")
+            assert sum(method=="POST" for method,_ in requests)==before_prepare
             page.evaluate("""() => {
               const e=document.getElementById('draft-form');
               e.dispatchEvent(new Event('submit',{cancelable:true}));
               e.dispatchEvent(new Event('submit',{cancelable:true}));
             }""")
             expect(page.locator("#quote-view")).to_contain_text("Version 2")
+            expect(page.locator("#quote-view")).to_contain_text("Synthetic candidate: synthetic-web")
             assert sum(method=="POST" and url.endswith("/draft")
                 for method,url in requests)==1
             page.locator("#dollars").fill("17.55")
@@ -138,6 +150,7 @@ try:
                 expect(reviewer.locator("#session-role")).to_contain_text("reviewer")
                 expect(reviewer.locator("#contract-fulfillment")).to_have_text("SUBMITTED")
                 assert reviewer.locator("#draft-panel").is_hidden()
+                assert reviewer.locator("#marketplace-panel").is_hidden()
                 assert reviewer.locator("#delivery-form").is_hidden()
                 reviewer.reload()
                 assert not any(method=="POST" for method,_ in review_requests)

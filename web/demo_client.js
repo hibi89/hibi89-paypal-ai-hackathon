@@ -74,7 +74,7 @@ async function init(){
     quoteId=session.quoteId;
     reviewerMode=session.role==='reviewer';
     if(reviewerMode){
-      for(const id of ['quote-panel','draft-panel','approval-panel','payment-panel'])
+      for(const id of ['marketplace-panel','quote-panel','draft-panel','approval-panel','payment-panel'])
         document.getElementById(id).hidden=true;
     }else await refresh();
     initialized=true;
