@@ -14,6 +14,7 @@ import {createSandboxTransport} from '../src/paypal_sandbox_transport.mjs';
 import {createOwnerMvpFlow,MVP_BRIEF} from '../src/owner_mvp_flow.mjs';
 import {validateMarketplaceBrief} from '../src/gemini_marketplace_provider.mjs';
 import {startOwnerMvpCallbackLanding} from '../src/owner_mvp_callback_landing.mjs';
+import {inspectOwnerMvpLocalState} from '../src/owner_mvp_local_status.mjs';
 
 const required=['--execute','--owner-authorized','--free-tier-confirmed',
   '--sandbox-only','--buyer-is-sandbox-personal'];
@@ -52,6 +53,13 @@ if(flags.length!==required.length||set.size!==required.length||
       let ledger=null,sessionStore=null,aiStore=null,landing=null;
       let publicState='NOT_STARTED';
       try{
+        // PRIVATE durable state must be read without mutation before external
+        // callback probes, Gemini classification, or a second Orders POST.
+        const previous=inspectOwnerMvpLocalState({directory:folder});
+        if(previous.safeToStartNewAttempt!==true){
+          publicState='PRIOR_PRIVATE_SQLITE_STATE_REVIEW_WITH_MVP_STATUS';
+          throw Error('PRIVATE_REPLAY_NOT_AUTHORIZED');
+        }
         const supplied=await rl.question(
           'FICTIONAL task description, 8-500 chars (Enter = fixed synthetic demo): ');
         const brief=supplied.trim()?supplied:MVP_BRIEF;
