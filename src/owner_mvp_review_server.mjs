@@ -99,7 +99,7 @@ export async function startOwnerMvpReview({receipt,port=0}={}){
    const host='127.0.0.1:'+server.address().port;
    const headers={'cache-control':'no-store','x-content-type-options':'nosniff',
      'referrer-policy':'no-referrer','x-frame-options':'DENY',
-     'content-security-policy':"default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; connect-src 'none'"};
+     'content-security-policy':"default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; connect-src 'none'"};
    if(!loopback(req.socket.remoteAddress)||req.headers.host!==host){
      res.writeHead(403,headers);res.end('FORBIDDEN');return;
    }
