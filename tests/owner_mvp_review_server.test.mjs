@@ -119,3 +119,12 @@ test('CSP permits same-origin GET worksheet without enabling payment POST',withA
  assert.equal((await fetch(app.url+'?candidate=synthetic-web&ack=1')).status,200);
  assert.equal((await fetch(app.url,{method:'POST',body:'capture'})).status,405);
 }));
+
+test('unverified receipt cannot record human scope acknowledgment',async()=>{
+ const app=await startOwnerMvpReview({receipt:{...saved,status:'LOCAL_EVIDENCE_REVIEW_REQUIRED'}});
+ try{
+  const html=await (await fetch(app.url+'?candidate=synthetic-web&ack=1')).text();
+  assert.ok(!html.includes('HUMAN SCOPE REVIEW RECORDED IN THIS PAGE ONLY'));
+  assert.ok(html.includes('candidate decisions are disabled'));
+ }finally{await app.close()}
+});
