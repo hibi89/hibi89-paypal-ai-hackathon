@@ -20,7 +20,8 @@ function provider(fn){
 }
 const good=provider(async()=>({source:'GEMINI_API',suggestedMinor:20000}));
 const api=(repo,p=good,actor='owner')=>createQuoteApi({repository:repo,
- resolveSession:async()=>({verified:true,actorId:actor,csrfToken:'synthetic-csrf'}),
+ resolveSession:async()=>({verified:true,actorId:actor,merchantId:'synthetic-merchant',csrfToken:'synthetic-csrf'}),
+ authorizeExternalAi:async()=>true,allowAiPricingExperiment:true,
  draftProvider:p});
 function fixture(){
  const dir=mkdtempSync(join(tmpdir(),'ai-cas-'));
@@ -58,7 +59,7 @@ test('two simultaneous draft submissions commit once, external call once, second
   const h=api(f.db,p);
   const first=h(req());
   // First reaches pending provider only after its SQLite transaction.
-  for(let i=0;i<10&&calls===0;i++)await Promise.resolve();
+  for(let i=0;i<50&&calls===0;i++)await Promise.resolve();
   assert.equal(calls,1);
   const duplicate=await h(req());
   assert.equal(duplicate.status,409);
@@ -160,5 +161,80 @@ test('forged GEMINI source without valid claim cannot persist',async()=>{
   await assert.rejects(f.db.revise({id:'q1',actorId:'owner',expectedVersion:2,
    scope:SCOPE,suggestedMinor:20000,suggestionSource:'GEMINI_API'}),
    {code:'AI_DRAFT_CLAIM_REQUIRED'});
+ }finally{f.close();}
+});
+
+test('legacy Gemini price route refuses construction without independent host authorization and explicit opt-in',()=>{
+ const r={get:async()=>null,approve:async()=>null,revise:async()=>null,
+  claimAiDraft:async()=>null,markAiDraftUnknown:async()=>null};
+ assert.throws(()=>createQuoteApi({repository:r,resolveSession:async()=>null,
+  draftProvider:good,authorizeExternalAi:async()=>true}),
+  /LEGACY_AI_PRICE_DRAFT_EXPLICIT_HOST_GATE_REQUIRED/);
+ assert.throws(()=>createQuoteApi({repository:r,resolveSession:async()=>null,
+  draftProvider:good,allowAiPricingExperiment:true}),
+  /LEGACY_AI_PRICE_DRAFT_EXPLICIT_HOST_GATE_REQUIRED/);
+});
+
+test('browser consent cannot call Gemini without separate trusted host permission',async()=>{
+ const f=fixture();
+ try{
+  await seed(f.db);
+  let networkCalls=0,approvalCalls=0;
+  const h=createQuoteApi({repository:f.db,
+    resolveSession:async()=>({verified:true,actorId:'owner',
+      merchantId:'synthetic-merchant',csrfToken:'synthetic-csrf'}),
+    draftProvider:provider(async()=>{networkCalls++;return {source:'GEMINI_API',suggestedMinor:20000};}),
+    authorizeExternalAi:async()=>{approvalCalls++;return false;},
+    allowAiPricingExperiment:true});
+  const result=await h(req());
+  assert.equal(result.status,403);
+  assert.equal((await result.json()).error,'TRUSTED_EXTERNAL_AI_APPROVAL_REQUIRED');
+  assert.equal(approvalCalls,1);
+  assert.equal(networkCalls,0);
+  assert.equal(await f.db.getAiDraftAttempt({id:'q1',expectedVersion:2}),null);
+ }finally{f.close();}
+});
+
+test('revoke auth during host approval blocks Gemini before durable claim',async()=>{
+ const f=fixture();
+ try{
+  await seed(f.db);
+  let principal={verified:true,actorId:'owner',
+    merchantId:'synthetic-merchant',csrfToken:'synthetic-csrf'};
+  let calls=0;
+  const h=createQuoteApi({repository:f.db,
+    resolveSession:async()=>principal,
+    authorizeExternalAi:async()=>{principal=null;return true;},
+    allowAiPricingExperiment:true,
+    draftProvider:provider(async()=>{calls++;return {source:'GEMINI_API',suggestedMinor:20000};})});
+  const response=await h(req());
+  assert.equal(response.status,403);
+  assert.equal((await response.json()).error,'EXTERNAL_AI_SESSION_CHANGED');
+  assert.equal(calls,0);
+  assert.equal(await f.db.getAiDraftAttempt({id:'q1',expectedVersion:2}),null);
+ }finally{f.close();}
+});
+
+test('revoke auth while claim awaits blocks provider POST, records UNKNOWN',async()=>{
+ const f=fixture();
+ try{
+  await seed(f.db);
+  let principal={verified:true,actorId:'owner',
+    merchantId:'synthetic-merchant',csrfToken:'synthetic-csrf'};
+  let calls=0;
+  const repo={...f.db,claimAiDraft:async data=>{
+    const outcome=await f.db.claimAiDraft(data);
+    principal=null;
+    return outcome;
+  }};
+  const h=createQuoteApi({repository:repo,
+    resolveSession:async()=>principal,
+    authorizeExternalAi:async()=>true,allowAiPricingExperiment:true,
+    draftProvider:provider(async()=>{calls++;return {source:'GEMINI_API',suggestedMinor:20000};})});
+  const response=await h(req());
+  assert.equal(response.status,403);
+  assert.equal((await response.json()).error,'EXTERNAL_AI_SESSION_CHANGED');
+  assert.equal(calls,0);
+  assert.equal((await f.db.getAiDraftAttempt({id:'q1',expectedVersion:2})).state,'UNKNOWN');
  }finally{f.close();}
 });

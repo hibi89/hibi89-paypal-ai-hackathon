@@ -74,7 +74,8 @@ async function withQuote(transport,fn){
  try{
   await db.insertQuote({id:'q1',ownerId:'owner',merchantId:'merchant',version:2});
   const api=createQuoteApi({repository:db,
-   resolveSession:async()=>({verified:true,actorId:'owner',csrfToken:'synthetic-csrf'}),
+   resolveSession:async()=>({verified:true,actorId:'owner',merchantId:'merchant',csrfToken:'synthetic-csrf'}),
+   authorizeExternalAi:async()=>true,allowAiPricingExperiment:true,
    draftProvider:createGeminiQuoteDraftProvider({...opts,fetchImpl:transport})});
   await fn({api,db});
  }finally{db.close();rmSync(dir,{recursive:true,force:true});}

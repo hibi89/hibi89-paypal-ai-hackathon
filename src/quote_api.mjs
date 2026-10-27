@@ -1,4 +1,6 @@
 // PPL-002 Day 1: offline Fetch API. NOT a deployed server, auth provider or PayPal client.
+// Legacy Gemini PRICE experiments are opt-in only; contest AI matches skills instead.
+import {createHash} from 'node:crypto';
 import { approvedAmount, ContractError } from './payment_contract.mjs';
 
 export class QuoteApiError extends Error {
@@ -114,7 +116,8 @@ function route(path) {
 
 // resolveSession is a TRUSTED server-side session verifier; never read actorId
 // or csrfToken from arbitrary browser headers/body. No insecure fallback.
-export function createQuoteApi({ repository, resolveSession, draftProvider } = {}) {
+export function createQuoteApi({ repository, resolveSession, draftProvider,
+  authorizeExternalAi, allowAiPricingExperiment=false } = {}) {
   if (!repository || typeof repository.get !== 'function' ||
       typeof repository.approve !== 'function' ||
       typeof resolveSession !== 'function')
@@ -126,6 +129,11 @@ export function createQuoteApi({ repository, resolveSession, draftProvider } = {
      (typeof repository.claimAiDraft!=='function'||
       typeof repository.markAiDraftUnknown!=='function'))
     throw new TypeError('DURABLE_AI_RESERVATION_REPOSITORY_REQUIRED');
+  // An AI-generated price is NOT part of the contest-submission skill matching.
+  // Preserve the legacy experimental path, but reject unapproved activation.
+  if(draftProvider?.requiresExternalConsent===true &&
+     (allowAiPricingExperiment!==true||typeof authorizeExternalAi!=='function'))
+    throw new TypeError('LEGACY_AI_PRICE_DRAFT_EXPLICIT_HOST_GATE_REQUIRED');
   return async function handleQuoteRequest(request) {
     try {
       if (!(request instanceof Request))
@@ -174,11 +182,44 @@ export function createQuoteApi({ repository, resolveSession, draftProvider } = {
         const externalAI = draftProvider.requiresExternalConsent === true;
         fail(externalAI && data.externalAiConsent !== true,
           'EXTERNAL_AI_CONSENT_REQUIRED',403);
+        // Real-host approval is separate from the browser's untrusted consent
+        // flag. Neither the legacy price proposal nor AI text may authorize pay.
+        const revalidateExternalAi=async()=>{
+          const currentSession=await resolveSession(request);
+          fail(!currentSession||currentSession.verified!==true||
+            currentSession.actorId!==session.actorId||
+            currentSession.merchantId!==quote.merchantId||
+            currentSession.csrfToken!==request.headers.get('x-csrf-token'),
+            'EXTERNAL_AI_SESSION_CHANGED',403);
+          const currentQuote=await repository.get(r.id);
+          fail(!currentQuote||currentQuote.id!==quote.id||
+            currentQuote.ownerId!==quote.ownerId||
+            currentQuote.merchantId!==quote.merchantId||
+            currentQuote.currency!==quote.currency||
+            currentQuote.status!=='PROPOSED'||
+            currentQuote.version!==data.expectedVersion,
+            'EXTERNAL_AI_QUOTE_CHANGED',409);
+        };
+        if(externalAI){
+          fail(session.merchantId!==quote.merchantId,
+            'EXTERNAL_AI_MERCHANT_REQUIRED',403);
+          const permitted=await authorizeExternalAi(Object.freeze({
+            action:'LEGACY_AI_PRICE_DRAFT_ONCE',quoteId:r.id,
+            quoteVersion:data.expectedVersion,actorId:session.actorId,
+            merchantId:quote.merchantId,
+            scopeHash:createHash('sha256').update(data.scope).digest('hex')
+          }));
+          fail(permitted!==true,'TRUSTED_EXTERNAL_AI_APPROVAL_REQUIRED',403);
+          await revalidateExternalAi();
+        }
         // Durable one-shot CAS/finite budget, performed before any third-party call.
         const claimArgs={id:r.id,actorId:session.actorId,
           expectedVersion:data.expectedVersion};
         if(externalAI)await repository.claimAiDraft(claimArgs);
         try{
+          // A durable claim can await SQLite. Revocation after that claim must
+          // consume the reservation as UNKNOWN and never contact Gemini.
+          if(externalAI)await revalidateExternalAi();
           let proposal;
           try{proposal=await draftProvider({scope:data.scope,currency:quote.currency});}
           catch{throw new QuoteApiError('DRAFT_PROVIDER_UNAVAILABLE',503);}
