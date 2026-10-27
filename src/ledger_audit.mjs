@@ -23,7 +23,8 @@ const auditTrigger=(name,table,action,kind,id,version,actor,merchant,state,sourc
 export function installLocalAudit(db){
   if(!db||typeof db.exec!=='function'||typeof db.function!=='function')
     throw new TypeError('SQLITE_AUDIT_DB_REQUIRED');
-  db.function('audit_hash',{deterministic:true},(...parts)=>localAuditHash(...parts));
+  db.function('audit_hash',{deterministic:true},
+    (a,b,c,d,e,f,g,h,i)=>localAuditHash(a,b,c,d,e,f,g,h,i));
   db.exec("CREATE TABLE IF NOT EXISTS local_audit_events ("+
     "seq INTEGER PRIMARY KEY AUTOINCREMENT,"+
     "prev_hash TEXT NOT NULL,event_hash TEXT NOT NULL UNIQUE,event_time TEXT NOT NULL,"+
