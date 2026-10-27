@@ -47,6 +47,8 @@ test('D13: nonpositive and overflowed milestones cannot qualify as accepted deli
  const subscription={mode:'OFFLINE_SCENARIO_NO_PROVIDER',state:'ACTIVE',paymentEvidence:'NOT_VERIFIED'};
  for(const milestones of [
    [{amountMinor:1300,state:'ACCEPTED'},{amountMinor:-100,state:'ACCEPTED'}],
+   [null,{amountMinor:1200,state:'ACCEPTED'}],
+   [undefined,{amountMinor:1200,state:'ACCEPTED'}],
    [{amountMinor:1200,state:'ACCEPTED'},{amountMinor:0,state:'ACCEPTED'}],
    [{amountMinor:1200,state:'ACCEPTED'},{amountMinor:NaN,state:'ACCEPTED'}],
    [{amountMinor:1200,state:'ACCEPTED'},{amountMinor:1.5,state:'ACCEPTED'}],
