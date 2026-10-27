@@ -96,7 +96,7 @@ test('constructor never exposes public route, rejects HTTP origin and missing ho
 });
 test('untrusted browser callback token and fake cookies never authenticate a session',withFixture(async f=>{
  const before=f.calls.length;
- for(const handle of [undefined,'token=FORGED','owner',{}]){
+ for(const handle of [null,'token=FORGED','owner',{}]){
   const r=await f.execute('return',handle,{headers:{
    cookie:'pilot=admin','x-actor-id':'owner','x-paypal-status':'COMPLETED',
    'x-forwarded-host':'checkout.example.org'
