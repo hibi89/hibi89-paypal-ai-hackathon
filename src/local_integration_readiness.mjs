@@ -35,7 +35,8 @@ export function evaluateLocalIntegration({quote,contract,subscription}={}){
       'CONTRACT_QUOTE_MISMATCH') : 'NO_CONTRACT',
     subscription:subValid?subState:'NOT_VERIFIED_SCENARIO',
     dataContract:contract?(amountConsistent?'CONSISTENT':'MISMATCH'):'NOT_CREATED',
-    contractPayment:contract?.paymentState??'NOT_CAPTURED',
+    // A synthetic contract must never be presented as provider-verified payment.
+    contractPayment:contract?.paymentState==='NOT_CAPTURED'?'NOT_CAPTURED':'NOT_VERIFIED',
     subscriptionPayment:'NOT_VERIFIED',
     realPayPal:'NOT_TESTED',
     realAI:'NOT_TESTED',
