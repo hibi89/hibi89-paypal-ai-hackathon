@@ -54,6 +54,7 @@ try:
             expect(evidence).to_contain_text("NOT INDEPENDENTLY REPRODUCED")
             expect(evidence).to_contain_text("web, payments, qa")
             expect(evidence).to_contain_text("USD 1.50")
+            expect(evidence).to_contain_text("PPL_OWNER_REAL_SANDBOX_LOCAL_RECEIPT_20261028.md")
             expect(evidence).to_contain_text("browser walkthrough below remains synthetic")
             for private_marker in ["checkoutnow", "PayerID", "client_secret", "access_token"]:
                 assert private_marker not in page.locator("body").inner_text()

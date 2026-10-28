@@ -52,7 +52,7 @@ npm run demo
 7. Refresh the page and use read-only status controls. The client must not issue a payment POST merely because the page refreshed. The quote/contract payment state remains **NOT_CAPTURED** and subscription payment verification remains **NOT_VERIFIED**.
 8. Select payment status. The browser must not initiate any real PayPal Orders create or capture operation. Live/capture routes intentionally fail closed.
 
-The payment panel includes a collapsed, read-only summary of the **2026-10-28 owner-reported** Gemini skills and PayPal Sandbox run. It is explicitly marked **not independently reproduced**, contains no account/token/order identifiers, and is separate from the current synthetic browser ledger. Expanding the disclosure sends no request.
+The payment panel includes a collapsed, read-only summary of the **2026-10-28 owner-reported** Gemini skills and PayPal Sandbox run. It is explicitly marked **not independently reproduced**, contains no account/token/order identifiers, identifies `docs/technical/PPL_OWNER_REAL_SANDBOX_LOCAL_RECEIPT_20261028.md` as its source record, and is separate from the current synthetic browser ledger. Expanding the disclosure sends no request.
 
 ## Optional automated browser journey
 
