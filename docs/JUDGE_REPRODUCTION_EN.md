@@ -16,9 +16,7 @@ git clone https://github.com/hibi89/hibi89-paypal-ai-hackathon.git
 cd hibi89-paypal-ai-hackathon
 git switch lead/paypal
 node --version
-npm run preflight:reviewer
-npm test
-python3 render_master_progress.py --check
+npm run verify:local
 npm run demo
 ```
 
@@ -29,15 +27,15 @@ git clone https://github.com/hibi89/hibi89-paypal-ai-hackathon.git
 Set-Location hibi89-paypal-ai-hackathon
 git switch lead/paypal
 node --version
-npm run preflight:reviewer
-npm test
-python render_master_progress.py --check
+npm run verify:local
 npm run demo
 ```
 
 **Prerequisites:** Node.js **22.5+** (or newer major), Git, and Python 3 to check the generated progress dashboard. Node 22.0–22.4 lacks the built-in experimental `node:sqlite` module used by the demo. `npm test` invokes Node's `--experimental-sqlite` local driver and built-in test runner. No PayPal account, API keys, paid plan, additional server or production database is required for this offline walkthrough.
 
 `npm run preflight:reviewer` is the **green local readiness check**. It starts an isolated loopback instance, performs eight local **GET** smoke requests across the page, session, quote, subscription, integration and evidence read models, including post-rejection state rechecks, and two local **POST rejection probes** against the integration/evidence read models (HTTP 405; no payment endpoint), closes its temporary SQLite-backed server and prints `REVIEWER_LOCAL_READY` with **exit 0** on success. No external PayPal/AI calls, paid services, public ports or payment POSTs occur. The POST rejection probe never creates a payment or changes the synthetic ledger. This result **does not prove** the real providers or final submission. `npm test` then checks Node contracts; `npm run demo` launches the separate interactive page.
+
+`npm run verify:local` is the one-command offline verification: it checks the Git HEAD, Node runtime, generated schedule, Node suite, synthetic MVP, reviewer loopback and—when Python Playwright is installed—the real Chromium UI journey. It strips credential-like environment variables from child processes and records sanitized logs in a temporary directory. On Windows it locates a standard Chrome installation automatically; set `BROWSER_CHROME_PATH` only when Chrome/Chromium is installed in a nonstandard location. Three symlink-rejection cases are reported as **SKIP** on Windows only when the host denies symlink creation; they remain enabled wherever symlinks are permitted.
 
 **Separately, for contest-entry eligibility only**, run `npm run preflight:submission` when reviewing remaining deliverables. It prints **SUBMISSION_BLOCKED_EXTERNAL_EVIDENCE** and intentionally exits **2**, even when the offline demo works. Do **not** place this expected-blocked command ahead of an automated demo sequence or interpret it as an app startup failure. The command makes zero third-party calls and cannot authorize Devpost submission.
 
@@ -55,7 +53,7 @@ npm run demo
 
 ## Optional automated browser journey
 
-The `tests/browser_offline_e2e.py` test launches Chromium on **127.0.0.1** and validates versioned approval, read-only refreshes, duplicate submission handling, contract lifecycle, synthetic reviewer actions and subscription scenarios. GitHub Actions installs browser test tooling and runs this on a private runner. To run manually, use a properly configured Playwright Python environment and installed Chrome/Chromium; this browser test is not part of the zero-install Node suite.
+The `tests/browser_offline_e2e.py` test launches Chromium on **127.0.0.1** and validates versioned approval, read-only refreshes, duplicate submission handling, contract lifecycle, synthetic reviewer actions and subscription scenarios. GitHub Actions installs browser test tooling and runs this on a private runner. To run manually, use a properly configured Playwright Python environment and installed Chrome/Chromium; this browser test is not part of the zero-install Node suite. On Windows, the runner reads Node's UTF-8 loopback output using a background reader because `select()` cannot wait on Windows pipes.
 
 ## Owner-only, separately authorized third-party evidence
 

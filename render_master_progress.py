@@ -78,7 +78,7 @@ def render(doc):
     lines = [
         "# MASTER_PROGRESS — " + clean(doc["project_name"]), "",
         "> **자동 생성 파일입니다. 직접 수정 금지.** 단일 JSON 정본: `" +
-        clean(SOURCE.relative_to(ROOT)) + "`. 갱신: `python render_master_progress.py --write`; 검증: `python render_master_progress.py --check`.",
+        clean(SOURCE.relative_to(ROOT).as_posix()) + "`. 갱신: `python render_master_progress.py --write`; 검증: `python render_master_progress.py --check`.",
         "> 예정일과 실제 수행일은 별개. DONE은 **그날 정한 검증 범위만** 완료했음을 의미하며 실제 외부 API/운영/제출 성공과 다릅니다.",
         "> 시간은 예상 작업·별도 안전 예비의 **미사용 작업 배정량**입니다. 외부 승인 대기 및 미계측 실투입시간은 포함하지 않습니다.",
         "",

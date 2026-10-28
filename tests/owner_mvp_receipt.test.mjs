@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync,readdirSync,writeFileSync,symlinkSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {DatabaseSync} from 'node:sqlite';
 import {createSqliteLedger} from '../src/sqlite_ledger.mjs';
 import {createMarketplaceAiBudgetStore} from '../src/marketplace_ai_budget.mjs';
@@ -11,9 +12,9 @@ import {inspectOwnerMvpReceipt} from '../src/owner_mvp_receipt.mjs';
 
 const ID='operator_mvp_01',ACTOR='local_operator',MERCHANT='A1B2C3D4E5F6G';
 const brief='Build a fictional website with PayPal checkout and QA testing.';
-const fixture=fn=>async()=>{
+const fixture=fn=>async t=>{
   const directory=mkdtempSync(join(tmpdir(),'receipt-readonly-'));
-  try{await fn(directory)}
+  try{await fn(directory,t)}
   finally{rmSync(directory,{recursive:true,force:true})}
 };
 async function seed(directory,{paid=true,ai=true}={}){
@@ -96,7 +97,7 @@ test('paid ledger without committed AI result is not the combined MVP proof',fix
  assert.equal(r.status,'LOCAL_EVIDENCE_REVIEW_REQUIRED');
  assert.equal(r.localStates.capture,'PAID');
 }));
-test('corrupt and symlinked SQLite files cannot become paid evidence',fixture(async directory=>{
+test('corrupt and symlinked SQLite files cannot become paid evidence',fixture(async (directory,t)=>{
  await seed(directory);
  const f=join(directory,'checkout.sqlite');
  rmSync(f);
@@ -104,7 +105,10 @@ test('corrupt and symlinked SQLite files cannot become paid evidence',fixture(as
  let r=inspectOwnerMvpReceipt({directory});
  assert.equal(r.status,'LOCAL_EVIDENCE_REVIEW_REQUIRED');
  rmSync(f);
- symlinkSync(join(directory,'other.sqlite'),f);
+ try{symlinkSync(join(directory,'other.sqlite'),f)}
+ catch(error){if(process.platform==='win32'&&['EPERM','EACCES'].includes(error.code)){
+  t.skip('Windows symlink privilege unavailable; symlink rejection needs Developer Mode or an elevated host');return;
+ }throw error}
  r=inspectOwnerMvpReceipt({directory});
  assert.equal(r.status,'LOCAL_EVIDENCE_REVIEW_REQUIRED');
 }));
@@ -112,7 +116,7 @@ test('receipt CLI with no private DB performs zero network and does not echo sec
 fixture(async directory=>{
  const {spawnSync}=await import('node:child_process');
  const path=new URL('../scripts/print_owner_mvp_receipt.mjs',import.meta.url);
- const result=spawnSync(process.execPath,['--experimental-sqlite',path.pathname],{
+ const result=spawnSync(process.execPath,['--experimental-sqlite',fileURLToPath(path)],{
   env:{...process.env,HOME:directory,USERPROFILE:directory,
    GEMINI_API_KEY:'SENTINEL_DO_NOT_PRINT',
    PAYPAL_SANDBOX_CLIENT_SECRET:'SENTINEL_DO_NOT_PRINT'},

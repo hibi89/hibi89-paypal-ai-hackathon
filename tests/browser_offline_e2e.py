@@ -1,5 +1,5 @@
 """Chromium E2E against the REAL local offline demo. No payment/AI credentials."""
-import os, re, select, shutil, subprocess, time, tempfile
+import os, queue, re, shutil, subprocess, threading, time, tempfile
 from pathlib import Path
 from playwright.sync_api import sync_playwright, expect
 
@@ -9,22 +9,36 @@ os.close(fd)
 os.unlink(reviewer_path)
 env={**os.environ,"PAYPAL_BROWSER_TEST_TOKEN_FILE":reviewer_path}
 node=subprocess.Popen(["node","--experimental-sqlite","scripts/run_demo.mjs"],
-    cwd=root,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,bufsize=1,env=env)
+    cwd=root,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,
+    encoding="utf-8",bufsize=1,env=env)
+output_lines=queue.Queue()
+def collect_output(stream):
+    for line in stream:
+        output_lines.put(line)
+threading.Thread(target=collect_output,args=(node.stdout,),daemon=True).start()
 try:
     deadline=time.monotonic()+20
     address=None
     while time.monotonic()<deadline:
-        if node.poll() is not None:
-            raise AssertionError("offline demo failed to start")
-        if select.select([node.stdout],[],[],0.5)[0]:
-            line=node.stdout.readline()
-            match=re.search(r"http://127\.0\.0\.1:\d+",line)
-            if match:
-                address=match.group(0)
-                break
+        try:
+            line=output_lines.get(timeout=min(0.5,deadline-time.monotonic()))
+        except queue.Empty:
+            if node.poll() is not None:
+                raise AssertionError("offline demo failed to start")
+            continue
+        match=re.search(r"http://127\.0\.0\.1:\d+",line)
+        if match:
+            address=match.group(0)
+            break
     assert address, "offline demo URL missing"
     binary=(os.getenv("BROWSER_CHROME_PATH") or shutil.which("google-chrome")
         or shutil.which("google-chrome-stable") or shutil.which("chromium"))
+    if not binary and os.name=="nt":
+        roots=[os.getenv("PROGRAMFILES"),os.getenv("PROGRAMFILES(X86)"),
+            os.getenv("LOCALAPPDATA")]
+        candidates=[Path(root)/"Google"/"Chrome"/"Application"/"chrome.exe"
+            for root in roots if root]
+        binary=next((str(path) for path in candidates if path.is_file()),None)
     assert binary, "system Chromium/Chrome missing"
     with sync_playwright() as p:
         browser=p.chromium.launch(executable_path=binary,headless=True,

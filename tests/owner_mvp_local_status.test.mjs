@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync,readdirSync,writeFileSync,symlinkSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {DatabaseSync} from 'node:sqlite';
 import {createSqliteLedger} from '../src/sqlite_ledger.mjs';
 import {createMarketplaceAiBudgetStore} from '../src/marketplace_ai_budget.mjs';
@@ -10,8 +11,8 @@ import {createPilotCheckoutSessionStore} from '../src/pilot_checkout_session_sto
 import {inspectOwnerMvpLocalState,inspectOwnerMvpConfig}
   from '../src/owner_mvp_local_status.mjs';
 const merchant='A1B2C3D4E5F6G',quoteId='operator_mvp_01';
-const fixture=fn=>async()=>{const dir=mkdtempSync(join(tmpdir(),'mvp-state-'));
-  try{await fn(dir)}finally{rmSync(dir,{force:true,recursive:true})}};
+const fixture=fn=>async t=>{const dir=mkdtempSync(join(tmpdir(),'mvp-state-'));
+  try{await fn(dir,t)}finally{rmSync(dir,{force:true,recursive:true})}};
 test('empty private directory is safe to inspect without creating DB files',
 fixture(async dir=>{
  const before=readdirSync(dir);
@@ -97,13 +98,16 @@ fixture(async dir=>{
  assert.equal(r.safeToStartNewAttempt,false);
 }));
 test('corrupt SQLite and symbolic links fail closed instead of creating new files',
-fixture(async dir=>{
+fixture(async (dir,t)=>{
  writeFileSync(join(dir,'checkout.sqlite'),'INVALID_DB_CONTENT');
  let r=inspectOwnerMvpLocalState({directory:dir});
  assert.equal(r.status,'UNREADABLE_PRIVATE_STATE_REVIEW_REQUIRED');
  assert.equal(r.safeToStartNewAttempt,false);
  rmSync(join(dir,'checkout.sqlite'));
- symlinkSync(join(dir,'other.file'),join(dir,'checkout.sqlite'));
+ try{symlinkSync(join(dir,'other.file'),join(dir,'checkout.sqlite'))}
+ catch(error){if(process.platform==='win32'&&['EPERM','EACCES'].includes(error.code)){
+  t.skip('Windows symlink privilege unavailable; symlink rejection needs Developer Mode or an elevated host');return;
+ }throw error}
  r=inspectOwnerMvpLocalState({directory:dir});
  assert.equal(r.status,'UNREADABLE_PRIVATE_STATE_REVIEW_REQUIRED');
 }));
@@ -125,7 +129,7 @@ fixture(async dir=>{
  const env={...process.env,HOME:dir,USERPROFILE:dir,
   GEMINI_API_KEY:'NOT_A_REAL_SECRET',
   PAYPAL_SANDBOX_CLIENT_SECRET:'NOT_A_REAL_SECRET'};
- const result=spawnSync(process.execPath,['--experimental-sqlite',cmd.pathname],{
+ const result=spawnSync(process.execPath,['--experimental-sqlite',fileURLToPath(cmd)],{
    env,encoding:'utf8',timeout:12000});
  assert.equal(result.status,0,result.stderr);
  const summary=JSON.parse(result.stdout.trim());

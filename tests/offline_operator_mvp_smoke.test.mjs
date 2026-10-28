@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 import {runOfflineOperatorMvpSmoke} from '../src/offline_operator_mvp_smoke.mjs';
 
 test('one-command full operator MVP runs with no credentials and two persisted claims',async()=>{
@@ -23,7 +24,7 @@ test('one-command full operator MVP runs with no credentials and two persisted c
 });
 test('CLI can be executed without private environment, reports offline scope only',()=>{
  const cmd=new URL('../scripts/run_mvp_mock_smoke.mjs',import.meta.url);
- const x=spawnSync(process.execPath,['--experimental-sqlite',cmd.pathname],{
+ const x=spawnSync(process.execPath,['--experimental-sqlite',fileURLToPath(cmd)],{
    encoding:'utf8',timeout:15000,
    env:{PATH:process.env.PATH,HOME:process.env.HOME,USERPROFILE:process.env.USERPROFILE}
  });

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {createSqliteLedger} from '../src/sqlite_ledger.mjs';
 import {createPilotCheckoutSessionStore} from '../src/pilot_checkout_session_store.mjs';
 import {createMarketplaceAiBudgetStore} from '../src/marketplace_ai_budget.mjs';
@@ -168,7 +169,7 @@ test('fail closed with unsafe callback or forged merchant before provider networ
 test('operator CLI without flags is a dry run and reads no private credentials',async()=>{
  const {spawnSync}=await import('node:child_process');
  const cli=new URL('../scripts/run_owner_mvp_operator.mjs',import.meta.url);
- const run=spawnSync(process.execPath,['--experimental-sqlite',cli.pathname],{
+ const run=spawnSync(process.execPath,['--experimental-sqlite',fileURLToPath(cli)],{
   encoding:'utf8',env:{...process.env,GEMINI_API_KEY:'PRIVATE_DO_NOT_REPORT',
     PAYPAL_SANDBOX_CLIENT_SECRET:'PRIVATE_DO_NOT_REPORT'},timeout:10000
  });

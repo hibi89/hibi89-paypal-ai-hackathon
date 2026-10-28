@@ -184,11 +184,15 @@ test('dry-run, partial approval and missing credentials never claim any provider
   assert.equal(claimOwnerProbeOnce({provider:'paypal',stateDir:dir}),'CLAIMED');
  }finally{rmSync(dir,{recursive:true,force:true});}
 });
-test('symlinked state directory and invalid provider fail closed',()=>{
+test('symlinked state directory and invalid provider fail closed',t=>{
  const root=mkdtempSync(join(tmpdir(),'ppl-claim-link-'));
  try{
   const target=join(root,'private');mkdirSync(target);
-  const link=join(root,'link');symlinkSync(target,link,'dir');
+  const link=join(root,'link');
+  try{symlinkSync(target,link,'dir')}
+  catch(error){if(process.platform==='win32'&&['EPERM','EACCES'].includes(error.code)){
+   t.skip('Windows symlink privilege unavailable; symlink rejection needs Developer Mode or an elevated host');return;
+  }throw error}
   assert.equal(claimOwnerProbeOnce({provider:'paypal',stateDir:link}),'RESERVATION_UNAVAILABLE');
   assert.equal(claimOwnerProbeOnce({provider:'live',stateDir:target}),'RESERVATION_UNAVAILABLE');
   assert.equal(claimOwnerProbeOnce({provider:'paypal',stateDir:''}),'RESERVATION_UNAVAILABLE');
