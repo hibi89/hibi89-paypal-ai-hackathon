@@ -15,6 +15,8 @@ const approveButton=document.getElementById('approve-submit');
 const rejectButton=document.getElementById('reject-submit');
 const refreshButton=document.getElementById('refresh');
 const paymentButton=document.getElementById('payment-status');
+const roleToggle=document.getElementById('demo-role-toggle');
+const sessionRole=document.getElementById('demo-session-role');
 const controls=[draftButton,approveButton,rejectButton,refreshButton,paymentButton];
 let csrfToken=null,quoteId=null,current=null,initialized=false,busy=false,reviewerMode=false;
 function updateControls(){
@@ -22,6 +24,7 @@ function updateControls(){
   // An already-approved amount cannot be approved again; draft revision is allowed.
   approveButton.disabled=!initialized||busy||reviewerMode||current?.status!=='PROPOSED'||!!current?.rejection;
   rejectButton.disabled=!initialized||busy||reviewerMode||current?.status!=='PROPOSED'||!!current?.rejection;
+  roleToggle.disabled=!initialized||busy||roleToggle.hidden;
   root.setAttribute('aria-busy',String(busy));
 }
 function show(text){message.textContent=text;}
@@ -80,6 +83,9 @@ async function init(){
     csrfToken=session.csrfToken;
     quoteId=session.quoteId;
     reviewerMode=session.role==='reviewer';
+    roleToggle.hidden=session.syntheticReviewerEnabled!==true;
+    roleToggle.textContent=reviewerMode?'Return to synthetic owner view':'Switch to synthetic reviewer view';
+    sessionRole.textContent='Current local demo session: '+(reviewerMode?'synthetic reviewer':'synthetic owner');
     if(reviewerMode){
       for(const id of ['marketplace-panel','quote-panel','draft-panel','approval-panel','payment-panel'])
         document.getElementById(id).hidden=true;
@@ -142,6 +148,10 @@ approveForm.addEventListener('submit',event=>{
 paymentButton.addEventListener('click',()=>runOnce(async()=>{
   try{await api('/api/quotes/'+quoteId+'/payment');show('No payments configured.');}
   catch(error){show('Payment safety: '+error.message+'. No payment action executed.');}
+}));
+roleToggle.addEventListener('click',()=>runOnce(async()=>{
+  await api('/demo/synthetic-role','POST');
+  window.location.reload();
 }));
 updateControls();
 init();

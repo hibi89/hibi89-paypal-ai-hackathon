@@ -178,46 +178,42 @@ try:
             expect(page.locator("#contract-fulfillment")).to_have_text("SUBMITTED")
             assert sum(method=="POST" and url.endswith("/submit") for method,url in requests)==1
 
-            # Server generated reviewer cookie is injected by the local test
-            # harness; the browser cannot change its identity by a role selector.
-            context=browser.new_context()
-            try:
-                context.add_cookies([{"name":"paypal_test_review",
-                    "value":token.split("=",1)[1],"url":address,
-                    "httpOnly":True,"sameSite":"Strict"}])
-                reviewer=context.new_page()
-                review_requests=[]
-                reviewer.on("request",lambda r:review_requests.append((r.method,r.url)))
-                reviewer.goto(address)
-                expect(reviewer.locator("#session-role")).to_contain_text("reviewer")
-                expect(reviewer.locator("#contract-fulfillment")).to_have_text("SUBMITTED")
-                assert reviewer.locator("#draft-panel").is_hidden()
-                assert reviewer.locator("#marketplace-panel").is_hidden()
-                assert reviewer.locator("#delivery-form").is_hidden()
-                reviewer.reload()
-                assert not any(method=="POST" for method,_ in review_requests)
-                reviewer.locator("#review-note").fill("Missing synthetic source assets")
-                reviewer.locator("#review-reject").click()
-                expect(reviewer.locator("#contract-fulfillment")).to_have_text("REJECTED")
-                expect(reviewer.locator("#contract-payment")).to_have_text("NOT_CAPTURED")
-                assert sum(method=="POST" and url.endswith("/reject")
-                    for method,url in review_requests)==1
-                page.locator("#contract-refresh").click()
-                expect(page.locator("#contract-fulfillment")).to_have_text("REJECTED")
-                page.locator("#delivery-note").fill("Revised synthetic project files")
-                page.locator("#delivery-submit").click()
-                expect(page.locator("#contract-fulfillment")).to_have_text("SUBMITTED")
-                reviewer.locator("#contract-refresh").click()
-                expect(reviewer.locator("#contract-fulfillment")).to_have_text("SUBMITTED")
-                reviewer.locator("#review-accept").click()
-                expect(reviewer.locator("#contract-fulfillment")).to_have_text("ACCEPTED")
-                page.locator("#contract-refresh").click()
-                expect(page.locator("#contract-fulfillment")).to_have_text("ACCEPTED")
-                expect(page.locator("#contract-payment")).to_have_text("NOT_CAPTURED")
-                assert sum(method=="POST" and "/orders" in url
-                    for method,url in requests+review_requests)==0
-            finally:
-                context.close()
+            # The interactive offline demo uses the same CSRF-protected
+            # synthetic session switch as the manual judge walkthrough.
+            page.locator("#demo-role-toggle").click()
+            expect(page.locator("#demo-session-role")).to_contain_text("synthetic reviewer")
+            expect(page.locator("#session-role")).to_contain_text("reviewer")
+            expect(page.locator("#contract-fulfillment")).to_have_text("SUBMITTED")
+            assert page.locator("#draft-panel").is_hidden()
+            assert page.locator("#marketplace-panel").is_hidden()
+            assert page.locator("#delivery-form").is_hidden()
+            before_reload=sum(method=="POST" for method,_ in requests)
+            page.reload()
+            assert sum(method=="POST" for method,_ in requests)==before_reload
+            page.locator("#review-note").fill("Missing synthetic source assets")
+            page.locator("#review-reject").click()
+            expect(page.locator("#contract-fulfillment")).to_have_text("REJECTED")
+            expect(page.locator("#contract-payment")).to_have_text("NOT_CAPTURED")
+            assert sum(method=="POST" and "/api/contracts/" in url and url.endswith("/reject")
+                for method,url in requests)==1
+            page.locator("#demo-role-toggle").click()
+            expect(page.locator("#demo-session-role")).to_contain_text("synthetic owner")
+            expect(page.locator("#contract-fulfillment")).to_have_text("REJECTED")
+            page.locator("#delivery-note").fill("Revised synthetic project files")
+            page.locator("#delivery-submit").click()
+            expect(page.locator("#contract-fulfillment")).to_have_text("SUBMITTED")
+            page.locator("#demo-role-toggle").click()
+            expect(page.locator("#demo-session-role")).to_contain_text("synthetic reviewer")
+            expect(page.locator("#contract-fulfillment")).to_have_text("SUBMITTED")
+            page.locator("#review-accept").click()
+            expect(page.locator("#contract-fulfillment")).to_have_text("ACCEPTED")
+            page.locator("#demo-role-toggle").click()
+            expect(page.locator("#demo-session-role")).to_contain_text("synthetic owner")
+            page.locator("#contract-refresh").click()
+            expect(page.locator("#contract-fulfillment")).to_have_text("ACCEPTED")
+            expect(page.locator("#contract-payment")).to_have_text("NOT_CAPTURED")
+            assert sum(method=="POST" and "/orders" in url
+                for method,url in requests)==0
             # D12 subscription lifecycle is a separate, server-owned local
             # scenario. F5/GET only reads; no provider/API/payment calls.
             expect(page.locator("#subscription-state")).to_have_text("NOT_STARTED")

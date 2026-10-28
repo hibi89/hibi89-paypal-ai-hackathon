@@ -173,3 +173,46 @@ test('real loopback HTTP can create contract, submit, read events but cannot cap
     assert.equal(result.status,503);
   }finally{await app.close();}
 });
+test('offline demo reviewer switch is explicit, same-origin and server-cookie bound',async()=>{
+  const locked=await startOfflineDemo();
+  try{
+    const localSession=await (await fetch(locked.url+'/demo/session')).json();
+    assert.equal(localSession.syntheticReviewerEnabled,false);
+    const denied=await fetch(locked.url+'/demo/synthetic-role',{method:'POST',headers:{
+      'content-type':'application/json','x-csrf-token':localSession.csrfToken,
+      origin:new URL(locked.url).origin}});
+    assert.equal(denied.status,404);
+    assert.equal(denied.headers.get('set-cookie'),null);
+  }finally{await locked.close();}
+  const app=await startOfflineDemo({enableSyntheticReviewer:true});
+  try{
+    const origin=new URL(app.url).origin;
+    const session=await (await fetch(app.url+'/demo/session')).json();
+    assert.equal(session.role,'owner');
+    assert.equal(session.syntheticReviewerEnabled,true);
+    const endpoint=app.url+'/demo/synthetic-role';
+    const headers={'content-type':'application/json','x-csrf-token':session.csrfToken};
+    let response=await fetch(endpoint,{method:'POST',headers:{...headers,origin:'https://attacker.example'}});
+    assert.equal(response.status,403);
+    assert.equal(response.headers.get('set-cookie'),null);
+    response=await fetch(endpoint,{method:'POST',headers:{...headers,origin}});
+    assert.equal(response.status,200);
+    assert.equal((await response.json()).role,'reviewer');
+    const reviewerCookie=response.headers.get('set-cookie').split(';',1)[0];
+    assert.match(reviewerCookie,/^paypal_test_review=[a-f0-9]{64}$/);
+    const reviewerSession=await (await fetch(app.url+'/demo/session',{
+      headers:{cookie:reviewerCookie}})).json();
+    assert.equal(reviewerSession.role,'reviewer');
+    response=await fetch(endpoint,{method:'POST',headers:{...headers,origin,
+      cookie:reviewerCookie, 'content-length':'16'},body:'{"role":"owner"}'});
+    assert.equal(response.status,403);
+    assert.equal((await (await fetch(app.url+'/demo/session',{
+      headers:{cookie:reviewerCookie}})).json()).role,'reviewer');
+    response=await fetch(endpoint,{method:'POST',headers:{...headers,origin,
+      cookie:reviewerCookie}});
+    assert.equal(response.status,200);
+    assert.equal((await response.json()).role,'owner');
+    assert.match(response.headers.get('set-cookie'),/Max-Age=0/);
+    assert.equal((await (await fetch(app.url+'/demo/session')).json()).role,'owner');
+  }finally{await app.close();}
+});

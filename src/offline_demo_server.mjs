@@ -20,7 +20,8 @@ import { inspectLocalEvidence } from './local_evidence_inspector.mjs';
 const html = readFileSync(new URL('../web/offline_demo.html', import.meta.url), 'utf8');
 const onlyLoopback = address => address === '127.0.0.1' ||
   address === '::ffff:127.0.0.1';
-export async function startOfflineDemo({ port = 0, testReviewSessions = false } = {}) {
+export async function startOfflineDemo({ port = 0, testReviewSessions = false,
+  enableSyntheticReviewer = false } = {}) {
   if (!Number.isInteger(port) || port < 0 || port > 65535)
     throw new TypeError('INVALID_LOCAL_PORT');
   const folder = mkdtempSync(join(tmpdir(), 'paypal-local-demo-'));
@@ -33,14 +34,15 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false } 
   const quoteId = 'sample-project';
   const actorId = 'synthetic-owner';
   const reviewerId = 'synthetic-reviewer';
-  const reviewerToken = testReviewSessions ? randomBytes(32).toString('hex') : null;
+  const reviewerToken = testReviewSessions || enableSyntheticReviewer
+    ? randomBytes(32).toString('hex') : null;
   const reviewerCookie = reviewerToken ? 'paypal_test_review=' + reviewerToken : null;
   const csrfToken = randomBytes(24).toString('base64url');
   await ledger.insertQuote({
     id: quoteId, ownerId: actorId, merchantId: 'synthetic-merchant',
     version: 1, aiSuggestedMinor: null,
   });
-  // A reviewer test browser must carry an unguessable server-issued loopback cookie.
+  // A reviewer browser must carry an unguessable server-issued loopback cookie.
   // Any malformed / forged reviewer cookie fails closed. Never accept role headers,
   // query parameters or request JSON as an identity signal.
   const resolveSession = async (request) => {
@@ -94,6 +96,38 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false } 
         return;
       }
       const path = new URL(req.url, 'http://127.0.0.1:' + listenPort).pathname;
+      if (req.method === 'POST' && path === '/demo/synthetic-role') {
+        req.resume();
+        const requestOrigin='http://127.0.0.1:'+listenPort;
+        const bodyLength=req.headers['content-length'];
+        if (!enableSyntheticReviewer || !reviewerToken) {
+          res.writeHead(404,{'cache-control':'no-store'});res.end('NOT_FOUND');return;
+        }
+        if (req.headers.origin!==requestOrigin ||
+            req.headers['x-csrf-token']!==csrfToken ||
+            req.headers['content-type']!=='application/json' ||
+            req.headers['transfer-encoding'] ||
+            (bodyLength!==undefined && bodyLength!=='0')) {
+          res.writeHead(403,{'cache-control':'no-store'});res.end('FORBIDDEN');return;
+        }
+        const session=await resolveSession(new Request(requestOrigin+'/demo/synthetic-role',{
+          method:'GET',headers:req.headers
+        }));
+        if(!session || session.verified!==true ||
+            ![actorId,reviewerId].includes(session.actorId) ||
+            session.merchantId!=='synthetic-merchant') {
+          res.writeHead(401,{'cache-control':'no-store'});res.end('UNAUTHORIZED');return;
+        }
+        const toReviewer=session.actorId===actorId;
+        const setCookie=toReviewer
+          ? reviewerCookie+'; HttpOnly; Path=/; SameSite=Strict'
+          : 'paypal_test_review=; HttpOnly; Path=/; SameSite=Strict; Max-Age=0';
+        res.writeHead(200,{'cache-control':'no-store',
+          'content-type':'application/json; charset=utf-8',
+          'set-cookie':setCookie,'x-content-type-options':'nosniff'});
+        res.end(JSON.stringify({role:toReviewer?'reviewer':'owner'}));
+        return;
+      }
       // Sandbox buyer return and cancellation are informational GET landings.
       // No approved checkout, account session or PayPal API is available in
       // the offline demo; ignore all token/PayerID/status query data.
@@ -139,7 +173,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false } 
         const role=reqSession.actorId===reviewerId?'reviewer':'owner';
         res.end(JSON.stringify({ csrfToken, quoteId, mode: 'OFFLINE_MOCK',
           role,contractId:'demo-contract',milestoneId:'demo-milestone',reviewerId,
-          subscriptionId }));
+          subscriptionId,syntheticReviewerEnabled:enableSyntheticReviewer }));
         return;
       }
       // Owner-scoped read-only evidence; no PayPal API, mutation or provider authority.

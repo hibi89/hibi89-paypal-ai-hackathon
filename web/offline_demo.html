@@ -26,6 +26,12 @@ strong{font-weight:700}.meta{color:#485972;font-size:.9rem}
 <p class="warning"><strong>Offline demonstration — NOT REAL AI OR PAYPAL.</strong> The price is a deterministic placeholder. No external model or payment is called. This example uses a synthetic user in a loopback-only server; do not deploy it publicly.</p>
 </header>
 <main id="demo-main" aria-busy="false">
+<section class="panel" id="demo-session-panel" aria-labelledby="demo-session-heading">
+<h2 id="demo-session-heading">Demo participants — synthetic only</h2>
+<p class="meta" id="demo-session-role">Loading local demo session…</p>
+<button type="button" id="demo-role-toggle" hidden disabled>Switch to synthetic reviewer</button>
+<p class="meta">This explicit local role switch demonstrates separate owner and reviewer sessions. It is not real authentication or a production identity system.</p>
+</section>
 <section class="panel" id="marketplace-panel" aria-labelledby="marketplace-heading">
 <h2 id="marketplace-heading">0. AI Work Marketplace — matching fixture</h2>
 <p class="meta">Three fictional freelancer profiles. Deterministic eligibility only; no real sellers, Gemini API, market pricing dataset or PayPal checkout. Input synthetic briefs only.</p>
@@ -81,7 +87,7 @@ strong{font-weight:700}.meta{color:#485972;font-size:.9rem}
 <section class="panel" aria-labelledby="contract-heading" id="contract-panel">
 <h2 id="contract-heading">4. Contract &amp; delivery — OFFLINE MOCK</h2>
 <p class="meta" id="session-role">Synthetic session loading…</p>
-<p class="meta">A signed-off quote is not a paid or delivered contract. The reviewer is a separate server-bound synthetic session, not a browser-selectable role.</p>
+<p class="meta">A signed-off quote is not a paid or delivered contract. Use the demo participant switch above to inspect the separate synthetic reviewer flow.</p>
 <div class="contract-grid">
 <div><p>Payment status</p><p id="contract-payment" class="delivery-status">NOT_CAPTURED</p></div>
 <div><p>Fulfillment status</p><p id="contract-fulfillment" class="delivery-status">NO_CONTRACT</p></div>
