@@ -8,7 +8,7 @@
 |---|---|---|
 | 0:00–0:15 | Problem statement | Freelancers need clear quotes, approvals, milestones and payment visibility |
 | 0:15–0:40 | Quote draft, rejection + approval | Label the draft as offline mock while applicable; demonstrate rejection with a reason, a versioned revision and fresh explicit human approval |
-| 0:40–1:10 | Contract + milestone UI | Show scope, milestone delivery, reviewer response and immutable history |
+| 0:40–1:10 | Contract + milestone UI | Show scope and milestone delivery; switch to the synthetic reviewer view to reject, return as owner to revise, then switch back to accept. Label this as an offline simulation, not real authentication. |
 | 1:10–1:35 | PayPal Sandbox buyer/merchant path | **OWNER-OBSERVED PROOF ONLY — use a sanitized owner-approved screenshot or clearly label this segment as evidence not independently replayed; never expose tokens, buyer identity, order/capture IDs or local DB** |
 | 1:35–1:55 | AI-assisted draft origin | **OWNER-OBSERVED SKILL CLASSIFICATION ONLY — show sanitized [web,payments,qa] output; human-set USD 1.50 price, not AI-generated quote** |
 | 1:55–2:15 | Subscription failure/cancel | Currently synthetic state-machine only; label accurately |
