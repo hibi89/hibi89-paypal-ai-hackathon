@@ -48,9 +48,9 @@ npm run demo
 3. On a proposed quote, enter a reason and select **Reject current quote**. The version displays `REJECTED`; approval is blocked for that version. Draft a revision and verify the new version clears the rejection and requires a fresh human decision.
 4. Revise an approved quote and verify the previous approval is invalidated. Reapprove the new version before creating a contract.
 5. Create a contract and submit milestone deliverables. Inspect the local review state, rejection/revision/acceptance and event log. The headless E2E includes a **special test-only reviewer cookie** created by the runner; do not infer production-grade user authentication from it. The interactive manual demo may not expose a separate reviewer login.
-5. Inspect subscription lifecycle states, failure and local recovery. These are **synthetic state machines**, not PayPal billing subscriptions.
-6. Refresh the page and use read-only status controls. The client must not issue a payment POST merely because the page refreshed. The quote/contract payment state remains **NOT_CAPTURED** and subscription payment verification remains **NOT_VERIFIED**.
-7. Select payment status. The browser must not initiate any real PayPal Orders create or capture operation. Live/capture routes intentionally fail closed.
+6. Inspect subscription lifecycle states, failure and local recovery. These are **synthetic state machines**, not PayPal billing subscriptions.
+7. Refresh the page and use read-only status controls. The client must not issue a payment POST merely because the page refreshed. The quote/contract payment state remains **NOT_CAPTURED** and subscription payment verification remains **NOT_VERIFIED**.
+8. Select payment status. The browser must not initiate any real PayPal Orders create or capture operation. Live/capture routes intentionally fail closed.
 
 ## Optional automated browser journey
 
