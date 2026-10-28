@@ -52,6 +52,8 @@ npm run demo
 7. Refresh the page and use read-only status controls. The client must not issue a payment POST merely because the page refreshed. The quote/contract payment state remains **NOT_CAPTURED** and subscription payment verification remains **NOT_VERIFIED**.
 8. Select payment status. The browser must not initiate any real PayPal Orders create or capture operation. Live/capture routes intentionally fail closed.
 
+The payment panel includes a collapsed, read-only summary of the **2026-10-28 owner-reported** Gemini skills and PayPal Sandbox run. It is explicitly marked **not independently reproduced**, contains no account/token/order identifiers, and is separate from the current synthetic browser ledger. Expanding the disclosure sends no request.
+
 ## Optional automated browser journey
 
 The `tests/browser_offline_e2e.py` test launches Chromium on **127.0.0.1** and validates versioned approval, read-only refreshes, duplicate submission handling, contract lifecycle, synthetic reviewer actions and subscription scenarios. GitHub Actions installs browser test tooling and runs this on a private runner. To run manually, use a properly configured Playwright Python environment and installed Chrome/Chromium; this browser test is not part of the zero-install Node suite. On Windows, the runner reads Node's UTF-8 loopback output using a background reader because `select()` cannot wait on Windows pipes.

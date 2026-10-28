@@ -49,6 +49,18 @@ try:
             page.on("request",lambda r:requests.append((r.method,r.url)))
             page.goto(address)
             expect(page.locator("#message")).to_contain_text("Offline demo ready")
+            evidence=page.locator("#historical-provider-evidence")
+            expect(evidence).to_contain_text("OWNER-REPORTED")
+            expect(evidence).to_contain_text("NOT INDEPENDENTLY REPRODUCED")
+            expect(evidence).to_contain_text("web, payments, qa")
+            expect(evidence).to_contain_text("USD 1.50")
+            expect(evidence).to_contain_text("browser walkthrough below remains synthetic")
+            for private_marker in ["checkoutnow", "PayerID", "client_secret", "access_token"]:
+                assert private_marker not in page.locator("body").inner_text()
+            assert sum(method=="POST" for method,_ in requests)==0
+            before_disclosure=len(requests)
+            evidence.locator("summary").click()
+            assert len(requests)==before_disclosure
             # Real Chromium click exercises the fictional matcher UI and API.
             expect(page.locator("#marketplace-results")).to_contain_text("DATA_INSUFFICIENT")
             before_match=sum(method=="POST" for method,_ in requests)
