@@ -6,7 +6,7 @@ import {runInNewContext} from 'node:vm';
 const client=readFileSync(new URL('../web/demo_client.js',import.meta.url),'utf8');
 
 function mount({deferredApproval=false}={}){
-  const ids=['quote-view','message','demo-main','draft-form','approve-form','reject-form','reject-reason','scope',
+  const ids=['quote-view','message','demo-main','demo-role-toggle','demo-session-role','draft-form','approve-form','reject-form','reject-reason','scope',
     'dollars','confirm','draft-submit','approve-submit','reject-submit','refresh','payment-status'];
   const elements=new Map(ids.map(id=>[id,{
     id,textContent:'',disabled:false,value:'',checked:false,attrs:{},listeners:{},
@@ -26,7 +26,8 @@ function mount({deferredApproval=false}={}){
     const answer=(status,data)=>({ok:status>=200&&status<300,status,
       async json(){return data;}});
     if(path==='/demo/session')return answer(200,{
-      mode:'OFFLINE_MOCK',quoteId:'q1',csrfToken:'mocktoken'});
+      mode:'OFFLINE_MOCK',quoteId:'q1',csrfToken:'mocktoken',role:'owner',
+      syntheticReviewerEnabled:false});
     if(path==='/api/quotes/q1'&&method==='GET')return answer(200,{quote:{...q}});
     if(path==='/api/quotes/q1/payment'&&method==='GET')
       return answer(503,{error:'PERSISTENT_PAYMENT_LEDGER_NOT_READY'});
@@ -67,6 +68,8 @@ test('bootstrap only GETs and controls initially become enabled',async()=>{
   const dom=mount();await dom.ready();
   assert.equal(dom.el('demo-main').attrs['aria-busy'],'false');
   assert.equal(dom.el('approve-submit').disabled,false);
+  assert.equal(dom.el('demo-role-toggle').hidden,true);
+  assert.equal(dom.el('demo-role-toggle').disabled,true);
   assert.equal(dom.requests.some(x=>x.method==='POST'),false);
   assert.match(dom.el('message').textContent,/No AI or PayPal/);
 });
