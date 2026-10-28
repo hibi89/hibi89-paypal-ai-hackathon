@@ -105,8 +105,19 @@ test('rejection validates reason, version, and owner',async()=>{
   const {handle}=setup();
   assert.equal((await handle(req('POST',rejection,{expectedVersion:1,reason:'Need update'}))).status,409);
   assert.equal((await handle(req('POST',rejection,{expectedVersion:2,reason:' '}))).status,400);
+  assert.equal((await handle(req('POST',rejection,{expectedVersion:2,reason:'x'.repeat(501)}))).status,400);
+  assert.equal((await handle(req('POST',rejection,{expectedVersion:2,reason:'bad\u0000reason'}))).status,400);
+  assert.equal((await handle(req('POST',rejection,{expectedVersion:2}))).status,400);
   assert.equal((await setup('buyer-b').handle(req('POST',rejection,
     {expectedVersion:2,reason:'Not suitable'}))).status,404);
+});
+test('rejection enforces the same CSRF and origin boundary as approval',async()=>{
+  const {handle,counts}=setup();
+  assert.equal((await handle(req('POST',rejection,{expectedVersion:2,reason:'Not suitable'},
+    {'x-csrf-token':'forged'}))).status,403);
+  assert.equal((await handle(req('POST',rejection,{expectedVersion:2,reason:'Not suitable'},
+    {origin:'https://evil.example'}))).status,403);
+  assert.equal(counts.write,0);
 });
 test('duplicate rejection conflicts and concurrent decisions are exclusive',async()=>{
   const {handle}=setup();
