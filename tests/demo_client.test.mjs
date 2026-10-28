@@ -107,6 +107,7 @@ test('reject is a single human decision, visible after refresh, draft opens a ne
   dom.el('reject-reason').value='Scope needs clarification';
   await dom.el('reject-form').fire('submit');
   assert.match(dom.el('quote-view').textContent,/REJECTED/);
+  assert.doesNotMatch(dom.el('quote-view').textContent,/PROPOSED/);
   assert.equal(dom.el('reject-submit').disabled,true);
   assert.equal(dom.quote().approval,null);
   await dom.el('draft-form').fire('submit');

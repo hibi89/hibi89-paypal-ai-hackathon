@@ -42,12 +42,13 @@ async function refresh(){
   if(!quoteId)throw new Error('SESSION_NOT_READY');
   const value=await api('/api/quotes/'+quoteId);
   current=value.quote;
-  view.textContent='Version '+current.version+' · '+current.status+
+  const decisionStatus=current.rejection?'REJECTED':current.status;
+  view.textContent='Version '+current.version+' · '+decisionStatus+
     ' · Proposal: '+(current.scope||'Not generated')+
     ' · Estimate: '+(current.aiSuggestedMinor==null?'None':'$'+(current.aiSuggestedMinor/100).toFixed(2))+
     ' · Source: '+(current.suggestionSource||'NONE')+
     ' · Approved: '+(current.approval?'$'+(current.approval.amountMinor/100).toFixed(2):'Not approved');
-  if(current.rejection)view.textContent+=' · REJECTED by '+current.rejection.actorId+
+  if(current.rejection)view.textContent+=' · Rejected by '+current.rejection.actorId+
     ': '+current.rejection.reason;
   if(current.aiSuggestedMinor!=null&&!current.approval)
     dollars.value=(current.aiSuggestedMinor/100).toFixed(2);
