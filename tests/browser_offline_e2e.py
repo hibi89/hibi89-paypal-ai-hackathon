@@ -120,6 +120,13 @@ try:
             page.locator("#draft-submit").click()
             expect(page.locator("#quote-view")).to_contain_text("Version 3")
             expect(page.locator("#quote-view")).to_contain_text("Not approved")
+            page.locator("#reject-reason").fill("Please narrow the delivery scope")
+            page.locator("#reject-submit").click()
+            expect(page.locator("#quote-view")).to_contain_text("REJECTED")
+            expect(page.locator("#quote-view")).to_contain_text("Please narrow the delivery scope")
+            page.locator("#draft-submit").click()
+            expect(page.locator("#quote-view")).to_contain_text("Version 4")
+            expect(page.locator("#quote-view")).not_to_contain_text("REJECTED")
             page.locator("#payment-status").click()
             expect(page.locator("#message")).to_contain_text("No payment action executed")
             assert not any(method=="POST" and "/orders" in url
@@ -134,7 +141,7 @@ try:
             expect(page.locator("#contract-message")).to_contain_text("Offline contract UI ready")
             assert sum(method=="POST" for method,_ in requests)==initial_posts
 
-            # The quote was revised to version 3; another approval is essential.
+            # The quote was revised to version 4; another approval is essential.
             page.locator("#dollars").fill("15.00")
             page.locator("#confirm").check()
             page.locator("#approve-submit").click()
@@ -244,3 +251,4 @@ finally:
 
     try: Path(reviewer_path).unlink(missing_ok=True)
     except OSError: pass
+

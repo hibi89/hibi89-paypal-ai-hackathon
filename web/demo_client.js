@@ -5,19 +5,23 @@ const message=document.getElementById('message');
 const root=document.getElementById('demo-main');
 const draftForm=document.getElementById('draft-form');
 const approveForm=document.getElementById('approve-form');
+const rejectForm=document.getElementById('reject-form');
+const rejectReason=document.getElementById('reject-reason');
 const scope=document.getElementById('scope');
 const dollars=document.getElementById('dollars');
 const confirmBox=document.getElementById('confirm');
 const draftButton=document.getElementById('draft-submit');
 const approveButton=document.getElementById('approve-submit');
+const rejectButton=document.getElementById('reject-submit');
 const refreshButton=document.getElementById('refresh');
 const paymentButton=document.getElementById('payment-status');
-const controls=[draftButton,approveButton,refreshButton,paymentButton];
+const controls=[draftButton,approveButton,rejectButton,refreshButton,paymentButton];
 let csrfToken=null,quoteId=null,current=null,initialized=false,busy=false,reviewerMode=false;
 function updateControls(){
   for(const element of controls) element.disabled=!initialized||busy||reviewerMode;
   // An already-approved amount cannot be approved again; draft revision is allowed.
   approveButton.disabled=!initialized||busy||reviewerMode||current?.status!=='PROPOSED';
+  rejectButton.disabled=!initialized||busy||reviewerMode||current?.status!=='PROPOSED'||!!current?.rejection;
   root.setAttribute('aria-busy',String(busy));
 }
 function show(text){message.textContent=text;}
@@ -43,6 +47,8 @@ async function refresh(){
     ' · Estimate: '+(current.aiSuggestedMinor==null?'None':'$'+(current.aiSuggestedMinor/100).toFixed(2))+
     ' · Source: '+(current.suggestionSource||'NONE')+
     ' · Approved: '+(current.approval?'$'+(current.approval.amountMinor/100).toFixed(2):'Not approved');
+  if(current.rejection)view.textContent+=' · REJECTED by '+current.rejection.actorId+
+    ': '+current.rejection.reason;
   if(current.aiSuggestedMinor!=null&&!current.approval)
     dollars.value=(current.aiSuggestedMinor/100).toFixed(2);
   updateControls();
@@ -107,6 +113,17 @@ draftForm.addEventListener('submit',event=>{
     show(result.warning+' Quote version '+result.quote.version+'.');
   });
 });
+rejectForm.addEventListener('submit',event=>{
+  event.preventDefault();
+  return runOnce(async()=>{
+    const reason=rejectReason.value.trim();
+    if(reason.length<3||reason.length>500)throw new Error('INVALID_REJECTION_REASON');
+    const version=current.version;
+    await api('/api/quotes/'+quoteId+'/reject','POST',{expectedVersion:version,reason});
+    await refresh();
+    show('Quote version '+version+' rejected. Revise the proposal to create a new version.');
+  });
+});
 approveForm.addEventListener('submit',event=>{
   event.preventDefault();
   return runOnce(async()=>{
@@ -127,3 +144,4 @@ paymentButton.addEventListener('click',()=>runOnce(async()=>{
 }));
 updateControls();
 init();
+

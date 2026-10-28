@@ -13,6 +13,7 @@ function setup(actor = 'buyer-a', rows = [quote()]) {
   const proxy = {
     async get(id) { counts.read++; return repository.get(id); },
     async approve(value) { counts.write++; return repository.approve(value); },
+    async reject(value) { counts.write++; return repository.reject(value); },
   };
   const handle = createQuoteApi({ repository: proxy, async resolveSession() {
     return actor ? { verified: true, actorId: actor, csrfToken: 'secret-csrf' } : null;
@@ -28,6 +29,7 @@ const req = (method, path, body = approved, over = {}) => new Request(base + pat
 });
 const get = '/api/quotes/q1';
 const post = '/api/quotes/q1/approve';
+const rejection = '/api/quotes/q1/reject';
 const json = async r => r.json();
 test('API cannot be created without trusted resolver + repository', () => {
   assert.throws(() => createQuoteApi({}), TypeError);
@@ -87,6 +89,33 @@ test('explicit human approval locks 15.00 USD, not AI 99.00 USD', async () => {
   assert.equal(record.aiSuggestedMinor, 9900);
   assert.equal(record.approval.actorId, 'buyer-a');
   assert.equal((await repository.get('q1')).status, 'APPROVED');
+});
+test('human rejection records reason and prevents approval at same version', async()=>{
+  const {handle,repository}=setup();
+  const r=await handle(req('POST',rejection,{expectedVersion:2,reason:'Scope is too broad'}));
+  assert.equal(r.status,200);
+  assert.deepEqual((await json(r)).quote.rejection,{decision:'REJECTED',actorId:'buyer-a',
+    quoteVersion:2,reason:'Scope is too broad'});
+  const approveResult=await handle(req('POST',post));
+  assert.equal(approveResult.status,409);
+  assert.equal((await json(approveResult)).error,'QUOTE_REJECTED');
+  assert.equal((await repository.get('q1')).status,'PROPOSED');
+});
+test('rejection validates reason, version, and owner',async()=>{
+  const {handle}=setup();
+  assert.equal((await handle(req('POST',rejection,{expectedVersion:1,reason:'Need update'}))).status,409);
+  assert.equal((await handle(req('POST',rejection,{expectedVersion:2,reason:' '}))).status,400);
+  assert.equal((await setup('buyer-b').handle(req('POST',rejection,
+    {expectedVersion:2,reason:'Not suitable'}))).status,404);
+});
+test('duplicate rejection conflicts and concurrent decisions are exclusive',async()=>{
+  const {handle}=setup();
+  assert.equal((await handle(req('POST',rejection,{expectedVersion:2,reason:'Needs revision'}))).status,200);
+  assert.equal((await handle(req('POST',rejection,{expectedVersion:2,reason:'Changed mind'}))).status,409);
+  const second=setup();
+  const results=await Promise.all([second.handle(req('POST',post)),
+    second.handle(req('POST',rejection,{expectedVersion:2,reason:'Not approved'}))]);
+  assert.deepEqual(results.map(x=>x.status).sort(),[200,409]);
 });
 test('no confirmed:true cannot approve', async () => {
   const { handle, counts } = setup();
@@ -188,3 +217,4 @@ test('in-memory repository returns defensive copies', async () => {
   q.status = 'APPROVED';
   assert.equal((await repository.get('q1')).status, 'PROPOSED');
 });
+

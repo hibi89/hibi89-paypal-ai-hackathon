@@ -27,6 +27,10 @@ function validateQuote(q) {
     try { approvedAmount(q); }
     catch { throw new QuoteApiError('INVALID_APPROVAL'); }
   } else fail(q.approval !== null && q.approval !== undefined, 'INVALID_PROPOSAL');
+  fail(q.rejection != null && (q.status !== 'PROPOSED' ||
+    q.rejection.actorId !== q.ownerId || q.rejection.quoteVersion !== q.version ||
+    typeof q.rejection.reason !== 'string' || q.rejection.reason.length < 3 ||
+    q.rejection.reason.length > 500), 'INVALID_REJECTION');
 }
 
 // Single-process, ephemeral fixture. A database CAS/UNIQUE adapter is mandatory before payments.
@@ -47,6 +51,7 @@ export function createMemoryQuoteRepository(quotes = []) {
       fail(!current || current.ownerId !== actorId, 'QUOTE_NOT_FOUND', 404);
       fail(current.version !== expectedVersion, 'STALE_QUOTE_VERSION', 409);
       fail(current.status !== 'PROPOSED', 'QUOTE_ALREADY_APPROVED', 409);
+      fail(!!current.rejection, 'QUOTE_REJECTED', 409);
       const next = {
         ...current, status: 'APPROVED',
         approval: { decision: 'APPROVED', actorId, quoteVersion: current.version,
@@ -57,6 +62,17 @@ export function createMemoryQuoteRepository(quotes = []) {
         if (error instanceof ContractError) throw new QuoteApiError(error.code);
         throw error;
       }
+      rows.set(id, clone(next));
+      return clone(next);
+    },
+    async reject({ id, actorId, expectedVersion, reason }) {
+      const current = rows.get(id);
+      fail(!current || current.ownerId !== actorId, 'QUOTE_NOT_FOUND', 404);
+      fail(current.version !== expectedVersion, 'STALE_QUOTE_VERSION', 409);
+      fail(current.status !== 'PROPOSED' || current.rejection, 'QUOTE_NOT_REJECTABLE', 409);
+      const next = {...current, rejection:{decision:'REJECTED',actorId,
+        quoteVersion:current.version,reason}};
+      validateQuote(next);
       rows.set(id, clone(next));
       return clone(next);
     },
@@ -110,7 +126,7 @@ function route(path) {
       parts[1] !== 'api' || parts[2] !== 'quotes' ||
       !/^[a-zA-Z0-9_-]{1,64}$/.test(parts[3])) return null;
   const resource = parts[4] || 'quote';
-  return ['quote', 'approve', 'orders', 'payment', 'draft'].includes(resource)
+  return ['quote', 'approve', 'reject', 'orders', 'payment', 'draft'].includes(resource)
     ? { id: parts[3], resource } : null;
 }
 
@@ -244,6 +260,16 @@ export function createQuoteApi({ repository, resolveSession, draftProvider,
         }
       }
       const data = await parseSmallJson(request);
+      if (r.resource === 'reject') {
+        fail(typeof repository.reject !== 'function','QUOTE_REJECTION_NOT_CONFIGURED',503);
+        fail(!Number.isSafeInteger(data.expectedVersion) || data.expectedVersion < 1,
+          'QUOTE_VERSION_REQUIRED');
+        fail(typeof data.reason !== 'string' || data.reason.trim().length < 3 ||
+          data.reason.trim().length > 500 || /[\u0000-\u0008\u000b-\u001f]/.test(data.reason),
+        'INVALID_REJECTION_REASON');
+        return reply({quote:await repository.reject({id:r.id,actorId:session.actorId,
+          expectedVersion:data.expectedVersion,reason:data.reason.trim()})});
+      }
       fail(data.confirmed !== true, 'EXPLICIT_CONFIRMATION_REQUIRED');
       fail(!Number.isSafeInteger(data.expectedVersion) || data.expectedVersion < 1,
         'QUOTE_VERSION_REQUIRED');
@@ -262,3 +288,4 @@ export function createQuoteApi({ repository, resolveSession, draftProvider,
     }
   };
 }
+

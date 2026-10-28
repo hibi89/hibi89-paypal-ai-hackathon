@@ -24,6 +24,7 @@ const SCHEMA = [
   'ai_suggested_minor INTEGER, scope_text TEXT, suggestion_source TEXT,' +
   'approval_actor TEXT, approval_version INTEGER,' +
   'approval_amount_minor INTEGER,' +
+  'rejection_actor TEXT,rejection_version INTEGER,rejection_reason TEXT,' +
   'CHECK ((status = \'PROPOSED\' AND approval_actor IS NULL AND approval_version IS NULL AND approval_amount_minor IS NULL)' +
   ' OR (status = \'APPROVED\' AND approval_actor = owner_id AND approval_version = version' +
   ' AND approval_amount_minor BETWEEN 100 AND 1000000)))',
@@ -54,6 +55,10 @@ function convertQuote(q) {
       actorId:q.approval_actor, decision:'APPROVED',
       quoteVersion:q.approval_version, amountMinor:q.approval_amount_minor,
     } : null,
+    rejection:q.rejection_reason == null ? null : {
+      actorId:q.rejection_actor, decision:'REJECTED',
+      quoteVersion:q.rejection_version, reason:q.rejection_reason,
+    },
   };
   return result;
 }
@@ -79,6 +84,9 @@ export function createSqliteLedger({ filename } = {}) {
   if (!columns.includes('scope_text')) db.exec('ALTER TABLE quotes ADD COLUMN scope_text TEXT');
   if (!columns.includes('suggestion_source'))
     db.exec('ALTER TABLE quotes ADD COLUMN suggestion_source TEXT');
+  if (!columns.includes('rejection_actor')) db.exec('ALTER TABLE quotes ADD COLUMN rejection_actor TEXT');
+  if (!columns.includes('rejection_version')) db.exec('ALTER TABLE quotes ADD COLUMN rejection_version INTEGER');
+  if (!columns.includes('rejection_reason')) db.exec('ALTER TABLE quotes ADD COLUMN rejection_reason TEXT');
   // Triggers write inside each existing SQLite transaction, including preexisting
   // code paths; legacy rows are intentionally NOT backfilled as audit evidence.
   installLocalAudit(db);
@@ -160,6 +168,7 @@ export function createSqliteLedger({ filename } = {}) {
         reject(!row || row.owner_id !== actorId,'QUOTE_NOT_FOUND',404);
         reject(row.version !== expectedVersion,'STALE_QUOTE_VERSION',409);
         reject(row.status !== 'PROPOSED','QUOTE_ALREADY_APPROVED',409);
+        reject(row.rejection_reason!=null,'QUOTE_REJECTED',409);
         reject(!!stmt('SELECT 1 FROM ai_draft_attempts WHERE quote_id=? AND quote_version=? AND state=\'RESERVED\'').get(id,expectedVersion),
           'AI_DRAFT_IN_FLIGHT',409);
         const res = stmt('UPDATE quotes SET status=\'APPROVED\',approval_actor=?,' +
@@ -167,6 +176,24 @@ export function createSqliteLedger({ filename } = {}) {
           ' AND version=? AND status=\'PROPOSED\'')
           .run(actorId,expectedVersion,amountMinor,id,actorId,expectedVersion);
         reject(res.changes !== 1,'APPROVAL_CONFLICT',409);
+        return convertQuote(getRow(id));
+      });
+    },
+    async reject({id,expectedVersion,actorId,reason}) {
+      reject(!Number.isSafeInteger(expectedVersion)||expectedVersion<1,'QUOTE_VERSION_REQUIRED');
+      reject(typeof reason!=='string'||reason.trim().length<3||reason.trim().length>500,
+        'INVALID_REJECTION_REASON');
+      return transaction(()=>{
+        const row=getRow(id);
+        reject(!row||row.owner_id!==actorId,'QUOTE_NOT_FOUND',404);
+        reject(row.version!==expectedVersion,'STALE_QUOTE_VERSION',409);
+        reject(row.status!=='PROPOSED'||row.rejection_reason!=null,'QUOTE_NOT_REJECTABLE',409);
+        reject(!!stmt('SELECT 1 FROM ai_draft_attempts WHERE quote_id=? AND quote_version=? AND state=\'RESERVED\'').get(id,expectedVersion),
+          'AI_DRAFT_IN_FLIGHT',409);
+        const res=stmt('UPDATE quotes SET rejection_actor=?,rejection_version=?,rejection_reason=?'+
+          ' WHERE id=? AND owner_id=? AND version=? AND status=\'PROPOSED\' AND rejection_reason IS NULL')
+          .run(actorId,expectedVersion,reason.trim(),id,actorId,expectedVersion);
+        reject(res.changes!==1,'REJECTION_CONFLICT',409);
         return convertQuote(getRow(id));
       });
     },
@@ -198,6 +225,7 @@ export function createSqliteLedger({ filename } = {}) {
         else reject(ai?.state==='RESERVED','AI_DRAFT_IN_FLIGHT',409);
         const done = stmt('UPDATE quotes SET version=version+1, status=\'PROPOSED\',' +
           'approval_actor=NULL,approval_version=NULL,approval_amount_minor=NULL,' +
+          'rejection_actor=NULL,rejection_version=NULL,rejection_reason=NULL,' +
           'scope_text=?,suggestion_source=?,ai_suggested_minor=?' +
           ' WHERE id=? AND owner_id=? AND version=?')
           .run(scope, suggestionSource, suggestedMinor, id, actorId, expectedVersion);
@@ -386,3 +414,4 @@ export function createSqliteLedger({ filename } = {}) {
   };
   return api;
 }
+

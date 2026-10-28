@@ -59,6 +59,11 @@ strong{font-weight:700}.meta{color:#485972;font-size:.9rem}
 <label><input id="confirm" type="checkbox" required style="display:inline;width:auto"> I approve this quote version and amount.</label>
 <button type="submit" id="approve-submit">Approve current quote</button>
 </form>
+<form id="reject-form">
+<label for="reject-reason">Reason for rejecting this quote</label>
+<textarea id="reject-reason" rows="2" minlength="3" maxlength="500" required></textarea>
+<button type="submit" id="reject-submit">Reject current quote</button>
+</form>
 <p class="meta">PayPal order and capture POST remain disabled until actual Sandbox verification.</p>
 </section>
 <section class="panel" id="payment-panel">
@@ -136,3 +141,4 @@ strong{font-weight:700}.meta{color:#485972;font-size:.9rem}
 <script src="/demo/evidence.js" defer></script>
 </body>
 </html>
+

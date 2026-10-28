@@ -6,8 +6,8 @@ import {runInNewContext} from 'node:vm';
 const client=readFileSync(new URL('../web/demo_client.js',import.meta.url),'utf8');
 
 function mount({deferredApproval=false}={}){
-  const ids=['quote-view','message','demo-main','draft-form','approve-form','scope',
-    'dollars','confirm','draft-submit','approve-submit','refresh','payment-status'];
+  const ids=['quote-view','message','demo-main','draft-form','approve-form','reject-form','reject-reason','scope',
+    'dollars','confirm','draft-submit','approve-submit','reject-submit','refresh','payment-status'];
   const elements=new Map(ids.map(id=>[id,{
     id,textContent:'',disabled:false,value:'',checked:false,attrs:{},listeners:{},
     setAttribute(k,v){this.attrs[k]=v;},
@@ -34,7 +34,7 @@ function mount({deferredApproval=false}={}){
       const body=JSON.parse(options.body);
       if(body.expectedVersion!==q.version)return answer(409,{error:'STALE_QUOTE_VERSION'});
       q={...q,version:q.version+1,status:'PROPOSED',scope:body.scope,
-        suggestionSource:'OFFLINE_MOCK',aiSuggestedMinor:5500,approval:null};
+        suggestionSource:'OFFLINE_MOCK',aiSuggestedMinor:5500,approval:null,rejection:null};
       return answer(200,{quote:{...q},warning:'Not a live AI model'});
     }
     if(path==='/api/quotes/q1/approve'&&method==='POST'){
@@ -43,6 +43,13 @@ function mount({deferredApproval=false}={}){
       if(body.expectedVersion!==q.version || q.status!=='PROPOSED')
         return answer(409,{error:'STALE_QUOTE_VERSION'});
       q={...q,status:'APPROVED',approval:{amountMinor:body.amountMinor}};
+      return answer(200,{quote:{...q}});
+    }
+    if(path==='/api/quotes/q1/reject'&&method==='POST'){
+      const body=JSON.parse(options.body);
+      if(body.expectedVersion!==q.version||q.status!=='PROPOSED'||q.rejection)
+        return answer(409,{error:'QUOTE_NOT_REJECTABLE'});
+      q={...q,rejection:{decision:'REJECTED',reason:body.reason,quoteVersion:q.version}};
       return answer(200,{quote:{...q}});
     }
     throw Error('UNEXPECTED_REQUEST '+method+' '+path);
@@ -95,6 +102,18 @@ test('draft after approval returns PROPOSED and requires new human confirmation'
   assert.equal(dom.el('approve-submit').disabled,false);
   assert.equal(dom.el('confirm').checked,false);
 });
+test('reject is a single human decision, visible after refresh, draft opens a new version',async()=>{
+  const dom=mount();await dom.ready();
+  dom.el('reject-reason').value='Scope needs clarification';
+  await dom.el('reject-form').fire('submit');
+  assert.match(dom.el('quote-view').textContent,/REJECTED/);
+  assert.equal(dom.el('reject-submit').disabled,true);
+  assert.equal(dom.quote().approval,null);
+  await dom.el('draft-form').fire('submit');
+  assert.equal(dom.quote().version,2);
+  assert.equal(dom.quote().rejection,null);
+  assert.equal(dom.el('reject-submit').disabled,false);
+});
 test('invalid price never causes a POST',async()=>{
   const dom=mount();await dom.ready();
   dom.el('confirm').checked=true;
@@ -109,3 +128,4 @@ test('payment status button sends only GET even on provider failure',async()=>{
   assert.equal(dom.requests.filter(x=>x.method==='POST').length,0);
   assert.match(dom.el('message').textContent,/No payment action executed/);
 });
+

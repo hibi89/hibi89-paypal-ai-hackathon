@@ -45,8 +45,9 @@ npm run demo
 
 1. Inspect the initial quote and version in the local page. Click the draft control. This is an `OFFLINE_MOCK` deterministic suggestion, **not a real language model response**.
 2. Enter an approved amount and explicitly check human approval; verify the latest version and amount show `APPROVED`.
-3. Revise the quote and verify the previous approval is invalidated. Reapprove the new version before creating a contract.
-4. Create a contract and submit milestone deliverables. Inspect the local review state, rejection/revision/acceptance and event log. The headless E2E includes a **special test-only reviewer cookie** created by the runner; do not infer production-grade user authentication from it. The interactive manual demo may not expose a separate reviewer login.
+3. On a proposed quote, enter a reason and select **Reject current quote**. The version displays `REJECTED`; approval is blocked for that version. Draft a revision and verify the new version clears the rejection and requires a fresh human decision.
+4. Revise an approved quote and verify the previous approval is invalidated. Reapprove the new version before creating a contract.
+5. Create a contract and submit milestone deliverables. Inspect the local review state, rejection/revision/acceptance and event log. The headless E2E includes a **special test-only reviewer cookie** created by the runner; do not infer production-grade user authentication from it. The interactive manual demo may not expose a separate reviewer login.
 5. Inspect subscription lifecycle states, failure and local recovery. These are **synthetic state machines**, not PayPal billing subscriptions.
 6. Refresh the page and use read-only status controls. The client must not issue a payment POST merely because the page refreshed. The quote/contract payment state remains **NOT_CAPTURED** and subscription payment verification remains **NOT_VERIFIED**.
 7. Select payment status. The browser must not initiate any real PayPal Orders create or capture operation. Live/capture routes intentionally fail closed.
@@ -75,3 +76,4 @@ The [one-shot owner probe instructions](technical/PPL_P0_OWNER_ONE_SHOT_REAL_API
 The owner supplied evidence of one real Gemini skill-classification call and one PayPal **Sandbox** checkout/capture/GET, but these were not independently reproduced in CI. There is no evidence of real money movement, Live PayPal, production D1, a public production URL, video publication or completed Devpost entry. A green local CI run is **only** engineering quality evidence. The [submission evidence preflight](../scripts/check_submission_evidence.mjs) keeps this distinction explicit.
 
 **Owner authorization is required** before any real provider requests, account/billing changes, public deployment, video release or final contest submission.
+

@@ -54,6 +54,31 @@ test('SQL schema survives close/open, approval snapshot stays durable',withDb(as
   assert.equal(q.approval.quoteVersion,2);
   db.close();
 }));
+test('quote rejection persists across reopen and cannot enter payment path',withDb(async e=>{
+  let db=e.open(); await seed(db);
+  const rejected=await db.reject({id:'q1',actorId:'owner',expectedVersion:2,reason:'Need a narrower scope'});
+  assert.equal(rejected.rejection.decision,'REJECTED');
+  assert.equal(rejected.rejection.reason,'Need a narrower scope');
+  await assert.rejects(approve(db),{code:'QUOTE_REJECTED'});
+  await assert.rejects(db.claimOperation(claim()),{code:'HUMAN_APPROVAL_REQUIRED'});
+  db.close(); db=e.open();
+  assert.equal((await db.get('q1')).rejection.reason,'Need a narrower scope');
+  await assert.rejects(db.reject({id:'q1',actorId:'owner',expectedVersion:2,reason:'Again'}),
+    {code:'QUOTE_NOT_REJECTABLE'});
+  db.close();
+}));
+test('a revised quote gets a fresh decision and clears the old rejection',withDb(async e=>{
+  const db=e.open(); await seed(db);
+  await db.reject({id:'q1',actorId:'owner',expectedVersion:2,reason:'Need narrower delivery'});
+  const revised=await db.revise({id:'q1',actorId:'owner',expectedVersion:2,
+    scope:'Deliver one accessible portfolio page',suggestedMinor:18000,
+    suggestionSource:'OFFLINE_MOCK'});
+  assert.equal(revised.version,3);
+  assert.equal(revised.rejection,null);
+  await db.approve({id:'q1',actorId:'owner',expectedVersion:3,amountMinor:18000});
+  assert.equal((await db.get('q1')).status,'APPROVED');
+  db.close();
+}));
 test('duplicate quote ID is rejected by PRIMARY KEY',withDb(async e=>{
   const db=e.open();
   await seed(db);
@@ -302,3 +327,4 @@ test('buyer-action-required GET remains durable UNKNOWN, capture cannot be claim
    {code:'ORDER_PROOF_MISMATCH'});
  }finally{db.close();}
 }));
+
