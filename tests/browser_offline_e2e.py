@@ -137,6 +137,8 @@ try:
             page.locator("#reject-submit").click()
             expect(page.locator("#quote-view")).to_contain_text("REJECTED")
             expect(page.locator("#quote-view")).to_contain_text("Please narrow the delivery scope")
+            expect(page.locator("#approve-submit")).to_be_disabled()
+            expect(page.locator("#reject-submit")).to_be_disabled()
             page.locator("#draft-submit").click()
             expect(page.locator("#quote-view")).to_contain_text("Version 4")
             expect(page.locator("#quote-view")).not_to_contain_text("REJECTED")

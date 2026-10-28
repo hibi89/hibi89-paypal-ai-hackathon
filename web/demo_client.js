@@ -20,7 +20,7 @@ let csrfToken=null,quoteId=null,current=null,initialized=false,busy=false,review
 function updateControls(){
   for(const element of controls) element.disabled=!initialized||busy||reviewerMode;
   // An already-approved amount cannot be approved again; draft revision is allowed.
-  approveButton.disabled=!initialized||busy||reviewerMode||current?.status!=='PROPOSED';
+  approveButton.disabled=!initialized||busy||reviewerMode||current?.status!=='PROPOSED'||!!current?.rejection;
   rejectButton.disabled=!initialized||busy||reviewerMode||current?.status!=='PROPOSED'||!!current?.rejection;
   root.setAttribute('aria-busy',String(busy));
 }
