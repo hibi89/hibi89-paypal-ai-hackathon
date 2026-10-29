@@ -30,7 +30,7 @@ if(args.includes('--help')||args.includes('-h')){
   try{
     if(!existsSync(python)){
       const candidates=process.platform==='win32'
-        ?[['py',['-3','-m','venv',venv]],['python',['-m','venv',venv]]]
+        ?[['python',['-m','venv',venv]],['py',['-3','-m','venv',venv]]]
         :[['python3',['-m','venv',venv]],['python',['-m','venv',venv]]];
       console.log('Preparing isolated Python video environment (no provider access)…');
       const made=candidates.some(([bin,argv])=>run(bin,argv,{quiet:true}));
