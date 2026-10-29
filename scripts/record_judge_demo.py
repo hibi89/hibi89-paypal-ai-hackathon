@@ -180,15 +180,31 @@ def capture(output_dir, pace_ms):
                 page.goto(address, wait_until="domcontentloaded")
                 expect(page.locator("#message")).to_contain_text("Offline demo ready")
                 expect(page.locator("#marketplace-submit")).to_be_enabled()
-                caption("PROOFLINE | AI-assisted work, human authorization, accountable evidence. OFFLINE SYNTHETIC DEMO.")
+                caption("PROOFLINE | AI should open the first door to work — not just automate existing work. OFFLINE SYNTHETIC DEMO.")
                 pause()
 
+                # Show BOTH real, clickable service categories in one marketplace.
+                # Category transitions never create a quote or call PayPal/Gemini.
                 page.locator("#marketplace-submit").click()
+                expect(page.locator(".match-summary")).to_contain_text("AI Work")
+                expect(page.locator("#marketplace-choose-synthetic-web")).to_be_visible()
+                caption("AI WORK | AI agents, automation and development. Three FICTIONAL specialists, with visible skill gaps.")
+                pause()
+
+                page.locator("#marketplace-vertical").select_option("general_services")
+                page.locator("#marketplace-submit").click()
+                expect(page.locator(".match-summary")).to_contain_text("Global Services")
+                expect(page.locator(".profile-card")).to_have_count(3)
+                caption("GLOBAL SERVICES | Design, translation, marketing: a second category sharing the SAME marketplace workflow. FICTIONAL profiles.")
+                page.wait_for_timeout(min(pace_ms, 5500))
+
+                # Return to AI Work for the common quote -> contract journey.
+                page.locator("#marketplace-vertical").select_option("ai_work")
+                page.locator("#marketplace-submit").click()
+                expect(page.locator(".match-summary")).to_contain_text("AI Work")
                 expect(page.locator("#marketplace-choose-synthetic-web")).to_be_visible()
                 page.locator("#marketplace-choose-synthetic-web").click()
                 expect(page.locator("#scope")).to_have_value(re.compile("Synthetic candidate: synthetic-web"))
-                caption("Three FICTIONAL profiles. Deterministic matching shows missing skills; no real seller network or AI model in this browser.")
-                pause()
 
                 page.locator("#draft-submit").click()
                 expect(page.locator("#quote-view")).to_contain_text("Version 2")
@@ -246,7 +262,7 @@ def capture(output_dir, pace_ms):
 
                 page.reload()
                 expect(page.locator("#contract-events")).to_contain_text("ACCEPTED")
-                caption("MIT open source | run the local demo from lead/paypal. DB health and audit counts are synthetic; production integration is future work.")
+                caption("Technology is the evidence. The marketplace is the mechanism. More opportunity for people is the goal. OFFLINE SYNTHETIC.")
                 pause()
                 assert not unsafe_requests, "EXTERNAL_REQUEST_BLOCKED"
                 assert not any("/orders" in x or "/capture" in x for x in post_paths), "PAYMENT_POST_FORBIDDEN"
