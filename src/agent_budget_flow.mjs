@@ -11,6 +11,7 @@ export function createAgentBudgetFlow({quotes,budgets}={}){
   if(!state.configured)return {ok:false,reason:'BUDGET_NOT_CONFIGURED'};
   const prior=typeof budgets.existing==='function'?budgets.existing(ownerId,merchantId,quoteId,expectedVersion):null;
   // An identical replay must not count its own already-reserved amount twice.
+  if(prior!==null&&prior!==negotiation?.agreedMinor)return {ok:false,reason:'RESERVATION_AMOUNT_CONFLICT'};
   const replay=prior!==null&&prior===negotiation?.agreedMinor;
   const reservedMinor=state.reservedMinor-(replay?prior:0);
   const decision=evaluatePaymentGuardrail({quote,negotiation,limitMinor:state.limitMinor,reservedMinor,actorApproved:explicitApproval===true});
