@@ -1,3 +1,5 @@
+> **[REVISED CONTEST POSITIONING · 2026-10-29 · NOT YET PUBLISHED]** One PayPal-centered marketplace with **two demonstrated service categories, AI Work and Global Services**, both sharing AI-assisted demand interpretation, quote/approval and Sandbox payment evidence. The lead must not submit older copy that describes SOVIA/DBVORA/standalone BI as contest pillars. PayPal-operated market intermediation and a lower combined-cost hypothesis are a **proposed strategic opportunity, not an existing relationship or implemented fee collection**. Actual two-category code must pass tests before claimed as working. Owner will record final finished UI personally; write English timecoded narration only after that video is received. See [CURRENT SCOPE](strategy/HAECHONG_DUAL_VERTICAL_SCOPE_20261029.md). 
+
 # PayPal AI Hackathon — Devpost entry and video copy (owner review draft)
 
 Status: **DRAFT — NOT PUBLISHED / NOT SUBMITTED**. The 2026-10-29 synthetic review WebM was locally created and owner viewed it; the upgraded evidence-first candidate is not yet owner-reviewed, public or submitted.
