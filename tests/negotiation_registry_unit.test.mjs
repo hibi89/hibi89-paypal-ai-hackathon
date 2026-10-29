@@ -9,7 +9,7 @@ test('server-issued proposal is required and bound to owner, amount and version'
  registry.issue({owner:'synthetic-owner',merchant:'synthetic-merchant',proposal});
  const check=(p,owner='synthetic-owner')=>registry.verify({owner,merchant:'synthetic-merchant',proposal:p});
  assert.equal(check(proposal),true);
- for(const forged of [{...proposal,agreedMinor:25001},{...proposal,currency:'EUR'},{...proposal,paymentAuthorized:true},{...proposal,quoteVersion:3},{...proposal,status:'NO_AGREEMENT'}]){
+ for(const forged of [{...proposal,agreedMinor:25001},{...proposal,currency:'EUR'},{...proposal,paymentAuthorized:true},{...proposal,quoteVersion:3},{...proposal,status:'NO_AGREEMENT'},{...proposal,source:'FAKE_PROVIDER'},{...proposal,rounds:[{offerMinor:1}]}]){
   assert.equal(check(forged),false);
  }
  assert.equal(check(proposal,'other-owner'),false);
