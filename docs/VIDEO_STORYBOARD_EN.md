@@ -1,6 +1,6 @@
 # Proofline — opportunity-first judging video storyboard
 
-**Status:** Owner review draft. The video recording script now traverses both service categories. No new owner-PC video, public video upload, or Devpost submission is claimed by this document.
+**Status:** New dual-category video NOT filmed and not released. OWNER-OBSERVED external provider evidence is historical only. Owner review draft. The video recording script now traverses both service categories. No new owner-PC video, public video upload, or Devpost submission is claimed by this document.
 
 **Key message:** AI should help people access their first freelance opportunities, not simply automate existing work.
 
