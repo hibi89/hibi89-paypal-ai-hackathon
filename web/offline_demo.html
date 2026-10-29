@@ -77,8 +77,17 @@ strong{font-weight:700}.meta{color:#485972;font-size:.9rem}
 <p><strong>Payment is DISABLED.</strong> No Live transactions, no Sandbox charges, no deployed provider integration.</p>
 <button type="button" id="payment-status">Check payment status (GET)</button>
 <details id="historical-provider-evidence">
-<summary>Historical provider evidence (owner-reported; read-only)</summary>
+<summary>Historical Gemini + PayPal Sandbox evidence — owner-reported, NOT this mock</summary>
 <p><strong>OWNER-REPORTED · NOT INDEPENDENTLY REPRODUCED · 2026-10-28</strong></p>
+<div id="provider-evidence-matrix" class="contract-grid" aria-label="Explicit evidence provenance for judge">
+<div><strong>Gemini API · owner one-shot</strong>
+<p>Previously classified technical skills: <code>web, payments, qa</code>. This local browser instead uses a deterministic fixture.</p>
+<p><strong>Proof class:</strong> Historical owner report, not current model output.</p></div>
+<div><strong>PayPal Sandbox · owner one-shot</strong>
+<p>Prior report: human USD 1.50 approval → Sandbox buyer approval → CAPTURE → provider GET verification. This page never performs any payment action.</p>
+<p><strong>Proof class:</strong> Historical owner report, not a new GET or independent replay.</p></div>
+</div>
+<p class="meta">On the original owner's computer only: <code>npm run mvp:receipt</code> checks saved local SQLite read-only; <code>npm run mvp:review</code> opens an isolated private read-only evidence worksheet. Neither is a public judge login, fresh provider GET or payment. Never upload a private DB, terminal credentials, order/capture ID or reviewer URL.</p>
 <p>Prior private run reported Gemini skill classification <code>web, payments, qa</code>; a person set the USD 1.50 quote; a separate Sandbox buyer approved it; the owner then captured and reported a subsequent PayPal GET verification.</p>
 <p>This is a historical owner observation, not this offline demo’s ledger or a fresh provider check. No credentials, account details, tokens, order IDs, or capture IDs are displayed. The browser walkthrough below remains synthetic and payment-disabled.</p>
 <p>Source record: <code>docs/technical/PPL_OWNER_REAL_SANDBOX_LOCAL_RECEIPT_20261028.md</code>.</p>
