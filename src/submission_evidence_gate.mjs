@@ -13,6 +13,8 @@ export function assessSubmissionEvidence({ledger,files}={}){
  const video=text(files['docs/VIDEO_STORYBOARD_EN.md']);
  const license=text(files.LICENSE);
  const readme=text(files['README.md']);
+ const devpost=text(files['docs/DEVPOST_ENTRY_AND_VIDEO_COPY_EN_20261029.md']);
+ const recorder=text(files['scripts/record_judge_demo.py']);
  const local=[
   info('LICENSE',license.startsWith('MIT License\n')&&license.includes('Copyright (c) 2026 hibi89')?
    'LOCAL_FILE_VERIFIED':'LOCAL_FILE_MISSING_OR_INVALID',
@@ -27,6 +29,14 @@ export function assessSubmissionEvidence({ledger,files}={}){
   info('PROJECT_README',readme.includes('lead/paypal')&&
    readme.includes('CHAT_BOOTSTRAP')?'LOCAL_FILE_VERIFIED':'LOCAL_FILE_MISSING_OR_INVALID',
    'GitHub reviewer entrypoint'),
+  info('DEVPOST_ENTRY_COPY',devpost.includes('DRAFT — NOT PUBLISHED')&&
+   devpost.includes('owner-operated private Sandbox')&&devpost.includes('OFFLINE_MOCK')?
+   'LOCAL_DRAFT_VERIFIED':'LOCAL_DRAFT_MISSING_OR_INVALID',
+   'English Devpost draft with synthetic/provider provenance; not published'),
+  info('OFFLINE_VIDEO_RECORDER_SOURCE',recorder.includes('RECORDED_SYNTHETIC_ONLY')&&
+   recorder.includes('PROVIDER_CALLS=0')&&recorder.includes('PUBLIC_UPLOAD=NO')?
+   'LOCAL_SOURCE_PRESENT_NOT_VIDEO_PROOF':'LOCAL_FILE_MISSING_OR_INVALID',
+   'Credential-free local WebM recorder source; no filmed/public video proof'),
  ];
  const external=[
   info('PAYPAL_SANDBOX_BUSINESS_PERSONAL','NOT_VERIFIED','Independent real merchant/buyer account proof required'),
