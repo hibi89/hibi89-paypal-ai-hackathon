@@ -9,7 +9,11 @@ export function createAgentBudgetFlow({quotes,budgets}={}){
   if(quote.version!==expectedVersion)return {ok:false,reason:'STALE_QUOTE'};
   const state=budgets.status(ownerId,merchantId);
   if(!state.configured)return {ok:false,reason:'BUDGET_NOT_CONFIGURED'};
-  const decision=evaluatePaymentGuardrail({quote,negotiation,limitMinor:state.limitMinor,reservedMinor:state.reservedMinor,actorApproved:explicitApproval===true});
+  const prior=typeof budgets.existing==='function'?budgets.existing(ownerId,merchantId,quoteId,expectedVersion):null;
+  // An identical replay must not count its own already-reserved amount twice.
+  const replay=prior!==null&&prior===negotiation?.agreedMinor;
+  const reservedMinor=state.reservedMinor-(replay?prior:0);
+  const decision=evaluatePaymentGuardrail({quote,negotiation,limitMinor:state.limitMinor,reservedMinor,actorApproved:explicitApproval===true});
   if(!decision.allowed)return {ok:false,reason:decision.reason};
   // Re-read quote immediately before reservation; durable CAS is still required for production.
   const fresh=await quotes.get(quoteId);
