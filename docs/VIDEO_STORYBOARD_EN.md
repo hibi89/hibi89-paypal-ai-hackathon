@@ -9,6 +9,7 @@
 | Scene | Actual demo behavior | Judge takeaway |
 | --- | --- | --- |
 | 1. Opening | Synthetic local browser, opportunity-first English caption | New freelancers need a path to first opportunities |
+| 1a. Evidence map | Four on-screen source classes: offline browser, injected fake APIs, owner-reported history and not-yet-submitted release | The video never passes simulated results off as PayPal/Gemini transactions |
 | 2. AI Work | Select AI Work, match three fictional specialists, show skills and gaps | Marketplace vertical one: AI agents, automation, development |
 | 3. Global Services | Switch to Global Services, enter the prefilled design brief, show three fictional profiles | Marketplace vertical two: design and related digital services; one shared product |
 | 4. Quote | Return to AI Work, choose fictional specialist, create versioned draft, approve exact amount | AI assistance never replaces human consent |
@@ -17,7 +18,7 @@
 | 7. Records | Show local SQLite audit, review evidence, quote/payment status | Current synthetic browser never creates or captures a PayPal order |
 | 8. Closing | Opportunity-first caption | Technology is the evidence; marketplace is the mechanism; opportunity is the goal |
 
-**Time rule:** The local recording script enforces an elapsed-time ceiling below 178 seconds; real encoded media duration and readability require owner review. The Global Services segment is deliberately short (up to 5.5 seconds) to preserve the three-minute target. Actual scene timestamps must be measured from the new completed video rather than asserted from this table.
+**Time rule:** The local recording script enforces an elapsed-time ceiling below 178 seconds; real encoded media duration and readability require owner review. The evidence-map scene uses no more than 4.5 seconds at normal speed. The Global Services segment is deliberately short (up to 5.5 seconds) to preserve the three-minute target. Actual scene timestamps must be measured from the new completed video rather than asserted from this table.
 
 ## Disclosure and scope
 
