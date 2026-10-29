@@ -184,6 +184,15 @@ def capture(output_dir, pace_ms):
                 caption("PROOFLINE | AI should open the first door to work — not just automate existing work. OFFLINE SYNTHETIC DEMO.")
                 pause()
 
+                # Show source classes directly in the product before any mock transaction.
+                proof_map = page.locator("#proof-map-panel")
+                expect(proof_map).to_contain_text("INJECTED FAKE APIS")
+                expect(proof_map).to_contain_text("OWNER-REPORTED HISTORY")
+                expect(proof_map).to_contain_text("NOT YET SUBMITTED")
+                proof_map.scroll_into_view_if_needed()
+                caption("EVIDENCE MAP | Offline browser + injected fake APIs are NOT the owner's historical Gemini/PayPal Sandbox receipt.")
+                page.wait_for_timeout(min(pace_ms, 4500))
+
                 # Show BOTH real, clickable service categories in one marketplace.
                 # Category transitions never create a quote or call PayPal/Gemini.
                 page.locator("#marketplace-submit").click()
