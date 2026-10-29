@@ -2,7 +2,8 @@
 // Gemini/PayPal transports, never the real services. No credentials or network.
 // Does NOT attempt to read the owner's private SQLite or publish any artifact.
 import {mkdirSync,writeFileSync} from 'node:fs';
-import {join} from 'node:path';
+import {resolve} from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {runOfflineOperatorMvpSmoke} from '../src/offline_operator_mvp_smoke.mjs';
 
 const REPORT_DIR=new URL('../output/submission/',import.meta.url);
@@ -110,7 +111,7 @@ export async function buildJudgeEvidenceReport({write=true}={}){
  }
  return report;
 }
-if(process.argv[1] && import.meta.url===new URL('file://'+process.argv[1]).href){
+if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  try{
    const report=await buildJudgeEvidenceReport();
    process.stdout.write(JSON.stringify({
