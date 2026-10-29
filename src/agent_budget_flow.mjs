@@ -15,9 +15,8 @@ export function createAgentBudgetFlow({quotes,budgets}={}){
   // An identical replay must not count its own already-reserved amount twice.
   if(prior!==null&&prior!==negotiation?.agreedMinor)return {ok:false,reason:'RESERVATION_AMOUNT_CONFLICT'};
   const replay=prior!==null&&prior===negotiation?.agreedMinor;
-  // A reservation is immutable: replay must not depend on a later budget-cap reduction.
   const reservedMinor=state.reservedMinor-(replay?prior:0);
-  const decision=evaluatePaymentGuardrail({quote,negotiation,limitMinor:replay?Math.max(state.limitMinor,state.reservedMinor):state.limitMinor,reservedMinor,actorApproved:explicitApproval===true});
+  const decision=evaluatePaymentGuardrail({quote,negotiation,limitMinor:state.limitMinor,reservedMinor,actorApproved:explicitApproval===true});
   if(!decision.allowed)return {ok:false,reason:decision.reason};
   // Re-read quote immediately before reservation; durable CAS is still required for production.
   const fresh=await quotes.get(quoteId);
