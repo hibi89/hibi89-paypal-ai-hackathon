@@ -2,11 +2,17 @@
 
 **This browser demo remains strictly OFFLINE/SYNTHETIC, not a public real-provider application.** Separately, the owner ran one private Windows terminal Gemini skill-classification → Sandbox USD 1.50 buyer approval → Capture → fresh GET on 2026-10-28 and provided output `SANDBOX_PAYMENT_VERIFIED_BY_PROVIDER_GET`. The run is owner-observed evidence, **NOT independently reproduced in GitHub CI**, not a production authenticated marketplace, not a public judge experience, and not a video/Devpost submission. The price was manually approved, **not AI-generated**, and the browser demo still uses offline mock quote drafting. Never confuse localhost synthetic browser outcomes with live third-party payment evidence. The private SQLite receipt can be reviewed safely via `npm run mvp:receipt`, but must NOT be uploaded or reset.
 
-## One command for reproducible local technical evidence (QA branch until release)\n\nOn the currently unmerged `work/paypal-final-qa-20261030` branch, run `npm run judge:reproduce` with Node.js 22.5+ (no keys, PayPal login, Playwright, payment or package installation). This exercises **real localhost HTTP** for both AI Work and Global Services with deterministic fictional profiles, a CSRF-bound local matching request for each category and a GET check confirming payment remains disabled and the quote unchanged. It then executes the **real owner orchestrator** against **injected fake** Gemini and PayPal transports, including human-approved mock amount, fake buyer approval, one fake create/capture each and fake GET reconciliation. The sanitized result is written only to gitignored `output/submission/judge_reproduction_receipt.json`. Source commit and clean-tree status are recorded, not a public release assertion.\n\n**Evidence classes:** (A) executable local synthetic HTTP for two categories (not Chromium); (B) orchestrator with fake provider responses (not a real transaction); (C) historical owner-reported 2026-10-28 Gemini/PayPal Sandbox activity (not rechecked by this command); (D) YouTube/Devpost not submitted. The existing Chromium tests are separate independent UI verification. No real Gemini or PayPal provider calls, payment posts, private owner receipt, or uploads occur. The command's stdout and JSON must not be described as live integration proof.\n\n## Proofline two-category walkthrough (current implementation)
+## One command for reproducible local technical evidence (QA branch until release)
+
+On the currently unmerged `work/paypal-final-qa-20261030` branch, run `npm run judge:reproduce` with Node.js 22.5+ (no keys, PayPal login, Playwright, payment or package installation). This exercises **real localhost HTTP** for both AI Work and Global Services with deterministic fictional profiles, a CSRF-bound local matching request for each category and a GET check confirming payment remains disabled and the quote unchanged. It then executes the **real owner orchestrator** against **injected fake** Gemini and PayPal transports, including human-approved mock amount, fake buyer approval, one fake create/capture each and fake GET reconciliation. The sanitized result is written only to gitignored `output/submission/judge_reproduction_receipt.json`. Source commit and clean-tree status are recorded, not a public release assertion.
+
+**Evidence classes:** (A) executable local synthetic HTTP for two categories (not Chromium); (B) orchestrator with fake provider responses (not a real transaction); (C) historical owner-reported 2026-10-28 Gemini/PayPal Sandbox activity (not rechecked by this command); (D) YouTube/Devpost not submitted. The existing Chromium tests are separate independent UI verification. No real Gemini or PayPal provider calls, payment posts, private owner receipt, or uploads occur. The command's stdout and JSON must not be described as live integration proof.
+
+**Source/API trace:** See [PayPal + Gemini integration code and sanitized injected protocol stages](JUDGE_PAYPAL_AI_INTEGRATION_TRACE_EN.md). This validates order of fake transport calls and approval gates, **not** a currently reachable external checkout.\n\n## Proofline two-category walkthrough (current implementation)
 
 Proofline presents **one local synthetic marketplace**, with two selected service categories; the real human freelancer network is not built. Both categories reuse the same versioned quote and contract path. **PayPal and Gemini calls do not run inside this browser.**
 
-1. Start `npm run demo` from `lead/paypal`. Open the printed 127.0.0.1 address; confirm the banner says **OFFLINE**.
+1. Start `npm run demo` from the unmerged QA work branch. Open the printed 127.0.0.1 address; confirm the banner says **OFFLINE**.
 2. Choose **AI Work**, click **Explore matching specialists**, and review the fictional web/automation/data candidates and their missing skills.
 3. Change the dropdown to **Global Services**. The sample design brief updates. Click **Explore matching specialists**, then **Prepare quote with this sample** for **Demo Creative Designer**. This only fills the local quote scope; it does not submit a charge.
 4. Click **Generate OFFLINE MOCK draft**, verify the new version includes `synthetic-creative`, enter **29.00** as an illustrative USD amount, check the explicit authorization box, and click **Approve**.
@@ -14,14 +20,14 @@ Proofline presents **one local synthetic marketplace**, with two selected servic
 
 **Automated evidence:** `tests/browser_general_services_e2e.py` reproduces the entire Global Services browser sequence on a fresh local server. `tests/browser_offline_e2e.py` covers AI Work, full delivery/review state changes and responsive Global Services mobile UI. Both run in GitHub Actions without any payment POST.
 
-**Video evidence (latest QA branch):** the `OPPORTUNITY_FIRST_V2` synthetic demo was recorded by GitHub CI and independently measured at **154.08 seconds (2:34.08)** in [run 40904439915](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40904439915) at `020d7cc`, with **572/572 Node tests** and both synthetic browser categories passing. This supersedes the older 148.72-second CI recording for the updated QA branch. It is temporary runner footage, **not** a public video, owner PC recording or live provider demonstration.
+**Latest verified pre-P15 QA:** `work/paypal-final-qa-20261030@36ced8f` completed [Actions #40925142424](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40925142424) with **596/596 Node PASS**, both synthetic Chromium categories, Windows owner review, and **149.60 seconds** independently measured private synthetic WebM. P15 adapter-protocol additions need their own exact-head CI. None of this is the owner's approved public YouTube video or a live PayPal/Gemini browser session.
 
 **Submission caveat:** the public repository's older default `main` branch is not the runnable `lead/paypal` build. Draft [PR #16](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/16) adds the missing default-branch MIT license and judge directions; draft [QA PR #23](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/23) has newer UI, consent and submission-candidate fixes not yet in `lead/paypal`. Both require owner review. Do not claim the default branch, final video or Devpost is submitted. For the release steps use the [owner-only checklist](FINAL_OWNER_SUBMISSION_CHECKLIST_20261030.md).
 
 ## Current verified scope
 
 - Root [MIT LICENSE](../LICENSE) is present and approved; `package.json` says `MIT`.
-- `lead/paypal` holds the current working source. The `main` branch is **not** asserted to be equivalent to the current lead.
+- The latest tested QA work is in `work/paypal-final-qa-20261030`, not yet merged into `lead/paypal`. The default `main` branch is older and does **not** expose the final QA build.
 - GitHub Actions verifies `npm test`, the 18-day dashboard and an actual Chromium **localhost** UI journey. The CI logs contain the exact SHA/results; they do **not** prove third-party API integration, production authentication or Devpost submission.
 - This demo uses SQLite and a loopback Node server. No npm package installation or developer credentials are needed to run the offline demo.
 
@@ -30,7 +36,7 @@ Proofline presents **one local synthetic marketplace**, with two selected servic
 ```bash
 git clone https://github.com/hibi89/hibi89-paypal-ai-hackathon.git
 cd hibi89-paypal-ai-hackathon
-git switch lead/paypal
+git switch work/paypal-final-qa-20261030
 node --version
 npm run verify:local
 npm run demo
@@ -41,7 +47,7 @@ npm run demo
 ```powershell
 git clone https://github.com/hibi89/hibi89-paypal-ai-hackathon.git
 Set-Location hibi89-paypal-ai-hackathon
-git switch lead/paypal
+git switch work/paypal-final-qa-20261030
 node --version
 npm run verify:local
 npm run demo
@@ -72,7 +78,7 @@ The payment panel includes a collapsed, read-only summary of the **2026-10-28 ow
 
 ## One-command owner recording on Windows / Linux (private, not submitted)
 
-Run `npm run video:record:owner` from the repository's `lead/paypal` branch on your computer. This explicit owner action creates an ignored, isolated `.video-venv/`, installs the pinned free Python Playwright 1.56.0 package and its ffmpeg helper (if needed), uses installed Chrome/Chromium, launches the local 127.0.0.1 **synthetic** demo, and writes a silent, English-captioned WebM under ignored `output/videos/`. Requires Node.js 22.5+, Python 3 and Chrome/Chromium; internet is needed **only for downloading the free Python/browser recording dependencies**, not for PayPal or Gemini. All PayPal/Gemini credential-like variables are stripped from child processes. The command also verifies the local WebM SHA-256, file size, record-time bound and explicit synthetic/nonpublic disclosure against an adjacent `.manifest.json` file. This is a file integrity check, not independently probed media duration or provider evidence. Do **not** upload the video until visually reviewed for correct claims and owner-authorized for publication. The default recording is an offline mock, not a recorded real provider transaction.
+Run `npm run video:record:owner` from the exact approved release checkout on your computer. This explicit owner action creates an ignored, isolated `.video-venv/`, installs the pinned free Python Playwright 1.56.0 package and its ffmpeg helper (if needed), uses installed Chrome/Chromium, launches the local 127.0.0.1 **synthetic** demo, and writes a silent, English-captioned WebM under ignored `output/videos/`. Requires Node.js 22.5+, Python 3 and Chrome/Chromium; internet is needed **only for downloading the free Python/browser recording dependencies**, not for PayPal or Gemini. All PayPal/Gemini credential-like variables are stripped from child processes. The command also verifies the local WebM SHA-256, file size, record-time bound and explicit synthetic/nonpublic disclosure against an adjacent `.manifest.json` file. This is a file integrity check, not independently probed media duration or provider evidence. Do **not** upload the video until visually reviewed for correct claims and owner-authorized for publication. The default recording is an offline mock, not a recorded real provider transaction.
 
 ## Optional offline video capture — NO upload or provider calls
 
