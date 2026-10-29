@@ -9,7 +9,11 @@ if(args.includes('--help')||args.includes('-h')){
   console.log('Requires Python 3, Playwright and Chrome/Chromium. Local synthetic silent WebM only; never uploads.');
 }else{
   const root=resolve(fileURLToPath(new URL('..',import.meta.url)));
-  const python=process.platform==='win32'?'python':'python3';
+  // CI installs Playwright inside an isolated venv; the end-user command uses
+  // the normal local Python interpreter unless an explicit binary is provided.
+  const python=process.env.VIDEO_PYTHON_BIN
+    ? resolve(root,process.env.VIDEO_PYTHON_BIN)
+    : process.platform==='win32'?'python':'python3';
   const env={};
   for(const [key,value] of Object.entries(process.env))
     if(!/(SECRET|TOKEN|PASSWORD|CREDENTIAL|API_KEY|CLIENT_ID|MERCHANT_ID|GEMINI|PAYPAL|OPENAI|AUTHORIZATION|PRIVATE_KEY|NODE_OPTIONS)/i.test(key))
