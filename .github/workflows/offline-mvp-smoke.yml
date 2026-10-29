@@ -1,0 +1,18 @@
+name: Offline MVP smoke
+on:
+  push:
+    branches: [lead/paypal]
+  workflow_dispatch:
+jobs:
+  offline-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run offline integration and regression tests
+        run: npm test
