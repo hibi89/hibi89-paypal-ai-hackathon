@@ -17,6 +17,8 @@ test('owner can inspect SQLite reservation history after approved offline negoti
   assert.equal((await post('/api/demo/budget/configure',{limitMinor:50000,confirmBudget:true})).status,200);
   assert.equal((await post(quote+'/approve',{expectedVersion:version,confirmed:true,amountMinor:amount})).status,200);
   assert.equal((await post('/api/demo/budget/reserve',{quoteId:session.quoteId,expectedVersion:version,negotiation:negotiation.data,explicitApproval:true})).status,200);
+  const replay=await post('/api/demo/budget/reserve',{quoteId:session.quoteId,expectedVersion:version,negotiation:negotiation.data,explicitApproval:true});
+  assert.equal(replay.status,200);
   const history=await (await fetch(app.url+'/api/demo/budget/history')).json();
   assert.equal(history.source,'OFFLINE_SQLITE');
   assert.deepEqual(history.reservations,[{quoteId:session.quoteId,quoteVersion:version,amountMinor:amount}]);
