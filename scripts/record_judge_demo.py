@@ -217,8 +217,9 @@ def capture(output_dir, pace_ms):
                 caption("OFFLINE MOCK proposal. A HUMAN approves a specific quote version and amount; no payment is authorized.")
                 pause()
 
-                # Three evidence-first inserts extend the existing 1:56 synthetic
-                # footage into a ~2:35–2:45 judge narrative. No external calls.
+                # Three attributed provider-evidence slides; do not imply fresh API use.
+                # Default caption pace is reduced to make room for both markets
+                # while retaining a safety margin under the 3-minute limit.
                 for card in storyboard_cards(proof):
                     evidence_overlay(card)
                     pause()
@@ -330,7 +331,7 @@ def capture(output_dir, pace_ms):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Private OFFLINE browser walkthrough recording; never publishes.")
     parser.add_argument("--output-dir", default=str(ROOT / "output" / "videos"))
-    parser.add_argument("--pace-ms", type=int, default=14000)
+    parser.add_argument("--pace-ms", type=int, default=12000)
     args = parser.parse_args()
     if not (200 <= args.pace_ms <= 18000):
         parser.error("pace must be 200–18000 milliseconds")
