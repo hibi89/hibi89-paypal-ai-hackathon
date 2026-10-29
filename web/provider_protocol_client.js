@@ -5,7 +5,7 @@
  const status=document.getElementById('protocol-replay-status');
  const list=document.getElementById('protocol-replay-list');
  const detail=document.getElementById('protocol-replay-detail');
- let csrf=null,busy=false;
+ let busy=false;
  const titles={
    FAKE_GEMINI_GENERATE_POST:'Gemini skill classification · injected fixture',
    FAKE_PAYPAL_OAUTH_POST:'PayPal Sandbox OAuth · simulated token',
@@ -15,29 +15,23 @@
    FAKE_ORDER_CAPTURE_POST:'Capture · fake request after approval',
    FAKE_ORDER_GET_COMPLETED:'Order GET · simulated completion only'
  };
- async function init(){
-   try{
-     const response=await fetch('/demo/session',{method:'GET',
-       credentials:'same-origin',cache:'no-store'});
-     if(!response.ok)throw Error('SYNTHETIC_SESSION_NOT_READY');
-     const session=await response.json();
-     if(session.mode!=='OFFLINE_MOCK' || session.role!=='owner' ||
-       !/^[a-zA-Z0-9_-]{20,96}$/.test(session.csrfToken||'')){
-       button.hidden=true;status.textContent='Only the fictional owner may run this local diagnostic.';
-       return;
-     }
-     csrf=session.csrfToken;
-     button.disabled=false;
-   }catch{
-     button.disabled=true;status.textContent='Local demo session unavailable. No API replay performed.';
-   }
- }
+ // Do not fetch /demo/session on page load. The main client owns initial
+ // session status and enables this button for the synthetic owner only.
+ // On explicit click fetch the current session once, then make one fake POST.
  button.addEventListener('click',async()=>{
-   if(busy||button.disabled||!csrf)return;
+   if(busy||button.disabled)return;
    busy=true;button.disabled=true;list.hidden=true;list.replaceChildren();
    status.textContent='Running injected FAKE API contracts. No external providers contacted.';
    detail.textContent='';
    try{
+     const current=await fetch('/demo/session',{method:'GET',
+       credentials:'same-origin',cache:'no-store'});
+     if(!current.ok)throw Error('SYNTHETIC_SESSION_NOT_READY');
+     const session=await current.json();
+     if(session.mode!=='OFFLINE_MOCK'||session.role!=='owner'||
+       !/^[a-zA-Z0-9_-]{20,96}$/.test(session.csrfToken||''))
+       throw Error('SYNTHETIC_OWNER_SESSION_REQUIRED');
+     const csrf=session.csrfToken;
      const response=await fetch('/api/demo/provider-protocol',{
        method:'POST',credentials:'same-origin',cache:'no-store',
        headers:{'content-type':'application/json','x-csrf-token':csrf},
@@ -71,5 +65,4 @@
          error.message:'LOCAL_REPLAY_FAILED');
    }finally{busy=false;button.disabled=false;}
  });
- init();
 })();
