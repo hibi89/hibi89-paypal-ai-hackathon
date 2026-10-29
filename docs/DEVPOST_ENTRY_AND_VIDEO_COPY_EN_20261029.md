@@ -19,6 +19,8 @@ Do not infer that the synthetic browser demo is a real-provider session. No priv
 
 ### Inspiration
 
+**My message is simple: AI should not only automate jobs; it should also help more people get their first chance to do one.** Technology demonstrates the mechanism, but the goal is access to opportunity. The global marketplace is the proposed way to reach that goal.
+
 I did not begin with an abstract market thesis. I started applying for freelance opportunities with few expectations, partly because I wanted to see whether I could find a place for my skills. What I experienced was frustrating: as a newcomer, it felt as though the most visible work and opportunities were concentrated around already-established profiles with reviews, reputation and an existing customer base. This is my personal experience and motivation, not a statistical claim that every platform excludes new workers.
 
 That raised a question: **where do capable newcomers get their first real opportunity, especially as AI creates new kinds of skills and services?** I wanted a stage where people can voluntarily present what they can do, where customers can describe what they actually need, and where AI helps connect both sides instead of rewarding visibility alone.
@@ -36,6 +38,8 @@ The proposed supply model is **asset-light and participation-led**. Unlike a bus
 The economic thesis has two distinct beneficiaries: an **independent marketplace operator might earn a disclosed, agreed intermediation fee**, while **PayPal could earn its applicable payment-processing fees on genuinely additional eligible transactions**. We propose no special PayPal fee share, partnership, guaranteed volume or realized revenue. The goal is to test whether a new AI-work market can produce **incremental** PayPal payment activity; the broader, opt-in global AI commerce community is future strategy, not a deployed feature.
 
 ### What it does
+
+The browser prototype presents **two selectable service categories in one marketplace**. A customer can explore AI Work or Global Services and compare three explicitly fictional specialists for the selected category. Both paths share the same quote and human-approval concept; a production marketplace, seller onboarding and connected buyer payments are not yet live.
 
 The runnable local, **synthetic** marketplace lets a customer describe a project, compare three explicitly fictional freelancer profiles against required skills and see missing skills instead of invented certainty. An offline quote draft is versioned; a person may reject it with a reason or explicitly approve an amount. Contracts and milestone delivery have a separate reviewer workflow, including rejection, revision and acceptance. A SQLite audit timeline shows each transition, while local read-only diagnostics show ledger integrity, policy findings and measured synthetic funnel counts.
 
