@@ -6,6 +6,12 @@ on:
     branches: [main, lead/paypal]
 permissions:
   contents: read
+
+# Only retain the latest push/PR revision of the same workflow. Different PRs
+# and the protected lead branch never share a cancellation group.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
     runs-on: ubuntu-latest
