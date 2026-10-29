@@ -53,6 +53,8 @@ if(args.includes('--help')||args.includes('-h')){
       stdio:'inherit',shell:false,timeout:240000});
     if(recorded.error||recorded.status!==0)
       throw Error('LOCAL_VIDEO_RECORDING_FAILED');
+    if(!run(python,['scripts/check_recorded_video.py']))
+      throw Error('LOCAL_VIDEO_INTEGRITY_VERIFICATION_FAILED');
     console.log('OWNER_VIDEO_LOCAL_ONLY: Review output/videos before any publication.');
   }catch(e){
     console.error(e.message||'OWNER_VIDEO_SETUP_FAILED');
