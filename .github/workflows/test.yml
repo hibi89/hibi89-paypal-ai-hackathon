@@ -76,6 +76,10 @@ jobs:
           python3 -m venv .video-venv
           .video-venv/bin/pip install --disable-pip-version-check playwright==1.56.0
           .video-venv/bin/python -m playwright install ffmpeg
+      - name: Install free ffprobe metadata verifier
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
       - name: Record default-speed silent English-captioned synthetic video (private only)
         env:
           VIDEO_PYTHON_BIN: .video-venv/bin/python
