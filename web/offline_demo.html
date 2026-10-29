@@ -180,6 +180,17 @@ strong{font-weight:750}.meta{color:#61718a;font-size:.85rem}
 <button type="button" id="agent-budget-reserve" disabled>Reserve approved amount in SQLite</button>
 <p id="agent-budget-result" role="status" aria-live="polite">No reservation.</p>
 </section>
+<section class="panel" id="github-delivery-panel" aria-labelledby="github-delivery-heading">
+<p class="section-kicker">GitHub delivery / Synthetic decision</p>
+<h2 id="github-delivery-heading">Review delivered work before settlement</h2>
+<p class="meta">FICTIONAL GitHub PR, commit and CI fixture. This demo does NOT fetch GitHub checks, run Gemini or initiate PayPal payouts. The decision only identifies eligibility for separate human review.</p>
+<form id="github-delivery-form">
+<label><input type="checkbox" name="checkPassed"> Synthetic required CI check passed</label>
+<label><input type="checkbox" name="reviewApproved"> Synthetic human delivery review approved</label>
+<button type="submit">Evaluate fictional delivery evidence</button>
+</form>
+<p id="github-delivery-result" role="status" aria-live="polite">No synthetic evaluation yet.</p>
+</section>
 <section class="panel" id="payment-panel">
 <p class="section-kicker">05 / PayPal evidence</p>
 <h2>Payment status &amp; verified provenance</h2>
@@ -275,6 +286,7 @@ strong{font-weight:750}.meta{color:#61718a;font-size:.85rem}
 </main>
 <script src="/demo/marketplace.js" defer></script>
 <script src="/demo/agent-budget.js" defer></script>
+<script src="/demo/github-delivery.js" defer></script>
 <script src="/demo/client.js" defer></script>
 <script src="/demo/contract.js" defer></script>
 <script src="/demo/subscription.js" defer></script>
