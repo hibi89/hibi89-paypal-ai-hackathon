@@ -45,6 +45,10 @@ If the QA branch already exists locally, use `git switch work/paypal-final-qa-20
 - Check `privateVideoDuration.status: ENCODED_MEDIA_UNDER_THREE_MINUTES` and `technicalVideoReady: true`. If `ffprobe` is unavailable, duration stays **NOT VERIFIED**; install a trusted free ffprobe binary or independently measure the actual WebM before considering it final. Do not use wall-clock elapsed time as a substitute.
 - No command above uploads a video, submits Devpost, charges a card, invokes live provider payments or merges Git branches.
 
+### Optional owner-authorized fresh remote verification (NOT part of the offline review)
+
+The local-only `npm run owner:review:local` **does not** recontact PayPal or Gemini. An additional command, `npm run owner:sandbox:get:optional`, is intentionally inert by default. If the owner separately decides to make authenticated provider requests, the optional flags and interactive consent are documented in [the integration trace](JUDGE_PAYPAL_AI_INTEGRATION_TRACE_EN.md). That script allows only OAuth + one **GET of the original captured Sandbox order** after strict immutable private SQLite validation. It never creates, captures or retries any payment, never reuses the buyer approval link and never calls Gemini. It may fail if the old Sandbox order is unavailable; failure is **not** a reason to reset the local DB or initiate another payment. No such remote recheck has been authorized or performed in CI.
+
 ## 3. Video editorial approval (NOT YET DONE)
 - [ ] Confirm `output/submission/submission_candidate_status.json` reports `videoSourceMatch: MATCHED_CLEAN_SOURCE`, `privateVideoDuration.status: ENCODED_MEDIA_UNDER_THREE_MINUTES`, `technicalVideoReady: true`, and `ownerReviewReady: true` on a clean, up-to-date Git checkout. Never edit recorded manifests manually.
 - [ ] Watch the **newest owner-PC WebM**, not an older CI synthetic file. Confirm both categories, explicit human quote approval, contract/delivery/reviewer interactions and the four-source Evidence Map appear.
