@@ -18,14 +18,10 @@ const safeFile=filename=>{
  if(!info.isFile()||info.isSymbolicLink()||info.size<1||
     info.size>64*1024*1024)reject('LOCAL_FILE_UNSAFE');
  for(const suffix of ['-wal','-shm']){
-   try{lstatSync(filename+suffix);reject('ACTIVE_SQLITE_WAL_REVIEW_REQUIRED')}
-   catch(e){
-     if(e?.code!=='ENOENT'&&
-       !String(e?.message||'').includes('READONLY_SANDBOX_ACTIVE_SQLITE_WAL_REVIEW_REQUIRED'))
-       reject('PRIVATE_SQLITE_SIDECAR_UNSAFE');
-     if(String(e?.message||'').includes('READONLY_SANDBOX_ACTIVE_SQLITE_WAL_REVIEW_REQUIRED'))
-       throw e;
-   }
+   let sidecarPresent=false;
+   try{lstatSync(filename+suffix);sidecarPresent=true}
+   catch(e){if(e?.code!=='ENOENT')reject('PRIVATE_SQLITE_SIDECAR_UNSAFE')}
+   if(sidecarPresent)reject('ACTIVE_SQLITE_WAL_REVIEW_REQUIRED');
  }
 };
 
