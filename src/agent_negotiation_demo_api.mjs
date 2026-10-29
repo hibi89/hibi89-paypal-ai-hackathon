@@ -10,7 +10,7 @@ export function createNegotiationDemoApi({resolveSession,repository}={}){
    if(url.pathname!=='/api/demo/negotiate')return reply({error:'NOT_FOUND'},404);
    const session=await resolveSession(request);
    if(!session?.verified||!session.actorId||!session.csrfToken)return reply({error:'AUTHENTICATION_REQUIRED'},401);
-   if(session.actorId!=='synthetic-owner'||session.merchantId!=='synthetic-merchant')return reply({error:'OWNER_ONLY'},403);
+   if(session.actorId==='synthetic-reviewer')return reply({error:'OWNER_ONLY'},403);
    if(request.headers.get('origin')!==url.origin||request.headers.get('x-csrf-token')!==session.csrfToken)
     return reply({error:'CSRF_REQUIRED'},403);
    const data=await parseSmallJson(request);
