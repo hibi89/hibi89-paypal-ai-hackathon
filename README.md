@@ -1,7 +1,27 @@
-> **2026-10-27 CURRENT PRODUCT NORTH STAR:** **Global AI Commerce Community**, not a freelancer-only destination. The AI freelancer marketplace is the first contest-targeted transaction vertical (real Sandbox E2E is still unverified). [Read the owner-approved market/community thesis and PayPal sponsor opportunity recommendation](docs/architecture/GLOBAL_AI_COMMERCE_COMMUNITY_NORTH_STAR_20261027.md) for user-generated expansion candidates, risk-adjusted market selection and economic caveats. **Strategy only; the 2026-11-13 contest submission freeze and real PayPal Sandbox + AI E2E obligations still control implementation.** No second vertical or sponsor partnership has been launched or authorized.
+> **2026-10-27 CURRENT PRODUCT NORTH STAR:** **Global AI Commerce Community**, not a freelancer-only destination. The AI freelancer marketplace is the first contest-targeted transaction vertical (owner-reported Gemini + PayPal Sandbox E2E on 2026-10-28; NOT independently provider-verified in public CI). [Read the owner-approved market/community thesis and PayPal sponsor opportunity recommendation](docs/architecture/GLOBAL_AI_COMMERCE_COMMUNITY_NORTH_STAR_20261027.md) for user-generated expansion candidates, risk-adjusted market selection and economic caveats. **Strategy only; the 2026-11-13 contest submission freeze and real PayPal Sandbox + AI E2E obligations still control implementation.** No second vertical or sponsor partnership has been launched or authorized.
 
 > **2026-10-27 LATEST USER CLARIFICATION — EXACT NAMED TOOLCHAIN LOCKED (PayPal):** First read [concrete software/API/DB/model/deploy/QA tools](docs/architecture/FINAL_TOOLCHAIN_20261027.md). No extra features before initial submission; prior [submission freeze](SUBMISSION_SCOPE_FREEZE_20261027.md) still applies. This documentation does not prove functionality, model training, a deployed app, submitted entry or authorization for external payments/data.
 > **2026-10-29 owner continuation instruction:** Safe, independent implementation and reproducibility improvements are authorized to continue on `lead/paypal`; this supersedes the earlier feature-freeze note above for this development run. The explicit prohibitions on unapproved provider calls, payments, deployment and submission remain in force.
+
+## Evidence-first submission video — safe owner workflow
+
+The **final candidate recorder** now inserts three explicit historical-proof scenes
+(Gemini classified skills; prior USD 1.50 PayPal Sandbox buyer approval / Capture /
+owner-reported GET; synthetic-versus-provider evidence boundary) into the tested
+offline marketplace/contract walkthrough. CI confirms **157.24 seconds (2:37.24)**
+using a true WebM `ffprobe` duration probe on the **CI owner-report-only** variant
+([exact-source Actions #40838069960](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40838069960)).
+Neither real Gemini nor PayPal is called by the video program.
+
+From the original Windows computer run `npm run video:record:owner` after updating
+`lead/paypal`; it **read-only** checks prior owner-private local evidence via
+`npm run mvp:receipt` and displays an allowlisted, redacted historical receipt
+status only if that local check succeeds. Otherwise it visibly says
+**OWNER REPORT ONLY**. Videos and their SHA256 manifests remain exclusively in
+ignored `output/videos/`. Next run `npm run submission:candidate:local`, view
+`output/submission/submission_candidate.md`, personally review the video and
+approve publication separately. Do not publish private SQLite, tokens,
+account/order/capture identifiers or the owner-only receipt server URL.
 
 ## Judge quick start — offline, no accounts or API keys
 
