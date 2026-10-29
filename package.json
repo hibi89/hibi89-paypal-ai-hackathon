@@ -21,7 +21,8 @@
     "mvp:fast": "node --experimental-sqlite scripts/run_owner_mvp_operator.mjs --quick-tunnel --fast-operator",
     "mvp:review": "node --experimental-sqlite scripts/run_owner_mvp_review.mjs",
     "video:record:offline": "node scripts/run_record_demo.mjs",
-    "video:record:owner": "node scripts/prepare_and_record_video.mjs"
+    "video:record:owner": "node scripts/prepare_and_record_video.mjs",
+    "submission:candidate:local": "node scripts/prepare_submission_candidate.mjs"
   },
   "engines": {
     "node": ">=22.5.0"
