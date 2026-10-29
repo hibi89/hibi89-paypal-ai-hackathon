@@ -11,3 +11,11 @@ test('budget API rejects unbound and mismatched negotiation proposals before sto
  }
  assert.equal(calls,0);
 });
+
+test('missing quote ID and expected version are not treated as matching undefined fields',async()=>{
+ for(const payload of [{negotiation:{}},{quoteId:'q1',negotiation:{quoteId:'q1'}},{expectedVersion:1,negotiation:{quoteVersion:1}}]){
+  const response=await api(new Request('http://localhost/api/demo/budget/reserve',{method:'POST',headers:{origin:'http://localhost','x-csrf-token':'token','content-type':'application/json'},body:JSON.stringify(payload)}));
+  assert.equal(response.status,409);assert.equal((await response.json()).error,'NEGOTIATION_BINDING_REQUIRED');
+ }
+ assert.equal(calls,0);
+});
