@@ -37,7 +37,7 @@ marketplaceForm.addEventListener('submit',async event=>{
     // No innerHTML: even server-controlled strings are rendered as text.
     marketplaceOutput.replaceChildren();
     const summary=document.createElement('p');
-    summary.textContent='OFFLINE SYNTHETIC ['+body.vertical+'] — requested skills: '+\
+    summary.textContent='OFFLINE SYNTHETIC ['+body.vertical+'] — requested skills: '+
       (body.requestedSkills.join(', ')||'none identified; clarify request')+
       '. Reference price: DATA_INSUFFICIENT. PayPal: NOT_CONNECTED.';
     marketplaceOutput.append(summary);
