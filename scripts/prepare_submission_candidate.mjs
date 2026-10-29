@@ -12,7 +12,7 @@ const entryPaths=['LICENSE','README.md','docs/JUDGE_REPRODUCTION_EN.md',
   'docs/VIDEO_STORYBOARD_EN.md',
   'docs/DEVPOST_ENTRY_AND_VIDEO_COPY_EN_20261029.md',
   'scripts/record_judge_demo.py'];
-const read=(root,path)=>{try{return readFileSync(join(root,path),'utf8')}catch{return ''}};
+const read=(root,path)=>{try{return readFileSync(join(root,path),'utf8').replace(/\r\n?/g,'\n')}catch{return ''}};
 const requireValue=(condition,why)=>{if(!condition)throw Error(why)};
 export function verifyPrivateSyntheticVideo(dir){
   if(!existsSync(dir))return {status:'LOCAL_VIDEO_NOT_RECORDED'};
