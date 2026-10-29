@@ -22,8 +22,8 @@ if(args.includes('--help')||args.includes('-h')){
   console.log('Usage: npm run video:record:owner -- [--pace-ms 200..18000]');
   console.log('Installs only pinned free Playwright Python + ffmpeg in ignored .video-venv/.');
   console.log('Requires Python 3 and installed Chrome/Chromium. Local synthetic video ONLY; no upload.');
-}else if(args.length>2||args.some((a,i)=>i%2===0&&a!=='--pace-ms')||
-  args.some((a,i)=>i%2===1&&(!/^\d{3,5}$/.test(a)||Number(a)<200||Number(a)>18000))){
+}else if(args.length!==0&&(args.length!==2||args[0]!=='--pace-ms'||
+  !/^\d{3,5}$/.test(args[1])||Number(args[1])<200||Number(args[1])>18000)){
   console.error('INVALID_VIDEO_FLAGS');
   process.exitCode=2;
 }else {
