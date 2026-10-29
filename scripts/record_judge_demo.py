@@ -4,6 +4,8 @@ Requires the same installed Python Playwright and Chrome/Chromium used by browse
 Produces a local silent .webm file; NEVER uploads, submits or contacts providers.
 """
 import argparse
+import hashlib
+import json
 import os
 import queue
 import re
@@ -12,7 +14,7 @@ import subprocess
 import sys
 import threading
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlsplit
 from playwright.sync_api import sync_playwright, expect
@@ -200,7 +202,28 @@ def capture(output_dir, pace_ms):
         if dest.exists():
             raise RuntimeError("OUTPUT_WOULD_OVERWRITE")
         shutil.move(source, dest)
+        # Manifest is not an attestation of PayPal, Gemini or uploaded footage:
+        # it identifies this private, synthetic file for human editorial review.
+        manifest = {
+            "evidence_class": "OFFLINE_SYNTHETIC_BROWSER_CAPTURE_ONLY",
+            "video_filename": dest.name,
+            "video_sha256": hashlib.sha256(dest.read_bytes()).hexdigest(),
+            "video_bytes": dest.stat().st_size,
+            "created_utc": datetime.now(timezone.utc).isoformat(),
+            "wall_clock_elapsed_seconds": round(time.monotonic() - video_started, 1),
+            "media_duration_independently_probed": False,
+            "provider_calls": 0,
+            "payment_posts": 0,
+            "publicly_uploaded": False,
+            "devpost_submitted": False,
+            "owner_approval_for_publication": False,
+            "notes": "Local synthetic content with historical owner-reported provider disclaimer. Human review required."
+        }
+        dest.with_suffix(".manifest.json").write_text(
+            json.dumps(manifest, indent=2) + "\\n", encoding="utf-8"
+        )
         print("RECORDED_SYNTHETIC_ONLY " + str(dest))
+        print("PRIVATE_VIDEO_MANIFEST " + str(dest.with_suffix(".manifest.json")))
         print("SOURCE_SCOPE=LOCALHOST_ONLY PROVIDER_CALLS=0 PAYMENT_POSTS=0 PUBLIC_UPLOAD=NO")
         return dest
     finally:
