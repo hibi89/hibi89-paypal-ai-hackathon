@@ -7,6 +7,7 @@ export function assessGithubDelivery({repository,commitSha,prNumber,checks=[],re
  if(!Array.isArray(checks)||!Array.isArray(requiredChecks)||checks.length>100||requiredChecks.length>30)throw new TypeError('INVALID_CHECKS');
  if(checks.some(x=>!x||typeof x.name!=='string'||!['success','failure','pending','cancelled'].includes(x.conclusion)))throw new TypeError('INVALID_CHECK');
  if(requiredChecks.some(x=>typeof x!=='string'||!x||x.length>100))throw new TypeError('INVALID_REQUIRED_CHECK');
+ if(checks.some(x=>x.name.length<1||x.name.length>100)||new Set(checks.map(x=>x.name)).size!==checks.length||new Set(requiredChecks).size!==requiredChecks.length)throw new TypeError('DUPLICATE_OR_INVALID_CHECK');
  const found=new Map(checks.map(x=>[x.name,x.conclusion]));
  const missing=requiredChecks.filter(x=>!found.has(x));
  const failed=requiredChecks.filter(x=>found.has(x)&&found.get(x)!=='success');
