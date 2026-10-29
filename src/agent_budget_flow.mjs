@@ -20,7 +20,7 @@ export function createAgentBudgetFlow({quotes,budgets}={}){
   if(!decision.allowed)return {ok:false,reason:decision.reason};
   // Re-read quote immediately before reservation; durable CAS is still required for production.
   const fresh=await quotes.get(quoteId);
-  if(!fresh||fresh.id!==quoteId||fresh.ownerId!==ownerId||fresh.merchantId!==merchantId||fresh.version!==expectedVersion||fresh.status!=='APPROVED'||fresh.approval?.actorId!==ownerId||fresh.approval?.quoteVersion!==expectedVersion||fresh.approval?.amountMinor!==negotiation.agreedMinor)return {ok:false,reason:'QUOTE_CHANGED'};
+  if(!fresh||fresh.rejection||fresh.currency!==quote.currency||fresh.id!==quoteId||fresh.ownerId!==ownerId||fresh.merchantId!==merchantId||fresh.version!==expectedVersion||fresh.status!=='APPROVED'||fresh.approval?.actorId!==ownerId||fresh.approval?.quoteVersion!==expectedVersion||fresh.approval?.amountMinor!==negotiation.agreedMinor)return {ok:false,reason:'QUOTE_CHANGED'};
   const reserved=budgets.reserve({owner:ownerId,merchant:merchantId,quote:quoteId,version:expectedVersion,amount:negotiation.agreedMinor});
   return {ok:reserved.ok,reason:reserved.reason??'RESERVED',remainingMinor:reserved.remainingMinor??null,paymentAuthorized:false,providerCallMade:false};
  };
