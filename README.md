@@ -1,5 +1,29 @@
 # PayPal Global Services Marketplace — PayPal + AI Hackathon (owner proposal)
 
+## For judges — Proofline in 60 seconds (English)
+
+**Concept:** AI should help skilled newcomers get their first freelance opportunity, not only automate existing jobs. Proofline is **one proposed global freelancer marketplace** with two playable categories: **AI Work** (agents, automation, development) and **Global Services** (design, translation, marketing). The current implementation is a working **offline synthetic browser demo**, not a commercial service.
+
+**Run the working browser build (Node.js 22.5+; no API keys or payments):**
+
+```bash
+git clone https://github.com/hibi89/hibi89-paypal-ai-hackathon.git
+cd hibi89-paypal-ai-hackathon
+git switch lead/paypal
+npm run demo
+```
+
+Open the printed `http://127.0.0.1:PORT` URL. Select **AI Work** and click **Explore matching specialists**; then select **Global Services** and explore again. You can return to AI Work, choose a fictional profile, generate an offline quote, explicitly approve its amount, and exercise the synthetic contract/reviewer workflow. All profiles and browser transactions are fictional, clearly labeled, and carry **no real payment authority**.
+
+**Evidence boundaries:** The browser makes **zero** Gemini/PayPal provider calls. A separate owner-observed October 28 Gemini skills classification and PayPal **Sandbox-only** approved order/capture/provider-GET test is described as historical evidence, not independently reproduced in CI. No production integration, actual sellers, escrow, PayPal partnership or paid transaction is claimed.
+
+**Verified engineering:** [Linux/Windows Chromium + Node tests](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40876399546) passed; the private CI synthetic video measured **2:28.72** with `ffprobe`. The CI file is not a publicly released YouTube submission. See [English reproduction instructions](docs/JUDGE_REPRODUCTION_EN.md), [MIT license on this development branch](LICENSE), [current video storyboard](docs/VIDEO_STORYBOARD_EN.md), and [owner-reviewed draft Devpost copy](docs/DEVPOST_ENTRY_AND_VIDEO_COPY_EN_20261029.md).
+
+**Release status:** The repository's default `main` branch is older and currently lacks a visible MIT license; [PR #16](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/16) prepares a default-page license and reviewer route but **requires explicit owner approval before merge**. The project video has not been approved for public upload and Devpost has not been submitted.
+
+---
+
+
 > **ACTIVE OWNER DIRECTION · 2026-10-29:** One marketplace, **two working synthetic service categories: AI Work and Global Services** (design/translation/marketing), **one shared Node.js + SQLite matching/quote/contract backend**. The category picker and distinct fictional matches have been added to the offline browser demo. This is **NOT yet** a deployed real seller marketplace, live Gemini browser invocation, actual Global Services payment, fee collection, or PayPal partnership. Historic owner-observed PayPal Sandbox and Gemini API proof is separate from the offline browser fixture. Any older one-category-only claims below are superseded by this notice. [Owner-approved exact scope](docs/strategy/HAECHONG_DUAL_VERTICAL_SCOPE_20261029.md).
 
 > **Contest exclusions:** SOVIA, DBVORA and CODE COUNCIL are **not** required independent contest features or product integrations; standalone BI is not necessary. Payment safety and ordinary SQLite event history are essential infrastructure, not branded audit apps. **Proposed business model only:** if PayPal separately decided to own/operate an eligible marketplace, it could evaluate intermediary fees **plus** existing processing fees; these are not active authorized marketplace partner fees. The user will personally screen-record the fully tested final product; English narration/captions will be matched **after** receiving the actual footage. Prior synthetic automated video is a QA artifact, not final submission. [Production plan](docs/PAYPAL_VIDEO_PRODUCTION_PLAN_20261027.md).
