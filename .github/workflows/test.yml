@@ -30,4 +30,4 @@ jobs:
       - name: Actual Chromium offline UI journey
         run: .browser-venv/bin/python tests/browser_offline_e2e.py
       - name: Record offline synthetic reviewer footage (ephemeral, no upload)
-        run: .browser-venv/bin/python scripts/record_judge_demo.py --pace-ms 200
+        run: npm run video:record:offline -- --pace-ms 200
