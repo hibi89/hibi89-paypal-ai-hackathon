@@ -1,7 +1,7 @@
 // Synthetic loopback budget endpoint. No outbound payment authority.
 import {reply,parseSmallJson,QuoteApiError} from './quote_api.mjs';
 import {createAgentBudgetFlow} from './agent_budget_flow.mjs';
-export function createAgentBudgetDemoApi({resolveSession,quotes,budgets}={}){
+export function createAgentBudgetDemoApi({resolveSession,quotes,budgets,registry}={}){
  const prepare=createAgentBudgetFlow({quotes,budgets});
  return async request=>{
   try{
@@ -22,6 +22,7 @@ export function createAgentBudgetDemoApi({resolveSession,quotes,budgets}={}){
     return reply({...result,paymentAuthorized:false},result.ok?200:409);
    }
    if(typeof data.quoteId!=='string'||!Number.isSafeInteger(data.expectedVersion)||data.expectedVersion<1||data.negotiation?.quoteId!==data.quoteId||data.negotiation?.quoteVersion!==data.expectedVersion)return reply({error:'NEGOTIATION_BINDING_REQUIRED'},409);
+   if(registry&&!registry.verify({owner:session.actorId,merchant:session.merchantId,proposal:data.negotiation}))return reply({error:'NEGOTIATION_NOT_ISSUED'},409);
    const result=await prepare({quoteId:data.quoteId,ownerId:session.actorId,merchantId:session.merchantId,expectedVersion:data.expectedVersion,negotiation:data.negotiation,explicitApproval:data.explicitApproval});
    return reply(result,result.ok?200:409);
   }catch(e){
