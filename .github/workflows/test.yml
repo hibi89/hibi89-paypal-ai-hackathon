@@ -30,8 +30,10 @@ jobs:
           .browser-venv/bin/python -m playwright install ffmpeg
       - name: Actual Chromium offline UI journey
         run: .browser-venv/bin/python tests/browser_offline_e2e.py
-      - name: Check recorder Python syntax
-        run: python3 -m py_compile scripts/record_judge_demo.py
+      - name: Check recorder Python syntax and proof provenance regression
+        run: |
+          python3 -m py_compile scripts/record_judge_demo.py scripts/video_owner_evidence.py
+          python3 tests/video_owner_evidence_test.py
       - name: Record offline synthetic reviewer footage (ephemeral, no upload)
         env:
           VIDEO_PYTHON_BIN: .browser-venv/bin/python
@@ -54,6 +56,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Historical owner evidence safety regressions
+        run: python tests/video_owner_evidence_test.py
       - name: Full owner workflow from clean machine (no accounts or providers)
         run: npm run video:record:owner -- --pace-ms 200
       - name: Build owner draft packet and assert video present / release blocked
@@ -87,6 +91,7 @@ jobs:
       - name: Verify WebM file + independent ffprobe media duration below three minutes
         run: |
           python3 scripts/check_recorded_video.py
+          python3 -c 'import json,glob; p=sorted(glob.glob("output/videos/*.manifest.json"))[-1]; d=json.load(open(p)); assert d["historical_owner_receipt_checked_locally"] is False; assert d["historical_owner_receipt_source"]=="OWNER_REPORTED_2026_10_28_NOT_VERIFIED_ON_THIS_DEVICE"; print("NO_PRIVATE_CI_PROVIDER_PROOF_CLAIM_PASS")'
           if ! command -v ffprobe >/dev/null 2>&1; then
             echo "FFPROBE_UNAVAILABLE; no true media duration verified" >&2
             exit 2
