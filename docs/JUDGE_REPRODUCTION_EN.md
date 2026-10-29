@@ -2,6 +2,22 @@
 
 **This browser demo remains strictly OFFLINE/SYNTHETIC, not a public real-provider application.** Separately, the owner ran one private Windows terminal Gemini skill-classification → Sandbox USD 1.50 buyer approval → Capture → fresh GET on 2026-10-28 and provided output `SANDBOX_PAYMENT_VERIFIED_BY_PROVIDER_GET`. The run is owner-observed evidence, **NOT independently reproduced in GitHub CI**, not a production authenticated marketplace, not a public judge experience, and not a video/Devpost submission. The price was manually approved, **not AI-generated**, and the browser demo still uses offline mock quote drafting. Never confuse localhost synthetic browser outcomes with live third-party payment evidence. The private SQLite receipt can be reviewed safely via `npm run mvp:receipt`, but must NOT be uploaded or reset.
 
+## Proofline two-category walkthrough (current implementation)
+
+Proofline presents **one local synthetic marketplace**, with two selected service categories; the real human freelancer network is not built. Both categories reuse the same versioned quote and contract path. **PayPal and Gemini calls do not run inside this browser.**
+
+1. Start `npm run demo` from `lead/paypal`. Open the printed 127.0.0.1 address; confirm the banner says **OFFLINE**.
+2. Choose **AI Work**, click **Explore matching specialists**, and review the fictional web/automation/data candidates and their missing skills.
+3. Change the dropdown to **Global Services**. The sample design brief updates. Click **Explore matching specialists**, then **Prepare quote with this sample** for **Demo Creative Designer**. This only fills the local quote scope; it does not submit a charge.
+4. Click **Generate OFFLINE MOCK draft**, verify the new version includes `synthetic-creative`, enter **29.00** as an illustrative USD amount, check the explicit authorization box, and click **Approve**.
+5. Click **Create contract** and confirm fulfillment is **PENDING** while PayPal payment remains **NOT_CAPTURED**. Change the dropdown back to **AI Work**: the accepted Global Services quote must not be changed automatically. Refresh the page and verify the contract and quote persist within the synthetic session.
+
+**Automated evidence:** `tests/browser_general_services_e2e.py` reproduces the entire Global Services browser sequence on a fresh local server. `tests/browser_offline_e2e.py` covers AI Work, full delivery/review state changes and responsive Global Services mobile UI. Both run in GitHub Actions without any payment POST.
+
+**Video evidence:** the `OPPORTUNITY_FIRST_V2` synthetic demo recorded on the GitHub CI runner and independently measured at **148.72 seconds** in [run 40876399546](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40876399546). That runner recording was temporary, not a public video or owner-approved final entry.
+
+**Submission caveat:** the public repository's older default `main` branch is not the runnable `lead/paypal` build. A draft [PR #16](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/16) adds the missing default-branch MIT license and judge directions, but requires explicit owner release approval before merge. Do not claim the default branch is ready or that Devpost has accepted a submission.
+
 ## Current verified scope
 
 - Root [MIT LICENSE](../LICENSE) is present and approved; `package.json` says `MIT`.
