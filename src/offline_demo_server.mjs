@@ -19,6 +19,7 @@ import { createNegotiationDemoApi } from './agent_negotiation_demo_api.mjs';
 import { createAgentBudgetStore } from './agent_budget_store.mjs';
 import { createAgentBudgetDemoApi } from './agent_budget_demo_api.mjs';
 import { createGithubDeliveryDemoApi } from './github_delivery_demo_api.mjs';
+import { createNegotiationRegistry } from './negotiation_registry.mjs';
 import { inspectLocalEvidence } from './local_evidence_inspector.mjs';
 
 const html = readFileSync(new URL('../web/offline_demo.html', import.meta.url), 'utf8');
@@ -77,8 +78,9 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
   const checkRate = createDemoRateLimiter();
   const buyerReturn=createPaypalBuyerReturnBoundary();
   const marketplaceApi=createMarketplaceDemoApi({resolveSession});
-  const negotiationApi=createNegotiationDemoApi({resolveSession,repository:ledger});
-  const budgetApi=createAgentBudgetDemoApi({resolveSession,quotes:ledger,budgets:budgetStore});
+  const negotiationRegistry=createNegotiationRegistry();
+  const negotiationApi=createNegotiationDemoApi({resolveSession,repository:ledger,registry:negotiationRegistry});
+  const budgetApi=createAgentBudgetDemoApi({resolveSession,quotes:ledger,budgets:budgetStore,registry:negotiationRegistry});
   const githubDeliveryApi=createGithubDeliveryDemoApi({resolveSession});
   let server;
   server = createServer(async (req, res) => {
