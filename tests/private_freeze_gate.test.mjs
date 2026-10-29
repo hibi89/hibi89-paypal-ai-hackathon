@@ -78,6 +78,16 @@ test('a malicious or fabricated live-provider claim invalidates local judge evid
  }
 });
 
+test('missing reports never cause undefined or omitted freeze gate fields',()=>{
+  const state=assessPrivateFreeze({checkout:{commitSha:sha},clean:true});
+  assert.equal(state.sourceVerified,true);
+  assert.equal(state.localJudgeTechnicalEvidenceVerified,false);
+  assert.equal(state.privateSyntheticVideoTechnicallyVerified,false);
+  assert.equal(state.publishingAuthorized,false);
+  assert.equal(state.submissionEligible,false);
+  assert.ok(JSON.stringify(state).includes('"privateSyntheticVideoTechnicallyVerified":false'));
+});
+
 test('without local private footage freeze preflight remains non-public and fail-closed',()=>{
  const state=checkPrivateFreeze({write:false});
  assert.equal(state.status,'PRIVATE_RELEASE_BLOCKED_NOT_SUBMITTED');
