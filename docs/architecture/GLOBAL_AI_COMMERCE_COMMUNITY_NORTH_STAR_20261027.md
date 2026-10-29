@@ -28,6 +28,16 @@ We are **not building only another AI freelancer job board**. The long-term prod
 
 **Operating rule:** “We provide and mediate the marketplace; users supply lawful, consented listings and negotiate the trade.” This reduces direct supply acquisition compared with procuring properties/inventory, but **does not remove** marketplace obligations, fraud/disputes, support or liability.
 
+## 1A. Why the first vertical may scale — asset-light, voluntary supply
+
+**Owner positioning update · 2026-10-29 KST:** The initial AI-work category is intentionally selected for *low physical inventory requirements and permission-based voluntary supplier participation*. The platform need not buy lodging inventory, hold physical goods, or individually contract every AI developer to launch a listing. After building awareness and a trusted buyer experience, eligible AI professionals and small teams may **self-register, publish portfolios/services and respond to requests**. This can reduce marginal supply-onboarding friction and permit international expansion, relative to inventory-owning or high-touch recruitment models. It does NOT imply that accommodation platforms generally own properties or that self-service participation is unique to this marketplace.
+
+**Value loop hypothesis:** customer AI-work demand → useful matchmaking and verified human-approved service scope → qualified providers voluntarily list → increased relevant supply → additional eligible completed transactions → potentially incremental PayPal payment-processing activity. The platform operator's potential commission and PayPal's ordinary transaction fees are **separate potential revenue streams for different entities**, not double PayPal revenue or an agreed partnership.
+
+**Hard reality gates:** discoverability/advertising alone will not automatically create an active marketplace. Onboarding quality, spam/fake sellers, buyer trust, two-sided liquidity, regional payments/KYC/consumer law, dispute handling, retention and acquisition/verification/support costs must be measured. **No current live self-registration, real supply counts, achieved acquisition efficiency, market share, PayPal net-new transactions or fee-sharing arrangement is claimed.** The hackathon still demonstrates three explicitly synthetic profiles and one bounded seller/buyer Sandbox path.
+
+**Contest positioning:** *“Build the stage, not the inventory: let AI professionals bring their skills, let customers bring projects, and let trusted approvals create new PayPal-powered transactions.”* This is a business proposition to be tested, not a proven outcome.
+
 ## 2. First vertical: AI Freelancer Marketplace — real contest MVP
 
 A single believable, reproducible flow:
