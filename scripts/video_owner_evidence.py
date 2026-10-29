@@ -28,6 +28,8 @@ def sanitize_saved_receipt(report):
     if not isinstance(report, dict):
         return fallback
     skills = report.get("classifiedSkills")
+    if not isinstance(report.get("localStates"), dict):
+        return fallback
     if (report.get("status") != LOCAL_STATUS
         or report.get("mode") != "READ_ONLY_PRIVATE_SQLITE_EVIDENCE_NO_NETWORK"
         or report.get("ownerReportedLiveRunNotIndependentlyAttested") is not True
