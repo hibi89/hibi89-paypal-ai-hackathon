@@ -18,6 +18,10 @@ const paymentButton=document.getElementById('payment-status');
 const roleToggle=document.getElementById('demo-role-toggle');
 const sessionRole=document.getElementById('demo-session-role');
 const controls=[draftButton,approveButton,rejectButton,refreshButton,paymentButton];
+// A checkbox is consent to the amount currently displayed, never to a later edit.
+// Changes in a second tab are also caught by the quote-version refresh below.
+dollars.addEventListener('input',()=>{confirmBox.checked=false;});
+dollars.addEventListener('change',()=>{confirmBox.checked=false;});
 let csrfToken=null,quoteId=null,current=null,initialized=false,busy=false,reviewerMode=false;
 function updateControls(){
   for(const element of controls) element.disabled=!initialized||busy||reviewerMode;
@@ -44,6 +48,7 @@ async function api(path,method='GET',data) {
 async function refresh(){
   if(!quoteId)throw new Error('SESSION_NOT_READY');
   const value=await api('/api/quotes/'+quoteId);
+  if(current?.version!==value.quote.version)confirmBox.checked=false;
   current=value.quote;
   const decisionStatus=current.rejection?'REJECTED':current.status;
   view.textContent='Version '+current.version+' · '+decisionStatus+
