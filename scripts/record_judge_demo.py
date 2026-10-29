@@ -97,15 +97,36 @@ def capture(output_dir, pace_ms):
 
                 page.route("**/*", intercept)
                 pause = lambda: page.wait_for_timeout(pace_ms)
+                def caption(label):
+                    # Presenter captions are part of the video, never injected into
+                    # the trusted application or sent to a provider.
+                    page.evaluate("""(label) => {
+                      let e=document.getElementById('video-presenter-caption');
+                      if(!e){
+                        e=document.createElement('div');
+                        e.id='video-presenter-caption';
+                        Object.assign(e.style,{
+                          position:'fixed',left:'4%',right:'4%',bottom:'8px',
+                          background:'rgba(11,22,39,.94)',color:'#fff',
+                          font:'bold 20px/1.35 system-ui,sans-serif',
+                          padding:'12px 18px',borderRadius:'9px',
+                          zIndex:'9999',pointerEvents:'none',textAlign:'center'
+                        });
+                        document.body.append(e);
+                      }
+                      e.textContent=label;
+                    }""",label)
                 page.goto(address, wait_until="domcontentloaded")
                 expect(page.locator("#message")).to_contain_text("Offline demo ready")
                 expect(page.locator("#marketplace-submit")).to_be_enabled()
+                caption("PROOFLINE | AI-assisted work, human authorization, accountable evidence. OFFLINE SYNTHETIC DEMO.")
                 pause()
 
                 page.locator("#marketplace-submit").click()
                 expect(page.locator("#marketplace-choose-synthetic-web")).to_be_visible()
                 page.locator("#marketplace-choose-synthetic-web").click()
                 expect(page.locator("#scope")).to_have_value(re.compile("Synthetic candidate: synthetic-web"))
+                caption("Three FICTIONAL profiles. Deterministic matching shows missing skills; no real seller network or AI model in this browser.")
                 pause()
 
                 page.locator("#draft-submit").click()
@@ -114,18 +135,21 @@ def capture(output_dir, pace_ms):
                 page.locator("#confirm").check()
                 page.locator("#approve-submit").click()
                 expect(page.locator("#quote-view")).to_contain_text("APPROVED")
+                caption("OFFLINE MOCK proposal. A HUMAN approves a specific quote version and amount; no payment is authorized.")
                 pause()
 
                 page.locator("#contract-create").click()
                 expect(page.locator("#contract-fulfillment")).to_have_text("PENDING")
                 page.locator("#delivery-submit").click()
                 expect(page.locator("#contract-fulfillment")).to_have_text("SUBMITTED")
+                caption("Owner creates an unpaid contract and submits a synthetic delivery for an independent reviewer decision.")
                 pause()
 
                 page.locator("#demo-role-toggle").click()
                 expect(page.locator("#demo-session-role")).to_contain_text("synthetic reviewer")
                 page.locator("#review-reject").click()
                 expect(page.locator("#contract-fulfillment")).to_have_text("REJECTED")
+                caption("Synthetic reviewer REJECTED delivery. The owner must revise and resubmit; previous review cannot be silently reused.")
                 pause()
 
                 page.locator("#demo-role-toggle").click()
@@ -142,16 +166,20 @@ def capture(output_dir, pace_ms):
                 expect(page.locator("#contract-events")).to_contain_text("REJECTED")
                 expect(page.locator("#contract-events")).to_contain_text("ACCEPTED")
                 expect(page.locator("#contract-payment")).to_have_text("NOT_CAPTURED")
+                caption("Read-only SQLite audit timeline: CREATED → SUBMITTED → REJECTED → RESUBMITTED → ACCEPTED. Payment remains NOT_CAPTURED.")
                 pause()
 
                 page.locator("#evidence-refresh").click()
                 expect(page.locator("#evidence-details")).to_contain_text("local audit chain: PASS")
                 page.locator("#historical-provider-evidence summary").click()
                 expect(page.locator("#historical-provider-evidence")).to_contain_text("NOT INDEPENDENTLY REPRODUCED")
+                caption("Separate owner-observed 2026-10-28 Gemini + PayPal SANDBOX test. Historical proof only; this browser never contacts providers.")
                 pause()
 
                 page.reload()
                 expect(page.locator("#contract-events")).to_contain_text("ACCEPTED")
+                caption("MIT open source | run the local demo from lead/paypal. DB health and audit counts are synthetic; production integration is future work.")
+                pause()
                 assert not unsafe_requests, "EXTERNAL_REQUEST_BLOCKED"
                 assert not any("/orders" in x or "/capture" in x for x in post_paths), "PAYMENT_POST_FORBIDDEN"
                 video_file = page.video
@@ -184,10 +212,10 @@ def capture(output_dir, pace_ms):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Private OFFLINE browser walkthrough recording; never publishes.")
     parser.add_argument("--output-dir", default=str(ROOT / "output" / "videos"))
-    parser.add_argument("--pace-ms", type=int, default=1200)
+    parser.add_argument("--pace-ms", type=int, default=14000)
     args = parser.parse_args()
-    if not (200 <= args.pace_ms <= 3000):
-        parser.error("pace must be 200–3000 milliseconds")
+    if not (200 <= args.pace_ms <= 18000):
+        parser.error("pace must be 200–18000 milliseconds")
     try:
         capture(Path(args.output_dir).resolve(), args.pace_ms)
     except Exception as exc:
