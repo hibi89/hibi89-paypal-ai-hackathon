@@ -54,6 +54,10 @@ npm run demo
 
 The payment panel includes a collapsed, read-only summary of the **2026-10-28 owner-reported** Gemini skills and PayPal Sandbox run. It is explicitly marked **not independently reproduced**, contains no account/token/order identifiers, identifies `docs/technical/PPL_OWNER_REAL_SANDBOX_LOCAL_RECEIPT_20261028.md` as its source record, and is separate from the current synthetic browser ledger. Expanding the disclosure sends no request.
 
+## Optional offline video capture — NO upload or provider calls
+
+With Python Playwright 1.56 and Chrome/Chromium available, run `python scripts/record_judge_demo.py` on Windows or `python3 scripts/record_judge_demo.py` on Linux/macOS. It records a short **silent** WebM walkthrough under the git-ignored `output/videos/` folder. It covers fictional matching, human quote approval, synthetic owner/reviewer reject–revise–accept, the new read-only contract audit timeline and the historic owner-attributed provider disclosure. It explicitly blocks external browser requests and does not call Gemini/PayPal, export private SQLite, publish to YouTube or submit Devpost. Its success means a **local synthetic recording** exists, not a finalized three-minute public video; an approved narration/caption edit and owner release are still required. Refer to [the reviewed English entry and narration draft](DEVPOST_ENTRY_AND_VIDEO_COPY_EN_20261029.md).
+
 ## Optional automated browser journey
 
 The `tests/browser_offline_e2e.py` test launches Chromium on **127.0.0.1** and validates versioned approval, read-only refreshes, duplicate submission handling, contract lifecycle, synthetic reviewer actions and subscription scenarios. GitHub Actions installs browser test tooling and runs this on a private runner. To run manually, use a properly configured Playwright Python environment and installed Chrome/Chromium; this browser test is not part of the zero-install Node suite. On Windows, the runner reads Node's UTF-8 loopback output using a background reader because `select()` cannot wait on Windows pipes.
