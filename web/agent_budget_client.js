@@ -71,7 +71,7 @@ reserveButton?.addEventListener('click',async()=>{
 async function showHistory(){
  const {data}=await request('/api/demo/budget/history');
  const rows=data.reservations||[];
- if(historyOutput)historyOutput.textContent=rows.length?rows.map(row=>row.quoteId+' · v'+row.quoteVersion+' · $'+(row.amountMinor/100).toFixed(2)+' · OFFLINE SQLITE').join('\\n'):'No SQLite reservations.';
+ if(historyOutput)historyOutput.textContent=rows.length?rows.map(row=>row.quoteId+' · v'+row.quoteVersion+' · $'+(row.amountMinor/100).toFixed(2)+' · OFFLINE SQLITE').join(String.fromCharCode(10)):'No SQLite reservations.';
 }
 historyButton?.addEventListener('click',async()=>{
  if(busy)return;busy=true;historyButton.disabled=true;
