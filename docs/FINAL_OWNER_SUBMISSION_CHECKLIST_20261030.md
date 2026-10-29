@@ -38,14 +38,15 @@ If the QA branch already exists locally, use `git switch work/paypal-final-qa-20
 - `npm run preflight:reviewer`: safe local synthetic reviewer readiness only.
 - `npm run judge:evidence`: injected fake providers only; **not** live Gemini or PayPal.
 - `npm run video:record:owner`: creates ignored private English-captioned synthetic WebM; may install pinned free Playwright/ffmpeg tooling; reads any prior owner evidence in a local **read-only** and allowlisted way.
-- `npm run submission:candidate:local`: writes only gitignored `output/submission/`. It reports the actual Git commit/branch and `videoSourceMatch`. **Require `MATCHED_CLEAN_SOURCE` and `ownerReviewReady: true` before starting manual video review;** an old or mismatched video requires a new recording. This is source consistency only, not final human approval or an encoded-duration probe.
+- `npm run submission:candidate:local`: writes only gitignored `output/submission/`. It records the actual Git commit/branch, `videoSourceMatch`, and **independent encoded duration if free `ffprobe` is installed**. An old/mismatched video must be re-recorded. Do not interpret a successful command or `ownerReviewReady: true` as public-release authorization.
+- Check `privateVideoDuration.status: ENCODED_MEDIA_UNDER_THREE_MINUTES` and `technicalVideoReady: true`. If `ffprobe` is unavailable, duration stays **NOT VERIFIED**; install a trusted free ffprobe binary or independently measure the actual WebM before considering it final. Do not use wall-clock elapsed time as a substitute.
 - No command above uploads a video, submits Devpost, charges a card, invokes live provider payments or merges Git branches.
 
 ## 3. Video editorial approval (NOT YET DONE)
-- [ ] Confirm `output/submission/submission_candidate_status.json` reports `videoSourceMatch: MATCHED_CLEAN_SOURCE` and `ownerReviewReady: true` on a clean, up-to-date Git checkout. Never edit recorded manifests manually.
+- [ ] Confirm `output/submission/submission_candidate_status.json` reports `videoSourceMatch: MATCHED_CLEAN_SOURCE`, `privateVideoDuration.status: ENCODED_MEDIA_UNDER_THREE_MINUTES`, `technicalVideoReady: true`, and `ownerReviewReady: true` on a clean, up-to-date Git checkout. Never edit recorded manifests manually.
 - [ ] Watch the **newest owner-PC WebM**, not an older CI synthetic file. Confirm both categories, explicit human quote approval, contract/delivery/reviewer interactions and the four-source Evidence Map appear.
 - [ ] Check all provider proof cards distinguish **owner-reported historical Gemini/PayPal Sandbox** from current offline mock; never claim fresh GET, paid live checkout, real userbase or PayPal marketplace partnership.
-- [ ] Independently check actual **encoded** media duration under 180 seconds (e.g. `ffprobe` if installed); the local recording wall clock or SHA-256 integrity check **alone does not verify media length**.
+- [ ] Inspect the actual **encoded** media duration under 180 seconds, independently checked by the candidate's `ffprobe` result or a separately trusted media inspector. If unavailable, the duration is unverified. Local wall-clock elapsed time and SHA-256 alone do not verify media length.
 - [ ] Visually check English caption readability and absence of account IDs, order/capture IDs, private SQLite, buyer details, keys, tunnel hostnames and credentials.
 - [ ] Owner explicitly approves the exact edited video. A prior CI PASS is not public-upload permission.
 
