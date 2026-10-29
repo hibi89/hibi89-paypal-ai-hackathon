@@ -67,7 +67,7 @@ jobs:
 
   full-length-video:
     name: Default-speed synthetic video under 3 minutes
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || contains(github.event.head_commit.message, '[video-full]')
     runs-on: ubuntu-latest
     timeout-minutes: 7
     steps:
