@@ -212,6 +212,11 @@ try:
             page.locator("#contract-refresh").click()
             expect(page.locator("#contract-fulfillment")).to_have_text("ACCEPTED")
             expect(page.locator("#contract-payment")).to_have_text("NOT_CAPTURED")
+            # Judge-visible ledger timeline; only GET reads, not new payment actions.
+            expect(page.locator("#contract-events")).to_contain_text("CREATED")
+            expect(page.locator("#contract-events")).to_contain_text("REJECTED")
+            expect(page.locator("#contract-events")).to_contain_text("ACCEPTED")
+            assert sum(method=="POST" and "/orders" in url for method,url in requests)==0
             assert sum(method=="POST" and "/orders" in url
                 for method,url in requests)==0
             # D12 subscription lifecycle is a separate, server-owned local
