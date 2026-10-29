@@ -33,6 +33,11 @@ jobs:
         run: |
           npm run judge:evidence
           node --input-type=module -e "import {readFileSync} from 'node:fs'; const r=JSON.parse(readFileSync('output/submission/judge_evidence_report.json')); if(r.status!=='JUDGE_SAFE_OFFLINE_EVIDENCE_READY_NOT_SUBMITTED'||r.verifiedFromThisCommand.actualProviderCalls!==0||r.verifiedFromThisCommand.actualPaymentCaptured!==false||r.releases.publicationAuthorized!==false||r.evidence[2].status!=='OWNER_REPORTED_NOT_INDEPENDENTLY_ATTESTED')process.exit(2)"
+      - name: Reproduce both judge categories and classify all four evidence sources offline
+        run: |
+          npm run judge:reproduce
+          npm run freeze:check
+          node --input-type=module -e "import {readFileSync} from 'node:fs'; const r=JSON.parse(readFileSync('output/submission/judge_reproduction_receipt.json')); const f=JSON.parse(readFileSync('output/submission/private_freeze_status.json')); if(r.status!=='JUDGE_OFFLINE_REPRODUCED_NOT_SUBMITTED'||r.reproducibleA.categories.length!==2||r.reproducibleB.actualProviderCalls!==0||r.publicationD.status!=='NOT_SUBMITTED'||!f.sourceVerified||!f.localJudgeTechnicalEvidenceVerified||f.publishingAuthorized!==false||f.submissionEligible!==false)process.exit(2)"
       - name: Install free browser test tooling
         run: |
           python3 -m venv .browser-venv
