@@ -33,11 +33,15 @@ export function createAgentBudgetStore(filename){
   if(!valid(owner)||!valid(merchant)||!valid(quote)||!Number.isSafeInteger(version)||version<1)throw Error('INVALID_RESERVATION');
   return db.prepare('SELECT amount FROM agent_reservations WHERE owner=? AND merchant=? AND quote=? AND version=?').get(owner,merchant,quote,version)?.amount??null;
  }
+ function history(owner,merchant){
+  if(!valid(owner)||!valid(merchant))throw Error('INVALID_OWNER');
+  return db.prepare('SELECT quote,version,amount FROM agent_reservations WHERE owner=? AND merchant=? ORDER BY rowid DESC LIMIT 100').all(owner,merchant).map(x=>({quoteId:x.quote,quoteVersion:x.version,amountMinor:x.amount}));
+ }
  function status(owner,merchant){
   if(!valid(owner)||!valid(merchant))throw Error('INVALID_OWNER');
   const limit=db.prepare('SELECT cap FROM agent_limits WHERE owner=? AND merchant=?').get(owner,merchant);
   const used=db.prepare('SELECT COALESCE(SUM(amount),0) AS total FROM agent_reservations WHERE owner=? AND merchant=?').get(owner,merchant).total;
   return {configured:!!limit,limitMinor:limit?.cap??null,reservedMinor:used};
  }
- return {configure,reserve,existing,status,close:()=>db.close()};
+ return {configure,reserve,existing,status,history,close:()=>db.close()};
 }
