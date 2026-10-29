@@ -1,6 +1,6 @@
 # PayPal AI Hackathon — Devpost entry and video copy (owner review draft)
 
-Status: **DRAFT — NOT PUBLISHED / NOT SUBMITTED / VIDEO NOT RECORDED**.
+Status: **DRAFT — NOT PUBLISHED / NOT SUBMITTED**. The 2026-10-29 synthetic review WebM was locally created and owner viewed it; the upgraded evidence-first candidate is not yet owner-reviewed, public or submitted.
 Do not infer that the synthetic browser demo is a real-provider session. No private IDs, tokens, SQLite database, buyer details or account credentials belong in this package.
 
 ## Devpost project fields — ready to edit
@@ -68,6 +68,25 @@ npm run demo
 ```
 
 Open the printed `http://127.0.0.1:PORT` address on that computer. This runs **local synthetic behavior only**, without accounts, external API calls or payment authorization. The browser's historical proof panel is an owner-attributed summary, not live checkout.
+
+## Evidence-first final video procedure (owner review required)
+
+The extended recorder retains the tested synthetic client, matching, approval,
+delivery and audit scenes. It inserts **three readable full-screen cards**
+identifying (1) owner-reported Gemini classification, (2) owner-reported USD 1.50
+PayPal Sandbox buyer approval / capture / historical provider GET, and
+(3) the source distinction from the synthetic browser. On the original owner's
+PC, the recorder invokes the existing **read-only** local receipt inspector. If
+the original private SQLite record is internally consistent, it shows
+**LOCAL SAVED RESULT MATCHED — NOT FRESH PROVIDER GET**; without that private
+record (including CI), it states **OWNER REPORT ONLY — NOT VERIFIED ON THIS
+MACHINE**. It never copies private identifiers or replays external calls.
+The owner must visually check the new 2:30–2:45 candidate, confirm that source
+labels match the actual private receipt, and separately approve any public upload.
+
+This local-record check is NOT independent remote provider attestation. Showing
+the real original merchant dashboard or buyer account is neither required nor
+authorized by this recording command. No new Sandbox payment should be made.
 
 ## Video script — under three minutes, no face or live credentials
 
