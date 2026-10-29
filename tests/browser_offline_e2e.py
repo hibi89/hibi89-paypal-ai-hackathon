@@ -260,7 +260,32 @@ try:
             page.reload()
             expect(page.locator("#integration-state")).to_have_text("LOCAL_DEMO_INCOMPLETE")
             assert sum(method=="POST" for method,_ in requests)==before_integration
-            print("CHROMIUM_BROWSER_E2E_PASS: marketplace+quote+contract+subscription+integration, no provider/payment POST")
+            # Mobile viewport and the second owner-approved category must remain
+            # independently clickable, without changing shared payment authority.
+            mobile=browser.new_page(viewport={"width":390,"height":844},device_scale_factor=1)
+            try:
+                mobile_requests=[]
+                mobile.on("request",lambda req: mobile_requests.append((req.method,req.url)))
+                mobile.goto(address)
+                expect(mobile.locator("#marketplace-vertical")).to_be_visible()
+                assert mobile.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 2"), \
+                    "Mobile layout must not require horizontal page scrolling"
+                mobile.locator("#marketplace-vertical").select_option("general_services")
+                expect(mobile.locator("#marketplace-brief")).to_have_value(
+                    re.compile(r"logo and brand identity"))
+                mobile.locator("#marketplace-submit").click()
+                expect(mobile.locator("#marketplace-results")).to_contain_text("Demo Creative Designer")
+                expect(mobile.locator("#marketplace-choose-synthetic-creative")).to_be_visible()
+                mobile.locator("#marketplace-choose-synthetic-creative").click()
+                expect(mobile.locator("#scope")).to_have_value(
+                    re.compile(r"Synthetic candidate: synthetic-creative"))
+                assert sum(method=="POST" and url.endswith("/api/demo/marketplace")
+                    for method,url in mobile_requests)==1
+                assert not any(method=="POST" and "/orders" in url
+                    for method,url in mobile_requests)
+            finally:
+                mobile.close()
+            print("CHROMIUM_BROWSER_E2E_PASS: two-vertical-mobile+marketplace+quote+contract+subscription+integration, no provider/payment POST")
         finally:
             browser.close()
 finally:
