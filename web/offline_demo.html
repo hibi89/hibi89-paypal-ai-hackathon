@@ -106,7 +106,7 @@ strong{font-weight:700}.meta{color:#485972;font-size:.9rem}
 <p id="contract-view" role="status" aria-live="polite">Contract not yet created.</p>
 <details id="contract-audit-panel" open>
 <summary>Contract audit timeline — local synthetic events, read-only</summary>
-<p class="meta">Events come from the owner/reviewer-scoped SQLite contract ledger. They are not independently signed SOVIA or real PayPal payment events. Refresh and page reload perform GET only.</p>
+<p class="meta">Events come from the owner/reviewer-scoped SQLite contract ledger. They are not independently signed or real PayPal payment events. Refresh and page reload perform GET only.</p>
 <ol id="contract-events" aria-live="polite"><li>No contract events recorded.</li></ol>
 </details>
 <div class="contract-actions">
@@ -145,7 +145,7 @@ strong{font-weight:700}.meta{color:#485972;font-size:.9rem}
 </section>
 <section class="panel" id="evidence-panel" aria-labelledby="evidence-heading">
 <h2 id="evidence-heading">7. Trust &amp; data evidence — LOCAL SQLITE ONLY</h2>
-<p class="meta">SOVIA-style policy snapshot, DBVORA-inspired SQLite read-only integrity and synthetic BI counts. These are real reads from the local demo database, including SHA-256 chained local change metadata (not independently signed/anchored). No live PayPal transactions, real market demand or independent product integration.</p>
+<p class="meta">Read-only local transaction diagnostics, SQLite integrity, and synthetic quote/activity counts. These are real reads from the local demo database, including SHA-256 chained local change metadata (not independently signed/anchored). No live PayPal transactions or verified real market demand.</p>
 <p id="evidence-details" role="status" aria-live="polite">Loading local read-only evidence…</p>
 <button type="button" id="evidence-refresh">Refresh local evidence (GET only)</button>
 </section>
