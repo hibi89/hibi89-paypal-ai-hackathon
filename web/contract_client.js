@@ -8,7 +8,8 @@
     refreshBtn=el('contract-refresh'),deliveryForm=el('delivery-form'),
     deliveryNote=el('delivery-note'),reviewActions=el('review-actions'),
     reviewNote=el('review-note'),submitBtn=el('delivery-submit'),
-    acceptBtn=el('review-accept'),rejectBtn=el('review-reject');
+    acceptBtn=el('review-accept'),rejectBtn=el('review-reject'),
+    auditEvents=el('contract-events');
   const controls=[createBtn,refreshBtn,submitBtn,acceptBtn,rejectBtn];
   let ready=false,busy=false,session=null,contract=null;
   const show=text=>{info.textContent=text;};
@@ -44,12 +45,33 @@
     return result;
   }
   function route(s){return '/api/contracts/'+s.contractId;}
+  function renderAudit(events){
+    // No innerHTML: actor, source and detail can originate from local demo inputs.
+    auditEvents.replaceChildren();
+    if(!events.length){
+      const item=document.createElement('li');
+      item.textContent='No contract events recorded.';
+      auditEvents.append(item);
+      return;
+    }
+    for(const event of events){
+      const item=document.createElement('li');
+      item.textContent='#'+event.seq+' · '+event.eventType+
+        ' · '+event.actorId+' · v'+event.contractVersion+
+        (event.fromState&&event.toState?' · '+event.fromState+' → '+event.toState:'')+
+        (event.detail?' · '+event.detail:'');
+      auditEvents.append(item);
+    }
+  }
   async function refresh(){
     const response=await fetch(route(session),{cache:'no-store',credentials:'same-origin'});
-    if(response.status===404){contract=null;render();return;}
+    if(response.status===404){contract=null;renderAudit([]);render();return;}
     const data=await response.json();
     if(!response.ok)throw new Error(data.error||'CONTRACT_READ_FAILED');
+    const history=await api(route(session)+'/events'); // read-only GET
+    if(!Array.isArray(history.events))throw new Error('AUDIT_EVENTS_UNAVAILABLE');
     contract=data.contract;
+    renderAudit(history.events);
     render();
   }
   async function act(fn){
