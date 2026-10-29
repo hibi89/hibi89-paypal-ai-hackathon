@@ -5,7 +5,7 @@ import {fileURLToPath} from 'node:url';
 import {resolve} from 'node:path';
 const args=process.argv.slice(2);
 if(args.includes('--help')||args.includes('-h')){
-  console.log('Usage: npm run video:record:offline -- [--pace-ms 200..3000] [--output-dir DIRECTORY]');
+  console.log('Usage: npm run video:record:offline -- [--pace-ms 200..18000] [--output-dir DIRECTORY]');
   console.log('Requires Python 3, Playwright and Chrome/Chromium. Local synthetic silent WebM only; never uploads.');
 }else{
   const root=resolve(fileURLToPath(new URL('..',import.meta.url)));
