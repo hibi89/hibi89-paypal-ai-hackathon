@@ -31,6 +31,23 @@ export function inspectLocalCheckout(root=ROOT,run=spawnSync){
   return {status:'LOCAL_GIT_COMMIT_RECORDED_NOT_RELEASED',commitSha:sha,
     branch:name};
 }
+// No network and no tracked-file mutation. A dirty or unknown checkout may
+// produce footage, but it must never be automatically labeled release-ready.
+export function inspectTrackedTreeClean(root=ROOT,run=spawnSync){
+  const options={cwd:root,encoding:'utf8',windowsHide:true,shell:false,
+    timeout:3000,maxBuffer:4096};
+  return [['diff','--quiet','--'],['diff','--cached','--quiet','--']]
+    .every(args=>run('git',args,options)?.status===0);
+}
+export function compareRecordedSource(video,localCheckout,trackedTreeClean){
+  if(video?.status!=='LOCAL_SYNTHETIC_WEBM_INTEGRITY_VERIFIED'||
+     !/^[a-f0-9]{40}$/.test(video?.sourceCommitSha||''))
+    return 'VIDEO_SOURCE_UNVERIFIED';
+  if(localCheckout?.commitSha===video.sourceCommitSha&&
+     video.sourceTrackedClean===true&&trackedTreeClean===true)
+    return 'MATCHED_CLEAN_SOURCE';
+  return 'VIDEO_SOURCE_MISMATCH_OR_DIRTY';
+}
 export function verifyPrivateSyntheticVideo(dir){
   if(!existsSync(dir))return {status:'LOCAL_VIDEO_NOT_RECORDED'};
   const candidates=readdirSync(dir)
@@ -58,11 +75,14 @@ export function verifyPrivateSyntheticVideo(dir){
   requireValue(bytes>0&&bytes<=250*1024*1024&&bytes===manifest.video_bytes,'VIDEO_BYTES_MISMATCH');
   const data=readFileSync(dest);
   requireValue(data.subarray(0,4).equals(Buffer.from([0x1a,0x45,0xdf,0xa3])),'VIDEO_WEBM_HEADER_MISSING');
+  const sourceSha=manifest.source_commit_sha;
+  requireValue(sourceSha==null||/^[a-f0-9]{40}$/.test(sourceSha),'VIDEO_SOURCE_SHA_INVALID');
   const hash=createHash('sha256').update(data).digest('hex');
   requireValue(hash===manifest.video_sha256,'VIDEO_SHA256_MISMATCH');
   return {status:'LOCAL_SYNTHETIC_WEBM_INTEGRITY_VERIFIED',filename,sha256:hash,
     bytes,recordingWallClockSeconds:manifest.wall_clock_elapsed_seconds,
-    mediaDurationProbed:false,publiclyUploaded:false};
+    mediaDurationProbed:false,publiclyUploaded:false,
+    sourceCommitSha:sourceSha||null,sourceTrackedClean:manifest.source_tracked_tree_clean===true};
 }
 export function prepareSubmissionCandidate({root=ROOT}={}){
   root=resolve(root);
@@ -71,8 +91,10 @@ export function prepareSubmissionCandidate({root=ROOT}={}){
   const assessment=assessSubmissionEvidence({ledger,files});
   const video=verifyPrivateSyntheticVideo(join(root,'output','videos'));
   const localCheckout=inspectLocalCheckout(root);
+  const localTrackedTreeClean=inspectTrackedTreeClean(root);
+  const videoSourceMatch=compareRecordedSource(video,localCheckout,localTrackedTreeClean);
   const localSource=assessment.localAssets.every(a=>!a.status.includes('MISSING')&&!a.status.includes('INVALID'));
-  const ownerReviewReady=localSource&&video.status==='LOCAL_SYNTHETIC_WEBM_INTEGRITY_VERIFIED';
+  const ownerReviewReady=localSource&&videoSourceMatch==='MATCHED_CLEAN_SOURCE';
   const copy=files['docs/DEVPOST_ENTRY_AND_VIDEO_COPY_EN_20261029.md'];
   requireValue(copy.includes('DRAFT — NOT PUBLISHED'),'DEVPOST_COPY_DRAFT_GUARD_MISSING');
   const dest=join(root,'output','submission');
@@ -82,6 +104,8 @@ export function prepareSubmissionCandidate({root=ROOT}={}){
     sourceStatus:localSource?'LOCAL_SOURCE_DRAFTS_PRESENT':'LOCAL_SOURCE_MISSING',
     privateVideo:video,
     localCheckout,
+    localTrackedTreeClean,
+    videoSourceMatch,
     publicSourceRelease:'NOT_APPROVED',
     ownerReviewReady,
     authorizedToPublish:false,
@@ -90,12 +114,14 @@ export function prepareSubmissionCandidate({root=ROOT}={}){
     mainBranchRelease:'NOT_APPROVED',
     externalSubmissionEligible:false,
     externalGates:assessment.externalGates,
-    note:'This file is local, synthetic, unpublished. No video duration probe, real-provider replay, publicity consent or Devpost submission.'
+    note:'Private candidate; only a SHA-matched clean source recording can be marked owner-review-ready. No media duration probe, real-provider replay, publicity consent or Devpost submission.'
   };
   const md='# PROOFLINE — PRIVATE SUBMISSION CANDIDATE (NOT SUBMITTED)\n\n'+
     '**No public YouTube link or Devpost receipt exists in this report. Do not publish without owner review and approval.**\n\n'+
     '- Local Git commit (NOT a public release): '+(localCheckout.commitSha||'UNVERIFIED')+'\n'+
     '- Local checked-out branch: '+(localCheckout.branch||'DETACHED_OR_UNVERIFIED')+'\n'+
+    '- Recorded video source match: '+videoSourceMatch+'\n'+
+    '- Local tracked Git files clean: '+(localTrackedTreeClean?'YES':'NO_OR_UNVERIFIED')+'\n'+
     '- Public code release: NOT APPROVED; verify source branch and root LICENSE before Devpost\n'+
     '- Local video: '+(video.filename||'NOT RECORDED ON THIS MACHINE')+'\n'+
     '- Private WebM integrity: '+video.status+'\n'+
