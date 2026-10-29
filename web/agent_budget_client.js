@@ -30,7 +30,87 @@ form?.addEventListener('submit',async e=>{
 });
 budgetForm?.addEventListener('submit',async e=>{
  e.preventDefault();if(agentBusy)return;agentBusy=true;
- try{const {data}=await agentRequest('/api/demo/budget/configure','POST',{limitMinor:cents(budgetForm.elements.limit.value),confirmBudget:true});budgetOutput.textContent=data.ok?'Offline budget configured. No payment authorized.':'Blocked: '+data.reason}
+ try{const {data}=await agentRequest('/api/demo/budget/configure','POST',{limitMinor:cents(budgetForm.elements.limit.value),confirmBudget:true});budgetOutput.textContent=data.ok?'Offline budget configured. No payment authorized.':'Blocked: '+data.reason;
+  if(data.ok){const state=(await agentRequest('/api/demo/budget/status')).data;budgetOutput.textContent+=' Limit: }
+ catch(err){budgetOutput.textContent='Blocked: '+err.message}finally{agentBusy=false}
+});
+reserveButton?.addEventListener('click',async()=>{
+ if(agentBusy||!proposal||proposal.status!=='PROPOSED')return;agentBusy=true;reserveButton.disabled=true;
+ try{
+  const {session,quote:q}=await quote();
+  if(q.version!==proposalVersion||q.status!=='APPROVED'||q.approval?.amountMinor!==proposal.agreedMinor)throw Error('APPROVE_EXACT_PROPOSAL_FIRST');
+  const {data}=await agentRequest('/api/demo/budget/reserve','POST',{quoteId:session.quoteId,expectedVersion:q.version,negotiation:proposal,explicitApproval:true});
+  budgetOutput.textContent=data.ok?'SQLite budget reserved. Payment remains disabled.':'Blocked: '+data.reason;
+  if(data.ok){const state=(await agentRequest('/api/demo/budget/status')).data;budgetOutput.textContent+=' Reserved: 
+ }catch(err){budgetOutput.textContent='Blocked: '+err.message}finally{agentBusy=false;reserveButton.disabled=false}
+});
++(state.limitMinor/100).toFixed(2)+' · Reserved: }
+ catch(err){budgetOutput.textContent='Blocked: '+err.message}finally{agentBusy=false}
+});
+reserveButton?.addEventListener('click',async()=>{
+ if(agentBusy||!proposal||proposal.status!=='PROPOSED')return;agentBusy=true;reserveButton.disabled=true;
+ try{
+  const {session,quote:q}=await quote();
+  if(q.version!==proposalVersion||q.status!=='APPROVED'||q.approval?.amountMinor!==proposal.agreedMinor)throw Error('APPROVE_EXACT_PROPOSAL_FIRST');
+  const {data}=await agentRequest('/api/demo/budget/reserve','POST',{quoteId:session.quoteId,expectedVersion:q.version,negotiation:proposal,explicitApproval:true});
+  budgetOutput.textContent=data.ok?'SQLite budget reserved. Payment remains disabled.':'Blocked: '+data.reason;
+ }catch(err){budgetOutput.textContent='Blocked: '+err.message}finally{agentBusy=false;reserveButton.disabled=false}
+});
++(state.reservedMinor/100).toFixed(2)}}
+ catch(err){budgetOutput.textContent='Blocked: '+err.message}finally{agentBusy=false}
+});
+reserveButton?.addEventListener('click',async()=>{
+ if(agentBusy||!proposal||proposal.status!=='PROPOSED')return;agentBusy=true;reserveButton.disabled=true;
+ try{
+  const {session,quote:q}=await quote();
+  if(q.version!==proposalVersion||q.status!=='APPROVED'||q.approval?.amountMinor!==proposal.agreedMinor)throw Error('APPROVE_EXACT_PROPOSAL_FIRST');
+  const {data}=await agentRequest('/api/demo/budget/reserve','POST',{quoteId:session.quoteId,expectedVersion:q.version,negotiation:proposal,explicitApproval:true});
+  budgetOutput.textContent=data.ok?'SQLite budget reserved. Payment remains disabled.':'Blocked: '+data.reason;
+ }catch(err){budgetOutput.textContent='Blocked: '+err.message}finally{agentBusy=false;reserveButton.disabled=false}
+});
++(state.reservedMinor/100).toFixed(2)+' · Remaining: 
+ }catch(err){budgetOutput.textContent='Blocked: '+err.message}finally{agentBusy=false;reserveButton.disabled=false}
+});
++(state.limitMinor/100).toFixed(2)+' · Reserved: }
+ catch(err){budgetOutput.textContent='Blocked: '+err.message}finally{agentBusy=false}
+});
+reserveButton?.addEventListener('click',async()=>{
+ if(agentBusy||!proposal||proposal.status!=='PROPOSED')return;agentBusy=true;reserveButton.disabled=true;
+ try{
+  const {session,quote:q}=await quote();
+  if(q.version!==proposalVersion||q.status!=='APPROVED'||q.approval?.amountMinor!==proposal.agreedMinor)throw Error('APPROVE_EXACT_PROPOSAL_FIRST');
+  const {data}=await agentRequest('/api/demo/budget/reserve','POST',{quoteId:session.quoteId,expectedVersion:q.version,negotiation:proposal,explicitApproval:true});
+  budgetOutput.textContent=data.ok?'SQLite budget reserved. Payment remains disabled.':'Blocked: '+data.reason;
+ }catch(err){budgetOutput.textContent='Blocked: '+err.message}finally{agentBusy=false;reserveButton.disabled=false}
+});
++(state.reservedMinor/100).toFixed(2)}}
+ catch(err){budgetOutput.textContent='Blocked: '+err.message}finally{agentBusy=false}
+});
+reserveButton?.addEventListener('click',async()=>{
+ if(agentBusy||!proposal||proposal.status!=='PROPOSED')return;agentBusy=true;reserveButton.disabled=true;
+ try{
+  const {session,quote:q}=await quote();
+  if(q.version!==proposalVersion||q.status!=='APPROVED'||q.approval?.amountMinor!==proposal.agreedMinor)throw Error('APPROVE_EXACT_PROPOSAL_FIRST');
+  const {data}=await agentRequest('/api/demo/budget/reserve','POST',{quoteId:session.quoteId,expectedVersion:q.version,negotiation:proposal,explicitApproval:true});
+  budgetOutput.textContent=data.ok?'SQLite budget reserved. Payment remains disabled.':'Blocked: '+data.reason;
+ }catch(err){budgetOutput.textContent='Blocked: '+err.message}finally{agentBusy=false;reserveButton.disabled=false}
+});
++((state.limitMinor-state.reservedMinor)/100).toFixed(2)}
+ }catch(err){budgetOutput.textContent='Blocked: '+err.message}finally{agentBusy=false;reserveButton.disabled=false}
+});
++(state.limitMinor/100).toFixed(2)+' · Reserved: }
+ catch(err){budgetOutput.textContent='Blocked: '+err.message}finally{agentBusy=false}
+});
+reserveButton?.addEventListener('click',async()=>{
+ if(agentBusy||!proposal||proposal.status!=='PROPOSED')return;agentBusy=true;reserveButton.disabled=true;
+ try{
+  const {session,quote:q}=await quote();
+  if(q.version!==proposalVersion||q.status!=='APPROVED'||q.approval?.amountMinor!==proposal.agreedMinor)throw Error('APPROVE_EXACT_PROPOSAL_FIRST');
+  const {data}=await agentRequest('/api/demo/budget/reserve','POST',{quoteId:session.quoteId,expectedVersion:q.version,negotiation:proposal,explicitApproval:true});
+  budgetOutput.textContent=data.ok?'SQLite budget reserved. Payment remains disabled.':'Blocked: '+data.reason;
+ }catch(err){budgetOutput.textContent='Blocked: '+err.message}finally{agentBusy=false;reserveButton.disabled=false}
+});
++(state.reservedMinor/100).toFixed(2)}}
  catch(err){budgetOutput.textContent='Blocked: '+err.message}finally{agentBusy=false}
 });
 reserveButton?.addEventListener('click',async()=>{
