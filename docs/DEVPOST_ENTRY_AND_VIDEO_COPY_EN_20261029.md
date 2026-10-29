@@ -19,7 +19,13 @@ Do not infer that the synthetic browser demo is a real-provider session. No priv
 
 ### Inspiration
 
-Small service projects fail when a good idea moves from a message to an estimate, a contract, a milestone and payment without a clear record of what the human actually approved. We asked whether an AI-assisted work marketplace could separate recommendations from authority and make each handoff inspectable.
+I did not begin with an abstract market thesis. I started applying for freelance opportunities with few expectations, partly because I wanted to see whether I could find a place for my skills. What I experienced was frustrating: as a newcomer, it felt as though the most visible work and opportunities were concentrated around already-established profiles with reviews, reputation and an existing customer base. This is my personal experience and motivation, not a statistical claim that every platform excludes new workers.
+
+That raised a question: **where do capable newcomers get their first real opportunity, especially as AI creates new kinds of skills and services?** I wanted a stage where people can voluntarily present what they can do, where customers can describe what they actually need, and where AI helps connect both sides instead of rewarding visibility alone.
+
+The idea grew beyond AI freelance matching. Imagine a low-friction, potentially lower-total-cost global services marketplace that can begin with AI work and expand to design, translation, marketing and other eligible digital services. If PayPal chose to operate or partner in such a marketplace, it could potentially participate in **creating new eligible transactions as well as processing their payments**. We would still have to prove whether fees can truly fall after all payment, currency, support and risk costs.
+
+Small service projects can also fail when a promising introduction moves through scope, quote, contract, milestones and payment without a clear record of what was approved. Our working contest slice tests whether AI assistance, deliberate human consent and verifiable PayPal Sandbox payment evidence can make that journey more understandable. The personal story explains **why I started**, while the tested application must demonstrate **what actually works**.
 
 ### Market opportunity: a new stage for AI professionals
 
