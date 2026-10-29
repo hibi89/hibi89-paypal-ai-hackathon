@@ -99,6 +99,7 @@ def capture(output_dir, pace_ms):
     server, address = start_demo()
     video_file = None
     two_verticals_verified = False
+    synthetic_protocol_replay_verified = False
     unsafe_requests = []
     post_paths = []
     try:
@@ -215,6 +216,22 @@ def capture(output_dir, pace_ms):
                 caption("EVIDENCE MAP | Offline browser + injected fake APIs are NOT the owner's historical Gemini/PayPal Sandbox receipt.")
                 page.wait_for_timeout(min(pace_ms, 4500))
 
+                # Real owner orchestration, injected FAKE Gemini/PayPal only.
+                # This opt-in visual trace is a distinct technical evidence
+                # class, NOT historical live Sandbox proof.
+                page.locator("#protocol-replay-button").click()
+                expect(page.locator("#protocol-replay-status")).to_contain_text(
+                    "0 real provider calls")
+                expect(page.locator("#protocol-replay-list")).to_contain_text(
+                    "simulated buyer approved")
+                expect(page.locator("#protocol-replay-list")).to_contain_text(
+                    "simulated completion only")
+                assert page.locator("#protocol-replay-list li").count() >= 7, "FAKE_PROTOCOL_STAGES_MISSING"
+                assert post_paths.count("/api/demo/provider-protocol") == 1, "FAKE_PROTOCOL_REPLAY_NOT_EXPLICIT"
+                synthetic_protocol_replay_verified = True
+                caption("INJECTED FAKE API TRACE | Gemini skills → simulated PayPal order → buyer approval GET → simulated Capture → GET. ZERO real provider calls.")
+                page.wait_for_timeout(min(pace_ms, 5000))
+
                 # Show BOTH real, clickable service categories in one marketplace.
                 # Category transitions never create a quote or call PayPal/Gemini.
                 page.locator("#marketplace-submit").click()
@@ -327,6 +344,9 @@ def capture(output_dir, pace_ms):
             "evidence_class": "OFFLINE_SYNTHETIC_BROWSER_CAPTURE_ONLY",
             "storyboard_version": "OPPORTUNITY_FIRST_V2",
             "demonstrated_categories": (["ai_work", "general_services"] if two_verticals_verified else []),
+            "interactive_fake_api_trace_replayed_locally": synthetic_protocol_replay_verified,
+            "interactive_fake_api_trace_actual_provider_calls": 0,
+            "interactive_fake_api_trace_payment_posts": 0,
             "video_filename": dest.name,
             "video_sha256": hashlib.sha256(dest.read_bytes()).hexdigest(),
             "video_bytes": dest.stat().st_size,
