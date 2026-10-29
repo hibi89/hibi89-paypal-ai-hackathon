@@ -16,6 +16,8 @@ import { createDemoRateLimiter } from './demo_rate_limit.mjs';
 import { createPaypalBuyerReturnBoundary } from './paypal_buyer_return_boundary.mjs';
 import { createMarketplaceDemoApi } from './marketplace_match.mjs';
 import { createNegotiationDemoApi } from './agent_negotiation_demo_api.mjs';
+import { createAgentBudgetStore } from './agent_budget_store.mjs';
+import { createAgentBudgetDemoApi } from './agent_budget_demo_api.mjs';
 import { inspectLocalEvidence } from './local_evidence_inspector.mjs';
 
 const html = readFileSync(new URL('../web/offline_demo.html', import.meta.url), 'utf8');
@@ -28,6 +30,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
   const folder = mkdtempSync(join(tmpdir(), 'paypal-local-demo-'));
   const demoLedgerPath=join(folder,'demo.sqlite');
   const ledger = createSqliteLedger({ filename:demoLedgerPath });
+  const budgetStore=createAgentBudgetStore(join(folder,'agent_budget.sqlite'));
   const subscriptionStore=createSubscriptionScenarioStore({
     filename:join(folder,'subscription_scenarios.sqlite')
   });
@@ -74,6 +77,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
   const buyerReturn=createPaypalBuyerReturnBoundary();
   const marketplaceApi=createMarketplaceDemoApi({resolveSession});
   const negotiationApi=createNegotiationDemoApi({resolveSession,repository:ledger});
+  const budgetApi=createAgentBudgetDemoApi({resolveSession,quotes:ledger,budgets:budgetStore});
   let server;
   server = createServer(async (req, res) => {
     try {
@@ -264,7 +268,8 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
       const options={method:req.method,headers:new Headers(req.headers)};
       if (req.method !== 'GET' && req.method !== 'HEAD')
         options.body=Buffer.concat(chunks);
-      const handler=path==='/api/demo/negotiate' ? negotiationApi :
+      const handler=path.startsWith('/api/demo/budget/') ? budgetApi :
+        path==='/api/demo/negotiate' ? negotiationApi :
         path==='/api/demo/marketplace' ? marketplaceApi :
         path==='/api/contracts'||path.startsWith('/api/contracts/')
         ? contractApi : path==='/api/demo/subscription'||
@@ -285,6 +290,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
     });
   } catch(e) {
     subscriptionStore.close();
+    budgetStore.close();
     ledger.close();
     rmSync(folder,{recursive:true,force:true});
     throw e;
@@ -296,6 +302,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
     async close() {
       await new Promise((resolve,reject)=>server.close(e=>e?reject(e):resolve()));
       subscriptionStore.close();
+      budgetStore.close();
       ledger.close();
       rmSync(folder,{recursive:true,force:true});
     },
