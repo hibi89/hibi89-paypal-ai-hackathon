@@ -27,16 +27,15 @@ On the **owner's Windows computer** in the existing cloned repository, inspect l
 git fetch origin
 git switch --track origin/work/paypal-final-qa-20261030
 git rev-parse HEAD
-npm run preflight:reviewer
-npm run judge:reproduce
-npm run judge:evidence
+npm run owner:review:local
+# Inspect the private summary. If the video is missing/stale, run once:
 npm run video:record:owner
-npm run submission:candidate:local
-npm run freeze:check
+npm run owner:review:local
 ```
 
 If the QA branch already exists locally, use `git switch work/paypal-final-qa-20261030` and `git pull --ff-only` instead of `git switch --track`. **Never force-reset a local branch**, overwrite private SQLite files, or replay a previous Sandbox CREATE/CAPTURE just to make footage.
 
+- **Shortest owner workflow:** `npm run owner:review:local` performs one automatic local HTTP + injected-fake provider replay, builds the gitignored source/video packet, runs the private freeze check, and checks the original user's local SQLite receipt in strictly **read-only** mode. The output `output/submission/owner_review_brief.json` contains only allowlisted status labels, never raw IDs or original private records. If the summary requests a new video, run `npm run video:record:owner` **once**, then `npm run owner:review:local` again. Video recording may install free tooling; no provider API or payment request occurs. This does not grant public release authority or independent provider attestation.
 - `npm run preflight:reviewer`: safe local synthetic reviewer readiness only.
 - `npm run judge:reproduce`: replays **both categories through the real localhost HTTP handler** and the existing full orchestration using explicitly fake Gemini/PayPal responses. Saves `output/submission/judge_reproduction_receipt.json` (gitignored). Proves neither public deployment nor external payment; historical 2026-10-28 proof remains owner-reported.
 - `npm run judge:evidence`: injected fake providers only; **not** live Gemini or PayPal.
