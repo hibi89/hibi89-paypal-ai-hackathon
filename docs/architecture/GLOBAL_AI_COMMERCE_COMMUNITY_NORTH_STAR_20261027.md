@@ -1,3 +1,5 @@
+> **[2026-10-29 OWNER CONTEST DECISION]** The upcoming hackathon entry demonstrates **TWO sections in ONE marketplace**: AI Work + Global Services (cross-category design/translation/marketing), linked to a common AI-assisted services/approval/PayPal flow. This is a proposal for PayPal **to operate/participate in owning the market** and potentially earn **intermediation plus normal processing fees** under future approvals; it is not a current PayPal fee-share feature. The owner dropped contest integration of standalone SOVIA, DBVORA, CODE COUNCIL and BI; basic payment ledger/consent/receipt must stay. Older north-star vertical priorities and analytics below remain speculative LONG-TERM OPTIONS, not mandatory contest work. [CURRENT SCOPE](../strategy/HAECHONG_DUAL_VERTICAL_SCOPE_20261029.md). 
+
 # Global AI Commerce Community — PayPal Hackathon Product North Star
 > **OWNER DECISION · 2026-10-27 KST · STRATEGY/PRODUCT DIRECTION ONLY**
 > Source: owner's explicit conversation clarification. Repository: `hibi89/hibi89-paypal-ai-hackathon@lead/paypal`.
