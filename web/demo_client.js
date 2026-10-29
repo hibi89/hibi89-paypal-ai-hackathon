@@ -16,6 +16,7 @@ const rejectButton=document.getElementById('reject-submit');
 const refreshButton=document.getElementById('refresh');
 const paymentButton=document.getElementById('payment-status');
 const roleToggle=document.getElementById('demo-role-toggle');
+const protocolReplayButton=document.getElementById('protocol-replay-button');
 const sessionRole=document.getElementById('demo-session-role');
 const controls=[draftButton,approveButton,rejectButton,refreshButton,paymentButton];
 // A checkbox is consent to the amount currently displayed, never to a later edit.
@@ -90,6 +91,8 @@ async function init(){
     reviewerMode=session.role==='reviewer';
     roleToggle.hidden=session.syntheticReviewerEnabled!==true;
     roleToggle.textContent=reviewerMode?'Return to synthetic owner view':'Switch to synthetic reviewer view';
+    protocolReplayButton.hidden=reviewerMode;
+    protocolReplayButton.disabled=reviewerMode;
     sessionRole.textContent='Current local demo session: '+(reviewerMode?'synthetic reviewer':'synthetic owner');
     if(reviewerMode){
       for(const id of ['marketplace-panel','quote-panel','draft-panel','approval-panel','payment-panel'])
