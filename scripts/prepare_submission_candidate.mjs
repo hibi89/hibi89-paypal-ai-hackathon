@@ -2,6 +2,7 @@
 // Reads only public checkout files and ignored synthetic video under output/videos.
 // Does not touch owner-private SQLite, provider credentials, payment APIs or browsers.
 import {createHash} from 'node:crypto';
+import {spawnSync} from 'node:child_process';
 import {readFileSync,readdirSync,lstatSync,mkdirSync,writeFileSync,existsSync} from 'node:fs';
 import {join,resolve,basename} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -14,6 +15,22 @@ const entryPaths=['LICENSE','README.md','docs/JUDGE_REPRODUCTION_EN.md',
   'scripts/record_judge_demo.py'];
 const read=(root,path)=>{try{return readFileSync(join(root,path),'utf8').replace(/\r\n?/g,'\n')}catch{return ''}};
 const requireValue=(condition,why)=>{if(!condition)throw Error(why)};
+// Read-only Git provenance: no network, no branch switch, no release claim.
+// In CI a PR checkout may be detached, so commit SHA is the stable identifier.
+export function inspectLocalCheckout(root=ROOT,run=spawnSync){
+  const options={cwd:root,encoding:'utf8',windowsHide:true,shell:false,
+    timeout:3000,maxBuffer:4096};
+  const result=run('git',['rev-parse','--verify','HEAD'],options);
+  const sha=typeof result?.stdout==='string'?result.stdout.trim():'';
+  if(result?.status!==0||!/^[a-f0-9]{40}$/.test(sha))
+    return {status:'LOCAL_GIT_COMMIT_UNVERIFIED',commitSha:null,branch:null};
+  const branchResult=run('git',['symbolic-ref','--quiet','--short','HEAD'],options);
+  const rawBranch=typeof branchResult?.stdout==='string'?branchResult.stdout.trim():'';
+  const name=branchResult?.status===0&&/^[A-Za-z0-9._/-]{1,200}$/.test(rawBranch)
+    ?rawBranch:null;
+  return {status:'LOCAL_GIT_COMMIT_RECORDED_NOT_RELEASED',commitSha:sha,
+    branch:name};
+}
 export function verifyPrivateSyntheticVideo(dir){
   if(!existsSync(dir))return {status:'LOCAL_VIDEO_NOT_RECORDED'};
   const candidates=readdirSync(dir)
@@ -53,6 +70,7 @@ export function prepareSubmissionCandidate({root=ROOT}={}){
   const files=Object.fromEntries(entryPaths.map(path=>[path,read(root,path)]));
   const assessment=assessSubmissionEvidence({ledger,files});
   const video=verifyPrivateSyntheticVideo(join(root,'output','videos'));
+  const localCheckout=inspectLocalCheckout(root);
   const localSource=assessment.localAssets.every(a=>!a.status.includes('MISSING')&&!a.status.includes('INVALID'));
   const ownerReviewReady=localSource&&video.status==='LOCAL_SYNTHETIC_WEBM_INTEGRITY_VERIFIED';
   const copy=files['docs/DEVPOST_ENTRY_AND_VIDEO_COPY_EN_20261029.md'];
@@ -63,6 +81,8 @@ export function prepareSubmissionCandidate({root=ROOT}={}){
     status:ownerReviewReady?'LOCAL_PACKET_PREPARED_NOT_SUBMITTED':'LOCAL_PACKET_NEEDS_VIDEO_OR_SOURCE',
     sourceStatus:localSource?'LOCAL_SOURCE_DRAFTS_PRESENT':'LOCAL_SOURCE_MISSING',
     privateVideo:video,
+    localCheckout,
+    publicSourceRelease:'NOT_APPROVED',
     ownerReviewReady,
     authorizedToPublish:false,
     publicVideoUrl:'NOT_PROVIDED',
@@ -74,7 +94,9 @@ export function prepareSubmissionCandidate({root=ROOT}={}){
   };
   const md='# PROOFLINE — PRIVATE SUBMISSION CANDIDATE (NOT SUBMITTED)\n\n'+
     '**No public YouTube link or Devpost receipt exists in this report. Do not publish without owner review and approval.**\n\n'+
-    '- Source: https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/lead/paypal\n'+
+    '- Local Git commit (NOT a public release): '+(localCheckout.commitSha||'UNVERIFIED')+'\n'+
+    '- Local checked-out branch: '+(localCheckout.branch||'DETACHED_OR_UNVERIFIED')+'\n'+
+    '- Public code release: NOT APPROVED; verify source branch and root LICENSE before Devpost\n'+
     '- Local video: '+(video.filename||'NOT RECORDED ON THIS MACHINE')+'\n'+
     '- Private WebM integrity: '+video.status+'\n'+
     '- Public video URL: NOT PROVIDED\n- Devpost receipt: NOT SUBMITTED\n'+
