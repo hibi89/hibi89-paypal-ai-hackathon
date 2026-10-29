@@ -76,6 +76,7 @@ def capture(output_dir, pace_ms):
     output_dir.mkdir(parents=True, exist_ok=True)
     server, address = start_demo()
     video_file = None
+    two_verticals_verified = False
     unsafe_requests = []
     post_paths = []
     try:
@@ -203,6 +204,7 @@ def capture(output_dir, pace_ms):
                 page.locator("#marketplace-submit").click()
                 expect(page.locator(".match-summary")).to_contain_text("AI Work")
                 expect(page.locator("#marketplace-choose-synthetic-web")).to_be_visible()
+                two_verticals_verified = True
                 page.locator("#marketplace-choose-synthetic-web").click()
                 expect(page.locator("#scope")).to_have_value(re.compile("Synthetic candidate: synthetic-web"))
 
@@ -287,6 +289,8 @@ def capture(output_dir, pace_ms):
         # it identifies this private, synthetic file for human editorial review.
         manifest = {
             "evidence_class": "OFFLINE_SYNTHETIC_BROWSER_CAPTURE_ONLY",
+            "storyboard_version": "OPPORTUNITY_FIRST_V2",
+            "demonstrated_categories": (["ai_work", "general_services"] if two_verticals_verified else []),
             "video_filename": dest.name,
             "video_sha256": hashlib.sha256(dest.read_bytes()).hexdigest(),
             "video_bytes": dest.stat().st_size,
