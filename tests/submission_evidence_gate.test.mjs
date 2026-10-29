@@ -7,7 +7,9 @@ import {assessSubmissionEvidence} from '../src/submission_evidence_gate.mjs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const ledger=JSON.parse(read('data/paypal_daily_progress.json'));
 const files=Object.fromEntries(['LICENSE','README.md','docs/JUDGE_REPRODUCTION_EN.md',
- 'docs/VIDEO_STORYBOARD_EN.md'].map(p=>[p,read(p)]));
+ 'docs/VIDEO_STORYBOARD_EN.md',
+ 'docs/DEVPOST_ENTRY_AND_VIDEO_COPY_EN_20261029.md',
+ 'scripts/record_judge_demo.py'].map(p=>[p,read(p)]));
 test('real checked-in reviewer materials are recognized but not eligible',()=>{
  const report=assessSubmissionEvidence({ledger,files});
  assert.equal(report.submissionEligible,false);
@@ -44,6 +46,18 @@ test('draft video is not confused with a real YouTube upload',()=>{
  assert.equal(localVideo.status,'DRAFT_ONLY');
  assert.equal(externalVideo.status,'NOT_SUBMITTED');
 });
+test('Devpost copy and silent recorder are local preparation only, not released evidence',()=>{
+ const report=assessSubmissionEvidence({ledger,files});
+ assert.equal(report.localAssets.find(x=>x.name==='DEVPOST_ENTRY_COPY').status,'LOCAL_DRAFT_VERIFIED');
+ assert.equal(report.localAssets.find(x=>x.name==='OFFLINE_VIDEO_RECORDER_SOURCE').status,
+   'LOCAL_SOURCE_PRESENT_NOT_VIDEO_PROOF');
+ assert.equal(report.externalGates.find(x=>x.name==='VIDEO_PUBLIC_LINK').status,'NOT_SUBMITTED');
+ assert.equal(report.submissionEligible,false);
+ const missing=assessSubmissionEvidence({ledger,files:{...files,
+  'docs/DEVPOST_ENTRY_AND_VIDEO_COPY_EN_20261029.md':''}});
+ assert.ok(missing.blockers.includes('DEVPOST_ENTRY_COPY'));
+});
+
 test('missing 18-day required records fails closed',()=>{
  const noD3={...ledger,days:ledger.days.filter(d=>d.day_id!=='PPL-D03')};
  assert.throws(()=>assessSubmissionEvidence({ledger:noD3,files}),{name:'TypeError'});
