@@ -22,6 +22,9 @@ test('local budget API replay remains idempotent',async()=>{
   const replay=await post('/api/demo/budget/reserve',request);
   assert.equal(replay.status,200);
   assert.equal(replay.data.reason,'ALREADY_RESERVED');
+  assert.equal(replay.data.remainingMinor,0);
+  assert.equal(replay.data.paymentAuthorized,false);
+  assert.equal(replay.data.providerCallMade,false);
   const state=await (await fetch(app.url+'/api/demo/budget/status')).json();
   assert.equal(state.reservedMinor,agreedMinor);
  }finally{await app.close()}
