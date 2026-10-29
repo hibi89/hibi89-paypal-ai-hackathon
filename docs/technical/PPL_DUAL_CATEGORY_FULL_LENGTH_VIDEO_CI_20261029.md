@@ -1,3 +1,18 @@
+## Later 2026-10-29 source-map video acceptance — NEWEST VERIFIED
+
+- **Source tested:** `d58b4158b16f833fc4c3047cbec683d79c4add47` on `lead/paypal`.
+- **Workflow:** [Actions 40882807818](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40882807818) — `test`, `Windows first-run offline video recording`, and `Default-speed synthetic video under 3 minutes`: all **SUCCESS**. [Offline smoke 40882807788](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40882807788): **SUCCESS**.
+- **Node:** **568/568 PASS**. Both the AI Work and Global Services real-Chromium journeys passed; the new visible evidence-map assertions passed.
+- **New default-speed WebM duration:** **152.64 seconds (2:32.64)** measured with `ffprobe`, leaving 27.36 seconds before the three-minute limit. This is a **new** measurement, not the old 148.72s file.
+- **Private CI output:** `paypal-synthetic-review-20261029-133522.webm`, **12,842,575 bytes**, `LOCAL_VIDEO_INTEGRITY_PASS` (SHA-256 manifest checked).
+- **What changed:** the video now pauses briefly over the browser's four-source Evidence Map (offline browser, injected fake APIs, owner-reported October 28 history, final release not submitted), then shows AI Work, Global Services and the existing approved-quote/contract/audit flow.
+- **External scope:** `PROVIDER_CALLS=0 PAYMENT_POSTS=0 PUBLIC_UPLOAD=NO`; `NO_PRIVATE_CI_PROVIDER_PROOF_CLAIM_PASS`. No current provider GET, Gemini inference or independent confirmation of historical Sandbox receipt.
+- **Release:** video is ephemeral in the CI runner, not an owner-PC recording or a publicly approved YouTube video; Devpost not submitted. Existing owner review and PR #16 default-branch MIT license decision remain.
+
+This later run supersedes the earlier 148.72-second runtime **for the updated source-map storyboard**. The prior baseline below remains valid for the earlier video source.
+
+---
+
 # Proofline — dual-category default-speed video acceptance (2026-10-29 KST)
 
 **Status: VERIFIED CI SYNTHETIC VIDEO ONLY. Not publicly released; owner-PC footage not reviewed; Devpost not submitted.**
