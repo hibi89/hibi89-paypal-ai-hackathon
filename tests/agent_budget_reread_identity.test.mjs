@@ -7,6 +7,7 @@ test('reservation rejects ownership or approval changed between two quote reads'
  const negotiation={quoteId:'q',quoteVersion:2,status:'PROPOSED',currency:'USD',agreedMinor:2500,paymentAuthorized:false};
  for(const changed of [
   {ownerId:'attacker'},{merchantId:'other'},{id:'other'},
+  {currency:'EUR'},{rejection:{reason:'owner rejected'}},
   {approval:{actorId:'attacker',quoteVersion:2,amountMinor:2500}},
   {approval:{actorId:'owner',quoteVersion:1,amountMinor:2500}}
  ]){
