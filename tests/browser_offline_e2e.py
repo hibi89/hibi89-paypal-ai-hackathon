@@ -271,12 +271,16 @@ try:
                 overflow=mobile.evaluate("""() => ({
                     width:window.innerWidth,
                     scroll:document.documentElement.scrollWidth,
+                    body:document.body.scrollWidth,
+                    bodyClient:document.body.clientWidth,
                     over:[...document.querySelectorAll('body *')]
-                      .map(el=>({tag:el.tagName,id:el.id,className:String(el.className||'').slice(0,50),
-                        right:Math.round(el.getBoundingClientRect().right),
-                        x:Math.round(el.getBoundingClientRect().left)}))
-                      .filter(x=>x.right>window.innerWidth+2||x.x< -2)
-                      .slice(0,12)
+                      .map(el=>({tag:el.tagName,id:el.id,className:String(el.className||'').slice(0,24),
+                        right:Math.round(el.getBoundingClientRect().right*100)/100,
+                        x:Math.round(el.getBoundingClientRect().left*100)/100,
+                        scroll:el.scrollWidth,client:el.clientWidth}))
+                      .filter(x=>x.right>window.innerWidth-20||x.x< -2||x.scroll>x.client+2)
+                      .sort((a,b)=>b.right-a.right)
+                      .slice(0,25)
                 })""")
                 assert overflow["scroll"]<=overflow["width"]+2, \
                     f"Mobile horizontal overflow diagnostics: {overflow}"
