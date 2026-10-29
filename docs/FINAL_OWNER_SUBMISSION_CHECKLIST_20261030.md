@@ -28,6 +28,7 @@ git fetch origin
 git switch --track origin/work/paypal-final-qa-20261030
 git rev-parse HEAD
 npm run preflight:reviewer
+npm run judge:reproduce
 npm run judge:evidence
 npm run video:record:owner
 npm run submission:candidate:local
@@ -36,6 +37,7 @@ npm run submission:candidate:local
 If the QA branch already exists locally, use `git switch work/paypal-final-qa-20261030` and `git pull --ff-only` instead of `git switch --track`. **Never force-reset a local branch**, overwrite private SQLite files, or replay a previous Sandbox CREATE/CAPTURE just to make footage.
 
 - `npm run preflight:reviewer`: safe local synthetic reviewer readiness only.
+- `npm run judge:reproduce`: replays **both categories through the real localhost HTTP handler** and the existing full orchestration using explicitly fake Gemini/PayPal responses. Saves `output/submission/judge_reproduction_receipt.json` (gitignored). Proves neither public deployment nor external payment; historical 2026-10-28 proof remains owner-reported.
 - `npm run judge:evidence`: injected fake providers only; **not** live Gemini or PayPal.
 - `npm run video:record:owner`: creates ignored private English-captioned synthetic WebM; may install pinned free Playwright/ffmpeg tooling; reads any prior owner evidence in a local **read-only** and allowlisted way.
 - `npm run submission:candidate:local`: writes only gitignored `output/submission/`. It records the actual Git commit/branch, `videoSourceMatch`, and **independent encoded duration if free `ffprobe` is installed**. An old/mismatched video must be re-recorded. Do not interpret a successful command or `ownerReviewReady: true` as public-release authorization.
