@@ -18,8 +18,8 @@ test('served browser assets compile as JavaScript without running provider calls
    assert.ok(script.length>100,path);
    assert.doesNotThrow(()=>new Script(script,{filename:path}),path+' must parse');
    if(path==='/demo/agent-budget.js'){
-    assert.equal((script.match(/form\\?\\.addEventListener\\('submit'/g)||[]).length,1,'One negotiation handler only');
-    assert.equal((script.match(/budgetForm\\?\\.addEventListener\\('submit'/g)||[]).length,1,'One budget handler only');
+    assert.equal(script.split("form?.addEventListener('submit'").length-1,1,'One negotiation handler only');
+    assert.equal(script.split("budgetForm?.addEventListener('submit'").length-1,1,'One budget handler only');
     assert.ok(script.includes("Limit: $"),'Budget amount must render');
    }
   }
