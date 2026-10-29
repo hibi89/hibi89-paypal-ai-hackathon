@@ -18,6 +18,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlsplit
 from playwright.sync_api import sync_playwright, expect
+from video_owner_evidence import collect_saved_receipt, storyboard_cards
 
 ROOT = Path(__file__).resolve().parents[1]
 SECRET = re.compile(r"(SECRET|TOKEN|PASSWORD|CREDENTIAL|API_KEY|CLIENT_ID|MERCHANT_ID|GEMINI|PAYPAL|OPENAI|AUTHORIZATION|PRIVATE_KEY|NODE_OPTIONS)", re.I)
@@ -69,6 +70,9 @@ def start_demo():
 
 def capture(output_dir, pace_ms):
     binary = chrome_binary()
+    # Explicit local read-only snapshot of the owner's earlier evidence.
+    # CI has no original private receipt and falls back to owner-reported labels.
+    proof = collect_saved_receipt(ROOT)
     output_dir.mkdir(parents=True, exist_ok=True)
     server, address = start_demo()
     video_file = None
@@ -119,6 +123,60 @@ def capture(output_dir, pace_ms):
                       }
                       e.textContent=label;
                     }""",label)
+                def evidence_overlay(card):
+                    # Strict allowlisted display data only. Text nodes, never HTML;
+                    # original private receipt values/IDs are not copied to a page.
+                    page.evaluate("""({heading, eyebrow, lines}) => {
+                      let panel=document.getElementById('owner-evidence-video-slide');
+                      if(!panel){
+                        panel=document.createElement('section');
+                        panel.id='owner-evidence-video-slide';
+                        Object.assign(panel.style,{
+                          position:'fixed',inset:'0',zIndex:'10000',
+                          background:'linear-gradient(135deg,#071b38,#142f53)',
+                          color:'#ffffff',padding:'64px 74px',
+                          font:'22px/1.5 system-ui,sans-serif',
+                          display:'flex',flexDirection:'column',
+                          justifyContent:'center'
+                        });
+                        document.body.appendChild(panel);
+                      }
+                      panel.replaceChildren();
+                      const tag=document.createElement('p');
+                      tag.textContent='PROOFLINE / SEPARATE HISTORICAL EVIDENCE';
+                      Object.assign(tag.style,{
+                        color:'#80e0ff',fontSize:'16px',letterSpacing:'2px',
+                        fontWeight:'800',margin:'0 0 24px'
+                      });
+                      panel.appendChild(tag);
+                      const headingNode=document.createElement('h2');
+                      headingNode.textContent=heading;
+                      Object.assign(headingNode.style,{
+                        fontSize:'39px',lineHeight:'1.2',margin:'0 0 16px'
+                      });
+                      panel.appendChild(headingNode);
+                      const source=document.createElement('p');
+                      source.textContent=eyebrow;
+                      Object.assign(source.style,{
+                        color:'#ffdf91',fontSize:'19px',
+                        fontWeight:'800',margin:'0 0 30px'
+                      });
+                      panel.appendChild(source);
+                      for(const line of lines){
+                        const item=document.createElement('p');
+                        item.textContent='• '+line;
+                        Object.assign(item.style,{
+                          fontSize:'20px',margin:'0 0 15px',maxWidth:'1140px'
+                        });
+                        panel.appendChild(item);
+                      }
+                      const foot=document.createElement('p');
+                      foot.textContent='PRIVATE LOCAL READ-ONLY HISTORY · NO NEW PROVIDER REQUESTS';
+                      Object.assign(foot.style,{
+                        fontSize:'13px',color:'#a3b9d8',margin:'22px 0 0'
+                      });
+                      panel.appendChild(foot);
+                    }""", card)
                 page.goto(address, wait_until="domcontentloaded")
                 expect(page.locator("#message")).to_contain_text("Offline demo ready")
                 expect(page.locator("#marketplace-submit")).to_be_enabled()
@@ -140,6 +198,13 @@ def capture(output_dir, pace_ms):
                 expect(page.locator("#quote-view")).to_contain_text("APPROVED")
                 caption("OFFLINE MOCK proposal. A HUMAN approves a specific quote version and amount; no payment is authorized.")
                 pause()
+
+                # Three evidence-first inserts extend the existing 1:56 synthetic
+                # footage into a ~2:35–2:45 judge narrative. No external calls.
+                for card in storyboard_cards(proof):
+                    evidence_overlay(card)
+                    pause()
+                page.evaluate("document.getElementById('owner-evidence-video-slide')?.remove()")
 
                 page.locator("#contract-create").click()
                 expect(page.locator("#contract-fulfillment")).to_have_text("PENDING")
@@ -214,6 +279,9 @@ def capture(output_dir, pace_ms):
             "media_duration_independently_probed": False,
             "provider_calls": 0,
             "payment_posts": 0,
+            "historical_owner_receipt_source": proof["source"],
+            "historical_owner_receipt_checked_locally": proof["local_receipt_verified"],
+            "proof_disclosure": "OWNER_LOCAL_HISTORY_NOT_FRESH_PROVIDER_API",
             "publicly_uploaded": False,
             "devpost_submitted": False,
             "owner_approval_for_publication": False,
@@ -225,6 +293,9 @@ def capture(output_dir, pace_ms):
         print("RECORDED_SYNTHETIC_ONLY " + str(dest))
         print("PRIVATE_VIDEO_MANIFEST " + str(dest.with_suffix(".manifest.json")))
         print("SOURCE_SCOPE=LOCALHOST_ONLY PROVIDER_CALLS=0 PAYMENT_POSTS=0 PUBLIC_UPLOAD=NO")
+        print("OWNER_HISTORICAL_RECEIPT="+
+              ("LOCAL_READ_ONLY_MATCH" if proof["local_receipt_verified"]
+               else "OWNER_REPORT_ONLY_NOT_VERIFIED_ON_THIS_DEVICE"))
         return dest
     finally:
         if server.poll() is None:
