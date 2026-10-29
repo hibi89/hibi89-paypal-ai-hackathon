@@ -1,3 +1,21 @@
+# Proofline — PayPal AI Hackathon judge entry
+
+**Current runnable project source:** [`lead/paypal`](https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/lead/paypal). This `main` branch is a historical coordination snapshot; do not judge it as the runnable application.
+
+**Reproduce the actual local synthetic demo (Node.js 22.5+):**
+```bash
+git clone https://github.com/hibi89/hibi89-paypal-ai-hackathon.git
+cd hibi89-paypal-ai-hackathon
+git switch lead/paypal
+npm run preflight:reviewer
+npm run demo
+```
+Open the local address printed by `npm run demo`. No accounts, payment calls or real AI are involved in the default browser demonstration. The separately owner-operated October 28 PayPal **Sandbox** + Gemini proof is historical owner evidence, not independently replayed in the browser or CI. See [the source branch reviewer guide](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/lead/paypal/docs/JUDGE_REPRODUCTION_EN.md).
+
+**Status as of 2026-10-29:** Submission is **NOT** completed. The official under-three-minute public YouTube video and Devpost receipt still require owner approval. Do not assume a deployed service or real funds. This header is a reviewer redirect; the older planning history follows below.
+
+---
+
 > **[현재 운영 안내 — 2026-10-24] 새 ChatGPT 채팅방에는 다음 한 문장만 입력:** `[페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈]`.  
 > **PayPal 총괄 겸 개발자는** [`lead/paypal` 최신 시작 문서](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/lead/paypal/CHAT_BOOTSTRAP.md) → [현재 작업 포인터](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/lead/paypal/docs/roles/lead/LEAD_ACTIVE_WORK.md) → [검증·진행률 원장](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/lead/paypal/data/paypal_daily_progress.json)을 보고 해당 NEXT 작업을 직접 구현·검수·GitHub 기록한다.  
 > **`main`은 과거 릴리스/문서 스냅샷이며, 아래 오래된 4채팅/기능별 worker 구조 및 작업 미착수 설명은 역사적 기록이다.** 작업용 지시는 반드시 `lead/paypal`을 우선한다. 최근 확인 기준 NEXT D07 0%/100%·잔여 예상 4h/안전 8h, D03 Sandbox/AI 접근 차단·D04 실제 AI 미검증. 배경 자동 개발/커밋은 아니다.
