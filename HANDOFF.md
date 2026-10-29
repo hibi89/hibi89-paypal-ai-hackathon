@@ -1,3 +1,17 @@
+## 2026-10-29 16:18 KST — VERIFIED PRIVATE SUBMISSION PACKET
+1. Goal: PayPal+AI hackathon submission readiness, target 90% by 16:30 KST; no real payment retries or public deployment without owner consent.
+2. Completed implementation: Windows/Linux one-command offline synthetic English-captioned local WebM recording with SHA256 manifest; new npm run submission:candidate:local builds gitignored output/submission/submission_candidate.md and a JSON status, checks public source entry and local WebM integrity, explicitly labels public YouTube/main release/Devpost as NOT approved or NOT submitted.
+3. Independent verification: GitHub Actions #40834352419 at PR20 feature SHA 3955beef3c7b5666ac2888408c985f3585d34ac7 COMPLETED SUCCESS: Linux Node 512/512, synthetic MVP, localhost Chromium E2E, WebM+SHA256, unpublished submission candidate all PASS; Windows clean installation, recorder, SHA256, unpublished candidate all PASS.
+4. CI error fixed: Windows CRLF checked-out source was flagged LOCAL_SOURCE_MISSING; candidate now normalizes CRLF before calling the strict evidence gate. The same new SHA passed both Linux and Windows CI.
+5. Scope: no provider requests or payment POSTs, no private owner SQLite read/copy, no credential access, no public uploaded video or final Devpost submission. CI synthetic mock is NOT an owner Sandbox or Gemini provider replay.
+6. GitHub: hibi89/hibi89-paypal-ai-hackathon, lead/paypal merged feature at 28968eb061d170e956a27ed7691fbe149a3f8253 before this doc update; main remains b8e7f7914084166b24a1eacf97e262c5d855d17b; isolated default entry LICENSE/README PR16 is still DRAFT and needs owner approval.
+7. Owner Windows next command: git switch lead/paypal; git pull --ff-only; npm run video:record:owner; npm run submission:candidate:local. Requires Node22.5+, Python3 and Chrome/Chromium. The local video is private and MUST be human-reviewed; the fast CI recording is not a submitted public video. No independent media-duration metadata probe yet, only wall-clock guard.
+8. Complete the final public source/Licence review, owner-approved YouTube upload and public link, and owner-approved Devpost submission and receipt. Do not merge main/upload/publish or run payment without explicit consent.
+9. Completion estimate ~85% was provisional rather than a measured scalar; no current basis to certify 90%, since final public artefacts and receipt are absent.
+10. Evidence/date: 2026-10-29 16:18 KST, remote GitHub Actions, job logs and refs verified. CI belongs to PR20 feature SHA, not post-merge documentation commits.
+
+---
+
 ## 2026-10-29 16:02 KST — OWNER VIDEO FIRST-RUN WINDOWS+LINUX VERIFIED
 
 1. Goal: reach a credible 90% PayPal hackathon submission readiness without inventing progress or reissuing the Oct28 owner private Sandbox transaction. Focus on existing Node.js/SQLite synthetic judge demo, historical owner-observed provider evidence, public-source release/Devpost/video gates.
