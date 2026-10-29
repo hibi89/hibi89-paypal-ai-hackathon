@@ -220,7 +220,7 @@ def capture(output_dir, pace_ms):
             "notes": "Local synthetic content with historical owner-reported provider disclaimer. Human review required."
         }
         dest.with_suffix(".manifest.json").write_text(
-            json.dumps(manifest, indent=2) + "\\n", encoding="utf-8"
+            json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
         )
         print("RECORDED_SYNTHETIC_ONLY " + str(dest))
         print("PRIVATE_VIDEO_MANIFEST " + str(dest.with_suffix(".manifest.json")))
