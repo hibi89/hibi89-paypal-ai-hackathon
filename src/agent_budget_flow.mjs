@@ -22,7 +22,8 @@ export function createAgentBudgetFlow({quotes,budgets}={}){
   const fresh=await quotes.get(quoteId);
   if(!fresh||fresh.rejection||fresh.currency!==quote.currency||fresh.id!==quoteId||fresh.ownerId!==ownerId||fresh.merchantId!==merchantId||fresh.version!==expectedVersion||fresh.status!=='APPROVED'||fresh.approval?.actorId!==ownerId||fresh.approval?.quoteVersion!==expectedVersion||fresh.approval?.amountMinor!==negotiation.agreedMinor)return {ok:false,reason:'QUOTE_CHANGED'};
   const reserved=budgets.reserve({owner:ownerId,merchant:merchantId,quote:quoteId,version:expectedVersion,amount:negotiation.agreedMinor});
-  const remainingMinor=reserved.ok ? budgets.status(ownerId,merchantId).limitMinor-budgets.status(ownerId,merchantId).reservedMinor : null;
+  const after=reserved.ok ? budgets.status(ownerId,merchantId) : null;
+  const remainingMinor=after ? after.limitMinor-after.reservedMinor : null;
   return {ok:reserved.ok,reason:reserved.reason??'RESERVED',remainingMinor,paymentAuthorized:false,providerCallMade:false};
  };
 }
