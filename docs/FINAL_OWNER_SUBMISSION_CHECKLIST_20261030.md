@@ -32,6 +32,7 @@ npm run judge:reproduce
 npm run judge:evidence
 npm run video:record:owner
 npm run submission:candidate:local
+npm run freeze:check
 ```
 
 If the QA branch already exists locally, use `git switch work/paypal-final-qa-20261030` and `git pull --ff-only` instead of `git switch --track`. **Never force-reset a local branch**, overwrite private SQLite files, or replay a previous Sandbox CREATE/CAPTURE just to make footage.
@@ -40,6 +41,7 @@ If the QA branch already exists locally, use `git switch work/paypal-final-qa-20
 - `npm run judge:reproduce`: replays **both categories through the real localhost HTTP handler** and the existing full orchestration using explicitly fake Gemini/PayPal responses. Saves `output/submission/judge_reproduction_receipt.json` (gitignored). Proves neither public deployment nor external payment; historical 2026-10-28 proof remains owner-reported.
 - `npm run judge:evidence`: injected fake providers only; **not** live Gemini or PayPal.
 - `npm run video:record:owner`: creates ignored private English-captioned synthetic WebM; may install pinned free Playwright/ffmpeg tooling; reads any prior owner evidence in a local **read-only** and allowlisted way.
+- `npm run freeze:check`: **read-only private release gate** that checks the local Git SHA, new `judge:reproduce` technical receipt and the exact source-matched WebM candidate. It writes only ignored `output/submission/private_freeze_status.json`. Even when all technical items are verified, the result is **PRIVATE_RELEASE_BLOCKED_NOT_SUBMITTED** until independent CI, owner review and public release/submission steps. Never interpret local JSON as publication consent.
 - `npm run submission:candidate:local`: writes only gitignored `output/submission/`. It records the actual Git commit/branch, `videoSourceMatch`, and **independent encoded duration if free `ffprobe` is installed**. An old/mismatched video must be re-recorded. Do not interpret a successful command or `ownerReviewReady: true` as public-release authorization.
 - Check `privateVideoDuration.status: ENCODED_MEDIA_UNDER_THREE_MINUTES` and `technicalVideoReady: true`. If `ffprobe` is unavailable, duration stays **NOT VERIFIED**; install a trusted free ffprobe binary or independently measure the actual WebM before considering it final. Do not use wall-clock elapsed time as a substitute.
 - No command above uploads a video, submits Devpost, charges a card, invokes live provider payments or merges Git branches.
@@ -64,7 +66,7 @@ Official rules: https://paypalaihackathon.devpost.com/rules .
 The rules permit repository-based setup instead of public hosting, require a functioning demonstrable app, a **public open-source repo with visible license**, an **English submission**, and a **public YouTube video under three minutes**. A standalone static mockup is insufficient.
 
 ## Current blockers to 100% submission
-1. P5 provenance-lock exact-HEAD regression CI and owner review/merge decision.
+1. Exact **final QA HEAD** GitHub Actions green, `npm run judge:reproduce` and `npm run freeze:check` output reviewed; owner review/merge decision.
 2. Current owner-PC video recording, actual encoded-duration/visual/privacy review.
 3. Public source/release license/working judge entry decision.
 4. Public YouTube link and actual Devpost receipt.
