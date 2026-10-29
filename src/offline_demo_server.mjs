@@ -18,6 +18,7 @@ import { createMarketplaceDemoApi } from './marketplace_match.mjs';
 import { createNegotiationDemoApi } from './agent_negotiation_demo_api.mjs';
 import { createAgentBudgetStore } from './agent_budget_store.mjs';
 import { createAgentBudgetDemoApi } from './agent_budget_demo_api.mjs';
+import { createGithubDeliveryDemoApi } from './github_delivery_demo_api.mjs';
 import { inspectLocalEvidence } from './local_evidence_inspector.mjs';
 
 const html = readFileSync(new URL('../web/offline_demo.html', import.meta.url), 'utf8');
@@ -78,6 +79,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
   const marketplaceApi=createMarketplaceDemoApi({resolveSession});
   const negotiationApi=createNegotiationDemoApi({resolveSession,repository:ledger});
   const budgetApi=createAgentBudgetDemoApi({resolveSession,quotes:ledger,budgets:budgetStore});
+  const githubDeliveryApi=createGithubDeliveryDemoApi({resolveSession});
   let server;
   server = createServer(async (req, res) => {
     try {
@@ -269,7 +271,8 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
       const options={method:req.method,headers:new Headers(req.headers)};
       if (req.method !== 'GET' && req.method !== 'HEAD')
         options.body=Buffer.concat(chunks);
-      const handler=path.startsWith('/api/demo/budget/') ? budgetApi :
+      const handler=path==='/api/demo/github-delivery' ? githubDeliveryApi :
+        path.startsWith('/api/demo/budget/') ? budgetApi :
         path==='/api/demo/negotiate' ? negotiationApi :
         path==='/api/demo/marketplace' ? marketplaceApi :
         path==='/api/contracts'||path.startsWith('/api/contracts/')
