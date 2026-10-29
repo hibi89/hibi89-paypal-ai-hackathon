@@ -53,7 +53,7 @@ The default browser app makes **zero Gemini or PayPal API requests**, never crea
 - A deterministic, bounded 3-profile marketplace with explicit unmatched skills and `DATA_INSUFFICIENT` reference pricing; no invented market-price ML model.
 - An owner-gated Gemini skill-classification adapter and PayPal Sandbox OAuth / Orders create → test buyer approval → capture → authenticated provider GET reconciliation in a **separate private one-shot workflow**.
 - A fail-closed payment boundary: human-approved amount/version/merchant scope, claim uniqueness, idempotency, unknown-outcome GET-first handling, origin/CSRF validation, and no payment POST from browser GET/refresh.
-- Read-only local SQL health and scoped evidence queries: **DBVORA-inspired**, not the standalone DBVORA service. Audited local transitions and policy checks: **SOVIA-style**, not a deployed SOVIA service.
+- Read-only SQLite integrity checks, scoped event history and explicit quote/payment state controls. These are supporting safeguards, not additional marketplace products.
 - Node regression tests plus an actual Chromium walkthrough of the **synthetic localhost** flow. These tests do not attest the external services or a deployed product.
 
 ### Challenges we ran into
@@ -70,7 +70,7 @@ An AI suggestion must never be treated as permission to charge. A provider GET r
 
 ### What's next
 
-Support authenticated real users, opt-in real seller onboarding, controlled server-side Sandbox reviewer reproduction, deployment hardening, dispute and cancellation flows, richer SOVIA-style governance, DBVORA-inspired operations and permissioned aggregate decision analytics. These are roadmap items, **not implemented production features**. No PayPal partnership, revenue-sharing arrangement, AI pricing model or real customer traction is claimed.
+Support authenticated real customers and opt-in sellers, clear identity and skills verification, transparent fees, dispute and cancellation handling, secure server-side PayPal integration, and privacy-preserving marketplace analytics. These are roadmap items, **not implemented production features**. No PayPal partnership, revenue-sharing arrangement, AI pricing model or real customer traction is claimed.
 
 ### Built with
 
@@ -108,33 +108,25 @@ This local-record check is NOT independent remote provider attestation. Showing
 the real original merchant dashboard or buyer account is neither required nor
 authorized by this recording command. No new Sandbox payment should be made.
 
-## Video script — under three minutes, no face or live credentials
+## Judge video — English caption/narration guide for the CURRENT dual-category recording
 
-**0:00–0:15 · Opening title / browser banner.**
-“Work marketplaces need better handoffs between an AI suggestion, human approval, delivery and payment. Proofline makes those boundaries visible.”
+**Status:** Editorial draft for a future owner-reviewed video. The CI recorded and independently measured a **148.72-second** private synthetic WebM at commit `0061d278` ([Actions proof](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40876399546)); the encoded file was ephemeral in CI. **No owner-PC final version, publicly approved YouTube link or Devpost receipt exists.** Actual scene timestamps must be checked against the owner's final recording, not assumed from this guide.
 
-**0:15–0:40 · Marketplace fixture.**
-“Here's a synthetic client request and three fictional worker profiles. We show which skills match and which are missing. No live inventory or market-price model is claimed.”
+The current automated screen sequence is: **opening → AI Work matches → Global Services matches → AI Work quote approval → historical Gemini/PayPal provenance cards → contract/delivery/reviewer rejection and acceptance → SQLite audit → historical disclosure → closing**. This sequence is not the earlier quote-first storyboard.
 
-**0:40–1:05 · Quote and human decisions.**
-“This scope draft is intentionally offline mock data. The owner can reject a version, revise it and approve a specific amount. A previous approval cannot silently authorize a changed quote.”
+| On-screen sequence | Suggested English caption or voice-over (edit to fit final footage) |
+| --- | --- |
+| **Opening — why** | "A newcomer can have real skills but no reviews or previous clients. AI should open a first door to work, not just automate work that already exists." |
+| **AI Work** | "Proofline starts with AI work: agents, automation and development. These are clearly fictional sample specialists, with skills and gaps shown openly." |
+| **Global Services** | "It is not an AI-only job board. The same marketplace can serve design, translation, marketing and other remote services. Both categories share one human-approved transaction path." |
+| **Quote and approval** | "A customer chooses a sample specialist and approves an exact quote version and amount. The browser generates offline mock proposals; no charge is authorized." |
+| **Historical Gemini / PayPal cards** | "Separately, on October 28, the owner reported an actual Gemini skill-classification call and one approved PayPal Sandbox order, capture and later provider GET. The original local record may be checked read-only. These are historical owner-observed results, not calls made by this browser or independently replayed in CI." |
+| **Delivery and review** | "A synthetic contract goes to review. The reviewer rejects an incomplete delivery, and the revised submission is accepted. People keep the decisions." |
+| **Audit and close** | "SQLite preserves the local event history, and payment remains NOT_CAPTURED in this browser. Technology is the evidence; the marketplace is the mechanism; more opportunity for people is the goal." |
 
-**1:05–1:35 · Contract/reviewer workflow.**
-“The synthetic owner creates a contract and submits a milestone. We switch to a separate synthetic reviewer session, reject the first delivery, request a revision and accept the corrected version.”
+**Judge-facing claim boundary:** Label every browser transaction **OFFLINE SYNTHETIC**. Show no actual seller inventory, real purchases, production authentication, PayPal-owned marketplace, lower-fee guarantee, escrow, or present-time Gemini/PayPal provider activity. Never show buyer/merchant IDs, tokens or private SQLite files. The separate owner-reported Sandbox proof is not a substitute for independent judge-accessible integration, and that remains a scoring risk.
 
-**1:35–1:55 · New event timeline.**
-“The read-only audit timeline records contract creation, submission, rejection, resubmission and acceptance with their versions and actors. This is a local SQLite audit, not a production SOVIA deployment.”
-
-**1:55–2:15 · Provider proof disclosure.**
-“Separately, the owner observed one private Gemini skill classification and a PayPal Sandbox test-buyer approval, capture and subsequent provider GET. This is historical owner evidence, not a payment executed by this browser.” Show **only** the built-in sanitized attribution panel; do **not** show private CLI, buyer, token, merchant, order or capture IDs.
-
-**2:15–2:35 · Database health and payment safety.**
-“The local read-only evidence panel shows SQLite integrity, an unsigned audit chain and synthetic-only funnel counts. Page refresh never triggers a provider payment or capture.”
-
-**2:35–2:48 · Source and close.**
-“The MIT-licensed source is reproducible locally. This demo shows a safer path from AI suggestion to accountable human approval. The production marketplace remains future work.”
-
-**Recording requirement:** The script is a production plan, **not captured footage or a public link**. The owner must review the final video, approve publication and provide the URL before Devpost submission. Do not record real user details, credentials or private evidence.
+**Audio and rights:** Silent English captions are acceptable editorially but still need owner inspection for readability. Do not add third-party music, brand graphics or other copyrighted material without appropriate rights. Do not publish until owner approval.
 
 ## Release owner checklist (not automatic)
 
