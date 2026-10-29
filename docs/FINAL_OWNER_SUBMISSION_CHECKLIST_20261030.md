@@ -9,7 +9,9 @@ No source merge, public upload, account action or Devpost submission is authoriz
 - [Actions #40904439915](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40904439915): Linux Node **572/572 PASS**, both synthetic Chromium category journeys PASS, Windows video task PASS, synthetic full-speed WebM **154.08 seconds** measured via `ffprobe`; all three jobs SUCCESS.
 - That CI recording is private, temporary and **not** the owner's final video; it contains **zero real Gemini/PayPal calls or payment POSTs**.
 - 2026-10-28 Gemini classification and PayPal Sandbox buyer-approved CREATE/CAPTURE/GET remain **owner-reported private local observations**, not newly re-executed/independently verified in CI.
-- QA changes added after that tested SHA (private submission checkout provenance, English docs and tests) require their own exact-head verification before release.
+- Later [CI #40905971285](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40905971285) on pre-P5 source `77b3469` completed **575/575 Node PASS**, AI Work and Global Services Chromium PASS, Windows recorder PASS and private synthetic WebM **153.96 seconds** via independent ffprobe. Never confuse that with an owner-approved public video.
+- **P5 source/video lock:** newly generated recording manifests store the exact Git SHA and whether tracked source was clean. `submission:candidate:local` compares that evidence with the current checked-out SHA and both tracked Git states; only `MATCHED_CLEAN_SOURCE` can be marked `ownerReviewReady`. Older videos lacking a source SHA or videos from another checkout are **not** automatically review-ready. A fresh owner-PC recording from the final chosen checkout is required.
+- P5 source-lock changes and tests must pass their **own** exact-head CI before release; do not treat earlier green runs as testing newer commits.
 
 ## 1. Owner source decision (NOT YET APPROVED)
 - [ ] Review [draft QA PR #23](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/23); confirm the exact UI and approval-consent changes, tests and provenance text.
@@ -36,10 +38,11 @@ If the QA branch already exists locally, use `git switch work/paypal-final-qa-20
 - `npm run preflight:reviewer`: safe local synthetic reviewer readiness only.
 - `npm run judge:evidence`: injected fake providers only; **not** live Gemini or PayPal.
 - `npm run video:record:owner`: creates ignored private English-captioned synthetic WebM; may install pinned free Playwright/ffmpeg tooling; reads any prior owner evidence in a local **read-only** and allowlisted way.
-- `npm run submission:candidate:local`: writes only gitignored `output/submission/`. The candidate now identifies the **actual local Git commit and branch** rather than claiming unmerged work is already on `lead/paypal`.
+- `npm run submission:candidate:local`: writes only gitignored `output/submission/`. It reports the actual Git commit/branch and `videoSourceMatch`. **Require `MATCHED_CLEAN_SOURCE` and `ownerReviewReady: true` before starting manual video review;** an old or mismatched video requires a new recording. This is source consistency only, not final human approval or an encoded-duration probe.
 - No command above uploads a video, submits Devpost, charges a card, invokes live provider payments or merges Git branches.
 
 ## 3. Video editorial approval (NOT YET DONE)
+- [ ] Confirm `output/submission/submission_candidate_status.json` reports `videoSourceMatch: MATCHED_CLEAN_SOURCE` and `ownerReviewReady: true` on a clean, up-to-date Git checkout. Never edit recorded manifests manually.
 - [ ] Watch the **newest owner-PC WebM**, not an older CI synthetic file. Confirm both categories, explicit human quote approval, contract/delivery/reviewer interactions and the four-source Evidence Map appear.
 - [ ] Check all provider proof cards distinguish **owner-reported historical Gemini/PayPal Sandbox** from current offline mock; never claim fresh GET, paid live checkout, real userbase or PayPal marketplace partnership.
 - [ ] Independently check actual **encoded** media duration under 180 seconds (e.g. `ffprobe` if installed); the local recording wall clock or SHA-256 integrity check **alone does not verify media length**.
@@ -58,7 +61,7 @@ Official rules: https://paypalaihackathon.devpost.com/rules .
 The rules permit repository-based setup instead of public hosting, require a functioning demonstrable app, a **public open-source repo with visible license**, an **English submission**, and a **public YouTube video under three minutes**. A standalone static mockup is insufficient.
 
 ## Current blockers to 100% submission
-1. New QA branch exact-HEAD regression CI and owner review/merge decision.
+1. P5 provenance-lock exact-HEAD regression CI and owner review/merge decision.
 2. Current owner-PC video recording, actual encoded-duration/visual/privacy review.
 3. Public source/release license/working judge entry decision.
 4. Public YouTube link and actual Devpost receipt.
