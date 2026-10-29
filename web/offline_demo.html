@@ -161,6 +161,25 @@ strong{font-weight:750}.meta{color:#61718a;font-size:.85rem}
 </form>
 <p class="meta">PayPal order and capture POST remain disabled until actual Sandbox verification.</p>
 </section>
+<section class="panel" id="agent-budget-panel" aria-labelledby="agent-budget-heading">
+<p class="section-kicker">AI negotiation / Offline guardrail</p>
+<h2 id="agent-budget-heading">Bounded negotiation and spending limit</h2>
+<p class="meta">Deterministic OFFLINE POLICY simulation, not a live Gemini agent. Prices are USD. No PayPal authorization or escrow.</p>
+<form id="agent-negotiation-form">
+<label>Buyer maximum (USD)<input name="buyerMax" type="number" min="1" max="10000" step="0.01" value="300.00" required></label>
+<label>Seller minimum (USD)<input name="sellerMin" type="number" min="1" max="10000" step="0.01" value="200.00" required></label>
+<label>Seller opening (USD)<input name="opening" type="number" min="1" max="10000" step="0.01" value="280.00" required></label>
+<button type="submit">Generate offline negotiation proposal</button>
+</form>
+<p id="agent-negotiation-result" role="status" aria-live="polite">No proposal yet.</p>
+<p class="meta">To reserve budget, approve the exact proposal amount in the separate human approval section above.</p>
+<form id="agent-budget-form">
+<label>Maximum spending budget (USD)<input name="limit" type="number" min="1" max="10000" step="0.01" value="500.00" required></label>
+<button type="submit">Confirm offline budget limit</button>
+</form>
+<button type="button" id="agent-budget-reserve" disabled>Reserve approved amount in SQLite</button>
+<p id="agent-budget-result" role="status" aria-live="polite">No reservation.</p>
+</section>
 <section class="panel" id="payment-panel">
 <p class="section-kicker">05 / PayPal evidence</p>
 <h2>Payment status &amp; verified provenance</h2>
@@ -255,6 +274,7 @@ strong{font-weight:750}.meta{color:#61718a;font-size:.85rem}
 <p id="message" role="status" aria-live="polite"></p>
 </main>
 <script src="/demo/marketplace.js" defer></script>
+<script src="/demo/agent-budget.js" defer></script>
 <script src="/demo/client.js" defer></script>
 <script src="/demo/contract.js" defer></script>
 <script src="/demo/subscription.js" defer></script>
