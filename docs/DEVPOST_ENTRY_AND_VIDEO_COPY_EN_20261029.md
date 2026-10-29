@@ -7,9 +7,9 @@ Do not infer that the synthetic browser demo is a real-provider session. No priv
 
 ## Devpost project fields — ready to edit
 
-**Project title:** Proofline — Human-approved AI Work and PayPal Sandbox Evidence
+**Project title:** Proofline — AI-Assisted Global Freelance Opportunities
 
-**Tagline:** Match skills, approve a clear quote, track milestones and preserve payment evidence without granting an AI permission to charge.
+**Tagline:** Help newcomers find their first opportunity across AI Work and Global Services, with human-approved transactions.
 
 **Project website:** Not deployed; the judge reproducibility route is the public source branch below.
 
@@ -27,9 +27,9 @@ The idea grew beyond AI freelance matching. Imagine a low-friction, potentially 
 
 Small service projects can also fail when a promising introduction moves through scope, quote, contract, milestones and payment without a clear record of what was approved. Our working contest slice tests whether AI assistance, deliberate human consent and verifiable PayPal Sandbox payment evidence can make that journey more understandable. The personal story explains **why I started**, while the tested application must demonstrate **what actually works**.
 
-### Market opportunity: a new stage for AI professionals
+### Market opportunity: opening freelance opportunities across borders
 
-The bigger idea is to **create new demand for PayPal transactions, not merely add PayPal to an existing checkout**. AI developers, automation builders, consultants and small teams around the world need an accessible place to find paying work. The first marketplace vertical connects that growing community to customers who need AI services. Additional eligible digital-service categories could follow once demand, compliance and economics are demonstrated.
+The bigger idea is to **create new demand for PayPal transactions, not merely add PayPal to an existing checkout**. AI developers, automation builders, consultants and small teams around the world need an accessible place to find paying work. The contest prototype presents **AI Work and Global Services together** as two categories of one marketplace. Both share skill matching, quote approvals, contracts and payment-evidence boundaries. Fictional sample sellers demonstrate the concept; real enrollment, live transactions and commercial fee models remain future work.
 
 The proposed supply model is **asset-light and participation-led**. Unlike a business that must own physical inventory or manually secure every supplier before it can sell, a digital AI-work marketplace can let qualified providers **voluntarily opt in, publish their skills and services, and respond to qualified requests**. Awareness and useful demand could attract suppliers without proportional inventory procurement or one-to-one recruitment. This is a scalability **hypothesis**, not evidence of zero customer-acquisition cost, automatic viral growth or an existing live seller community; identity checks, moderation, trust, disputes and two-sided marketplace liquidity still cost money.
 
