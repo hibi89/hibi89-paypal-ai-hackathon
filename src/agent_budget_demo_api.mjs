@@ -21,7 +21,7 @@ export function createAgentBudgetDemoApi({resolveSession,quotes,budgets}={}){
     const result=budgets.configure(session.actorId,session.merchantId,data.limitMinor);
     return reply({...result,paymentAuthorized:false},result.ok?200:409);
    }
-   if(data.negotiation?.quoteId!==data.quoteId||data.negotiation?.quoteVersion!==data.expectedVersion)return reply({error:'NEGOTIATION_BINDING_REQUIRED'},409);
+   if(typeof data.quoteId!=='string'||!Number.isSafeInteger(data.expectedVersion)||data.expectedVersion<1||data.negotiation?.quoteId!==data.quoteId||data.negotiation?.quoteVersion!==data.expectedVersion)return reply({error:'NEGOTIATION_BINDING_REQUIRED'},409);
    const result=await prepare({quoteId:data.quoteId,ownerId:session.actorId,merchantId:session.merchantId,expectedVersion:data.expectedVersion,negotiation:data.negotiation,explicitApproval:data.explicitApproval});
    return reply(result,result.ok?200:409);
   }catch(e){
