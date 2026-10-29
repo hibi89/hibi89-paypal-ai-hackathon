@@ -1,17 +1,26 @@
 // Local-only fictional marketplace fixture, not a Gemini or PayPal integration.
 const marketplaceForm=document.getElementById('marketplace-form');
 const marketplaceBrief=document.getElementById('marketplace-brief');
+const marketplaceVertical=document.getElementById('marketplace-vertical');
 const marketplaceButton=document.getElementById('marketplace-submit');
 const marketplaceOutput=document.getElementById('marketplace-results');
 const marketplaceSelection=document.getElementById('marketplace-selection-status');
 const quoteScopeInput=document.getElementById('scope');
 let marketplaceBusy=false;
+marketplaceVertical.addEventListener('change',()=>{
+  marketplaceBrief.value=marketplaceVertical.value==='general_services'
+    ? 'Design a new logo and brand identity for my small business'
+    : 'Build an ecommerce website with PayPal checkout';
+  marketplaceOutput.textContent='Choose Match to inspect fictional specialists in this category.';
+  marketplaceSelection.textContent='Category changed: re-match before preparing a quote; no payment affected.';
+});
 marketplaceForm.addEventListener('submit',async event=>{
   event.preventDefault();
   if(marketplaceBusy)return;
   marketplaceBusy=true;
   marketplaceButton.disabled=true;
-  marketplaceOutput.textContent='Checking three fictional profiles…';
+  const selectedVertical=marketplaceVertical.value;
+  marketplaceOutput.textContent='Checking three fictional profiles in selected service category…';
   marketplaceSelection.textContent='No candidate selected. No quote or payment modified.';
   try {
     const sessionResponse=await fetch('/demo/session',{credentials:'same-origin',cache:'no-store'});
@@ -21,20 +30,21 @@ marketplaceForm.addEventListener('submit',async event=>{
     const result=await fetch('/api/demo/marketplace',{
       method:'POST',credentials:'same-origin',cache:'no-store',
       headers:{'content-type':'application/json','x-csrf-token':session.csrfToken},
-      body:JSON.stringify({brief:marketplaceBrief.value}),
+      body:JSON.stringify({brief:marketplaceBrief.value,vertical:selectedVertical}),
     });
     const body=await result.json();
     if(!result.ok)throw new Error(body.error||'MATCH_FAILED');
     // No innerHTML: even server-controlled strings are rendered as text.
     marketplaceOutput.replaceChildren();
     const summary=document.createElement('p');
-    summary.textContent='OFFLINE SYNTHETIC — requested skills: '+
+    summary.textContent='OFFLINE SYNTHETIC ['+body.vertical+'] — requested skills: '+\
       (body.requestedSkills.join(', ')||'none identified; clarify request')+
       '. Reference price: DATA_INSUFFICIENT. PayPal: NOT_CONNECTED.';
     marketplaceOutput.append(summary);
     // Candidate choice is local preparation only: no quote write/approval/PayPal POST.
     // Revalidation protects against a stale match after editing the project brief.
     const matchedBrief=marketplaceBrief.value;
+    const matchedVertical=selectedVertical;
     for(const profile of body.profiles){
       const p=document.createElement('p');
       p.textContent=profile.displayName+' ['+profile.id+'] · '+
@@ -47,7 +57,7 @@ marketplaceForm.addEventListener('submit',async event=>{
         choose.id='marketplace-choose-'+profile.id;
         choose.textContent='Prepare quote scope for '+profile.displayName;
         choose.addEventListener('click',()=>{
-          if(marketplaceBrief.value!==matchedBrief){
+          if(marketplaceBrief.value!==matchedBrief || marketplaceVertical.value!==matchedVertical){
             marketplaceSelection.textContent='Brief changed after matching. Match again before selecting.';
             return;
           }
