@@ -24,6 +24,27 @@ ROOT = Path(__file__).resolve().parents[1]
 SECRET = re.compile(r"(SECRET|TOKEN|PASSWORD|CREDENTIAL|API_KEY|CLIENT_ID|MERCHANT_ID|GEMINI|PAYPAL|OPENAI|AUTHORIZATION|PRIVATE_KEY|NODE_OPTIONS)", re.I)
 
 
+def git_source_snapshot():
+    """Read Git commit and tracked-code cleanliness; no network or file writes."""
+    try:
+        sha = subprocess.run(
+            ["git", "rev-parse", "--verify", "HEAD"], cwd=ROOT,
+            capture_output=True, text=True, timeout=4, check=True
+        ).stdout.strip()
+        if not re.fullmatch(r"[0-9a-f]{40}", sha):
+            return {"sha": None, "clean": False}
+        clean = all(subprocess.run(
+            args, cwd=ROOT, stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL, timeout=4
+        ).returncode == 0 for args in (
+            ["git", "diff", "--quiet", "--"],
+            ["git", "diff", "--cached", "--quiet", "--"],
+        ))
+        return {"sha": sha, "clean": clean}
+    except (OSError, subprocess.SubprocessError):
+        return {"sha": None, "clean": False}
+
+
 def chrome_binary():
     candidate = os.environ.get("BROWSER_CHROME_PATH")
     if candidate and Path(candidate).is_file():
@@ -69,6 +90,7 @@ def start_demo():
 
 
 def capture(output_dir, pace_ms):
+    source_snapshot = git_source_snapshot()
     binary = chrome_binary()
     # Explicit local read-only snapshot of the owner's earlier evidence.
     # CI has no original private receipt and falls back to owner-reported labels.
@@ -295,6 +317,10 @@ def capture(output_dir, pace_ms):
         if dest.exists():
             raise RuntimeError("OUTPUT_WOULD_OVERWRITE")
         shutil.move(source, dest)
+        # Prevent a recording from silently claiming a different source version.
+        current_source = git_source_snapshot()
+        if current_source != source_snapshot:
+            raise RuntimeError("SOURCE_CHANGED_DURING_RECORDING")
         # Manifest is not an attestation of PayPal, Gemini or uploaded footage:
         # it identifies this private, synthetic file for human editorial review.
         manifest = {
@@ -304,6 +330,8 @@ def capture(output_dir, pace_ms):
             "video_filename": dest.name,
             "video_sha256": hashlib.sha256(dest.read_bytes()).hexdigest(),
             "video_bytes": dest.stat().st_size,
+            "source_commit_sha": source_snapshot["sha"],
+            "source_tracked_tree_clean": source_snapshot["clean"],
             "created_utc": datetime.now(timezone.utc).isoformat(),
             "wall_clock_elapsed_seconds": round(time.monotonic() - video_started, 1),
             "media_duration_independently_probed": False,
