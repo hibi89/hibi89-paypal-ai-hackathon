@@ -8,7 +8,9 @@ On the currently unmerged `work/paypal-final-qa-20261030` branch, run `npm run j
 
 **Evidence classes:** (A) executable local synthetic HTTP for two categories (not Chromium); (B) orchestrator with fake provider responses (not a real transaction); (C) historical owner-reported 2026-10-28 Gemini/PayPal Sandbox activity (not rechecked by this command); (D) YouTube/Devpost not submitted. The existing Chromium tests are separate independent UI verification. No real Gemini or PayPal provider calls, payment posts, private owner receipt, or uploads occur. The command's stdout and JSON must not be described as live integration proof.
 
-**Source/API trace:** See [PayPal + Gemini integration code and sanitized injected protocol stages](JUDGE_PAYPAL_AI_INTEGRATION_TRACE_EN.md). This validates order of fake transport calls and approval gates, **not** a currently reachable external checkout.\n\n## Proofline two-category walkthrough (current implementation)
+**Source/API trace:** See [PayPal + Gemini integration code and sanitized injected protocol stages](JUDGE_PAYPAL_AI_INTEGRATION_TRACE_EN.md). This validates order of fake transport calls and approval gates, **not** a currently reachable external checkout.
+
+## Proofline two-category walkthrough (current implementation)
 
 Proofline presents **one local synthetic marketplace**, with two selected service categories; the real human freelancer network is not built. Both categories reuse the same versioned quote and contract path. **PayPal and Gemini calls do not run inside this browser.**
 
