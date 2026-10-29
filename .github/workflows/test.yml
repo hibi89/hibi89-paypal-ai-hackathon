@@ -38,6 +38,10 @@ jobs:
         run: npm run video:record:offline -- --pace-ms 200
       - name: Validate private synthetic WebM hash and release flags
         run: python3 scripts/check_recorded_video.py
+      - name: Build private submission candidate and assert not published
+        run: |
+          npm run submission:candidate:local
+          node --input-type=module -e "import {readFileSync} from 'node:fs'; const x=JSON.parse(readFileSync('output/submission/submission_candidate_status.json')); if(!x.ownerReviewReady||x.externalSubmissionEligible||x.authorizedToPublish)process.exit(2)"
   owner-video-windows:
     name: Windows first-run offline video recording
     runs-on: windows-latest
@@ -52,3 +56,7 @@ jobs:
           python-version: "3.11"
       - name: Full owner workflow from clean machine (no accounts or providers)
         run: npm run video:record:owner -- --pace-ms 200
+      - name: Build owner draft packet and assert video present / release blocked
+        run: |
+          npm run submission:candidate:local
+          node --input-type=module -e "import {readFileSync} from 'node:fs'; const x=JSON.parse(readFileSync('output/submission/submission_candidate_status.json')); if(!x.ownerReviewReady||x.externalSubmissionEligible||x.authorizedToPublish)process.exit(2)"
