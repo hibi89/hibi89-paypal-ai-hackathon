@@ -38,3 +38,17 @@ jobs:
         run: npm run video:record:offline -- --pace-ms 200
       - name: Validate private synthetic WebM hash and release flags
         run: python3 scripts/check_recorded_video.py
+  owner-video-windows:
+    name: Windows first-run offline video recording
+    runs-on: windows-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Full owner workflow from clean machine (no accounts or providers)
+        run: npm run video:record:owner -- --pace-ms 200
