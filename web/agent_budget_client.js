@@ -1,3 +1,4 @@
+(() => {
 // Offline synthetic demo. All payments remain disabled.
 const form=document.getElementById('agent-negotiation-form');
 const output=document.getElementById('agent-negotiation-result');
@@ -78,3 +79,5 @@ historyButton?.addEventListener('click',async()=>{
  try{await showHistory()}catch(error){if(historyOutput)historyOutput.textContent='Blocked: '+error.message}
  finally{busy=false;historyButton.disabled=false}
 });
+
+})();
