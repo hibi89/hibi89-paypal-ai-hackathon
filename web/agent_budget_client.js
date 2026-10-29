@@ -38,9 +38,6 @@ async function showBudget(prefix){
  const {data}=await request('/api/demo/budget/status');
  if(!data.configured){budgetOutput.textContent=prefix+' No offline budget configured · PayPal: DISABLED';return}
  budgetOutput.textContent=prefix+' Limit: $'+(data.limitMinor/100).toFixed(2)+' · Reserved: $'+(data.reservedMinor/100).toFixed(2)+' · Remaining: $'+((data.limitMinor-data.reservedMinor)/100).toFixed(2)+' · PayPal: DISABLED';
-}+(data.limitMinor/100).toFixed(2)+' · Reserved: 
-}+(data.reservedMinor/100).toFixed(2)+' · Remaining: 
-}+((data.limitMinor-data.reservedMinor)/100).toFixed(2)+' · PayPal: DISABLED';
 }
 form?.addEventListener('submit',async event=>{
  event.preventDefault();if(busy)return;busy=true;proposal=null;
