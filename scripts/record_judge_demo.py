@@ -342,7 +342,7 @@ def capture(output_dir, pace_ms):
         # it identifies this private, synthetic file for human editorial review.
         manifest = {
             "evidence_class": "OFFLINE_SYNTHETIC_BROWSER_CAPTURE_ONLY",
-            "storyboard_version": "OPPORTUNITY_FIRST_V2",
+            "storyboard_version": "OPPORTUNITY_FIRST_V3_FAKE_API_TRACE",
             "demonstrated_categories": (["ai_work", "general_services"] if two_verticals_verified else []),
             "interactive_fake_api_trace_replayed_locally": synthetic_protocol_replay_verified,
             "interactive_fake_api_trace_actual_provider_calls": 0,
