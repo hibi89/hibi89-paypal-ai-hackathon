@@ -9,7 +9,7 @@ export function createGithubDeliveryDemoApi({resolveSession}={}){
    const url=new URL(request.url);
    if(url.pathname!=='/api/demo/github-delivery')return reply({error:'NOT_FOUND'},404);
    const session=await resolveSession(request);
-   if(!session?.verified||!session.actorId||!session.csrfToken)return reply({error:'AUTH_REQUIRED'},401);
+   if(!session?.verified||session.actorId!=='synthetic-owner'||session.merchantId!=='synthetic-merchant'||!session.csrfToken)return reply({error:'OWNER_ONLY'},403);
    if(request.headers.get('origin')!==url.origin||request.headers.get('x-csrf-token')!==session.csrfToken)return reply({error:'CSRF_REQUIRED'},403);
    const data=await parseSmallJson(request);
    if(data.acknowledgeSynthetic!==true)return reply({error:'SYNTHETIC_ACK_REQUIRED'},403);
