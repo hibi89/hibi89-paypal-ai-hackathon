@@ -93,6 +93,11 @@ strong{font-weight:700}.meta{color:#485972;font-size:.9rem}
 <div><p>Fulfillment status</p><p id="contract-fulfillment" class="delivery-status">NO_CONTRACT</p></div>
 </div>
 <p id="contract-view" role="status" aria-live="polite">Contract not yet created.</p>
+<details id="contract-audit-panel" open>
+<summary>Contract audit timeline — local synthetic events, read-only</summary>
+<p class="meta">Events come from the owner/reviewer-scoped SQLite contract ledger. They are not independently signed SOVIA or real PayPal payment events. Refresh and page reload perform GET only.</p>
+<ol id="contract-events" aria-live="polite"><li>No contract events recorded.</li></ol>
+</details>
 <div class="contract-actions">
 <button type="button" id="contract-create">Create contract from approved quote</button>
 <button type="button" id="contract-refresh">Refresh contract (GET only)</button>
