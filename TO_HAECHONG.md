@@ -63,3 +63,15 @@
 5. 실로컬 외부 재실증은 꼭 필요한 결함/주최 요구 변경 때 **새로운 명시적 승인**을 받는다. 그 전에는 AI가 합성 통합·보안 검사·문서 최소화를 직접 진행한다.
 
 **해총 판정 제안 근거:** 승인 횟수/로컬 테스트 호출 수를 감소시키는 코드는 **KEEP**, 미검증 Windows 완전 실행/인증된 심사 페이지는 **FIX**, 중복 GitHub/문서 갱신과 불필요한 Sandbox 재거래는 **STOP**, 다음 우선 기능 통합은 **ACCELERATE**. 최종 판단은 해총이 실제 소스·Actions와 대조한다.
+
+
+---
+
+## P7 업데이트 — PayPal 최종 QA 브랜치 (2026-10-30)
+
+- **실제 작업:** `work/paypal-final-qa-20261030` / [Draft PR #23](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/23). `lead/paypal` 및 `main`에 아직 병합하지 않음. 공개/영상 업로드/Devpost 제출/PayPal 결제 요청 없음.
+- **확인된 기존 성과:** CI #40906767630에서 579/579 Node, 양 카테고리 Chromium E2E, Windows 로컬 제출 후보, 3분 미만 합성 영상 검증 모두 성공. P6 이후 exact-HEAD 검증은 GitHub Actions 대기열 때문에 별도 확인 필요.
+- **P7 CI 병목 제거:** `.github/workflows/test.yml`에 PR별 최신 커밋만 유지하는 `concurrency` / `cancel-in-progress` 설정 추가. 동일 PR의 오래된 push/PR 실행만 자동 취소하며 다른 PR이나 `lead/paypal` 독립 실행은 취소하지 않음. 런타임·결제·영상 생성 코드는 그대로 유지.
+- **심사 위험 TOP 3 (실제 미완료):** ① 심사위원의 공개 기능 재현과 실제 PayPal Sandbox + Gemini 통합의 증명은 현재 별개이다. CI 영상은 **가상 공급자/오프라인**이고, 10/28 실 API 실행은 사용자 로컬 기록이다. ② 공개 저장소 기본 페이지·보이는 MIT 라이선스 및 최신 QA 병합 결정 미승인(PR #16, #23). ③ 사용자 PC에서 최종 영상 녹화·소스 SHA 일치·재생시간·개인정보 검수, 공개 YouTube 링크와 Devpost 접수증 없음.
+- **공식 규정:** PayPal 플랫폼 + AI 도구를 실질적으로 결합한 작동 앱, 심사위원 재현 가능한 실행 지침 또는 데모 URL, 공개 오픈소스 라이선스, 영어 제출물, 3분 미만 공개 YouTube 영상이 필요함. https://paypalaihackathon.devpost.com/rules
+- **다음 작업 기준:** 새로운 수수료/마켓플레이스 기능이나 SOVIA/DBVORA 등의 연동보다, 사용자가 승인 가능한 재현·영상·출시 증거를 먼저 완성. `docs/FINAL_OWNER_SUBMISSION_CHECKLIST_20261030.md` 참조. **완성률 90%는 내부 제출 준비도의 잠정 추정치**이며, 공식 제출이 되었다는 뜻이 아님.
