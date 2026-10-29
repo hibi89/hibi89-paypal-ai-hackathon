@@ -1,3 +1,5 @@
+**2026-10-29 15:35 KST: Isolated V8 execution of the real contract browser client displayed four ordered events and made three GET / zero POST requests; malicious HTML detail was rendered as literal text. Regression added at 93131640, Node suite not yet verified. Executed the pure submission readiness function against actual connected GitHub ledger + entry files: draft assets recognized; video and Devpost both NOT_SUBMITTED; submission remains blocked. PR15 closed without merge; PR16 draft and pending owner approval.**
+
 ## 2026-10-29 15:28 KST — 16:30 sprint / latest factual handoff
 
 1. **Goal & fixed stack:** User requested rapid progress from the prior ~65% submission estimate toward 90% readiness by 16:30 KST. One PayPal+AI working contest submission only; Node >=22.5, JS/HTML, SQLite, separately owner-authorized Gemini and PayPal Sandbox one-shot. No full marketplace deployment, real money or authorized feature-scope reduction.
