@@ -113,6 +113,7 @@ export async function runJudgeReproduction({write=false}={}){
       fakePayPalCreatePosts:trace.verifiedFromThisCommand.fakePayPalOrderCreateRequests,
       fakePayPalCapturePosts:trace.verifiedFromThisCommand.fakePayPalCaptureRequests,
       fakeGetReconciliation:trace.verifiedFromThisCommand.fakeProviderGetReconciliation,
+      fakeApiProtocol:trace.verifiedFromThisCommand.fakeApiProtocol,
       syntheticSqliteClaims:trace.verifiedFromThisCommand.persistedSyntheticSqliteClaims,
       actualProviderCalls:0,actualPaymentCaptured:false
     },
