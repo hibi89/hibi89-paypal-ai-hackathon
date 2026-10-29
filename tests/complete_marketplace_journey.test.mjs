@@ -26,6 +26,10 @@ test('single offline user journey: draft, negotiation, approval, reservation, co
   assert.equal(reservation.data.paymentAuthorized,false);
   const budget=await (await fetch(app.url+'/api/demo/budget/status')).json();
   assert.equal(budget.reservedMinor,amount);
+  assert.equal(budget.source,'OFFLINE_SQLITE');
+  const reservations=await (await fetch(app.url+'/api/demo/budget/history')).json();
+  assert.equal(reservations.source,'OFFLINE_SQLITE');
+  assert.deepEqual(reservations.reservations,[{quoteId:session.quoteId,quoteVersion:version,amountMinor:amount}]);
   const create=await post('/api/contracts',{id:'demo-contract',quoteId:session.quoteId,reviewerId:session.reviewerId,expectedVersion:version,eventId:'createdJourney',milestones:[{id:'demo-milestone',step:1,amountMinor:amount}]});
   assert.equal(create.status,201);
   const milestone='/api/contracts/demo-contract/milestones/demo-milestone/';
@@ -34,6 +38,8 @@ test('single offline user journey: draft, negotiation, approval, reservation, co
   const contract=await (await fetch(app.url+'/api/contracts/demo-contract')).json();
   assert.equal(contract.contract.milestones[0].state,'ACCEPTED');
   assert.equal(contract.contract.paymentState,'NOT_CAPTURED');
+  const reviewerHistory=await fetch(app.url+'/api/demo/budget/history',{headers:{cookie:app.testReviewerCookie}});
+  assert.equal(reviewerHistory.status,403);
   const delivery=await post('/api/demo/github-delivery',{repository:'fictional/demo',commitSha:'a'.repeat(40),prNumber:1,checks:[{name:'build',conclusion:'success'}],requiredChecks:['build'],reviewApproved:true,acknowledgeSynthetic:true});
   assert.equal(delivery.status,200);
   assert.equal(delivery.data.decision,'READY_FOR_HUMAN_SETTLEMENT_REVIEW');
