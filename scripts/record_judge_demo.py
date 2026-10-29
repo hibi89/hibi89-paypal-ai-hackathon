@@ -186,11 +186,13 @@ def capture(output_dir, pace_ms):
                 assert time.monotonic()-video_started < 178, "SUBMISSION_VIDEO_EXCEEDS_3_MIN"
                 video_file = page.video
                 context.close()
+                # Playwright sync handles must be resolved before exiting the
+                # sync_playwright context; afterwards its event loop is closed.
+                source = Path(video_file.path())
             finally:
                 browser.close()
         if video_file is None:
             raise RuntimeError("NO_VIDEO_RECORDED")
-        source = Path(video_file.path())
         if not source.is_file() or source.stat().st_size == 0:
             raise RuntimeError("EMPTY_VIDEO_RECORDING")
         filename = "paypal-synthetic-review-" + datetime.now().strftime("%Y%m%d-%H%M%S") + ".webm"
