@@ -268,8 +268,18 @@ try:
                 mobile.on("request",lambda req: mobile_requests.append((req.method,req.url)))
                 mobile.goto(address)
                 expect(mobile.locator("#marketplace-vertical")).to_be_visible()
-                assert mobile.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 2"), \
-                    "Mobile layout must not require horizontal page scrolling"
+                overflow=mobile.evaluate("""() => ({
+                    width:window.innerWidth,
+                    scroll:document.documentElement.scrollWidth,
+                    over:[...document.querySelectorAll('body *')]
+                      .map(el=>({tag:el.tagName,id:el.id,className:String(el.className||'').slice(0,50),
+                        right:Math.round(el.getBoundingClientRect().right),
+                        x:Math.round(el.getBoundingClientRect().left)}))
+                      .filter(x=>x.right>window.innerWidth+2||x.x< -2)
+                      .slice(0,12)
+                })""")
+                assert overflow["scroll"]<=overflow["width"]+2, \
+                    f"Mobile horizontal overflow diagnostics: {overflow}"
                 mobile.locator("#marketplace-vertical").select_option("general_services")
                 expect(mobile.locator("#marketplace-brief")).to_have_value(
                     re.compile(r"logo and brand identity"))
