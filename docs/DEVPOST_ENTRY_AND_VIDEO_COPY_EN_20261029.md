@@ -47,6 +47,8 @@ A separate **owner-operated private Sandbox proof run on October 28, 2026** used
 
 The default browser app makes **zero Gemini or PayPal API requests**, never creates/captures payments and deliberately labels its output `OFFLINE_MOCK`. Historic owner-reported provider results appear separately with their attribution.
 
+The judge-facing browser also has an explicit four-source **Evidence Map**: (A) reproducible synthetic browser, (B) genuine orchestration code tested with injected fake Gemini/PayPal transports, (C) the owner's historically reported October 28 provider run, and (D) unreleased public contest deliverables. Only class B is re-executed by `npm run judge:evidence`; neither the map nor that command independently authenticates the historical provider result.
+
 ### How we built it
 
 - Node.js 22.5+ ES modules, native HTTP, HTML/CSS/vanilla JavaScript, local SQLite with transactional version checks and immutable-style event history.
