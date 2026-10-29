@@ -14,9 +14,9 @@ Proofline presents **one local synthetic marketplace**, with two selected servic
 
 **Automated evidence:** `tests/browser_general_services_e2e.py` reproduces the entire Global Services browser sequence on a fresh local server. `tests/browser_offline_e2e.py` covers AI Work, full delivery/review state changes and responsive Global Services mobile UI. Both run in GitHub Actions without any payment POST.
 
-**Video evidence:** the `OPPORTUNITY_FIRST_V2` synthetic demo recorded on the GitHub CI runner and independently measured at **148.72 seconds** in [run 40876399546](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40876399546). That runner recording was temporary, not a public video or owner-approved final entry.
+**Video evidence (latest QA branch):** the `OPPORTUNITY_FIRST_V2` synthetic demo was recorded by GitHub CI and independently measured at **154.08 seconds (2:34.08)** in [run 40904439915](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40904439915) at `020d7cc`, with **572/572 Node tests** and both synthetic browser categories passing. This supersedes the older 148.72-second CI recording for the updated QA branch. It is temporary runner footage, **not** a public video, owner PC recording or live provider demonstration.
 
-**Submission caveat:** the public repository's older default `main` branch is not the runnable `lead/paypal` build. A draft [PR #16](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/16) adds the missing default-branch MIT license and judge directions, but requires explicit owner release approval before merge. Do not claim the default branch is ready or that Devpost has accepted a submission.
+**Submission caveat:** the public repository's older default `main` branch is not the runnable `lead/paypal` build. Draft [PR #16](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/16) adds the missing default-branch MIT license and judge directions; draft [QA PR #23](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/23) has newer UI, consent and submission-candidate fixes not yet in `lead/paypal`. Both require owner review. Do not claim the default branch, final video or Devpost is submitted. For the release steps use the [owner-only checklist](FINAL_OWNER_SUBMISSION_CHECKLIST_20261030.md).
 
 ## Current verified scope
 
