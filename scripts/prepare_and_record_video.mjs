@@ -2,7 +2,7 @@
 // Only installs pinned local Python Playwright + its ffmpeg helper when needed.
 // Never accesses user PayPal/Gemini secrets, never calls providers, never publishes.
 import {spawnSync} from 'node:child_process';
-import {existsSync,mkdirSync} from 'node:fs';
+import {existsSync} from 'node:fs';
 import {resolve,join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
