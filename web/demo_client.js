@@ -17,6 +17,7 @@ const refreshButton=document.getElementById('refresh');
 const paymentButton=document.getElementById('payment-status');
 const roleToggle=document.getElementById('demo-role-toggle');
 const protocolReplayButton=document.getElementById('protocol-replay-button');
+const marketplaceSubmitButton=document.getElementById('marketplace-submit');
 const sessionRole=document.getElementById('demo-session-role');
 const controls=[draftButton,approveButton,rejectButton,refreshButton,paymentButton];
 // A checkbox is consent to the amount currently displayed, never to a later edit.
@@ -99,6 +100,7 @@ async function init(){
         document.getElementById(id).hidden=true;
     }else await refresh();
     initialized=true;
+    marketplaceSubmitButton.disabled=reviewerMode;
     show('Offline demo ready. No AI or PayPal external calls.');
   }catch(error){show('Cannot load local demo: '+(error instanceof Error?error.message:'REQUEST_FAILED'));}
   finally{busy=false;updateControls();}
