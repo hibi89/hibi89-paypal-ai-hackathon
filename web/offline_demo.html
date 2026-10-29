@@ -38,6 +38,7 @@ a{color:inherit}h1,h2,h3,p{margin-top:0}h1,h2,h3{letter-spacing:-.035em;line-hei
 .protocol-lab .meta{margin:10px 0}
 #protocol-replay-status{font-size:.85rem;font-weight:750;color:#305a92;min-height:1.5em;margin:12px 0 0}
 #protocol-replay-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));list-style:none;counter-reset:protocol;gap:8px;padding:0;margin:16px 0}
+#protocol-replay-list[hidden]{display:none}
 #protocol-replay-list li{counter-increment:protocol;display:flex;align-items:start;gap:10px;padding:11px 12px;border:1px solid #dce7f4;border-radius:10px;background:white;color:#314863;font-size:.8rem;overflow-wrap:anywhere}
 #protocol-replay-list li:before{content:counter(protocol,decimal-leading-zero);font-size:.72rem;font-weight:800;color:#2459b4;min-width:22px}
 #protocol-replay-detail{font-size:.8rem;color:#556d8b;margin:0}
