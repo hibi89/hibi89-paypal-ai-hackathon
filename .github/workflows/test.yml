@@ -60,3 +60,38 @@ jobs:
         run: |
           npm run submission:candidate:local
           node --input-type=module -e "import {readFileSync} from 'node:fs'; const x=JSON.parse(readFileSync('output/submission/submission_candidate_status.json')); if(!x.ownerReviewReady||x.externalSubmissionEligible||x.authorizedToPublish)process.exit(2)"
+
+  full-length-video:
+    name: Default-speed synthetic video under 3 minutes
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install isolated video tools
+        run: |
+          python3 -m venv .video-venv
+          .video-venv/bin/pip install --disable-pip-version-check playwright==1.56.0
+          .video-venv/bin/python -m playwright install ffmpeg
+      - name: Install free ffprobe metadata verifier
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Record default-speed silent English-captioned synthetic video (private only)
+        env:
+          VIDEO_PYTHON_BIN: .video-venv/bin/python
+        run: npm run video:record:offline
+      - name: Verify WebM file + independent ffprobe media duration below three minutes
+        run: |
+          python3 scripts/check_recorded_video.py
+          if ! command -v ffprobe >/dev/null 2>&1; then
+            echo "FFPROBE_UNAVAILABLE; no true media duration verified" >&2
+            exit 2
+          fi
+          video=$(find output/videos -maxdepth 1 -type f -name 'paypal-synthetic-review-*.webm' -print -quit)
+          if [ -z "$video" ]; then echo "RECORDING_MISSING" >&2; exit 2; fi
+          duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$video")
+          python3 -c 'import sys; d=float(sys.argv[1]); assert 100 < d < 180, "VIDEO_DURATION_INVALID"; print(f"PRIVATE_MEDIA_DURATION_VERIFIED_SECONDS={d:.2f}")' "$duration"
