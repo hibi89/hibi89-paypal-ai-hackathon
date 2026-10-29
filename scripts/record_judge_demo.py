@@ -83,6 +83,7 @@ def capture(output_dir, pace_ms):
                     record_video_size={"width": 1280, "height": 900},
                 )
                 page = context.new_page()
+                video_started = time.monotonic()
                 page.set_default_timeout(10000)
 
                 def intercept(route):
