@@ -19,6 +19,14 @@ Do not infer that the synthetic browser demo is a real-provider session. No priv
 
 Small service projects fail when a good idea moves from a message to an estimate, a contract, a milestone and payment without a clear record of what the human actually approved. We asked whether an AI-assisted work marketplace could separate recommendations from authority and make each handoff inspectable.
 
+### Market opportunity: a new stage for AI professionals
+
+The bigger idea is to **create new demand for PayPal transactions, not merely add PayPal to an existing checkout**. AI developers, automation builders, consultants and small teams around the world need an accessible place to find paying work. The first marketplace vertical connects that growing community to customers who need AI services. Additional eligible digital-service categories could follow once demand, compliance and economics are demonstrated.
+
+The proposed supply model is **asset-light and participation-led**. Unlike a business that must own physical inventory or manually secure every supplier before it can sell, a digital AI-work marketplace can let qualified providers **voluntarily opt in, publish their skills and services, and respond to qualified requests**. Awareness and useful demand could attract suppliers without proportional inventory procurement or one-to-one recruitment. This is a scalability **hypothesis**, not evidence of zero customer-acquisition cost, automatic viral growth or an existing live seller community; identity checks, moderation, trust, disputes and two-sided marketplace liquidity still cost money.
+
+The economic thesis has two distinct beneficiaries: an **independent marketplace operator might earn a disclosed, agreed intermediation fee**, while **PayPal could earn its applicable payment-processing fees on genuinely additional eligible transactions**. We propose no special PayPal fee share, partnership, guaranteed volume or realized revenue. The goal is to test whether a new AI-work market can produce **incremental** PayPal payment activity; the broader, opt-in global AI commerce community is future strategy, not a deployed feature.
+
 ### What it does
 
 The runnable local, **synthetic** marketplace lets a customer describe a project, compare three explicitly fictional freelancer profiles against required skills and see missing skills instead of invented certainty. An offline quote draft is versioned; a person may reject it with a reason or explicitly approve an amount. Contracts and milestone delivery have a separate reviewer workflow, including rejection, revision and acceptance. A SQLite audit timeline shows each transition, while local read-only diagnostics show ledger integrity, policy findings and measured synthetic funnel counts.
