@@ -1,3 +1,5 @@
+> **[2026-10-29 OWNER SCOPE OVERRIDE]** Same fixed Node >=22.5 ESM + HTML/CSS/vanilla JS + node:sqlite + Gemini + PayPal Sandbox stack, **NOW TWO USER-VISIBLE SERVICE CATEGORIES**: (A) AI Work and (B) Global Services (design/translation/marketing), reusing the SAME matching→quote→human approval→payment/evidence backend. The technical table below was written before this owner decision; the old single-category limit and references to SOVIA/DBVORA judge features are **historical, not current requirements**. Neither standalone audit/DBVORA nor CODE COUNCIL/BI/HAE/RAG/AutoML is in the contest runtime. Preserve base ledger, payment safety and errors. Current scope: [dual-vertical strategy](../strategy/HAECHONG_DUAL_VERTICAL_SCOPE_20261029.md). 
+
 # PayPal AI Work Marketplace — FIXED REAL-WORLD TOOLCHAIN
 2026-10-27 owner correction: exact selected programs and libraries, not vague AI/DB/backend categories. This is the specific build stack and post-submission roadmap. No newly added runtime dependency before deadline. Latest submission freeze prevails.
 
