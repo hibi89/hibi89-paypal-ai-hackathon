@@ -12,7 +12,7 @@ test('offline video wrapper strips fake payment and AI secrets before child exec
     try{
       const stub=join(tmp,'fake-python.sh');
       writeFileSync(stub,`#!/bin/sh
-if [ -n "${GEMINI_API_KEY+x}" ] || [ -n "${PAYPAL_SANDBOX_CLIENT_SECRET+x}" ] || [ -n "${NODE_OPTIONS+x}" ]; then
+if [ -n "\${GEMINI_API_KEY+x}" ] || [ -n "\${PAYPAL_SANDBOX_CLIENT_SECRET+x}" ] || [ -n "\${NODE_OPTIONS+x}" ]; then
   echo "SENSITIVE_ENV_LEAKED"
   exit 91
 fi
@@ -26,13 +26,13 @@ echo "OFFLINE_WRAPPER_ARGS_AND_ENV_OK"
       const proc=spawnSync(process.execPath,[wrapper,'--pace-ms','200'],{
         encoding:'utf8',timeout:10000,
         env:{...process.env,VIDEO_PYTHON_BIN:stub,
-          GEMINI_API_KEY:'TEST_SENTINEL_NEVER_ACTUAL',
-          PAYPAL_SANDBOX_CLIENT_SECRET:'TEST_SENTINEL_NEVER_ACTUAL',
+          GEMINI_API_KEY:'DUMMY_ONLY',
+          PAYPAL_SANDBOX_CLIENT_SECRET:'DUMMY_ONLY',
           NODE_OPTIONS:'--no-warnings'}
       });
       assert.equal(proc.status,0,proc.stderr+' '+proc.stdout);
       assert.match(proc.stdout,/OFFLINE_WRAPPER_ARGS_AND_ENV_OK/);
-      assert.doesNotMatch(proc.stdout,/TEST_SENTINEL_NEVER_ACTUAL/);
+      assert.doesNotMatch(proc.stdout,/DUMMY_ONLY/);
     }finally{
       rmSync(tmp,{recursive:true,force:true});
     }
