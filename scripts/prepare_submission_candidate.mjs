@@ -39,6 +39,30 @@ export function inspectTrackedTreeClean(root=ROOT,run=spawnSync){
   return [['diff','--quiet','--'],['diff','--cached','--quiet','--']]
     .every(args=>run('git',args,options)?.status===0);
 }
+// Optional system ffprobe gives an independent container/encoded-media duration.
+// The renderer, wall-clock timer and WebM hash cannot prove the <180-second rule.
+// This command only reads a locally recorded file; no upload or provider network.
+export function probePrivateVideoDuration(dir,video,{run=spawnSync}={}){
+  if(video?.status!=='LOCAL_SYNTHETIC_WEBM_INTEGRITY_VERIFIED'||
+     typeof video.filename!=='string'||
+     !/^paypal-synthetic-review-\d{8}-\d{6}\.webm$/.test(video.filename))
+    return {status:'NO_VERIFIED_VIDEO_TO_PROBE',seconds:null};
+  let result;
+  try{
+    result=run('ffprobe',['-v','error','-show_entries','format=duration',
+      '-of','default=noprint_wrappers=1:nokey=1','-i',join(dir,video.filename)],{
+      encoding:'utf8',windowsHide:true,shell:false,timeout:12000,maxBuffer:4096
+    });
+  }catch{return {status:'FFPROBE_UNAVAILABLE_OR_FAILED',seconds:null}}
+  const raw=typeof result?.stdout==='string'?result.stdout.trim():'';
+  if(result?.status!==0||!/^(?:0|[1-9]\d{0,3})(?:\.\d{1,6})?$/.test(raw))
+    return {status:'FFPROBE_UNAVAILABLE_OR_FAILED',seconds:null};
+  const seconds=Number(raw);
+  if(!(Number.isFinite(seconds)&&seconds>0))
+    return {status:'ENCODED_MEDIA_DURATION_INVALID',seconds:null};
+  return {status:seconds<180?'ENCODED_MEDIA_UNDER_THREE_MINUTES':
+    'ENCODED_MEDIA_TOO_LONG',seconds};
+}
 export function compareRecordedSource(video,localCheckout,trackedTreeClean){
   if(video?.status!=='LOCAL_SYNTHETIC_WEBM_INTEGRITY_VERIFIED'||
      !/^[a-f0-9]{40}$/.test(video?.sourceCommitSha||''))
@@ -93,6 +117,9 @@ export function prepareSubmissionCandidate({root=ROOT}={}){
   const localCheckout=inspectLocalCheckout(root);
   const localTrackedTreeClean=inspectTrackedTreeClean(root);
   const videoSourceMatch=compareRecordedSource(video,localCheckout,localTrackedTreeClean);
+  const privateVideoDuration=probePrivateVideoDuration(join(root,'output','videos'),video);
+  const technicalVideoReady=videoSourceMatch==='MATCHED_CLEAN_SOURCE'&&
+    privateVideoDuration.status==='ENCODED_MEDIA_UNDER_THREE_MINUTES';
   const localSource=assessment.localAssets.every(a=>!a.status.includes('MISSING')&&!a.status.includes('INVALID'));
   const ownerReviewReady=localSource&&videoSourceMatch==='MATCHED_CLEAN_SOURCE';
   const copy=files['docs/DEVPOST_ENTRY_AND_VIDEO_COPY_EN_20261029.md'];
@@ -106,6 +133,8 @@ export function prepareSubmissionCandidate({root=ROOT}={}){
     localCheckout,
     localTrackedTreeClean,
     videoSourceMatch,
+    privateVideoDuration,
+    technicalVideoReady,
     publicSourceRelease:'NOT_APPROVED',
     ownerReviewReady,
     authorizedToPublish:false,
@@ -114,13 +143,16 @@ export function prepareSubmissionCandidate({root=ROOT}={}){
     mainBranchRelease:'NOT_APPROVED',
     externalSubmissionEligible:false,
     externalGates:assessment.externalGates,
-    note:'Private candidate; only a SHA-matched clean source recording can be marked owner-review-ready. No media duration probe, real-provider replay, publicity consent or Devpost submission.'
+    note:'Private candidate only. Source match and optional independent ffprobe duration are technical checks; neither is owner visual/editorial consent, public YouTube upload, PayPal/Gemini provider proof, or Devpost submission.'
   };
   const md='# PROOFLINE — PRIVATE SUBMISSION CANDIDATE (NOT SUBMITTED)\n\n'+
     '**No public YouTube link or Devpost receipt exists in this report. Do not publish without owner review and approval.**\n\n'+
     '- Local Git commit (NOT a public release): '+(localCheckout.commitSha||'UNVERIFIED')+'\n'+
     '- Local checked-out branch: '+(localCheckout.branch||'DETACHED_OR_UNVERIFIED')+'\n'+
     '- Recorded video source match: '+videoSourceMatch+'\n'+
+    '- Independently probed encoded video duration: '+
+      (privateVideoDuration.seconds===null?'NOT VERIFIED':privateVideoDuration.seconds.toFixed(2)+' seconds')+
+      ' ('+privateVideoDuration.status+')'+'\n'+
     '- Local tracked Git files clean: '+(localTrackedTreeClean?'YES':'NO_OR_UNVERIFIED')+'\n'+
     '- Public code release: NOT APPROVED; verify source branch and root LICENSE before Devpost\n'+
     '- Local video: '+(video.filename||'NOT RECORDED ON THIS MACHINE')+'\n'+
