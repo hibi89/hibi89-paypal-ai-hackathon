@@ -1,4 +1,4 @@
-// Display live read-only SQLite counts; not a live PayPal/DBVORA/SOVIA connector.
+// Local read-only SQLite integrity and event counts; not a live PayPal connector.
 const evidenceRefresh=document.getElementById('evidence-refresh');
 const evidenceOutput=document.getElementById('evidence-details');
 let evidenceBusy=false;
@@ -13,13 +13,13 @@ async function readLocalEvidence(){
     if(!response.ok)throw new Error(data.error||'EVIDENCE_READ_FAILED');
     const bi=data.businessIntelligence;
     evidenceOutput.textContent=
-      'DBVORA-inspired SQLite integrity: '+data.dbvoraInspired.integrity+
+      'SQLite data integrity: '+data.dbvoraInspired.integrity+
       ' (read-only; backup not verified).\n'+
-      'SOVIA-style local audit chain: '+data.soviaStyle.audit.integrity+
+      'Local transaction history integrity: '+data.soviaStyle.audit.integrity+
       ' ('+data.soviaStyle.audit.ownerEvents+' owner-scoped events, SHA256 not signed).\n'+
-      'SOVIA-style policy snapshot: '+
+      'Local policy checks: '+
       data.soviaStyle.checks.map(c=>c.rule+'='+c.status).join('; ')+'\n'+
-      'Synthetic BI: quotes '+bi.quotes.total+', approved '+bi.quotes.approved+
+      'Synthetic quote/activity counts: quotes '+bi.quotes.total+', approved '+bi.quotes.approved+
       ', approval rate '+(bi.humanApprovalRate.percentage??'N/A')+'%'+
       ', local payment claims '+bi.paymentAttempts.total+
       ', unresolved '+bi.paymentAttempts.unresolved+
