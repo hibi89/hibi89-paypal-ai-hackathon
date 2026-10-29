@@ -49,6 +49,20 @@ The fake test uses those same adapter/orchestration modules with an explicit `fa
 
 For the owner on the original PC, `npm run owner:review:local` prepares a summarized, ignored JSON status without contacting any provider. The owner should never reset the historical private SQLite, replay Capture, share OAuth credentials, or upload private receipt files.
 
+## Optional owner-only fresh Sandbox GET of the *existing* paid test order
+
+A second real Sandbox CREATE or Capture is **not** necessary to check the status of an already-recorded historical order. The official Orders v2 `GET /v2/checkout/orders/{id}` interface permits inspecting an existing order using an OAuth bearer token. [PayPal Orders v2](https://developer.paypal.com/sdk/orders/v2/orders-get/) · [PayPal OAuth](https://developer.paypal.com/api/rest/authentication).
+
+**Default `npm run owner:sandbox:get:optional` is blocked and makes zero network calls.** It does not read credentials or SQLite unless the owner separately chooses to run the command on the original Windows machine with all four explicit flags and types the interactive authorization phrase:
+
+```powershell
+npm run owner:sandbox:get:optional -- --execute --owner-authorized --sandbox-only --existing-order-get-only
+```
+
+The *optional, explicitly authorized* command first checks the existing private Gemini+PayPal audit data with SQLite immutable + read-only mode, then allows **at most one Sandbox OAuth POST (not a payment)** and **one Sandbox Orders GET**, using the PayPal Sandbox origin only. Any Orders CREATE, Capture, PATCH, refund, Gemini request, extra GET, Live host or automatic retry is blocked. The provider order/capture identifiers and sensitive response remain in memory, not stdout, repository, or output artifact. The returned summary reports only whether authenticated GET matches the prior USD 1.50 approved quote, merchant, completed status and historical capture ID. It does not prove the owner's historical Gemini request was independently run and does not authorize Devpost publication.
+
+**No provider calls were made by the development assistant or CI.** Even if the owner later obtains a confirmed GET, that is an owner-device observation rather than a third-party-signed audit or a judge-reproducible live app. Do not distribute Sandbox credentials, buyer account login, order IDs or private databases. The owner may choose not to perform the optional external request.
+
 **Remaining hackathon risk:** the official rules require an app with PayPal developer platform integration central to the AI project and a working judge-accessible build. This evidence distinguishes code paths but does **not** substitute for an owner-approved, genuinely reviewer-reproducible PayPal + Gemini Sandbox flow.
 
 [Official rules](https://paypalaihackathon.devpost.com/rules) · [Owner release checklist](FINAL_OWNER_SUBMISSION_CHECKLIST_20261030.md)
