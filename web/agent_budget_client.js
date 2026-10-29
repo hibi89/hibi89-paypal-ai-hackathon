@@ -4,6 +4,8 @@ const output=document.getElementById('agent-negotiation-result');
 const budgetForm=document.getElementById('agent-budget-form');
 const budgetOutput=document.getElementById('agent-budget-result');
 const reserveButton=document.getElementById('agent-budget-reserve');
+const historyButton=document.getElementById('agent-budget-history-refresh');
+const historyOutput=document.getElementById('agent-budget-history');
 let proposal=null,proposalVersion=null,busy=false;
 async function request(path,method='GET',body){
  const sr=await fetch('/demo/session',{credentials:'same-origin',cache:'no-store'});
@@ -62,5 +64,17 @@ reserveButton?.addEventListener('click',async()=>{
   if(quote.version!==proposalVersion||quote.status!=='APPROVED'||quote.approval?.amountMinor!==proposal.agreedMinor)throw Error('APPROVE_EXACT_PROPOSAL_FIRST');
   await request('/api/demo/budget/reserve','POST',{quoteId:session.quoteId,expectedVersion:quote.version,negotiation:proposal,explicitApproval:true});
   await showBudget('SQLite budget reserved.');
+  await showHistory();
  }catch(error){budgetOutput.textContent='Blocked: '+error.message}finally{busy=false;reserveButton.disabled=false}
+});
+
+async function showHistory(){
+ const {data}=await request('/api/demo/budget/history');
+ const rows=data.reservations||[];
+ historyOutput.textContent=rows.length?rows.map(row=>row.quoteId+' · v'+row.quoteVersion+' · $'+(row.amountMinor/100).toFixed(2)+' · OFFLINE SQLITE').join('\n'):'No SQLite reservations.';
+}
+historyButton?.addEventListener('click',async()=>{
+ if(busy)return;busy=true;historyButton.disabled=true;
+ try{await showHistory()}catch(error){historyOutput.textContent='Blocked: '+error.message}
+ finally{busy=false;historyButton.disabled=false}
 });
