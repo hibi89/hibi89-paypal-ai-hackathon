@@ -2,7 +2,7 @@
 import {negotiateBoundedPrice} from './agent_negotiation_policy.mjs';
 import {reply,parseSmallJson,QuoteApiError} from './quote_api.mjs';
 export function createNegotiationDemoApi({resolveSession,repository,registry}={}){
- if(typeof resolveSession!=='function'||typeof repository?.get!=='function')throw new TypeError('TRUSTED_DEPENDENCIES_REQUIRED');
+ if(typeof resolveSession!=='function'||typeof repository?.get!=='function'||typeof registry?.issue!=='function')throw new TypeError('TRUSTED_DEPENDENCIES_REQUIRED');
  return async function(request){
   try{
    if(request.method!=='POST')return reply({error:'METHOD_NOT_ALLOWED'},405,{allow:'POST'});
@@ -20,7 +20,7 @@ export function createNegotiationDemoApi({resolveSession,repository,registry}={}
    if(quote.status!=='PROPOSED'||quote.version!==data.expectedVersion||quote.rejection)return reply({error:'QUOTE_NOT_NEGOTIABLE'},409);
    const result=negotiateBoundedPrice({buyerMaxMinor:data.buyerMaxMinor,sellerMinMinor:data.sellerMinMinor,openingMinor:data.openingMinor,currency:quote.currency});
    const proposal={quoteId:quote.id,quoteVersion:quote.version,source:'OFFLINE_POLICY',...result};
-   registry?.issue({owner:session.actorId,merchant:session.merchantId,proposal});
+   registry.issue({owner:session.actorId,merchant:session.merchantId,proposal});
    return reply(proposal);
   }catch(e){if(e instanceof QuoteApiError)return reply({error:e.code},e.status);
    if(e instanceof TypeError)return reply({error:'INVALID_NEGOTIATION_INPUT'},400);
