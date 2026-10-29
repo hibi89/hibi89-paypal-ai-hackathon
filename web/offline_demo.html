@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Freelancer Quote Agent — Offline Demo</title>
+<title>PayPal Global Services Marketplace — Offline Demo</title>
 <style>
 :root{font:16px/1.5 system-ui,sans-serif;background:#f4f6fa;color:#16243a}
 *{box-sizing:border-box}body{max-width:760px;margin:0 auto;padding:28px 18px}
@@ -11,7 +11,7 @@ h1{margin:0 0 8px}.hint{font-size:.9rem;color:#455368}
 .warning{background:#fff2cc;border:1px solid #b8801a;border-radius:10px;padding:12px 16px}
 main{display:grid;gap:16px;margin-top:18px}.panel{background:#fff;border:1px solid #d6dfed;border-radius:14px;padding:20px}
 label{display:block;font-weight:650;margin:8px 0 4px}
-textarea,input{display:block;width:100%;padding:10px;border:1px solid #8492a5;border-radius:8px;font:inherit}
+textarea,input,select{display:block;width:100%;padding:10px;border:1px solid #8492a5;border-radius:8px;font:inherit;background:white}
 button{cursor:pointer;font:inherit;border:0;border-radius:8px;padding:10px 14px;background:#1e4582;color:white;margin:10px 6px 0 0}
 button:disabled{opacity:.45;cursor:not-allowed}
 [hidden]{display:none!important}.delivery-status{font-weight:700}.contract-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.contract-grid p{margin:4px 0}.contract-actions{display:flex;flex-wrap:wrap;gap:6px}
@@ -22,7 +22,7 @@ strong{font-weight:700}.meta{color:#485972;font-size:.9rem}
 </head>
 <body>
 <header>
-<h1>Freelancer Quote Agent</h1>
+<h1>PayPal Global Services Marketplace</h1>
 <p class="warning"><strong>Offline demonstration — NOT REAL AI OR PAYPAL.</strong> The price is a deterministic placeholder. No external model or payment is called. This example uses a synthetic user in a loopback-only server; do not deploy it publicly.</p>
 </header>
 <main id="demo-main" aria-busy="false">
@@ -33,9 +33,11 @@ strong{font-weight:700}.meta{color:#485972;font-size:.9rem}
 <p class="meta">This explicit local role switch demonstrates separate owner and reviewer sessions. It is not real authentication or a production identity system.</p>
 </section>
 <section class="panel" id="marketplace-panel" aria-labelledby="marketplace-heading">
-<h2 id="marketplace-heading">0. AI Work Marketplace — matching fixture</h2>
-<p class="meta">Three fictional freelancer profiles. Deterministic eligibility only; no real sellers, Gemini API, market pricing dataset or PayPal checkout. Input synthetic briefs only.</p>
+<h2 id="marketplace-heading">0. Two service categories — shared matching fixture</h2>
+<p class="meta">Choose AI Work or Global Services. Both use one matching/quote/approval workflow. Three fictional specialists per category; no live sellers, Gemini API, fee-sharing agreement, or PayPal checkout. Input synthetic briefs only.</p>
 <form id="marketplace-form">
+<label for="marketplace-vertical">Service category</label>
+<select id="marketplace-vertical" name="vertical"><option value="ai_work">AI Work — development and automation</option><option value="general_services">Global Services — design, translation, marketing</option></select>
 <label for="marketplace-brief">Synthetic client project request</label>
 <textarea id="marketplace-brief" rows="3" minlength="8" maxlength="500" required>Build an ecommerce website with PayPal checkout</textarea>
 <button type="submit" id="marketplace-submit">Match 3 synthetic profiles (no AI)</button>
