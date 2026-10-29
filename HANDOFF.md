@@ -1,3 +1,17 @@
+## 2026-10-29 16:27 KST — FINAL DEFAULT VIDEO RUNTIME PASS
+1. Goal: PayPal AI Hackathon 16:30 90% submission readiness; clear distinction between actual code/CI evidence and not-yet-performed external final submission.
+2. Verified: PR #21 source SHA 82d0f43392756b440ce0ad02b21d1a391fd3a72a GitHub Actions #40835148407 COMPLETED SUCCESS. Full default 14,000ms caption-pause OFFLINE SYNTHETIC WebM finished; ffprobe actual media duration 116.00 seconds, within 3-minute limit. Private SHA256/manifest also PASS. Separate Linux regression and Windows first-run local owner video jobs PASS (previous 512/512 Node CI).
+3. CI failure fixed: original runtime CI completed video but lacked ffprobe. Added free ffmpeg apt install; exact new CI confirmed three jobs green. Media was ephemeral in GitHub runner and not uploaded as artifact or to YouTube.
+4. Owner command from updated lead/paypal: git switch lead/paypal, git pull --ff-only, npm run video:record:owner, npm run submission:candidate:local. Inspect ignored output/videos WebM and output/submission draft. Owner must watch, check private-data provenance and captions, and explicitly authorize any publication.
+5. Current repo: hibi89/hibi89-paypal-ai-hackathon lead/paypal merge SHA a770fb719b075f8ff5c83929c41628e0d27f8256 prior to this doc write. main still historically b8e7f7914084166b24a1eacf97e262c5d855d17b; small PR16 default MIT LICENSE/judge README DRAFT owner approval pending. Do not merge main without authorization.
+6. No real Gemini/PayPal calls in synthetic CI, private Sandbox SQLite access, capture retries, production deployment, video publication, Devpost submission or receipt.
+7. Remaining external obligations: user-PC final video visual review/upload and public YouTube URL, verified judge-repro source release/PR16 decision, Devpost final fields and submission receipt; historical owner-reported one-shot Gemini/Sandbox provider proof remains separate. Never present synthetic CI as independent provider reproduction.
+8. Finish condition: full CI 512 PASS + default media 116s VERIFIED; submission-ready estimate is still provisional (about 85–88%), not objectively 90% until external video/release gates are completed.
+9. No further added functionality is needed for offline contest demo, avoid scope expansion. Strong priority on owner-approved release.
+10. Evidence: Actions logs for run 40835148407, full length job ffprobe printed PRIVATE_MEDIA_DURATION_VERIFIED_SECONDS=116.00, 2026-10-29 KST. After this doc push check new HEAD separately; no post-merge CI claim.
+
+---
+
 ## 2026-10-29 16:18 KST — VERIFIED PRIVATE SUBMISSION PACKET
 1. Goal: PayPal+AI hackathon submission readiness, target 90% by 16:30 KST; no real payment retries or public deployment without owner consent.
 2. Completed implementation: Windows/Linux one-command offline synthetic English-captioned local WebM recording with SHA256 manifest; new npm run submission:candidate:local builds gitignored output/submission/submission_candidate.md and a JSON status, checks public source entry and local WebM integrity, explicitly labels public YouTube/main release/Devpost as NOT approved or NOT submitted.
