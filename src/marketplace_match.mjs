@@ -58,6 +58,54 @@ export function matchSyntheticMarketplaceBrief(brief) {
   return matchSyntheticMarketplaceSkills(requestedSkills);
 
 }
+// Second contest category: general digital services, using the SAME offline quote,
+// approval and payment boundaries. This is not a real opt-in seller directory.
+const GENERAL_SERVICE_SKILLS=Object.freeze([
+  ['design', /\b(design|graphic|logo|figma|ui|ux|visual)\b/i],
+  ['translation', /\b(translat(?:e|ion|or)|korean|japanese|localiz(?:e|ation))\b/i],
+  ['marketing', /\b(marketing|seo|campaign|advertis(?:e|ing)|social media)\b/i],
+  ['writing', /\b(writing|copywriting|copywriter|content|article|blog)\b/i],
+  ['video', /\b(video|edit(?:ing|or)|motion|animation)\b/i],
+  ['branding', /\b(brand|branding|identity|logo)\b/i],
+]);
+const GENERAL_PROFILES=Object.freeze([
+  Object.freeze({id:'synthetic-creative',displayName:'Demo Creative Designer',skills:Object.freeze(['design','branding','video']),language:'en',source:'SYNTHETIC_PROFILE'}),
+  Object.freeze({id:'synthetic-translator',displayName:'Demo Translation Writer',skills:Object.freeze(['translation','writing']),language:'en',source:'SYNTHETIC_PROFILE'}),
+  Object.freeze({id:'synthetic-marketer',displayName:'Demo Marketing Specialist',skills:Object.freeze(['marketing','writing','video']),language:'en',source:'SYNTHETIC_PROFILE'}),
+]);
+export function matchSyntheticGeneralServiceBrief(brief) {
+  if(typeof brief!=='string'||brief.length<8||brief.length>500||
+     /[\u0000-\u001f\u007f]/u.test(brief)||brief.trim().length<8)
+    throw error('INVALID_SYNTHETIC_BRIEF');
+  const requestedSkills=GENERAL_SERVICE_SKILLS.filter(([,pattern])=>pattern.test(brief)).map(([skill])=>skill);
+  const profiles=GENERAL_PROFILES.map((profile,index)=>{
+    const matchedSkills=requestedSkills.filter(skill=>profile.skills.includes(skill));
+    const missingSkills=requestedSkills.filter(skill=>!profile.skills.includes(skill));
+    return {
+      id:profile.id,displayName:profile.displayName,source:profile.source,
+      language:profile.language,skills:[...profile.skills],
+      matchedSkills,missingSkills,
+      eligible:requestedSkills.length>0&&missingSkills.length===0,
+      score:requestedSkills.length?matchedSkills.length/requestedSkills.length:0,
+      reason:!requestedSkills.length?'NEEDS_SKILL_CLARIFICATION':
+        !missingSkills.length?'MATCHES_REQUESTED_SKILLS':'MISSING_REQUIRED_SKILLS',
+      order:index,
+    };
+  }).sort((a,b)=>Number(b.eligible)-Number(a.eligible)||b.score-a.score||a.order-b.order)
+    .map(({order,...profile})=>profile);
+  return {
+    vertical:'general_services',
+    mode:'OFFLINE_SYNTHETIC_NO_AI',
+    skillSource:'OFFLINE_REGEX',
+    profileCount:GENERAL_PROFILES.length,
+    requestedSkills,needsClarification:requestedSkills.length===0,
+    profiles,
+    price:{status:'DATA_INSUFFICIENT',source:'NO_VERIFIED_COMPARABLE_TRANSACTIONS',amountMinor:null},
+    paypal:{status:'NOT_CONNECTED',capturePerformed:false},
+    statement:'Fictional general-service candidates only. No real opt-in sellers, Gemini request, fee-sharing agreement or PayPal transaction.',
+  };
+}
+
 export function createMarketplaceDemoApi({resolveSession}={}) {
   if(typeof resolveSession!=='function') throw new TypeError('VERIFIED_SESSION_REQUIRED');
   return async function handleMarketplace(request){
@@ -75,8 +123,12 @@ export function createMarketplaceDemoApi({resolveSession}={}) {
       if(typeof session.csrfToken!=='string' ||
           request.headers.get('x-csrf-token')!==session.csrfToken)throw error('CSRF_REQUIRED',403);
       const body=await parseSmallJson(request);
-      if(Object.keys(body).some(key=>key!=='brief'))throw error('UNEXPECTED_FIELDS');
-      return reply(matchSyntheticMarketplaceBrief(body.brief));
+      if(Object.keys(body).some(key=>!['brief','vertical'].includes(key)))throw error('UNEXPECTED_FIELDS');
+      const vertical=body.vertical??'ai_work';
+      if(!['ai_work','general_services'].includes(vertical))throw error('INVALID_MARKETPLACE_VERTICAL');
+      return reply(vertical==='ai_work'
+        ? {...matchSyntheticMarketplaceBrief(body.brief),vertical}
+        : matchSyntheticGeneralServiceBrief(body.brief));
     }catch(e) {
       const status=e instanceof QuoteApiError?e.status:
         Number.isInteger(e?.status)?e.status:400;
