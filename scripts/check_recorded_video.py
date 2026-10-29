@@ -37,6 +37,9 @@ def verify(directory):
         raise ValueError("VIDEO_MANIFEST_INTEGRITY_MISMATCH")
     if data.get("evidence_class") != "OFFLINE_SYNTHETIC_BROWSER_CAPTURE_ONLY":
         raise ValueError("REAL_PROVIDER_CLAIM_FORBIDDEN")
+    if data.get("storyboard_version") == "OPPORTUNITY_FIRST_V2":
+        if data.get("demonstrated_categories") != ["ai_work", "general_services"]:
+            raise ValueError("TWO_CATEGORY_VIDEO_EVIDENCE_MISSING")
     if data.get("provider_calls") != 0 or data.get("payment_posts") != 0:
         raise ValueError("PROVIDER_ACTIVITY_CLAIM_FORBIDDEN")
     if data.get("publicly_uploaded") is not False or data.get("devpost_submitted") is not False:
