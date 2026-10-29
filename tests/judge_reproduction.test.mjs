@@ -26,6 +26,13 @@ test('judge one-shot exercises two real loopback match requests and fake-provide
   assert.equal(report.reproducibleB.fakePayPalCapturePosts,1);
   assert.equal(report.reproducibleB.fakeGetReconciliation,true);
   assert.equal(report.reproducibleB.actualProviderCalls,0);
+  assert.equal(report.reproducibleB.fakeApiProtocol.status,
+    'INJECTED_FAKE_PROTOCOL_SEQUENCE_VERIFIED');
+  assert.ok(report.reproducibleB.fakeApiProtocol.stageSequence.indexOf(
+    'FAKE_ORDER_GET_APPROVED')<
+    report.reproducibleB.fakeApiProtocol.stageSequence.indexOf('FAKE_ORDER_CAPTURE_POST'));
+  assert.ok(report.reproducibleB.fakeApiProtocol.stageSequence.indexOf('FAKE_ORDER_CAPTURE_POST')<
+    report.reproducibleB.fakeApiProtocol.stageSequence.indexOf('FAKE_ORDER_GET_COMPLETED'));
   assert.equal(report.historicalC.status,'OWNER_REPORTED_NOT_INDEPENDENTLY_ATTESTED');
   assert.equal(report.publicationD.status,'NOT_SUBMITTED');
   assert.equal(report.safety.submissionEligible,false);
@@ -69,6 +76,9 @@ test('one-command reviewer CLI returns classified safe JSON and saves only ignor
   assert.equal(output.safety.realPayPalCalls,0);
   assert.equal(output.safety.paymentPosts,0);
   assert.equal(output.safety.publicUploads,0);
+  assert.equal(output.reproducibleB.fakeApiProtocol.actualProviderCalls,0);
+  assert.doesNotMatch(JSON.stringify(output.reproducibleB.fakeApiProtocol),
+    /FICTIONALORDER|FICTIONALCAPTURE|checkoutnow|PayerID|client_secret/);
   assert.equal(output.publicationD.publicVideoUrl,null);
   assert.equal(output.publicationD.devpostReceipt,null);
   assert.doesNotMatch(cmd.stdout,/CANARY_NO_LEAK|PayerID|access_token|client_secret/);
