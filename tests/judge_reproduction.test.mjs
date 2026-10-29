@@ -59,8 +59,8 @@ test('one-command reviewer CLI returns classified safe JSON and saves only ignor
   const cmd=spawnSync(process.execPath,['--experimental-sqlite',script],{
     encoding:'utf8',timeout:25000,maxBuffer:1024*1024,
     env:{PATH:process.env.PATH||'',HOME:process.env.HOME||'',
-      PAYPAL_SANDBOX_CLIENT_SECRET:'CANARY_SECRET_NOT_FOR_REPORT',
-      GEMINI_API_KEY:'CANARY_SECRET_NOT_FOR_REPORT'}
+      PAYPAL_SANDBOX_CLIENT_SECRET:'CANARY_NO_LEAK',
+      GEMINI_API_KEY:'CANARY_NO_LEAK'}
   });
   assert.equal(cmd.status,0,cmd.stderr||cmd.stdout);
   const output=JSON.parse(cmd.stdout);
@@ -71,7 +71,7 @@ test('one-command reviewer CLI returns classified safe JSON and saves only ignor
   assert.equal(output.safety.publicUploads,0);
   assert.equal(output.publicationD.publicVideoUrl,null);
   assert.equal(output.publicationD.devpostReceipt,null);
-  assert.doesNotMatch(cmd.stdout,/CANARY_SECRET_NOT_FOR_REPORT|PayerID|access_token|client_secret/);
+  assert.doesNotMatch(cmd.stdout,/CANARY_NO_LEAK|PayerID|access_token|client_secret/);
   const saved=JSON.parse(readFileSync(new URL('../output/submission/judge_reproduction_receipt.json',import.meta.url),'utf8'));
   assert.deepEqual(saved,output);
 });
