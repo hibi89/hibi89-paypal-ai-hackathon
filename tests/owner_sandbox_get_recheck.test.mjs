@@ -170,7 +170,7 @@ test('command line without explicit flags or interactive TTY cannot make provide
    encoding:'utf8',timeout:12000,env:{
      PATH:process.env.PATH||'',HOME:process.env.HOME||'',
      PAYPAL_SANDBOX_CLIENT_ID:'DO_NOT_PRINT_SANDBOX_CLIENT',
-     PAYPAL_SANDBOX_CLIENT_SECRET:'DO_NOT_PRINT_SANDBOX_SECRET'
+     PAYPAL_SANDBOX_CLIENT_SECRET:'CANARY_NO_LEAK'
    }
  });
  assert.equal(result.status,2,result.stderr);
