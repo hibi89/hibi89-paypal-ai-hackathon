@@ -54,7 +54,7 @@ def start_demo():
             if proc.poll() is not None:
                 break
             continue
-        match = re.search(r"http://127\\.0\\.0\\.1:\\d+", line)
+        match = re.search(r"http://127\.0\.0\.1:\d+", line)
         if match:
             return proc, match.group(0)
     proc.terminate()
@@ -67,8 +67,8 @@ def start_demo():
 
 def capture(output_dir, pace_ms):
     binary = chrome_binary()
-    server, address = start_demo()
     output_dir.mkdir(parents=True, exist_ok=True)
+    server, address = start_demo()
     video_file = None
     unsafe_requests = []
     post_paths = []
