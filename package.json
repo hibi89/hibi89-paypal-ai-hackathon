@@ -15,6 +15,7 @@
     "mvp:callback": "node --experimental-sqlite scripts/run_owner_mvp_callback.mjs",
     "mvp:simulate": "node --experimental-sqlite scripts/run_mvp_mock_smoke.mjs",
     "judge:evidence": "node --experimental-sqlite scripts/build_judge_evidence_report.mjs",
+    "judge:reproduce": "node --experimental-sqlite scripts/run_judge_reproduction.mjs",
     "mvp:status": "node --experimental-sqlite scripts/check_owner_mvp_local_status.mjs",
     "mvp:quick": "node --experimental-sqlite scripts/run_owner_mvp_operator.mjs --quick-tunnel",
     "mvp:receipt": "node --experimental-sqlite scripts/print_owner_mvp_receipt.mjs",
