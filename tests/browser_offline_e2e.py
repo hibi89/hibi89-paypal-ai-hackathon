@@ -49,6 +49,17 @@ try:
             page.on("request",lambda r:requests.append((r.method,r.url)))
             page.goto(address)
             expect(page.locator("#message")).to_contain_text("Offline demo ready")
+            # Judge proof map is an explanatory, noninteractive source boundary:
+            # it must not turn historical reports or fake APIs into provider proof.
+            proof_map=page.locator("#proof-map-panel")
+            expect(proof_map).to_be_visible()
+            expect(page.locator("#proof-browser")).to_contain_text("OFFLINE BROWSER")
+            expect(page.locator("#proof-browser")).to_contain_text("Global Services")
+            expect(page.locator("#proof-fake-provider")).to_contain_text("INJECTED FAKE APIS")
+            expect(page.locator("#proof-fake-provider")).to_contain_text("Provider calls: 0")
+            expect(page.locator("#proof-owner-history")).to_contain_text("OWNER-REPORTED HISTORY")
+            expect(page.locator("#proof-owner-history")).to_contain_text("not independently reproduced")
+            expect(page.locator("#proof-release")).to_contain_text("NOT YET SUBMITTED")
             evidence=page.locator("#historical-provider-evidence")
             expect(evidence).to_contain_text("OWNER-REPORTED")
             expect(evidence).to_contain_text("NOT INDEPENDENTLY REPRODUCED")
