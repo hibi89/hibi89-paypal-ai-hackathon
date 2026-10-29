@@ -183,6 +183,7 @@ def capture(output_dir, pace_ms):
                 pause()
                 assert not unsafe_requests, "EXTERNAL_REQUEST_BLOCKED"
                 assert not any("/orders" in x or "/capture" in x for x in post_paths), "PAYMENT_POST_FORBIDDEN"
+                assert time.monotonic()-video_started < 178, "SUBMISSION_VIDEO_EXCEEDS_3_MIN"
                 video_file = page.video
                 context.close()
             finally:
