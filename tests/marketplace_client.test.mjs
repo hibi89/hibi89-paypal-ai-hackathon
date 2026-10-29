@@ -18,15 +18,24 @@ function mount({reviewer=false,matchNone=false}={}){
     return e;
   }
   for(const id of ['marketplace-form','marketplace-brief','marketplace-submit',
-    'marketplace-results','marketplace-selection-status','scope'])element(id);
+    'marketplace-results','marketplace-selection-status','marketplace-vertical','scope'])element(id);
   elements.get('marketplace-brief').value='Build ecommerce website with PayPal checkout';
+  elements.get('marketplace-vertical').value='ai_work';
   elements.get('scope').value='Previous untouched scope';
   const requests=[];
   const fetch=async(path,opts={})=>{
-    requests.push({path,method:opts.method||'GET'});
+    requests.push({path,method:opts.method||'GET',body:opts.body});
     const result=value=>({ok:true,async json(){return value}});
     if(path==='/demo/session')return result({
       mode:'OFFLINE_MOCK',role:reviewer?'reviewer':'owner',csrfToken:'test'
+    });
+    if(path==='/api/demo/marketplace' && JSON.parse(opts.body).vertical==='general_services')return result({
+      vertical:'general_services',requestedSkills:['design','branding'],profiles:[
+        {id:'synthetic-creative',displayName:'Demo Creative Designer',eligible:true,
+          matchedSkills:['design','branding'],missingSkills:[],skills:['design','branding']},
+        {id:'synthetic-marketer',displayName:'Demo Marketing Specialist',eligible:false,
+          matchedSkills:[],missingSkills:['design','branding'],skills:['marketing','writing']}
+      ]
     });
     if(path==='/api/demo/marketplace')return result(matchNone?{
       requestedSkills:[],profiles:[{id:'synthetic-web',displayName:'Demo Web Specialist',
@@ -91,4 +100,38 @@ test('prepared quote never exceeds backend 500-char length bound',async()=>{
  dom.choose().fire('click');
  assert.equal(dom.elements.get('scope').value,'Previous untouched scope');
  assert.match(dom.elements.get('marketplace-selection-status').textContent,/too long/);
+});
+
+test('category switch uses the same API and returns distinct general-service specialist cards',async()=>{
+ const dom=mount();
+ const category=dom.elements.get('marketplace-vertical');
+ category.value='general_services';
+ category.fire('change');
+ assert.match(dom.elements.get('marketplace-brief').value,/logo/);
+ await dom.fire();
+ const api=dom.requests.find(request=>request.path==='/api/demo/marketplace');
+ assert.equal(JSON.parse(api.body).vertical,'general_services');
+ const result=dom.elements.get('marketplace-results');
+ const find=node=>{
+   if(node.id==='marketplace-choose-synthetic-creative')return node;
+   for(const child of node.children){const value=find(child);if(value)return value;}
+   return null;
+ };
+ const button=find(result);
+ assert.ok(button);
+ button.fire('click');
+ assert.match(dom.elements.get('scope').value,/Synthetic candidate: synthetic-creative/);
+ assert.equal(dom.requests.filter(r=>r.method==='POST').length,1);
+});
+
+test('switching service category invalidates previously rendered candidate selection',async()=>{
+ const dom=mount();
+ await dom.fire();
+ const stale=dom.choose();assert.ok(stale);
+ const category=dom.elements.get('marketplace-vertical');
+ category.value='general_services';
+ category.fire('change');
+ stale.fire('click');
+ assert.equal(dom.elements.get('scope').value,'Previous untouched scope');
+ assert.match(dom.elements.get('marketplace-selection-status').textContent,/Match again/);
 });
