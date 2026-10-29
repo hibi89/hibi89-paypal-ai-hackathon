@@ -7,7 +7,9 @@ test('served browser assets compile as JavaScript without running provider calls
  const app=await startOfflineDemo();
  try{
   const html=await (await fetch(app.url+'/demo')).text();
-  const assets=['/demo/agent-budget.js','/demo/github-delivery.js','/demo/marketplace.js'];
+  const assets=[...html.matchAll(/<script\s+src="(\/demo\/[a-z-]+\.js)"/g)].map(match=>match[1]);
+  assert.ok(assets.length>=7,'All demo browser modules should be loaded');
+  assert.equal(new Set(assets).size,assets.length,'No duplicate script tags');
   for(const path of assets){
    assert.ok(html.includes(path),'HTML must reference '+path);
    const response=await fetch(app.url+path);
