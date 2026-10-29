@@ -1,7 +1,7 @@
 // Offline, read-only proposal endpoint. Does not authorize payments or call AI/PayPal.
 import {negotiateBoundedPrice} from './agent_negotiation_policy.mjs';
 import {reply,parseSmallJson,QuoteApiError} from './quote_api.mjs';
-export function createNegotiationDemoApi({resolveSession,repository}={}){
+export function createNegotiationDemoApi({resolveSession,repository,registry}={}){
  if(typeof resolveSession!=='function'||typeof repository?.get!=='function')throw new TypeError('TRUSTED_DEPENDENCIES_REQUIRED');
  return async function(request){
   try{
@@ -19,7 +19,9 @@ export function createNegotiationDemoApi({resolveSession,repository}={}){
    if(!quote||quote.ownerId!==session.actorId||quote.merchantId!==session.merchantId)return reply({error:'QUOTE_NOT_FOUND'},404);
    if(quote.status!=='PROPOSED'||quote.version!==data.expectedVersion||quote.rejection)return reply({error:'QUOTE_NOT_NEGOTIABLE'},409);
    const result=negotiateBoundedPrice({buyerMaxMinor:data.buyerMaxMinor,sellerMinMinor:data.sellerMinMinor,openingMinor:data.openingMinor,currency:quote.currency});
-   return reply({quoteId:quote.id,quoteVersion:quote.version,source:'OFFLINE_POLICY',...result});
+   const proposal={quoteId:quote.id,quoteVersion:quote.version,source:'OFFLINE_POLICY',...result};
+   registry?.issue({owner:session.actorId,merchant:session.merchantId,proposal});
+   return reply(proposal);
   }catch(e){if(e instanceof QuoteApiError)return reply({error:e.code},e.status);
    if(e instanceof TypeError)return reply({error:'INVALID_NEGOTIATION_INPUT'},400);
    return reply({error:'INTERNAL_ERROR'},500);
