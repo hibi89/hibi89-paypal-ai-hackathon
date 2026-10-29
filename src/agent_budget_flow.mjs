@@ -4,6 +4,8 @@ export function createAgentBudgetFlow({quotes,budgets}={}){
  if(typeof quotes?.get!=='function'||typeof budgets?.status!=='function'||typeof budgets?.reserve!=='function')throw new TypeError('STORES_REQUIRED');
  return async function prepare({quoteId,ownerId,merchantId,expectedVersion,negotiation,explicitApproval}={}){
   if(typeof quoteId!=='string'||typeof ownerId!=='string'||typeof merchantId!=='string'||!Number.isSafeInteger(expectedVersion)||expectedVersion<1)return {ok:false,reason:'INVALID_REQUEST'};
+  if(negotiation?.quoteId !== undefined && negotiation.quoteId !== quoteId) return {ok:false,reason:'NEGOTIATION_QUOTE_MISMATCH'};
+  if(negotiation?.quoteVersion !== undefined && negotiation.quoteVersion !== expectedVersion) return {ok:false,reason:'NEGOTIATION_VERSION_MISMATCH'};
   const quote=await quotes.get(quoteId);
   if(!quote||quote.ownerId!==ownerId||quote.merchantId!==merchantId)return {ok:false,reason:'QUOTE_NOT_FOUND'};
   if(quote.version!==expectedVersion)return {ok:false,reason:'STALE_QUOTE'};
