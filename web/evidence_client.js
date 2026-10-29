@@ -13,9 +13,9 @@ async function readLocalEvidence(){
     if(!response.ok)throw new Error(data.error||'EVIDENCE_READ_FAILED');
     const bi=data.businessIntelligence;
     evidenceOutput.textContent=
-      'SQLite data integrity: '+data.dbvoraInspired.integrity+
+      'SQLite integrity: '+data.dbvoraInspired.integrity+
       ' (read-only; backup not verified).\n'+
-      'Local transaction history integrity: '+data.soviaStyle.audit.integrity+
+      'local audit chain: '+data.soviaStyle.audit.integrity+
       ' ('+data.soviaStyle.audit.ownerEvents+' owner-scoped events, SHA256 not signed).\n'+
       'Local policy checks: '+
       data.soviaStyle.checks.map(c=>c.rule+'='+c.status).join('; ')+'\n'+
