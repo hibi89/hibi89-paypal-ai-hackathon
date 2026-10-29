@@ -178,5 +178,5 @@ test('command line without explicit flags or interactive TTY cannot make provide
  assert.equal(body.status,'OWNER_AUTHORIZATION_REQUIRED_NO_NETWORK');
  assert.equal(body.privateFilesRead,false);
  assert.equal(body.paymentPosts,0);
- assert.doesNotMatch(result.stdout,/DO_NOT_PRINT_SANDBOX_/);
+ assert.doesNotMatch(result.stdout,/DO_NOT_PRINT_SANDBOX_|CANARY_NO_LEAK/);
 });
