@@ -21,7 +21,7 @@ const safeRead=name=>{
 export function assessPrivateFreeze({checkout,clean,judge,candidate}={}){
   const sha=shaOk(checkout?.commitSha)?checkout.commitSha:null;
   const sourceValid=sha!==null&&same(clean);
-  const judgeValid=sourceValid&&
+  const judgeValid=Boolean(sourceValid&&
     judge?.source?.commitSha===sha&&same(judge?.source?.trackedFilesClean)&&
     judge.status==='JUDGE_OFFLINE_REPRODUCED_NOT_SUBMITTED'&&
     judge.reproducibleA?.status==='ACTUAL_LOOPBACK_HTTP_VERIFIED_SYNTHETIC_ONLY'&&
@@ -38,8 +38,8 @@ export function assessPrivateFreeze({checkout,clean,judge,candidate}={}){
     judge.safety?.realGeminiCalls===0&&judge.safety?.realPayPalCalls===0&&
     judge.safety?.paymentPosts===0&&
     judge.safety?.publicUploads===0&&
-    judge.safety?.submissionEligible===false;
-  const videoValid=sourceValid&&
+    judge.safety?.submissionEligible===false);
+  const videoValid=Boolean(sourceValid&&
     candidate?.localCheckout?.commitSha===sha&&
     candidate?.videoSourceMatch==='MATCHED_CLEAN_SOURCE'&&
     candidate?.privateVideo?.sourceCommitSha===sha&&
@@ -51,7 +51,7 @@ export function assessPrivateFreeze({checkout,clean,judge,candidate}={}){
     candidate?.ownerReviewReady===true&&
     candidate?.authorizedToPublish===false&&
     candidate?.devpostReceipt==='NOT_SUBMITTED'&&
-    candidate?.publicSourceRelease==='NOT_APPROVED';
+    candidate?.publicSourceRelease==='NOT_APPROVED');
   const blockers=[];
   if(!sourceValid)blockers.push('CHECKOUT_NOT_VERIFIED_OR_TRACKED_DIRTY');
   if(!judgeValid)blockers.push('JUDGE_LOCAL_REPLAY_NEEDS_EXACT_SHA_VERIFICATION');
