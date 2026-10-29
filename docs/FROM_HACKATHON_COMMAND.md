@@ -1,3 +1,5 @@
+> **[ACTIVE OWNER CHANGE 2026-10-29 — DUAL VERTICALS]** Supersedes prior AI-only and SOVIA/DBVORA/BI-heavy scope. Current demo has **AI Work and Global Services in one marketplace**, one shared Gemini/quote/PayPal Sandbox path; no branded SOVIA, DBVORA, CODE COUNCIL or standalone BI feature requirement. Do not weaken required payment safeguards. See [direct current scope](strategy/HAECHONG_DUAL_VERTICAL_SCOPE_20261029.md). Implement and test code, not just docs. The long-range thesis is PayPal-owned marketplace intermediation + processing fees, purely proposed, not presently activated. Owner personally records real finished UI, and English narration follows footage. 
+
 # 통합 수뇌부 → PayPal 총괄 상시 전달문
 
 ## [ACTIVE · 최신] 2026-10-29 해총 개발·제출 집중 지시
