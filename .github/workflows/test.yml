@@ -82,6 +82,12 @@ jobs:
           npm run submission:candidate:local
           node --input-type=module -e "import {readFileSync} from 'node:fs'; const x=JSON.parse(readFileSync('output/submission/submission_candidate_status.json')); if(!x.ownerReviewReady||x.externalSubmissionEligible||x.authorizedToPublish)process.exit(2)"
 
+      - name: One-command owner-PC private review (synthetic only, no historical CI receipt)
+        run: |
+          npm run owner:review:local
+          node --input-type=module -e "import {readFileSync} from 'node:fs'; const r=JSON.parse(readFileSync('output/submission/owner_review_brief.json')); if(r.status!=='OWNER_LOCAL_REVIEW_PREPARED_NOT_SUBMITTED'||r.localTechnicalReplay!=='SYNTHETIC_PASS'||r.originalPrivateReceiptStatus!=='NO_LOCAL_ATTEMPT'||r.livePayPalAndGeminiJudgeReplay!=='NOT_INDEPENDENTLY_VERIFIED'||r.realProviderCalls!==0||r.paymentPosts!==0||r.devpostSubmitted!==false||r.publishingAuthorized!==false)process.exit(2)"
+
+
   full-length-video:
     name: Default-speed synthetic video under 3 minutes
     if: github.event_name == 'pull_request' || contains(github.event.head_commit.message, '[video-full]')
