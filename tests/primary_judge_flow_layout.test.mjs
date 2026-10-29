@@ -20,6 +20,6 @@ test('optional tools retain existing IDs and explicit synthetic-only provenance'
   }
   assert.match(html,/Offline demonstration — NOT REAL AI OR PAYPAL/);
   assert.match(html,/Payment is DISABLED/);
-  assert.match(html,/#marketplace-brief\\{[^}]*min-height:96px;height:auto\\}/);
+  assert.match(html,/#marketplace-brief\{[^}]*min-height:96px;height:auto\}/);
   assert.match(html,/OWNER-REPORTED · NOT INDEPENDENTLY REPRODUCED/);
 });
