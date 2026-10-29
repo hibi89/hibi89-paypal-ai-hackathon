@@ -158,13 +158,14 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
         res.end(html);
         return;
       }
-      if (req.method === 'GET' && (path === '/demo/client.js' || path === '/demo/contract.js' || path === '/demo/subscription.js' || path === '/demo/integration.js' || path === '/demo/marketplace.js' || path === '/demo/agent-budget.js' || path === '/demo/evidence.js')) {
+      if (req.method === 'GET' && (path === '/demo/client.js' || path === '/demo/contract.js' || path === '/demo/subscription.js' || path === '/demo/integration.js' || path === '/demo/marketplace.js' || path === '/demo/agent-budget.js' || path === '/demo/github-delivery.js' || path === '/demo/evidence.js')) {
         const js = readFileSync(new URL(
           path === '/demo/client.js' ? '../web/demo_client.js' :
           path === '/demo/contract.js' ? '../web/contract_client.js' :
           path === '/demo/subscription.js' ? '../web/subscription_client.js' :
           path === '/demo/marketplace.js' ? '../web/marketplace_client.js' :
           path === '/demo/agent-budget.js' ? '../web/agent_budget_client.js' :
+          path === '/demo/github-delivery.js' ? '../web/github_delivery_client.js' :
           path === '/demo/evidence.js' ? '../web/evidence_client.js' :
           '../web/integration_client.js', import.meta.url));
         res.writeHead(200, {
