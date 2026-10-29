@@ -36,3 +36,5 @@ jobs:
         env:
           VIDEO_PYTHON_BIN: .browser-venv/bin/python
         run: npm run video:record:offline -- --pace-ms 200
+      - name: Validate private synthetic WebM hash and release flags
+        run: python3 scripts/check_recorded_video.py
