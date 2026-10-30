@@ -201,6 +201,12 @@ strong{font-weight:750}.meta{color:#61718a;font-size:.85rem}
 <h2>Payment status &amp; verified provenance</h2>
 <p><strong>Payment is DISABLED.</strong> No Live transactions, no Sandbox charges, no deployed provider integration.</p>
 <button type="button" id="payment-status">Check payment status (GET)</button>
+<div class="protocol-lab" id="quote-checkout-plan-panel">
+<h3>Approved quote → PayPal Orders plan (offline)</h3>
+<p class="meta">Inspect your exact persisted amount and quote version with the real Orders v2 planner. <strong>Fictional merchant only.</strong> No Gemini, PayPal Sandbox call, order creation, buyer action, or Capture.</p>
+<button type="button" id="quote-checkout-preview" disabled>Preview plan for approved quote (GET only)</button>
+<p id="quote-checkout-preview-result" role="status" aria-live="polite">Approve a quote first. No provider call will be sent.</p>
+</div>
 <details id="historical-provider-evidence">
 <summary>Historical Gemini + PayPal Sandbox evidence — owner-reported, NOT this mock</summary>
 <p><strong>OWNER-REPORTED · NOT INDEPENDENTLY REPRODUCED · 2026-10-28</strong></p>
@@ -330,6 +336,7 @@ strong{font-weight:750}.meta{color:#61718a;font-size:.85rem}
 <script src="/demo/integration.js" defer></script>
 <script src="/demo/evidence.js" defer></script>
 <script src="/demo/provider-protocol.js" defer></script>
+<script src="/demo/quote-checkout-preview.js" defer></script>
 </body>
 </html>
 
