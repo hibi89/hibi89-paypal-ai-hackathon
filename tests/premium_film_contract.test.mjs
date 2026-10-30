@@ -31,7 +31,7 @@ test('premium recorder is opt-in and ordinary CI recording remains unchanged',()
   assert.match(recorder,/page.mouse.click\(x,y,delay=140 if pace_ms >= 1000 else 40\)/);
   assert.match(recorder,/page.wait_for_timeout\(min\(7800, max\(950, pace_ms\+1200\)\)\)/);
   assert.match(recorder,/guided_click\("a.hero-cta"\)/);
-  assert.match(recorder,/target.type\(value,delay=22\)/);
+  assert.match(recorder,/target.type\(value,delay=52 if pace_ms >= 1000 else 5\)/);
   assert.match(recorder,/html\{scroll-behavior:auto!important\}/);
   assert.match(recorder,/video_started < 178|video_started < 178|video_started < 178|time.monotonic\(\)-video_started < 178/);
   assert.match(recorder,/route.abort\(\)/);
