@@ -19,6 +19,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 from playwright.sync_api import sync_playwright, expect
 from video_owner_evidence import (collect_saved_receipt, storyboard_cards,
+                                  premium_storyboard_cards,
                                   preserve_private_recording,
                                   git_source_snapshot as inspect_git_source)
 
@@ -88,6 +89,7 @@ def capture(output_dir, pace_ms, premium=False):
     synthetic_protocol_replay_verified = False
     unsafe_requests = []
     post_paths = []
+    narration_cues = []
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch(executable_path=binary, headless=True,
@@ -196,6 +198,14 @@ def capture(output_dir, pace_ms, premium=False):
                     target.fill("")
                     target.type(value,delay=22)
 
+                def voice_cue(text):
+                    # Editorial text only; the initial browser recording stays silent.
+                    if premium:
+                        narration_cues.append({
+                            "at_seconds": round(time.monotonic()-video_started, 2),
+                            "text": text,
+                        })
+
                 def caption(label):
                     # Presenter captions are part of the video, never injected into
                     # the trusted application or sent to a provider.
@@ -273,6 +283,7 @@ def capture(output_dir, pace_ms, premium=False):
                 expect(page.locator("#message")).to_contain_text("Offline demo ready")
                 expect(page.locator("#marketplace-submit")).to_be_enabled()
                 if premium:
+                    page.add_script_tag(content=(ROOT / "scripts" / "premium_evidence_overlay.js").read_text(encoding="utf-8"))
                     install_film_cursor()
                     guided_fill("#marketplace-brief","Build an ecommerce website with PayPal checkout")
                 caption("PROOFLINE | AI should open the first door to work — not just automate existing work. OFFLINE SYNTHETIC DEMO.")
@@ -353,10 +364,23 @@ def capture(output_dir, pace_ms, premium=False):
                 # Three attributed provider-evidence slides; do not imply fresh API use.
                 # Default caption pace is reduced to make room for both markets
                 # while retaining a safety margin under the 3-minute limit.
-                for card in storyboard_cards(proof):
-                    evidence_overlay(card)
+                film_cards = premium_storyboard_cards(proof) if premium else storyboard_cards(proof)
+                for card in film_cards:
+                    if premium:
+                        page.evaluate("(card)=>window.ProoflineFilmLens.show(card)",card)
+                        if card["scene"] == "gemini":
+                            voice_cue("Previously, the owner reported a Gemini skills classification. This is historical evidence, not a new Gemini request.")
+                        elif card["scene"] == "paypal":
+                            voice_cue("A previous PayPal Sandbox test reportedly included human approval, capture and verification. This video does not repeat that payment.")
+                        else:
+                            voice_cue("This browser uses simulated data. The historical owner report is separate, and not an independently replayed transaction.")
+                    else:
+                        evidence_overlay(card)
                     pause()
-                page.evaluate("document.getElementById('owner-evidence-video-slide')?.remove()")
+                if premium:
+                    page.evaluate("()=>window.ProoflineFilmLens.hide()")
+                else:
+                    page.evaluate("document.getElementById('owner-evidence-video-slide')?.remove()")
 
                 guided_click("#contract-create")
                 expect(page.locator("#contract-fulfillment")).to_have_text("PENDING")
@@ -431,6 +455,8 @@ def capture(output_dir, pace_ms, premium=False):
             "storyboard_version": "OPPORTUNITY_FIRST_V3_FAKE_API_TRACE",
             "presentation_mode": ("GUIDED_REAL_BROWSER_CURSOR_NO_POST_ZOOM" if premium else "STANDARD_BROWSER_RECORDING"),
             "voiceover_included": False,
+            "narration_cues": narration_cues if premium else [],
+            "narration_script_version": "PROOFLINE_PREMIUM_CUES_V1" if premium else None,
             "demonstrated_categories": (["ai_work", "general_services"] if two_verticals_verified else []),
             "interactive_fake_api_trace_replayed_locally": synthetic_protocol_replay_verified,
             "interactive_fake_api_trace_actual_provider_calls": 0,
