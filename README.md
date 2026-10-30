@@ -1,51 +1,51 @@
-# Proofline — PayPal + AI Hackathon reviewer entry (STAGED, NOT RELEASED)
+# Proofline — PayPal + AI Hackathon judge entry (STAGED, NOT RELEASED)
 
-**Current most recent QA source (public branch, still unmerged):**
-[`work/paypal-final-qa-20261030`](https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/work/paypal-final-qa-20261030).
-The latest verified source for this entry is **NOT** a public release: the QA PR
-[#23](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/23)
-and this default-page/LICENSE PR
-[#16](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/16)
-are both **DRAFT and not merged**. This page is a staged reviewer redirect,
-not evidence that `main` runs the final application.
+**Current consolidated QA candidate (public source branch, NOT released):**
+[`work/paypal-video-evidence-preservation-20261030`](https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/work/paypal-video-evidence-preservation-20261030).
+This branch includes both service categories and the safe private video/manifest changes in
+[unmerged draft integration PR #24](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/24).
+The earlier [QA PR #23](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/23)
+is superseded as the single merge candidate; avoid merging both.
+This [draft LICENSE/default-entry PR #16](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/16)
+only updates the release landing, **not** the application source on `main`.
 
-**Reproduce the offline synthetic browser (Node.js 22.5+; no credentials):**
+**Reproduce the offline synthetic browser (Node.js >=22.5; no credentials):**
 
 ```bash
 git clone https://github.com/hibi89/hibi89-paypal-ai-hackathon.git
 cd hibi89-paypal-ai-hackathon
-git switch work/paypal-final-qa-20261030
+git switch work/paypal-video-evidence-preservation-20261030
 npm run preflight:reviewer
 npm run judge:reproduce
 npm run demo
 ```
 
-Open the locally printed `http://127.0.0.1:PORT` address. AI Work and
-Global Services use fictional seller data. Quote approvals, local SQLite,
-contract/reviewer screens and PayPal-domain quote-bound plans are runnable
-offline; Gemini and PayPal APIs are **not contacted by this browser**.
-Any illustrated PayPal create/approval/capture/GET sequence is FAKE unless
-clearly labeled otherwise. The owner's October 28 Gemini + Sandbox exercise
-is **historical owner-reported private evidence**, not independent CI
-attestation or a judge-accessible live provider checkout.
+Open the printed `http://127.0.0.1:PORT` locally. AI Work and Global Services
+use fictional sellers, approved local SQLite quotes, contract and reviewer
+screens, and fake PayPal-domain planning. **No Gemini or PayPal API is contacted
+by this demo.** The owner's October 28 Gemini + Sandbox one-shot remains
+**owner-reported historical private evidence**, not independently replayed
+by GitHub CI, a production payment, or a live judge-facing integration.
 
-[Full reviewer guide on QA branch](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/work/paypal-final-qa-20261030/docs/JUDGE_REPRODUCTION_EN.md) ·
-[PayPal + AI integration provenance](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/work/paypal-final-qa-20261030/docs/JUDGE_PAYPAL_AI_INTEGRATION_TRACE_EN.md) ·
-[Owner release checklist](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/work/paypal-final-qa-20261030/docs/FINAL_OWNER_SUBMISSION_CHECKLIST_20261030.md)
+[Reviewer reproduction guide](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/work/paypal-video-evidence-preservation-20261030/docs/JUDGE_REPRODUCTION_EN.md) ·
+[Integration evidence boundaries](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/work/paypal-video-evidence-preservation-20261030/docs/JUDGE_PAYPAL_AI_INTEGRATION_TRACE_EN.md) ·
+[Owner release checklist](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/work/paypal-video-evidence-preservation-20261030/docs/FINAL_OWNER_SUBMISSION_CHECKLIST_20261030.md)
 
-**Verification boundary (2026-10-30 KST):** QA functionality source
-`e24bd0ec9413a0f2cb628ac73f9730fd27599cef` was committed; its
-[full GitHub CI #41012416698](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41012416698)
-was **PENDING at last check**. Earlier independent V8 function-level
-checks (6/6 PASS) do not replace Node, SQLite, Chromium, Windows or
-full-duration video CI. The current default `main` remains older;
-this MIT-license/landing PR does **not** merge QA code.
+**CI boundaries (2026-10-30 KST):** The last fully green 3-job run
+[#41002555640](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41002555640)
+tested an *older* SHA `5c07333` (613 Node tests; browser/Windows/video).
+The latest consolidated candidate source `a55afb3` has separate
+[full CI #41015201155](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41015201155)
+**QUEUED at last check, NOT PASS**. Independent P20 helper behavior tests
+do not replace Node, SQLite, Chromium, Windows or full video CI.
+Before any owner-authorized merge/release, revise this landing's source
+URL to the final *validated* release branch/commit.
 
-**Submission status:** No owner-approved public video URL, public platform
-release or Devpost receipt has been confirmed. An English-captioned private
-synthetic WebM from CI is not the owner's public YouTube demonstration.
-No PayPal affiliation, fee-sharing deal, real seller population or
-production payment is claimed.
+**Submission status:** No owner-authorized public video URL, default branch
+source release or Devpost receipt has been verified. A CI-private synthetic
+WebM is not the owner's released YouTube submission. No PayPal partnership,
+fee-sharing, real seller population, production payment or user traction is
+claimed.
 
 ---
 
