@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"scripts"))
-from render_owner_neural_voice import synthesize, VOICES
+from render_owner_neural_voice import synthesize, sample_voice, VOICES
 
 
 class OfflineNeuralSafety(unittest.TestCase):
@@ -31,6 +31,29 @@ class OfflineNeuralSafety(unittest.TestCase):
                     synthesize(root,"af_heart")
             self.assertFalse((vids/"private-voice-kokoro").exists())
             self.assertEqual(fake.read_bytes(),b"synthetic-video")
+
+    def test_sample_is_local_fixed_script_and_never_accesses_private_recording(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            class DummyVoice:
+                def create(self, text, voice, speed, lang):
+                    self_text = text
+                    assert "Talent is everywhere" in self_text
+                    assert "Proofline" in self_text
+                    assert voice == "af_heart"
+                    assert lang == "en-us"
+                    return ([0.0] * 24000, 24000)
+            class DummyWriter:
+                @staticmethod
+                def write(path, samples, rate, subtype):
+                    Path(path).write_bytes(b"LOCAL_TEST_WAV")
+            with patch("render_owner_neural_voice.load_engine",
+                       return_value=(DummyVoice(),DummyWriter(),None,None)):
+                with patch("render_owner_neural_voice.validated_source") as source:
+                    sample=sample_voice(root,"af_heart")
+                    source.assert_not_called()
+            self.assertEqual(sample.read_bytes(), b"LOCAL_TEST_WAV")
+            self.assertTrue(sample.parent.name=="private-neural-samples")
 
     def test_allowlisted_neural_voices_are_english(self):
         self.assertTrue({"af_heart","am_michael"}.issubset(VOICES))
