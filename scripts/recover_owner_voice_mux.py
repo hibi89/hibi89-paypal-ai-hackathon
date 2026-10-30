@@ -145,7 +145,7 @@ def recover(root):
     if narration.is_symlink() or not narration.is_file():
         raise ValueError("SAVED_VOICE_WAV_INVALID")
     with wave.open(str(narration), "rb") as voice:
-        if (voice.getframerate() != 22050 or voice.getnchannels() != 1 or
+        if (voice.getframerate() not in (22050, 24000) or voice.getnchannels() != 1 or
             voice.getsampwidth() != 2 or voice.getnframes() <= 22050):
             raise ValueError("SAVED_VOICE_WAV_FORMAT_UNEXPECTED")
     ffmpeg = checked_local_ffmpeg()
