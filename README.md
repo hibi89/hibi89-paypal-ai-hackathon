@@ -4,10 +4,10 @@
 [`work/paypal-video-integrity-hardening-20261030`](https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/work/paypal-video-integrity-hardening-20261030).
 This branch includes both service categories, the safe private video/manifest checks, and
 one-command owner-local final verification in
-[unmerged draft integration PR #25](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/26).
+[unmerged draft integration PR #26](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/26).
 Older overlapping [QA PR #23](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/23)
 and [integration PR #24](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/24)
-overlap with PR #25; review only one approved integration route.
+overlap with PR #26; review only one approved integration route.
 This [draft LICENSE/default-entry PR #16](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/16)
 only updates the release landing, **not** the application source on `main`.
 
