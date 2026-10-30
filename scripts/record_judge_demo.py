@@ -464,7 +464,12 @@ def capture(output_dir, pace_ms, premium=False):
                             voice_cue("This browser uses simulated data. The historical owner report is separate, and not an independently replayed transaction.")
                     else:
                         evidence_overlay(card)
-                    pause()
+                    if premium and pace_ms >= 1000:
+                        # Historical evidence captions must outlast the spoken
+                        # sentence, not disappear mid-narration.
+                        page.wait_for_timeout(max(pace_ms, 9500))
+                    else:
+                        pause()
                 if premium:
                     page.evaluate("()=>window.ProoflineFilmLens.hide()")
                 else:
