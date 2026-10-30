@@ -130,6 +130,10 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg
+      - name: Verify bounded narration mux recovers from existing synthetic media
+        run: |
+          python3 -m py_compile scripts/recover_owner_voice_mux.py
+          python3 tests/test_recover_owner_voice_mux.py
       - name: Record default-speed silent English-captioned synthetic video (private only)
         env:
           VIDEO_PYTHON_BIN: .video-venv/bin/python
