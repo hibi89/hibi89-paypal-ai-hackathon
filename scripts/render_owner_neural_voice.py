@@ -11,6 +11,8 @@ import hashlib
 import os
 import json
 import re
+import shutil
+import tempfile
 import subprocess
 import sys
 import uuid
@@ -102,7 +104,19 @@ def load_engine(root: Path, voice: str):
         data = Path(espeakng_loader.__file__).resolve().parent / "espeak-ng-data"
         if not (data / "phontab").is_file():
             raise ValueError("LOCAL_ESPEAK_PHONTAB_NOT_FOUND")
-        os.environ["ESPEAK_DATA_PATH"] = str(data)
+        # eSpeak's Windows C runtime may reject non-ASCII paths. Copy only
+        # public phoneme data into a short ASCII temporary directory.
+        # Keep the directory alive for the entire synthesis process.
+        ascii_root = Path(os.environ.get("SystemDrive", "C:") + "/") / "kokoro-espeak-data"
+        if not ascii_root.drive or not ascii_root.drive.isascii():
+            raise ValueError("ASCII_ESPEAK_DRIVE_REQUIRED")
+        dest = ascii_root / "espeak-ng-data"
+        if not dest.exists():
+            ascii_root.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(data, dest)
+        if not (dest / "phontab").is_file():
+            raise ValueError("ASCII_ESPEAK_PHONTAB_NOT_FOUND")
+        os.environ["ESPEAK_DATA_PATH"] = str(dest)
     kokoro = Kokoro(str(model), str(voicepack))
     if voice not in kokoro.get_voices():
         raise ValueError("REQUESTED_NEURAL_VOICE_NOT_IN_LOCAL_MODEL")
