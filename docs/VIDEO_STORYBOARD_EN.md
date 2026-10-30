@@ -1,0 +1,52 @@
+# Proofline — opportunity-first judging video storyboard
+
+**Status (2026-10-30 KST):** [Draft PR #28](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/28) candidate `771ba6f4fb61b86af1530df51b2acda8fac9013b` had a private synthetic dual-category CI recording independently verified as **165.84 seconds (<180)** by [Actions #41073098696](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41073098696), **3/3 jobs PASS**. The owner-PC final source-matched, visually/privacy-reviewed video is **NOT verified**, not publicly uploaded to YouTube and not submitted on Devpost. The 2026-10-28 actual PayPal Sandbox/Gemini activity remains **separately owner-reported historical evidence**; the CI video is fake-provider only.
+
+**Video proof boundary (release-gate literal):** Final owner-approved submission recording **NOT filmed** as part of this GitHub CI or independently reviewed on the owner's original PC at this exact SHA. **OWNER-OBSERVED** refers only to the separate historical 2026-10-28 Gemini/PayPal Sandbox report; neither this storyboard nor the CI generates or uploads fresh third-party proof. This is a draft, not a YouTube video.
+
+**Key message:** AI should help people access their first freelance opportunities, not simply automate existing work.
+
+## Screen sequence (target under 3 minutes)
+
+| Scene | Actual demo behavior | Judge takeaway |
+| --- | --- | --- |
+| 1. Opening | Synthetic local browser, opportunity-first English caption | New freelancers need a path to first opportunities |
+| 1a. Evidence map | Four on-screen source classes: offline browser, injected fake APIs, owner-reported history and not-yet-submitted release | The video never passes simulated results off as PayPal/Gemini transactions |
+| 2. AI Work | Select AI Work, match three fictional specialists, show skills and gaps | Marketplace vertical one: AI agents, automation, development |
+| 3. Global Services | Switch to Global Services, enter the prefilled design brief, show three fictional profiles | Marketplace vertical two: design and related digital services; one shared product |
+| 4. Quote | Return to AI Work, choose fictional specialist, create versioned draft, approve exact amount | AI assistance never replaces human consent |
+| 5. Historical evidence | Three clearly attributed cards: owner-observed Gemini, owner-observed PayPal Sandbox, provenance limits | Historical owner-local provider evidence is NOT current browser provider calls |
+| 6. Delivery | Create synthetic contract; owner submits; separate demo reviewer rejects; owner revises; reviewer accepts | Clear work verification and separate human decisions |
+| 7. Records | Show local SQLite audit, review evidence, quote/payment status | Current synthetic browser never creates or captures a PayPal order |
+| 8. Closing | Opportunity-first caption | Technology is the evidence; marketplace is the mechanism; opportunity is the goal |
+
+**Time rule:** The local recording script enforces an elapsed-time ceiling below 178 seconds; real encoded media duration and readability require owner review. The evidence-map scene uses no more than 4.5 seconds at normal speed. The Global Services segment is deliberately short (up to 5.5 seconds) to preserve the three-minute target. Actual scene timestamps must be measured from the new completed video rather than asserted from this table.
+
+## Disclosure and scope
+
+- The local browser is **OFFLINE SYNTHETIC**. Sellers, matching, quotes, contracts, review and SQLite data in the recording are fictional samples.
+- The October 28 Gemini skill-classification and PayPal Sandbox buyer approval → Capture → provider GET are separately attributed **historical owner-observed** evidence. The clip does not independently reproduce external provider activity.
+- If the private saved owner receipt is unavailable on the recording machine, display **OWNER REPORT ONLY**, not a verified local result.
+- No live PayPal payment, real seller enrollment, escrow, fee-sharing partnership, lower-cost guarantee, production hosting or current buyer transactions are claimed.
+- Do not reveal API keys, OAuth tokens, buyer identity, merchant information, private IDs or databases. Do not replay Capture to produce a fresh shot.
+- Do not publish footage, merge a release branch or submit to Devpost until the owner has reviewed and explicitly authorized it.
+
+## Owner recording and gate
+
+On the original owner's computer, inspect uncommitted files first and use the **unmerged PR28** review source. Never reset the private SQLite or old videos; if the branch already exists locally, use `git switch release/paypal-main-qa-preview-20261030` then `git pull --ff-only` instead of recreating the tracking branch:
+
+```powershell
+git status --short
+git fetch origin
+git switch --track origin/release/paypal-main-qa-preview-20261030
+git rev-parse HEAD
+npm run owner:final:local
+# Owner may explicitly opt in to one missing/stale private recording:
+# npm run owner:final:local -- --record-if-missing
+```
+
+The optional recording path may install pinned free browser tools. Review and approve any download before using it. Check the exact source SHA and resulting private manifest/video; no real provider calls, uploads or Devpost submission are authorized.
+
+Review the latest ignored `output/videos/paypal-synthetic-review-*.webm`, its `.manifest.json`, and the local candidate. The new video manifest records `storyboard_version=OPPORTUNITY_FIRST_V3_FAKE_API_TRACE` and `demonstrated_categories=[ai_work,general_services]` after the automated browser scene assertions succeed. This does **not** independently attest to PayPal or Gemini or certify a final public submission.
+
+**Owner-PC final video with latest QA changes: not yet recorded or approved. Public YouTube link and Devpost receipt: not yet provided.**
