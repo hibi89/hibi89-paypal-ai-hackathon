@@ -156,37 +156,83 @@ def capture(output_dir, pace_ms, premium=False):
                       },{passive:true});
                     }""")
 
+                # The browser footage is actually rendered. A Playwright
+                # cursor move with steps alone is too fast to reach the video
+                # capture frame rate; space each move across real frames.
+                film_cursor_xy = [1060.0, 620.0]
+
+                def film_move_to(x, y):
+                    if not premium:
+                        page.mouse.move(x, y)
+                        return
+                    start_x, start_y = film_cursor_xy
+                    distance = ((x-start_x)**2+(y-start_y)**2)**.5
+                    steps = min(12, max(6, int(distance/95)))
+                    page.mouse.move(start_x, start_y)
+                    for idx in range(1, steps+1):
+                        t = idx/steps
+                        eased = t*t*(3-2*t)
+                        page.mouse.move(start_x+(x-start_x)*eased,
+                                        start_y+(y-start_y)*eased)
+                        page.wait_for_timeout(45 if pace_ms >= 1000 else 4)
+                    film_cursor_xy[0], film_cursor_xy[1] = x, y
+
+                def film_scroll_to(selector):
+                    if not premium:
+                        return
+                    needs_scroll = page.evaluate("""(selector) => {
+                      const node = document.querySelector(selector);
+                      if (!node) return false;
+                      const rect = node.getBoundingClientRect();
+                      const center = window.innerHeight/2;
+                      if (Math.abs((rect.top+rect.bottom)/2-center) < 235 &&
+                          rect.top >= 50 && rect.bottom <= innerHeight-55)
+                        return false;
+                      node.scrollIntoView({behavior:'smooth',block:'center'});
+                      return true;
+                    }""", selector)
+                    if needs_scroll:
+                        page.wait_for_timeout(500 if pace_ms >= 1000 else 30)
+
+                def film_action_hold():
+                    # Let the viewer actually see the changed interface.
+                    if premium:
+                        page.wait_for_timeout(min(1550, max(100, pace_ms//4)))
+
                 def guided_click(selector):
                     target=page.locator(selector)
                     if not premium:
                         target.click()
                         return
+                    film_scroll_to(selector)
                     target.scroll_into_view_if_needed()
                     rect=target.bounding_box()
                     if rect is None:
                         raise RuntimeError("FILM_TARGET_NOT_VISIBLE")
                     x=rect["x"]+rect["width"]/2
                     y=rect["y"]+rect["height"]/2
-                    page.mouse.move(x,y,steps=14)
+                    film_move_to(x,y)
                     page.evaluate("(s)=>document.querySelector(s)?.classList.add('film-target')",selector)
-                    page.wait_for_timeout(125)
-                    page.mouse.click(x,y,delay=80)
-                    page.wait_for_timeout(90)
+                    page.wait_for_timeout(380 if pace_ms >= 1000 else 45)
+                    page.mouse.click(x,y,delay=140 if pace_ms >= 1000 else 40)
+                    page.wait_for_timeout(420 if pace_ms >= 1000 else 40)
                     page.evaluate("(s)=>document.querySelector(s)?.classList.remove('film-target')",selector)
 
                 def guided_select(selector,value):
                     target=page.locator(selector)
                     if premium:
+                        film_scroll_to(selector)
                         target.scroll_into_view_if_needed()
                         rect=target.bounding_box()
                         if rect is None:
                             raise RuntimeError("FILM_SELECT_NOT_VISIBLE")
-                        page.mouse.move(rect["x"]+rect["width"]/2,
-                                        rect["y"]+rect["height"]/2,steps=12)
+                        film_move_to(rect["x"]+rect["width"]/2,
+                                     rect["y"]+rect["height"]/2)
                         page.evaluate("(s)=>document.querySelector(s)?.classList.add('film-target')",selector)
-                        page.wait_for_timeout(145)
+                        page.wait_for_timeout(310 if pace_ms >= 1000 else 35)
                     target.select_option(value)
                     if premium:
+                        page.wait_for_timeout(550 if pace_ms >= 1000 else 40)
                         page.evaluate("(s)=>document.querySelector(s)?.classList.remove('film-target')",selector)
 
                 def guided_fill(selector,value):
@@ -196,7 +242,7 @@ def capture(output_dir, pace_ms, premium=False):
                         return
                     guided_click(selector)
                     target.fill("")
-                    target.type(value,delay=22)
+                    target.type(value,delay=52 if pace_ms >= 1000 else 5)
 
                 def voice_cue(text):
                     # Editorial text only; the initial browser recording stays silent.
@@ -285,10 +331,20 @@ def capture(output_dir, pace_ms, premium=False):
                 if premium:
                     page.evaluate((ROOT / "scripts" / "premium_evidence_overlay.js").read_text(encoding="utf-8"))
                     install_film_cursor()
+                    page.evaluate("window.scrollTo(0,0)")
+                    # First the title is legible. THEN the viewer sees the real
+                    # pointer click 'Explore two service markets' before the
+                    # app scrolls to the actual input workflow.
+                    caption("START HERE | Explore the two service markets. Follow the cursor into a real, local browser walkthrough.")
+                    voice_cue("Talent is everywhere. Access to opportunity is not. Proofline is designed to open the first door to work.")
+                    page.wait_for_timeout(min(7800, max(950, pace_ms+1200)))
+                    guided_click("a.hero-cta")
+                    caption("DISCOVER | The cursor opens the marketplace. All specialists and transactions shown here are fictional.")
+                    film_action_hold()
                     guided_fill("#marketplace-brief","Build an ecommerce website with PayPal checkout")
-                caption("PROOFLINE | AI should open the first door to work — not just automate existing work. OFFLINE SYNTHETIC DEMO.")
-                voice_cue("Talent is everywhere. Access to opportunity is not. Proofline is designed to open the first door to work.")
-                pause()
+                else:
+                    caption("PROOFLINE | AI should open the first door to work — not just automate existing work. OFFLINE SYNTHETIC DEMO.")
+                    pause()
 
                 # Show source classes directly in the product before any mock transaction.
                 proof_map = page.locator("#proof-map-panel")
@@ -342,13 +398,20 @@ def capture(output_dir, pace_ms, premium=False):
                 two_verticals_verified = True
                 guided_click("#marketplace-choose-synthetic-web")
                 expect(page.locator("#scope")).to_have_value(re.compile("Synthetic candidate: synthetic-web"))
+                film_action_hold()
 
                 guided_click("#draft-submit")
                 expect(page.locator("#quote-view")).to_contain_text("Version 2")
+                film_action_hold()
                 guided_fill("#dollars","15.00")
-                page.locator("#confirm").check()
+                if premium:
+                    guided_click("#confirm")
+                    expect(page.locator("#confirm")).to_be_checked()
+                else:
+                    page.locator("#confirm").check()
                 guided_click("#approve-submit")
                 expect(page.locator("#quote-view")).to_contain_text("APPROVED")
+                film_action_hold()
                 guided_click("#quote-checkout-preview")
                 expect(page.locator("#quote-checkout-preview-result")).to_contain_text(
                     "human-approved USD 15.00")
@@ -409,6 +472,7 @@ def capture(output_dir, pace_ms, premium=False):
 
                 guided_click("#contract-create")
                 expect(page.locator("#contract-fulfillment")).to_have_text("PENDING")
+                film_action_hold()
                 guided_click("#delivery-submit")
                 expect(page.locator("#contract-fulfillment")).to_have_text("SUBMITTED")
                 caption("Owner creates an unpaid contract and submits a synthetic delivery for an independent reviewer decision.")
@@ -417,8 +481,10 @@ def capture(output_dir, pace_ms, premium=False):
 
                 guided_click("#demo-role-toggle")
                 expect(page.locator("#demo-session-role")).to_contain_text("synthetic reviewer")
+                film_action_hold()
                 guided_click("#review-reject")
                 expect(page.locator("#contract-fulfillment")).to_have_text("REJECTED")
+                film_action_hold()
                 caption("Synthetic reviewer REJECTED delivery. The owner must revise and resubmit; previous review cannot be silently reused.")
                 voice_cue("The reviewer can reject the work and request a revision.")
                 pause()
@@ -432,6 +498,7 @@ def capture(output_dir, pace_ms, premium=False):
                 expect(page.locator("#demo-session-role")).to_contain_text("synthetic reviewer")
                 guided_click("#review-accept")
                 expect(page.locator("#contract-fulfillment")).to_have_text("ACCEPTED")
+                film_action_hold()
                 guided_click("#demo-role-toggle")
                 expect(page.locator("#demo-session-role")).to_contain_text("synthetic owner")
                 expect(page.locator("#contract-events")).to_contain_text("REJECTED")
