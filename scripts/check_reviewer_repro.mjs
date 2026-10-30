@@ -1,7 +1,7 @@
 // Local-only smoke test of the real loopback demo; no browser, secrets or providers.
 import {readFileSync} from 'node:fs';
 import {startOfflineDemo} from '../src/offline_demo_server.mjs';
-import {inspectReviewerPrereqs,REVIEW_FILES} from '../src/reviewer_repro_preflight.mjs';
+import {inspectReviewerPrereqs,REVIEW_FILES,REVIEW_SCRIPT_ROUTES} from '../src/reviewer_repro_preflight.mjs';
 
 const root=new URL('../',import.meta.url);
 const read=p=>{try{return readFileSync(new URL(p,root),'utf8');}catch{return '';}};
@@ -36,6 +36,15 @@ if(!report.ready){
     const html=await (await get('/')).text();
     if(!/offline/i.test(html)||!html.includes('draft-form'))
       throw new Error('DEMO_HTML_INVALID');
+    // Confirm each actual browser script URL serves its own *exact* local
+    // checked-in JavaScript, not an HTML 200 or a different app client's JS.
+    for(const {url,file} of REVIEW_SCRIPT_ROUTES){
+      const response=await get(url);
+      if(!/^text\/javascript(?:;|$)/i.test(response.headers.get('content-type')||'')||
+         response.headers.get('x-content-type-options')!=='nosniff'||
+         await response.text()!==assets[file])
+        throw Error('BROWSER_SCRIPT_NOT_SERVED_AS_CHECKED_IN');
+    }
     const session=await (await get('/demo/session')).json();
     if(session.mode!=='OFFLINE_MOCK'||session.role!=='owner'||
        session.quoteId!=='sample-project')throw new Error('LOCAL_SESSION_INVALID');

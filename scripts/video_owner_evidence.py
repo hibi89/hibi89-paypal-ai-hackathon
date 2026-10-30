@@ -7,6 +7,8 @@ import json
 import os
 import re
 import subprocess
+import shutil
+from pathlib import Path
 
 SAFE_SKILLS = ("web", "design", "payments", "automation", "data", "qa")
 SENSITIVE_ENV = re.compile(
@@ -14,6 +16,30 @@ SENSITIVE_ENV = re.compile(
     r"GEMINI|PAYPAL|OPENAI|AUTHORIZATION|PRIVATE_KEY|NODE_OPTIONS", re.I
 )
 LOCAL_STATUS = "LOCAL_PROVIDER_RESULT_RECORDED_NOT_FRESH_GET"
+
+
+def git_source_snapshot(root):
+    """Read exact Git SHA and all non-ignored worktree changes, without network.
+
+    Untracked source modules/assets must not be presented as committed code.
+    Git status output is handled only in memory and never printed; ignored
+    recordings and isolated toolchain files are checked separately.
+    """
+    try:
+        sha = subprocess.run(
+            ["git", "rev-parse", "--verify", "HEAD"], cwd=root,
+            capture_output=True, text=True, timeout=4, check=True
+        ).stdout.strip()
+        if not re.fullmatch(r"[0-9a-f]{40}", sha):
+            return {"sha": None, "clean": False}
+        state = subprocess.run(
+            ["git", "status", "--porcelain=v1", "--untracked-files=normal", "--"],
+            cwd=root, capture_output=True, text=True, timeout=4, check=False
+        )
+        return {"sha": sha, "clean": state.returncode == 0
+                and isinstance(state.stdout, str) and len(state.stdout) == 0}
+    except (OSError, subprocess.SubprocessError):
+        return {"sha": None, "clean": False}
 
 
 def sanitize_saved_receipt(report):
@@ -124,3 +150,34 @@ def storyboard_cards(proof):
             ],
         },
     ]
+
+
+def preserve_private_recording(source_path, dest_path, manifest):
+    """Exclusively save a private video and manifest without replacing earlier evidence.
+
+    The original Playwright recording stays intact until both outputs exist.
+    If a write fails, only newly created outputs are rolled back.
+    """
+    source, dest = Path(source_path), Path(dest_path)
+    manifest_path = dest.with_suffix(".manifest.json")
+    if source == dest or any(path.exists() or path.is_symlink()
+                             for path in (dest, manifest_path)):
+        raise RuntimeError("PRIVATE_RECORDING_ALREADY_EXISTS")
+    made_video = False
+    made_manifest = False
+    try:
+        with source.open("rb") as original:
+            with dest.open("xb") as output:
+                made_video = True
+                shutil.copyfileobj(original, output, length=1024 * 1024)
+        with manifest_path.open("x", encoding="utf-8") as output:
+            made_manifest = True
+            output.write(json.dumps(manifest, indent=2) + "\n")
+    except BaseException:
+        if made_manifest:
+            manifest_path.unlink(missing_ok=True)
+        if made_video:
+            dest.unlink(missing_ok=True)
+        raise
+    source.unlink()
+    return manifest_path

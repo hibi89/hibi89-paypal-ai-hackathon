@@ -18,10 +18,17 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlsplit
 from playwright.sync_api import sync_playwright, expect
-from video_owner_evidence import collect_saved_receipt, storyboard_cards
+from video_owner_evidence import (collect_saved_receipt, storyboard_cards,
+                                  preserve_private_recording,
+                                  git_source_snapshot as inspect_git_source)
 
 ROOT = Path(__file__).resolve().parents[1]
 SECRET = re.compile(r"(SECRET|TOKEN|PASSWORD|CREDENTIAL|API_KEY|CLIENT_ID|MERCHANT_ID|GEMINI|PAYPAL|OPENAI|AUTHORIZATION|PRIVATE_KEY|NODE_OPTIONS)", re.I)
+
+
+def git_source_snapshot():
+    """Pure read-only source provenance; also rejects untracked files."""
+    return inspect_git_source(ROOT)
 
 
 def chrome_binary():
@@ -69,6 +76,7 @@ def start_demo():
 
 
 def capture(output_dir, pace_ms):
+    source_snapshot = git_source_snapshot()
     binary = chrome_binary()
     # Explicit local read-only snapshot of the owner's earlier evidence.
     # CI has no original private receipt and falls back to owner-reported labels.
@@ -77,6 +85,7 @@ def capture(output_dir, pace_ms):
     server, address = start_demo()
     video_file = None
     two_verticals_verified = False
+    synthetic_protocol_replay_verified = False
     unsafe_requests = []
     post_paths = []
     try:
@@ -193,6 +202,22 @@ def capture(output_dir, pace_ms):
                 caption("EVIDENCE MAP | Offline browser + injected fake APIs are NOT the owner's historical Gemini/PayPal Sandbox receipt.")
                 page.wait_for_timeout(min(pace_ms, 4500))
 
+                # Real owner orchestration, injected FAKE Gemini/PayPal only.
+                # This opt-in visual trace is a distinct technical evidence
+                # class, NOT historical live Sandbox proof.
+                page.locator("#protocol-replay-button").click()
+                expect(page.locator("#protocol-replay-status")).to_contain_text(
+                    "0 real provider calls")
+                expect(page.locator("#protocol-replay-list")).to_contain_text(
+                    "simulated buyer approved")
+                expect(page.locator("#protocol-replay-list")).to_contain_text(
+                    "simulated completion only")
+                assert page.locator("#protocol-replay-list li").count() >= 7, "FAKE_PROTOCOL_STAGES_MISSING"
+                assert post_paths.count("/api/demo/provider-protocol") == 1, "FAKE_PROTOCOL_REPLAY_NOT_EXPLICIT"
+                synthetic_protocol_replay_verified = True
+                caption("INJECTED FAKE API TRACE | Gemini skills → simulated PayPal order → buyer approval GET → simulated Capture → GET. ZERO real provider calls.")
+                page.wait_for_timeout(min(pace_ms, 5000))
+
                 # Show BOTH real, clickable service categories in one marketplace.
                 # Category transitions never create a quote or call PayPal/Gemini.
                 page.locator("#marketplace-submit").click()
@@ -223,6 +248,20 @@ def capture(output_dir, pace_ms):
                 page.locator("#confirm").check()
                 page.locator("#approve-submit").click()
                 expect(page.locator("#quote-view")).to_contain_text("APPROVED")
+                page.locator("#quote-checkout-preview").click()
+                expect(page.locator("#quote-checkout-preview-result")).to_contain_text(
+                    "human-approved USD 15.00")
+                expect(page.locator("#quote-checkout-preview-result")).to_contain_text(
+                    "9 in-memory fake PayPal domain stages")
+                caption("APPROVED USD 15 QUOTE → ORDER AND CAPTURE DOMAIN FLOW | 9 FAKE in-memory stages, no API POST or payment.")
+                page.wait_for_timeout(min(pace_ms,2200))
+                page.locator("#verify-local-bridge").click()
+                expect(page.locator("#verify-local-bridge-result")).to_contain_text(
+                    "LOCAL PROOF PASS")
+                expect(page.locator("#verify-local-bridge-result")).to_contain_text(
+                    "fixed USD 1.50")
+                caption("DISTINCT PROOFS | USD 15 quote-bound plan plus separate USD 1.50 FAKE Gemini/PayPal adapter replay.")
+                page.wait_for_timeout(min(pace_ms,2200))
                 caption("OFFLINE MOCK proposal. A HUMAN approves a specific quote version and amount; no payment is authorized.")
                 pause()
 
@@ -292,18 +331,28 @@ def capture(output_dir, pace_ms):
             raise RuntimeError("EMPTY_VIDEO_RECORDING")
         filename = "paypal-synthetic-review-" + datetime.now().strftime("%Y%m%d-%H%M%S") + ".webm"
         dest = output_dir / filename
-        if dest.exists():
+        # Reject changed source before creating final private output files.
+        current_source = git_source_snapshot()
+        if current_source != source_snapshot:
+            raise RuntimeError("SOURCE_CHANGED_DURING_RECORDING")
+        if (dest.exists() or dest.is_symlink() or
+                dest.with_suffix(".manifest.json").exists() or
+                dest.with_suffix(".manifest.json").is_symlink()):
             raise RuntimeError("OUTPUT_WOULD_OVERWRITE")
-        shutil.move(source, dest)
         # Manifest is not an attestation of PayPal, Gemini or uploaded footage:
         # it identifies this private, synthetic file for human editorial review.
         manifest = {
             "evidence_class": "OFFLINE_SYNTHETIC_BROWSER_CAPTURE_ONLY",
-            "storyboard_version": "OPPORTUNITY_FIRST_V2",
+            "storyboard_version": "OPPORTUNITY_FIRST_V3_FAKE_API_TRACE",
             "demonstrated_categories": (["ai_work", "general_services"] if two_verticals_verified else []),
+            "interactive_fake_api_trace_replayed_locally": synthetic_protocol_replay_verified,
+            "interactive_fake_api_trace_actual_provider_calls": 0,
+            "interactive_fake_api_trace_payment_posts": 0,
             "video_filename": dest.name,
-            "video_sha256": hashlib.sha256(dest.read_bytes()).hexdigest(),
-            "video_bytes": dest.stat().st_size,
+            "video_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+            "video_bytes": source.stat().st_size,
+            "source_commit_sha": source_snapshot["sha"],
+            "source_tracked_tree_clean": source_snapshot["clean"],
             "created_utc": datetime.now(timezone.utc).isoformat(),
             "wall_clock_elapsed_seconds": round(time.monotonic() - video_started, 1),
             "media_duration_independently_probed": False,
@@ -317,11 +366,9 @@ def capture(output_dir, pace_ms):
             "owner_approval_for_publication": False,
             "notes": "Local synthetic content with historical owner-reported provider disclaimer. Human review required."
         }
-        dest.with_suffix(".manifest.json").write_text(
-            json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
-        )
+        manifest_path = preserve_private_recording(source, dest, manifest)
         print("RECORDED_SYNTHETIC_ONLY " + str(dest))
-        print("PRIVATE_VIDEO_MANIFEST " + str(dest.with_suffix(".manifest.json")))
+        print("PRIVATE_VIDEO_MANIFEST " + str(manifest_path))
         print("SOURCE_SCOPE=LOCALHOST_ONLY PROVIDER_CALLS=0 PAYMENT_POSTS=0 PUBLIC_UPLOAD=NO")
         print("OWNER_HISTORICAL_RECEIPT="+
               ("LOCAL_READ_ONLY_MATCH" if proof["local_receipt_verified"]

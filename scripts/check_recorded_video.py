@@ -12,17 +12,26 @@ from pathlib import Path
 BASE = Path(__file__).resolve().parents[1]
 
 def verify(directory):
-    if not directory.is_dir():
-        raise ValueError("LOCAL_VIDEO_DIRECTORY_MISSING")
-    manifests = sorted(directory.glob("paypal-synthetic-review-*.manifest.json"),
-                       key=lambda p: p.stat().st_mtime, reverse=True)
-    if not manifests:
+    # Verify candidate manifest entries BEFORE stat/sort/JSON read, since
+    # each could otherwise follow a symlink into private owner files.
+    if directory.is_symlink() or not directory.is_dir():
+        raise ValueError("LOCAL_VIDEO_DIRECTORY_UNSAFE")
+    candidates = list(directory.glob("paypal-synthetic-review-*.manifest.json"))
+    if not candidates:
         raise ValueError("PRIVATE_MANIFEST_NOT_FOUND")
+    for candidate in candidates:
+        if (candidate.is_symlink() or not candidate.is_file()
+                or not 2 <= candidate.stat().st_size <= 256 * 1024):
+            raise ValueError("PRIVATE_MANIFEST_UNSAFE")
+    manifests = sorted(candidates,
+                       key=lambda p: p.stat().st_mtime, reverse=True)
     path = manifests[0]
     data = json.loads(path.read_text(encoding="utf-8"))
     name = data.get("video_filename")
-    if not isinstance(name, str) or not name.startswith("paypal-synthetic-review-") or not name.endswith(".webm"):
-        raise ValueError("UNSAFE_VIDEO_FILENAME")
+    # Manifest must refer to its own same-name WebM, before video access.
+    expected_name = path.name.replace(".manifest.json", ".webm")
+    if not isinstance(name, str) or name != expected_name:
+        raise ValueError("VIDEO_MANIFEST_NAME_MISMATCH")
     video = directory / name
     if video.resolve().parent != directory.resolve() or video.is_symlink() or not video.is_file():
         raise ValueError("LOCAL_VIDEO_UNAVAILABLE")
@@ -37,9 +46,15 @@ def verify(directory):
         raise ValueError("VIDEO_MANIFEST_INTEGRITY_MISMATCH")
     if data.get("evidence_class") != "OFFLINE_SYNTHETIC_BROWSER_CAPTURE_ONLY":
         raise ValueError("REAL_PROVIDER_CLAIM_FORBIDDEN")
-    if data.get("storyboard_version") == "OPPORTUNITY_FIRST_V2":
+    version = data.get("storyboard_version")
+    if version in ("OPPORTUNITY_FIRST_V2", "OPPORTUNITY_FIRST_V3_FAKE_API_TRACE"):
         if data.get("demonstrated_categories") != ["ai_work", "general_services"]:
             raise ValueError("TWO_CATEGORY_VIDEO_EVIDENCE_MISSING")
+    if version == "OPPORTUNITY_FIRST_V3_FAKE_API_TRACE":
+        if (data.get("interactive_fake_api_trace_replayed_locally") is not True
+            or data.get("interactive_fake_api_trace_actual_provider_calls") != 0
+            or data.get("interactive_fake_api_trace_payment_posts") != 0):
+            raise ValueError("FAKE_API_TRACE_MANIFEST_INVALID")
     if data.get("provider_calls") != 0 or data.get("payment_posts") != 0:
         raise ValueError("PROVIDER_ACTIVITY_CLAIM_FORBIDDEN")
     if data.get("publicly_uploaded") is not False or data.get("devpost_submitted") is not False:
@@ -60,7 +75,7 @@ if __name__ == "__main__":
     parser.add_argument("--dir", default=str(BASE / "output" / "videos"))
     args = parser.parse_args()
     try:
-        verify(Path(args.dir).resolve())
+        verify(Path(args.dir))
     except Exception as e:
         print("LOCAL_VIDEO_INTEGRITY_FAIL: " + str(e), file=sys.stderr)
         sys.exit(1)

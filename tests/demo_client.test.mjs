@@ -7,13 +7,17 @@ const client=readFileSync(new URL('../web/demo_client.js',import.meta.url),'utf8
 
 function mount({deferredApproval=false}={}){
   const ids=['quote-view','message','demo-main','demo-role-toggle','demo-session-role','draft-form','approve-form','reject-form','reject-reason','scope',
-    'dollars','confirm','draft-submit','approve-submit','reject-submit','refresh','payment-status'];
+    'dollars','confirm','draft-submit','approve-submit','reject-submit','refresh','payment-status',
+    'protocol-replay-button','marketplace-submit',
+    'quote-checkout-preview','verify-local-bridge'];
   const elements=new Map(ids.map(id=>[id,{
     id,textContent:'',disabled:false,value:'',checked:false,attrs:{},listeners:{},
     setAttribute(k,v){this.attrs[k]=v;},
     addEventListener(type,fn){this.listeners[type]=fn;},
     fire(type){return this.listeners[type]?.({preventDefault(){}});},
   }]));
+  elements.get('protocol-replay-button').disabled=true;
+  elements.get('marketplace-submit').disabled=true;
   elements.get('scope').value='Build an accessible synthetic portfolio landing page';
   elements.get('dollars').value='25.00';
   let q={id:'q1',version:1,status:'PROPOSED',scope:null,suggestionSource:null,
@@ -70,6 +74,8 @@ test('bootstrap only GETs and controls initially become enabled',async()=>{
   assert.equal(dom.el('approve-submit').disabled,false);
   assert.equal(dom.el('demo-role-toggle').hidden,true);
   assert.equal(dom.el('demo-role-toggle').disabled,true);
+  assert.equal(dom.el('protocol-replay-button').disabled,false);
+  assert.equal(dom.el('marketplace-submit').disabled,false);
   assert.equal(dom.requests.some(x=>x.method==='POST'),false);
   assert.match(dom.el('message').textContent,/No AI or PayPal/);
 });

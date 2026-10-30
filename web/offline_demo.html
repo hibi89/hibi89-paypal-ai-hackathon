@@ -30,7 +30,20 @@ a{color:inherit}h1,h2,h3,p{margin-top:0}h1,h2,h3{letter-spacing:-.035em;line-hei
 .visual-top .dot{width:8px;height:8px;border-radius:50%;background:#6ee6c4;display:inline-block;margin-right:6px}
 .visual-title{font-size:1.6rem;font-weight:800;letter-spacing:-.04em;line-height:1.2;margin:32px 0 16px}
 .visual-flow{display:flex;flex-wrap:wrap;gap:7px}.visual-flow span{padding:7px 10px;background:#ffffff20;border:1px solid #ffffff24;border-radius:8px;font-size:.79rem}
-.proof-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}.proof-cell{border:1px solid #d9e3f0;border-radius:12px;padding:14px 15px;background:#f8faff;min-width:0}.proof-cell h3{font-size:.85rem;letter-spacing:0;line-height:1.45;margin:4px 0 9px}.proof-cell p{font-size:.77rem;line-height:1.55;margin:0;color:#4b6080}.proof-source{font-size:.68rem;font-weight:800;letter-spacing:.06em;color:#315da3}.proof-cell.proof-pending{background:#fffaf1;border-color:#ebdfc5}.proof-cell.proof-pending .proof-source{color:#916325}@media(max-width:900px){.proof-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:620px){.proof-grid{grid-template-columns:1fr}}
+.proof-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}.proof-cell{border:1px solid #d9e3f0;border-radius:12px;padding:14px 15px;background:#f8faff;min-width:0}.proof-cell h3{font-size:.85rem;letter-spacing:0;line-height:1.45;margin:4px 0 9px}.proof-cell p{font-size:.77rem;line-height:1.55;margin:0;color:#4b6080}.proof-source{font-size:.68rem;font-weight:800;letter-spacing:.06em;color:#315da3}.proof-cell.proof-pending{background:#fffaf1;border-color:#ebdfc5}.proof-cell.proof-pending .proof-source{color:#916325}
+.protocol-lab{margin-top:20px;padding:21px 23px;border-radius:16px;border:1px solid #c9d9f0;background:linear-gradient(125deg,#f6faff,#fff);box-shadow:0 6px 18px #1739660b}
+.protocol-lab-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.protocol-lab-head h3{font-size:1.15rem;margin:2px 0 0;color:#1a3458}
+.protocol-lab button{margin:0;min-height:44px}
+.protocol-lab .meta{margin:10px 0}
+#protocol-replay-status{font-size:.85rem;font-weight:750;color:#305a92;min-height:1.5em;margin:12px 0 0}
+#protocol-replay-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));list-style:none;counter-reset:protocol;gap:8px;padding:0;margin:16px 0}
+#protocol-replay-list[hidden]{display:none}
+#protocol-replay-list li{counter-increment:protocol;display:flex;align-items:start;gap:10px;padding:11px 12px;border:1px solid #dce7f4;border-radius:10px;background:white;color:#314863;font-size:.8rem;overflow-wrap:anywhere}
+#protocol-replay-list li:before{content:counter(protocol,decimal-leading-zero);font-size:.72rem;font-weight:800;color:#2459b4;min-width:22px}
+#protocol-replay-detail{font-size:.8rem;color:#556d8b;margin:0}
+@media(max-width:620px){.protocol-lab{padding:17px}.protocol-lab-head button{width:100%}#protocol-replay-list{grid-template-columns:1fr}}
+@media(max-width:900px){.proof-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:620px){.proof-grid{grid-template-columns:1fr}}
 .warning{padding:15px 18px;border:1px solid #e6dbaa;border-left:4px solid #c38a32;border-radius:12px;background:#fffaf0;color:#76501e;font-size:.87rem;line-height:1.6;margin:3px 0 18px}
 main{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:20px;margin-top:24px}
 .panel{grid-column:span 12;background:#fff;border:1px solid #e0e7f1;border-radius:20px;padding:27px;box-shadow:0 7px 24px #16345809;min-width:0}
@@ -51,7 +64,7 @@ button:disabled{opacity:.48;cursor:not-allowed}
 #marketplace-form{display:grid;grid-template-columns:minmax(220px,.7fr) minmax(0,1.3fr);column-gap:18px;align-items:end}
 #marketplace-form label[for=marketplace-vertical]{grid-column:1}#marketplace-form label[for=marketplace-brief]{grid-column:2;grid-row:1}
 #marketplace-vertical{grid-column:1;grid-row:2;height:54px;font-weight:700}
-#marketplace-brief{grid-column:2;grid-row:2;min-height:54px;height:54px}
+#marketplace-brief{grid-column:2;grid-row:2;min-height:96px;height:auto}
 #marketplace-submit{grid-column:1/-1;justify-self:start;min-height:46px;margin:16px 0 8px}
 #marketplace-results{margin-top:18px}#marketplace-results>p:first-child{font-size:.85rem;color:#657793}
 .match-summary{font-size:.86rem;color:#4d6480;padding:12px 14px;background:#f2f6fe;border-radius:10px;margin-bottom:16px}
@@ -120,6 +133,16 @@ strong{font-weight:750}.meta{color:#61718a;font-size:.85rem}
 <div class="proof-cell" id="proof-owner-history"><div class="proof-source">C / OWNER-REPORTED HISTORY</div><h3>October 28 Sandbox + Gemini</h3><p>The owner reported a Gemini classification and a Sandbox buyer-approved capture verified by provider GET. Original private evidence is not independently reproduced in this browser or CI.</p></div>
 <div class="proof-cell proof-pending" id="proof-release"><div class="proof-source">D / NOT YET SUBMITTED</div><h3>Final public hackathon entry</h3><p>Public approved video, Devpost receipt and judge-accessible real integration evidence are not established by this offline demo.</p></div>
 </div>
+<div class="protocol-lab" id="protocol-lab">
+  <div class="protocol-lab-head">
+    <div><p class="section-kicker">Interactive proof / simulated APIs only</p><h3>Explore the Gemini → PayPal integration logic</h3></div>
+    <button type="button" id="protocol-replay-button" disabled>Run synthetic API replay</button>
+  </div>
+  <p class="meta">Runs the actual orchestration functions with injected FAKE Gemini/PayPal HTTP responses in an isolated local test. A simulated buyer approval is checked before a simulated capture. It does <strong>not</strong> call either provider, make payments or confirm the historic owner test.</p>
+  <p id="protocol-replay-status" role="status" aria-live="polite">Press the button to inspect a fake-only, opt-in API call sequence. No replay occurs on page load.</p>
+  <ol id="protocol-replay-list" aria-label="Simulated provider call order" hidden></ol>
+  <p id="protocol-replay-detail" aria-live="polite"></p>
+</div>
 </section>
 <section class="panel" id="demo-session-panel" aria-labelledby="demo-session-heading">
 <h2 id="demo-session-heading">Demo participants — synthetic only</h2>
@@ -136,7 +159,7 @@ strong{font-weight:750}.meta{color:#61718a;font-size:.85rem}
 <select id="marketplace-vertical" name="vertical"><option value="ai_work">AI Work — development and automation</option><option value="general_services">Global Services — design, translation, marketing</option></select>
 <label for="marketplace-brief">Synthetic client project request</label>
 <textarea id="marketplace-brief" rows="3" minlength="8" maxlength="500" required>Build an ecommerce website with PayPal checkout</textarea>
-<button type="submit" id="marketplace-submit">Explore matching specialists &rarr;</button>
+<button type="submit" id="marketplace-submit" disabled>Explore matching specialists &rarr;</button>
 </form>
 <div id="marketplace-results" role="status" aria-live="polite">Click Match to inspect fictional skills and eligibility. Reference price: DATA_INSUFFICIENT.</div>
 <p class="meta" id="marketplace-selection-status" role="status" aria-live="polite">No candidate selected. Quote and payment unchanged.</p>
@@ -173,43 +196,23 @@ strong{font-weight:750}.meta{color:#61718a;font-size:.85rem}
 </form>
 <p class="meta">PayPal order and capture POST remain disabled until actual Sandbox verification.</p>
 </section>
-<section class="panel" id="agent-budget-panel" aria-labelledby="agent-budget-heading">
-<p class="section-kicker">AI negotiation / Offline guardrail</p>
-<h2 id="agent-budget-heading">Bounded negotiation and spending limit</h2>
-<p class="meta">Deterministic OFFLINE POLICY simulation, not a live Gemini agent. Prices are USD. No PayPal authorization or escrow.</p>
-<form id="agent-negotiation-form">
-<label>Buyer maximum (USD)<input name="buyerMax" type="number" min="1" max="10000" step="0.01" value="300.00" required></label>
-<label>Seller minimum (USD)<input name="sellerMin" type="number" min="1" max="10000" step="0.01" value="200.00" required></label>
-<label>Seller opening (USD)<input name="opening" type="number" min="1" max="10000" step="0.01" value="280.00" required></label>
-<button type="submit">Generate offline negotiation proposal</button>
-</form>
-<p id="agent-negotiation-result" role="status" aria-live="polite">No proposal yet.</p>
-<p class="meta">To reserve budget, approve the exact proposal amount in the separate human approval section above.</p>
-<form id="agent-budget-form">
-<label>Maximum spending budget (USD)<input name="limit" type="number" min="1" max="10000" step="0.01" value="500.00" required></label>
-<button type="submit">Confirm offline budget limit</button>
-</form>
-<button type="button" id="agent-budget-reserve" disabled>Reserve approved amount in SQLite</button>
-<p id="agent-budget-result" role="status" aria-live="polite">No reservation.</p>
-<button type="button" id="agent-budget-history-refresh">View SQLite reservation history</button>
-<pre id="agent-budget-history" role="status" aria-live="polite">No history loaded.</pre>
-</section>
-<section class="panel" id="github-delivery-panel" aria-labelledby="github-delivery-heading">
-<p class="section-kicker">GitHub delivery / Synthetic decision</p>
-<h2 id="github-delivery-heading">Review delivered work before settlement</h2>
-<p class="meta">FICTIONAL GitHub PR, commit and CI fixture. This demo does NOT fetch GitHub checks, run Gemini or initiate PayPal payouts. The decision only identifies eligibility for separate human review.</p>
-<form id="github-delivery-form">
-<label><input type="checkbox" name="checkPassed"> Synthetic required CI check passed</label>
-<label><input type="checkbox" name="reviewApproved"> Synthetic human delivery review approved</label>
-<button type="submit">Evaluate fictional delivery evidence</button>
-</form>
-<p id="github-delivery-result" role="status" aria-live="polite">No synthetic evaluation yet.</p>
-</section>
 <section class="panel" id="payment-panel">
 <p class="section-kicker">05 / PayPal evidence</p>
 <h2>Payment status &amp; verified provenance</h2>
 <p><strong>Payment is DISABLED.</strong> No Live transactions, no Sandbox charges, no deployed provider integration.</p>
 <button type="button" id="payment-status">Check payment status (GET)</button>
+<div class="protocol-lab" id="quote-checkout-plan-panel">
+<h3>Approved quote → PayPal Orders plan (offline)</h3>
+<p class="meta">Inspect your exact persisted amount and quote version with the real Orders v2 planner. <strong>Fictional merchant only.</strong> No Gemini, PayPal Sandbox call, order creation, buyer action, or Capture.</p>
+<button type="button" id="quote-checkout-preview" disabled>Preview plan for approved quote (GET only)</button>
+<p id="quote-checkout-preview-result" role="status" aria-live="polite">Approve a quote first. No provider call will be sent.</p>
+<div style="margin-top:16px;border-top:1px solid #c9d9f0;padding-top:15px">
+<h3>Judge verification · quote + separate fake API</h3>
+<p class="meta">One click compares your approved SQLite quote before and after a fixed USD 1.50 injected-fake Gemini/PayPal replay. <strong>These are not one linked checkout.</strong> Zero real provider calls.</p>
+<button type="button" id="verify-local-bridge" disabled>Verify both local code paths (fake only)</button>
+<p id="verify-local-bridge-result" role="status" aria-live="polite">Approve a quote first. No provider call will be sent.</p>
+</div>
+</div>
 <details id="historical-provider-evidence">
 <summary>Historical Gemini + PayPal Sandbox evidence — owner-reported, NOT this mock</summary>
 <p><strong>OWNER-REPORTED · NOT INDEPENDENTLY REPRODUCED · 2026-10-28</strong></p>
@@ -296,6 +299,38 @@ strong{font-weight:750}.meta{color:#61718a;font-size:.85rem}
 <button type="button" id="integration-refresh">Review integration (GET only)</button>
 <p id="integration-message" role="status" aria-live="polite"></p>
 </section>
+<section class="panel" id="agent-budget-panel" aria-labelledby="agent-budget-heading">
+<p class="section-kicker">Optional / Negotiation and budget guardrails</p>
+<h2 id="agent-budget-heading">Bounded negotiation and spending limit</h2>
+<p class="meta">Deterministic OFFLINE POLICY simulation, not a live Gemini agent. Prices are USD. No PayPal authorization or escrow.</p>
+<form id="agent-negotiation-form">
+<label>Buyer maximum (USD)<input name="buyerMax" type="number" min="1" max="10000" step="0.01" value="300.00" required></label>
+<label>Seller minimum (USD)<input name="sellerMin" type="number" min="1" max="10000" step="0.01" value="200.00" required></label>
+<label>Seller opening (USD)<input name="opening" type="number" min="1" max="10000" step="0.01" value="280.00" required></label>
+<button type="submit">Generate offline negotiation proposal</button>
+</form>
+<p id="agent-negotiation-result" role="status" aria-live="polite">No proposal yet.</p>
+<p class="meta">To reserve budget, approve the exact proposal amount in the separate human approval section above.</p>
+<form id="agent-budget-form">
+<label>Maximum spending budget (USD)<input name="limit" type="number" min="1" max="10000" step="0.01" value="500.00" required></label>
+<button type="submit">Confirm offline budget limit</button>
+</form>
+<button type="button" id="agent-budget-reserve" disabled>Reserve approved amount in SQLite</button>
+<p id="agent-budget-result" role="status" aria-live="polite">No reservation.</p>
+<button type="button" id="agent-budget-history-refresh">View SQLite reservation history</button>
+<pre id="agent-budget-history" role="status" aria-live="polite">No history loaded.</pre>
+</section>
+<section class="panel" id="github-delivery-panel" aria-labelledby="github-delivery-heading">
+<p class="section-kicker">Optional / Synthetic GitHub delivery check</p>
+<h2 id="github-delivery-heading">Review delivered work before settlement</h2>
+<p class="meta">FICTIONAL GitHub PR, commit and CI fixture. This demo does NOT fetch GitHub checks, run Gemini or initiate PayPal payouts. The decision only identifies eligibility for separate human review.</p>
+<form id="github-delivery-form">
+<label><input type="checkbox" name="checkPassed"> Synthetic required CI check passed</label>
+<label><input type="checkbox" name="reviewApproved"> Synthetic human delivery review approved</label>
+<button type="submit">Evaluate fictional delivery evidence</button>
+</form>
+<p id="github-delivery-result" role="status" aria-live="polite">No synthetic evaluation yet.</p>
+</section>
 <p id="message" role="status" aria-live="polite"></p>
 </main>
 <script src="/demo/marketplace.js" defer></script>
@@ -306,6 +341,8 @@ strong{font-weight:750}.meta{color:#61718a;font-size:.85rem}
 <script src="/demo/subscription.js" defer></script>
 <script src="/demo/integration.js" defer></script>
 <script src="/demo/evidence.js" defer></script>
+<script src="/demo/provider-protocol.js" defer></script>
+<script src="/demo/quote-checkout-preview.js" defer></script>
 </body>
 </html>
 

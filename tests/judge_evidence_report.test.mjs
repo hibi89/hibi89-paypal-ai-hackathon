@@ -17,6 +17,10 @@ test('evidence classes are strictly separated after fake-provider orchestrator s
  assert.equal(report.evidence[3].status,'NOT_SUBMITTED');
  assert.equal(report.verifiedFromThisCommand.actualProviderCalls,0);
  assert.equal(report.verifiedFromThisCommand.actualPaymentCaptured,false);
+ assert.equal(report.verifiedFromThisCommand.fakeApiProtocol.status,
+   'INJECTED_FAKE_PROTOCOL_SEQUENCE_VERIFIED');
+ assert.ok(report.verifiedFromThisCommand.fakeApiProtocol.stageSequence.includes(
+   'FAKE_ORDER_CAPTURE_POST'));
  assert.equal(report.releases.publicationAuthorized,false);
  const markdown=renderJudgeEvidenceMarkdown(report);
  assert.match(markdown,/FAKE Gemini and PayPal Sandbox/);
@@ -24,25 +28,16 @@ test('evidence classes are strictly separated after fake-provider orchestrator s
  assert.match(markdown,/NOT_SUBMITTED/);
  assert.doesNotMatch(markdown,/client_secret|access_token|PayerID|checkoutnow/);
 });
-test('tampered mock payload or invented real provider proof fails closed',()=>{
- const valid={
-   status:'MOCK_MVP_E2E_PASS',scope:'SYNTHETIC_PROVIDER_FIXTURE_ONLY',
-   realGeminiCalls:0,realPayPalCalls:0,realPaymentCaptured:false,
-   implicitNetworkAccess:false,syntheticQuoteCurrency:'USD',
-   syntheticQuoteAmount:'1.50',syntheticSkillSource:'INJECTED_FAKE_GEMINI',
-   simulatedBuyerApproved:true,
-   mockCaptureState:'PAID_VERIFIED_BY_INJECTED_PROVIDER_GET',
-   privateSqliteLedgerVerified:true,syntheticOperationClaims:2,
-   createPostsToFakeTransport:1,capturePostsToFakeTransport:1,
-   automaticRetry:false,selectedProfile:'synthetic-web',missingSkills:['qa']
- };
+test('tampered mock payload or invented real provider proof fails closed',async()=>{
+ const valid=await runOfflineOperatorMvpSmoke();
  assert.doesNotThrow(()=>summarizeSyntheticJudgeTrace(valid));
  for(const alteration of [
     {realGeminiCalls:1},{realPayPalCalls:1},{realPaymentCaptured:true},
     {implicitNetworkAccess:true},{scope:'REAL_PROVIDER'},
     {mockCaptureState:'PAID_VERIFIED_BY_REAL_PAYPAL'},
     {syntheticOperationClaims:0},{automaticRetry:true},
-    {selectedProfile:'sensitive-email@example.com'}, {missingSkills:['secret_token']}
+    {selectedProfile:'sensitive-email@example.com'}, {missingSkills:['secret_token']},
+    {fakeProviderProtocol:{...valid.fakeProviderProtocol,stageSequence:['FAKE_PAYPAL_OAUTH_POST']}}
  ]){
    assert.throws(()=>summarizeSyntheticJudgeTrace({...valid,...alteration}));
  }
