@@ -18,31 +18,17 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlsplit
 from playwright.sync_api import sync_playwright, expect
-from video_owner_evidence import collect_saved_receipt, storyboard_cards, preserve_private_recording
+from video_owner_evidence import (collect_saved_receipt, storyboard_cards,
+                                  preserve_private_recording,
+                                  git_source_snapshot as inspect_git_source)
 
 ROOT = Path(__file__).resolve().parents[1]
 SECRET = re.compile(r"(SECRET|TOKEN|PASSWORD|CREDENTIAL|API_KEY|CLIENT_ID|MERCHANT_ID|GEMINI|PAYPAL|OPENAI|AUTHORIZATION|PRIVATE_KEY|NODE_OPTIONS)", re.I)
 
 
 def git_source_snapshot():
-    """Read Git commit and tracked-code cleanliness; no network or file writes."""
-    try:
-        sha = subprocess.run(
-            ["git", "rev-parse", "--verify", "HEAD"], cwd=ROOT,
-            capture_output=True, text=True, timeout=4, check=True
-        ).stdout.strip()
-        if not re.fullmatch(r"[0-9a-f]{40}", sha):
-            return {"sha": None, "clean": False}
-        clean = all(subprocess.run(
-            args, cwd=ROOT, stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL, timeout=4
-        ).returncode == 0 for args in (
-            ["git", "diff", "--quiet", "--"],
-            ["git", "diff", "--cached", "--quiet", "--"],
-        ))
-        return {"sha": sha, "clean": clean}
-    except (OSError, subprocess.SubprocessError):
-        return {"sha": None, "clean": False}
+    """Pure read-only source provenance; also rejects untracked files."""
+    return inspect_git_source(ROOT)
 
 
 def chrome_binary():
