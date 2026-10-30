@@ -1,11 +1,11 @@
 # Proofline — PayPal + AI Hackathon judge entry (STAGED, NOT RELEASED)
 
 **Current consolidated QA candidate (public source branch, NOT released):**
-[`work/paypal-owner-review-fastpath-20261030`](https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/work/paypal-owner-review-fastpath-20261030).
-This branch includes both service categories, the safe private video/manifest changes, and
+[`work/paypal-video-integrity-hardening-20261030`](https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/work/paypal-video-integrity-hardening-20261030).
+This branch includes both service categories, the safe private video/manifest checks, and
 one-command owner-local final verification in
-[unmerged draft integration PR #25](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/25).
-Older [QA PR #23](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/23)
+[unmerged draft integration PR #25](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/26).
+Older overlapping [QA PR #23](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/23)
 and [integration PR #24](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/24)
 overlap with PR #25; review only one approved integration route.
 This [draft LICENSE/default-entry PR #16](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/16)
@@ -16,7 +16,7 @@ only updates the release landing, **not** the application source on `main`.
 ```bash
 git clone https://github.com/hibi89/hibi89-paypal-ai-hackathon.git
 cd hibi89-paypal-ai-hackathon
-git switch work/paypal-owner-review-fastpath-20261030
+git switch work/paypal-video-integrity-hardening-20261030
 npm run preflight:reviewer
 npm run judge:reproduce
 npm run demo
@@ -29,15 +29,15 @@ by this demo.** The owner's October 28 Gemini + Sandbox one-shot remains
 **owner-reported historical private evidence**, not independently replayed
 by GitHub CI, a production payment, or a live judge-facing integration.
 
-[Reviewer reproduction guide](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/work/paypal-owner-review-fastpath-20261030/docs/JUDGE_REPRODUCTION_EN.md) ·
-[Integration evidence boundaries](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/work/paypal-owner-review-fastpath-20261030/docs/JUDGE_PAYPAL_AI_INTEGRATION_TRACE_EN.md) ·
-[Owner release checklist](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/work/paypal-owner-review-fastpath-20261030/docs/FINAL_OWNER_SUBMISSION_CHECKLIST_20261030.md)
+[Reviewer reproduction guide](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/work/paypal-video-integrity-hardening-20261030/docs/JUDGE_REPRODUCTION_EN.md) ·
+[Integration evidence boundaries](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/work/paypal-video-integrity-hardening-20261030/docs/JUDGE_PAYPAL_AI_INTEGRATION_TRACE_EN.md) ·
+[Owner release checklist](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/work/paypal-video-integrity-hardening-20261030/docs/FINAL_OWNER_SUBMISSION_CHECKLIST_20261030.md)
 
 **CI boundaries (2026-10-30 KST):** The last fully green 3-job run
 [#41002555640](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41002555640)
 tested an *older* SHA `5c07333` (613 Node tests; browser/Windows/video).
-The latest consolidated candidate source `d1e76e3` has separate
-[full CI #41017095517](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41017095517)
+The latest consolidated candidate source `92afae7` has separate
+[full CI #41018496987](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41018496987)
 **QUEUED at last check, NOT PASS**. Independent P20 helper behavior tests
 do not replace Node, SQLite, Chromium, Windows or full video CI.
 Before any owner-authorized merge/release, revise this landing's source
