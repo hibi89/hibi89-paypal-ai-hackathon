@@ -1,4 +1,5 @@
 """Offline neural narration fail-closed tests with no model or network."""
+import inspect
 import sys
 import tempfile
 import unittest
@@ -6,7 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"scripts"))
-from render_owner_neural_voice import synthesize, sample_voice, VOICES
+from render_owner_neural_voice import synthesize, sample_voice, load_engine, VOICES
 
 
 class OfflineNeuralSafety(unittest.TestCase):
@@ -54,6 +55,14 @@ class OfflineNeuralSafety(unittest.TestCase):
                     source.assert_not_called()
             self.assertEqual(sample.read_bytes(), b"LOCAL_TEST_WAV")
             self.assertTrue(sample.parent.name=="private-neural-samples")
+
+    def test_kokoro_receives_explicit_espeak_data_root_on_windows(self):
+        # Kokoro's Tokenizer resets the eSpeak data path when EspeakConfig
+        # is omitted. A successful phonemizer precheck alone is insufficient.
+        source = inspect.getsource(load_engine)
+        self.assertIn("EspeakConfig(", source)
+        self.assertIn("data_path=str(ascii_root)", source)
+        self.assertIn("espeak_config=espeak_config", source)
 
     def test_allowlisted_neural_voices_are_english(self):
         self.assertTrue({"af_heart","am_michael"}.issubset(VOICES))
