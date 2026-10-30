@@ -128,3 +128,11 @@ jobs:
           if [ -z "$video" ]; then echo "RECORDING_MISSING" >&2; exit 2; fi
           duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$video")
           python3 -c 'import sys; d=float(sys.argv[1]); assert 100 < d < 180, "VIDEO_DURATION_INVALID"; print(f"PRIVATE_MEDIA_DURATION_VERIFIED_SECONDS={d:.2f}")' "$duration"
+      - name: Capture opt-in premium real-browser cursor footage (private only)
+        env:
+          VIDEO_PYTHON_BIN: .video-venv/bin/python
+        run: |
+          npm run video:record:offline -- --premium --pace-ms 250
+          python3 scripts/check_recorded_video.py
+          python3 -c 'import json,glob; p=sorted(glob.glob("output/videos/*.manifest.json"))[-1]; d=json.load(open(p)); assert d["presentation_mode"]=="GUIDED_REAL_BROWSER_CURSOR_NO_POST_ZOOM"; assert d["voiceover_included"] is False; assert d["provider_calls"]==0 and d["payment_posts"]==0; assert d["publicly_uploaded"] is False; print("PRIVATE_PREMIUM_CURSOR_RECORDING_PASS")'
+
