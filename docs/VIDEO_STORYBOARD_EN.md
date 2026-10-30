@@ -1,6 +1,6 @@
 # Proofline — opportunity-first judging video storyboard
 
-**Status:** A private synthetic dual-category CI video was recorded at `020d7cc`, verified as **154.08 seconds (2:34.08)** in [Actions #40904439915](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40904439915). The owner-PC final video is **NOT filmed** or reviewed; this is not a public release. OWNER-OBSERVED Gemini/PayPal evidence remains separately attributed historical evidence. No final owner-reviewed footage, public YouTube video or Devpost receipt is verified.
+**Status (2026-10-30 KST):** [Draft PR #28](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/28) candidate `771ba6f4fb61b86af1530df51b2acda8fac9013b` had a private synthetic dual-category CI recording independently verified as **165.84 seconds (<180)** by [Actions #41073098696](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41073098696), **3/3 jobs PASS**. The owner-PC final source-matched, visually/privacy-reviewed video is **NOT verified**, not publicly uploaded to YouTube and not submitted on Devpost. The 2026-10-28 actual PayPal Sandbox/Gemini activity remains **separately owner-reported historical evidence**; the CI video is fake-provider only.
 
 **Key message:** AI should help people access their first freelance opportunities, not simply automate existing work.
 

@@ -3,20 +3,20 @@
 **STATUS: PRIVATE PREPARATION / NOT RELEASED / NOT SUBMITTED.**
 No source merge, public upload, account action or Devpost submission is authorized by this document.
 
-## Current verified engineering baseline (source d37215de27e8; 2026-10-30 KST)
+## Current verified engineering baseline — Draft PR #28 exact SHA
 
-- **One contest application:** Proofline is one offline synthetic marketplace with AI Work and Global Services; human-approved versioned quote, contract, delivery/reviewer stages and pure fake PayPal Orders/Capture planning. The browser/CI makes zero real Gemini or PayPal calls and captures no actual payment.
-- **Exact-source engineering CI:** [Actions #41064633633](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41064633633) on `d37215de27e80669d0d5f33ead6c8d92a5bf627d`: **643/643 Node PASS; Chromium AI Work, Global Services, synthetic API replay and mobile PASS; Windows first-run owner video workflow PASS; all 3 jobs SUCCESS; WebM ffprobe 165.08 seconds (<180s)**. After this document change, verify the new branch head separately; never claim its CI status from an earlier SHA.
-- **Single unmerged QA candidate:** [Draft PR #27](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/27), `work/paypal-reviewer-assets-gate-20261030` targeting `lead/paypal`. Older draft PRs #23/#24/#25/#26 are overlapping ancestry, **not independent release patches**; do not merge twice.
-- **Default `main` landing:** [Draft PR #16](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/16) remains unmerged; align its README/license and submitted source to the exact owner-approved QA SHA before any authorized release. Current public default `main` is not the verified app.
-- **Actual historical provider claim:** 2026-10-28 owner-reported private Gemini and PayPal Sandbox USD 1.50 buyer-approved CREATE/CAPTURE/GET (not replayed in CI and not present browser checkout). Do not rerun the previous payment or expose private receipts.
+- **Source:** [Draft PR #28](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/28), `release/paypal-main-qa-preview-20261030@771ba6f4fb61b86af1530df51b2acda8fac9013b` -> unchanged `main` (owner approval required). Two-parent main+QA history; exact program/tests/scripts identical to QA `f6da705bb62577688b18f3a5dd1b30f3cf7a140f`, with original main-only `docs/ROLE_COORDINATION.md` preserved, plus release-preview docs.
+- **Exact-source CI:** [Actions #41073098696](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41073098696) **3/3 COMPLETED SUCCESS**, 643/643 Node, Chromium AI Work/Global Services/mobile + injected-fake protocol, Windows owner review, independently ffprobe-tested synthetic WebM **165.84 seconds**. This validates the synthetic candidate, not owner PC editorial approval or authentic third-party calls.
+- **Historic real provider evidence:** 2026-10-28 owner-reported Gemini skill-classification and one PayPal Sandbox USD 1.50 buyer-authorized CREATE / CAPTURE / authenticated GET on the original computer. The private SQLite is NOT in CI and has not been independently attested by judges. **Do not repeat the capture, publish secrets, or assert fresh Gemini/PayPal contact.**
+- **Public release state:** `main` still older; PR28 is DRAFT/UNMERGED, root MIT LICENSE exists only on preview until approved main update. Prior PR #7/#16 and overlapping QA #23–26 must **not** be merged separately; PR27 remains QA history reference. No public YouTube/Devpost receipts or Production URL exist.
+- **Official [Rules](https://paypalaihackathon.devpost.com/rules):** Run/build from complete public GitHub repo OR hosted demo; real PayPal developer Sandbox + meaningful AI integration and working prototype; root visible open-source license, complete English write-up and public YouTube **under 3 minutes**. Hosting itself is not mandatory, but a simulated-only API trace is **not** fresh third-party evidence.
 
 ## 1. Source and release approval (OWNER-GATED; NONE COMPLETED)
 
-- [ ] Review the consolidated **[Draft PR #27](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/27)**, including the previously unmerged PR #23–#26 work; never merge the overlapping older drafts separately.
-- [ ] Confirm **one** actual chosen source SHA and full Linux Node + Chromium, Windows recorder and under-180s encoded video CI PASS at that exact SHA. A green status on older commit is insufficient.
-- [ ] Separately approve whether to merge that source into `lead/paypal` and whether to release public source on `main`; do not auto-merge.
-- [ ] Review MIT root LICENSE and [staged main landing PR #16](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/16). **Synchronize its final source link to the exact validated release SHA** before merging; PR #16 alone adds no application implementation to `main`.
+- [ ] Owner reviews consolidated **[Draft PR #28](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/28)** as the single `main` release route; [QA PR #27](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/27) is its test-proven history, not a second required public release. Never merge overlapping older drafts separately.
+- [x] GitHub exact-SHA technical CI for `771ba6f4fb61b86af1530df51b2acda8fac9013b`: [3/3 SUCCESS](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41073098696), 643 Node, Chromium, Windows and ffprobe 165.84s. **Does not authorize public release or certify the owner's private final video.**
+- [ ] Owner explicitly decides whether to merge **PR #28** to public `main`; merging underlying PR #27 into `lead/paypal` is a separate choice and is **not needed** to publish already integrated PR28 source. Do not auto-merge.
+- [ ] Verify the root MIT LICENSE and README in **PR28**, then once the owner approves release confirm GitHub's public default-branch About section detects the license and that a clean clone of approved `main` runs. **PR #16 alone is obsolete; do not merge it.**
 - [ ] Confirm the final public reviewer README, Devpost source URL and video all refer to the **same version** and remain accurate about fake-vs-historical PayPal/Gemini evidence.
 
 ## 2. One-command safe owner PC review and optional recording
@@ -27,14 +27,14 @@ From an **existing Windows clone**, first inspect uncommitted files; do not rese
 git status --short
 git fetch origin
 # If this latest review branch is not yet present locally:
-git switch --track origin/work/paypal-reviewer-assets-gate-20261030
+git switch --track origin/release/paypal-main-qa-preview-20261030
 git rev-parse HEAD
 npm run owner:final:local
 # If the private recording is missing/stale, this is an EXPLICIT opt-in:
 npm run owner:final:local -- --record-if-missing
 ```
 
-If the branch exists locally, use `git switch work/paypal-reviewer-assets-gate-20261030` and `git pull --ff-only` rather than tracking it again. If a source branch has later changed, verify the new SHA and review the affected CI before regarding it as the submitted candidate.
+If the branch exists locally, use `git switch release/paypal-main-qa-preview-20261030` and `git pull --ff-only` rather than tracking it again. If a source branch has later changed, verify the new SHA and review the affected CI before regarding it as the submitted candidate.
 
 - `npm run owner:final:local` runs the existing **localhost synthetic/SQLite/fake API reproduction**, creates ignored release-readiness reports, checks the private recorded video + source SHA + optional system `ffprobe` encoded duration, and inspects the **existing historical SQLite receipt read-only if present**. It never initiates recording by default, uploads content or calls Gemini/PayPal.
 - A default result requesting a missing/stale video is an expected **review action required**, not permission to submit. It may exit with code 2. The optional `--record-if-missing` is a separate, deliberate choice; it records at most once only when safe prerequisites pass. It can download pinned free video tooling, so review that dependency first. No payment endpoints, CAPTURE retries, public uploads or video releases occur.
@@ -67,7 +67,7 @@ Official rules: https://paypalaihackathon.devpost.com/rules .
 The rules permit repository-based setup instead of public hosting, require a functioning demonstrable app, a **public open-source repo with visible license**, an **English submission**, and a **public YouTube video under three minutes**. A standalone static mockup is insufficient.
 
 ## Current blockers to 100% submission
-1. Exact **final QA HEAD** GitHub Actions green, `npm run judge:reproduce` and `npm run freeze:check` output reviewed; owner review/merge decision.
+1. Exact PR28 HEAD GitHub Actions **3/3 SUCCESS verified**; owner-PC clean source/video review and merge decision still required. `freeze:check` is a non-release safety gate.
 2. Current owner-PC video recording, actual encoded-duration/visual/privacy review.
 3. Public source/release license/working judge entry decision.
 4. Public YouTube link and actual Devpost receipt.

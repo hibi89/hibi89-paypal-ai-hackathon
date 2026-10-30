@@ -3,7 +3,7 @@
 # PayPal AI Hackathon — Devpost entry and video copy (owner review draft)
 
 Status: **DRAFT — NOT PUBLISHED / NOT SUBMITTED**.
-**Final review caution (2026-10-30):** The source link below is a **single unmerged Draft PR #27 candidate**, NOT an owner-approved released build. Source `d37215de27e80669d0d5f33ead6c8d92a5bf627d` passed [Actions #41064633633](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41064633633) with 643/643 Node, Chromium desktop/mobile, Windows and a 165.08-second CI synthetic WebM (3/3 jobs). Documentation updates after that SHA need their own exact-head verification. Historical private Gemini/PayPal Sandbox run is owner-reported, not independently re-executed by CI; no approved public YouTube URL or Devpost receipt exists. Before final submission replace this preview link with the exact owner-approved published source.
+**Final review caution (2026-10-30):** Submission draft source is owner-review-only [Draft PR #28](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/28) / `release/paypal-main-qa-preview-20261030@771ba6f4fb61b86af1530df51b2acda8fac9013b`. Latest exact-SHA [Actions #41073098696](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41073098696) **3/3 SUCCESS**, **643/643 Node**, Chromium AI Work+Global Services/mobile, Windows safe owner workflow and private synthetic WebM **165.84s**. This is NOT a released default `main`, verified owner-approved public video, Devpost receipt or independent live PayPal/Gemini browser integration. Before publication replace preview branch links with the exact owner-approved published source SHA. Historic 2026-10-28 real provider flow remains owner-reported/private; do not imply it ran in synthetic browser or CI.
 Do not infer that the synthetic browser demo is a real-provider session. No private IDs, tokens, SQLite database, buyer details or account credentials belong in this package.
 
 ## Devpost project fields — ready to edit
@@ -14,7 +14,7 @@ Do not infer that the synthetic browser demo is a real-provider session. No priv
 
 **Project website:** Not deployed; the judge reproducibility route is the public source branch below.
 
-**Open-source repository (CURRENT UNMERGED QA PREVIEW; UPDATE TO OWNER-APPROVED PUBLIC RELEASE URL BEFORE SUBMISSION):** https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/work/paypal-reviewer-assets-gate-20261030
+**Open-source repository (CURRENT UNMERGED MAIN-RELEASE PREVIEW; REPLACE WITH OWNER-APPROVED PUBLIC MAIN SHA BEFORE SUBMISSION):** https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/release/paypal-main-qa-preview-20261030
 
 **Video URL:** [OWNER TO ADD AFTER APPROVED PUBLIC YOUTUBE UPLOAD]
 
@@ -84,7 +84,7 @@ PayPal Sandbox REST API (OAuth and Orders v2, owner-operated test); Gemini API (
 ```bash
 git clone https://github.com/hibi89/hibi89-paypal-ai-hackathon.git
 cd hibi89-paypal-ai-hackathon
-git switch work/paypal-reviewer-assets-gate-20261030  # QA preview only; final release ref needs owner approval
+git switch release/paypal-main-qa-preview-20261030  # QA preview only; final release ref needs owner approval
 node --version  # Node 22.5+
 npm run preflight:reviewer
 npm run demo
@@ -113,7 +113,7 @@ authorized by this recording command. No new Sandbox payment should be made.
 
 ## Judge video — English caption/narration guide for the CURRENT dual-category recording
 
-**Status (current engineering baseline):** [Actions #41064633633](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41064633633) at `d37215de27e80669d0d5f33ead6c8d92a5bf627d` passed 643/643 Node, real local Chromium synthetic browser flows, Windows private recording and 165.08-second ffprobe-verified WebM. This video is CI-generated and ephemeral, not owner-PC approved/public footage. No real provider calls in CI, no published video or submitted Devpost. The final narration timestamps must follow the owner's personally reviewed new recording. Review [Draft PR #27](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/27), which remains unmerged.
+**Status (current engineering baseline):** [Actions #41073098696](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41073098696) at candidate `771ba6f4fb61b86af1530df51b2acda8fac9013b` passed **643/643 Node** plus actual Chromium two-category synthetic localhost/browser flows, Windows safe review and independently probed WebM **165.84 seconds**. The CI footage is ephemeral and does not contain authenticated provider activity or publication approval. Owner must inspect a new private source-matched recording, check English captions/privacy and approve any separate public upload. Only then provide a real public YouTube URL. [Draft PR #28](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/28) remains unmerged.
 
 The current automated screen sequence is: **opening → AI Work matches → Global Services matches → AI Work quote approval → historical Gemini/PayPal provenance cards → contract/delivery/reviewer rejection and acceptance → SQLite audit → historical disclosure → closing**. This sequence is not the earlier quote-first storyboard.
 
