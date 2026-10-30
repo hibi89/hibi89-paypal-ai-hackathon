@@ -177,22 +177,42 @@ def capture(output_dir, pace_ms, premium=False):
                         page.wait_for_timeout(45 if pace_ms >= 1000 else 4)
                     film_cursor_xy[0], film_cursor_xy[1] = x, y
 
-                def film_scroll_to(selector):
+                def film_scroll_to(selector, align="center"):
                     if not premium:
                         return
-                    needs_scroll = page.evaluate("""(selector) => {
-                      const node = document.querySelector(selector);
-                      if (!node) return false;
-                      const rect = node.getBoundingClientRect();
-                      const center = window.innerHeight/2;
-                      if (Math.abs((rect.top+rect.bottom)/2-center) < 235 &&
-                          rect.top >= 50 && rect.bottom <= innerHeight-55)
-                        return false;
-                      node.scrollIntoView({behavior:'smooth',block:'center'});
+                    # Playback must show the journey between sections, not jump.
+                    # One awaited animation owns the scroll (no locator's implicit
+                    # scrollIntoViewIfNeeded). Frame-wise scrollTo uses the
+                    # recording-only html auto override to avoid double easing.
+                    if align not in ("center", "start"):
+                        raise RuntimeError("FILM_SCROLL_ALIGNMENT_INVALID")
+                    page.evaluate("""async ({selector, align, durationMs}) => {
+                      const node=document.querySelector(selector);
+                      if(!node)throw Error('FILM_SCROLL_TARGET_MISSING');
+                      const r=node.getBoundingClientRect();
+                      const viewport=window.innerHeight;
+                      const desiredOffset=align==='start'?72:viewport/2-r.height/2;
+                      const maxY=Math.max(0,document.documentElement.scrollHeight-viewport);
+                      const begin=window.scrollY;
+                      const end=Math.max(0,Math.min(maxY,begin+r.top-desiredOffset));
+                      const distance=end-begin;
+                      if(Math.abs(distance)<3)return false;
+                      if(align==='center'&&r.top>=50&&r.bottom<=viewport-55&&
+                         Math.abs((r.top+r.bottom)/2-viewport/2)<235)return false;
+                      await new Promise(resolve=>{
+                        const started=performance.now();
+                        const frame=now=>{
+                          const t=Math.min(1,(now-started)/durationMs);
+                          const eased=t*t*(3-2*t);
+                          window.scrollTo(0,begin+distance*eased);
+                          if(t<1)requestAnimationFrame(frame);
+                          else resolve();
+                        };
+                        requestAnimationFrame(frame);
+                      });
                       return true;
-                    }""", selector)
-                    if needs_scroll:
-                        page.wait_for_timeout(500 if pace_ms >= 1000 else 30)
+                    }""", {"selector":selector,"align":align,
+                             "durationMs":460 if pace_ms >= 1000 else 70})
 
                 def film_action_hold():
                     # Let the viewer actually see the changed interface.
@@ -205,7 +225,7 @@ def capture(output_dir, pace_ms, premium=False):
                         target.click()
                         return
                     film_scroll_to(selector)
-                    target.scroll_into_view_if_needed()
+                    target.wait_for(state="visible")
                     rect=target.bounding_box()
                     if rect is None:
                         raise RuntimeError("FILM_TARGET_NOT_VISIBLE")
@@ -215,15 +235,29 @@ def capture(output_dir, pace_ms, premium=False):
                     film_move_to(x,y)
                     page.evaluate("(s)=>document.querySelector(s)?.classList.add('film-target')",selector)
                     page.wait_for_timeout(380 if pace_ms >= 1000 else 45)
-                    page.mouse.click(x,y,delay=140 if pace_ms >= 1000 else 40)
-                    page.wait_for_timeout(420 if pace_ms >= 1000 else 40)
+                    # A native #anchor click is an abrupt jump under the film
+                    # CSS auto override. Let that real link navigate smoothly
+                    # while preserving its normal hash and click semantics.
+                    hero_anchor = selector == "a.hero-cta"
+                    if hero_anchor:
+                        page.evaluate("""() => document.documentElement.style
+                          .setProperty('scroll-behavior','smooth','important')""")
+                    try:
+                        page.mouse.click(x,y,delay=140 if pace_ms >= 1000 else 40)
+                        page.wait_for_timeout(
+                            (650 if pace_ms >= 1000 else 130)
+                            if hero_anchor else (420 if pace_ms >= 1000 else 40))
+                    finally:
+                        if hero_anchor:
+                            page.evaluate("""() => document.documentElement.style
+                              .removeProperty('scroll-behavior')""")
                     page.evaluate("(s)=>document.querySelector(s)?.classList.remove('film-target')",selector)
 
                 def guided_select(selector,value):
                     target=page.locator(selector)
                     if premium:
                         film_scroll_to(selector)
-                        target.scroll_into_view_if_needed()
+                        target.wait_for(state="visible")
                         rect=target.bounding_box()
                         if rect is None:
                             raise RuntimeError("FILM_SELECT_NOT_VISIBLE")
@@ -392,7 +426,12 @@ def capture(output_dir, pace_ms, premium=False):
                 expect(proof_map).to_contain_text("INJECTED FAKE APIS")
                 expect(proof_map).to_contain_text("OWNER-REPORTED HISTORY")
                 expect(proof_map).to_contain_text("NOT YET SUBMITTED")
-                proof_map.scroll_into_view_if_needed()
+                if premium:
+                    # This was the other full-screen snap near the intro.
+                    # Show the top of the tall source map, not its middle.
+                    film_scroll_to("#proof-map-panel", align="start")
+                else:
+                    proof_map.scroll_into_view_if_needed()
                 caption("EVIDENCE MAP | Local fake APIs are NOT historical Sandbox proof.", placement="top")
                 voice_cue("Every result has a source. This fictional offline demo is not a live PayPal checkout.")
                 page.wait_for_timeout(min(pace_ms, 4500))
