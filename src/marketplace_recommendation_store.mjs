@@ -25,10 +25,10 @@ export function createMarketplaceRecommendationStore(filename) {
     try{const result=fn();db.exec('COMMIT');return result}
     catch(e){db.exec('ROLLBACK');throw e}
   };
-  const rowToPublic=row=>row&&({
+  const rowToPublic=row=>row?({
     id:row.id,vertical:row.vertical,round:row.round,
     skills:JSON.parse(row.skills_json)
-  });
+  }):null;
   function start(owner,vertical,brief,skills){
     if(!validOwner(owner)||!['ai_work','general_services'].includes(vertical)||
        typeof brief!=='string'||brief.length<8||brief.length>500||

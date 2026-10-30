@@ -89,7 +89,7 @@ const GENERAL_PROFILES=Object.freeze([
 ]);
 export function matchSyntheticGeneralServiceBrief(brief,{round=0}={}) {
   if(typeof brief!=='string'||brief.length<8||brief.length>500||
-     /[\\u0000-\\u001f\\u007f]/u.test(brief)||brief.trim().length<8)
+     /[\u0000-\u001f\u007f]/u.test(brief)||brief.trim().length<8)
     throw error('INVALID_SYNTHETIC_BRIEF');
   const requestedSkills=GENERAL_SERVICE_SKILLS.filter(([,pattern])=>pattern.test(brief)).map(([skill])=>skill);
   return matchSyntheticGeneralServiceSkills(requestedSkills,{round});
