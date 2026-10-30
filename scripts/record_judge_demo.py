@@ -374,6 +374,25 @@ def capture(output_dir, pace_ms, premium=False):
                 for card in film_cards:
                     if premium:
                         page.evaluate("(card)=>window.ProoflineFilmLens.show(card)",card)
+                        layout=page.evaluate("""() => {
+                          const panel=document.querySelector('#proofline-film-lens .lens-panel');
+                          if(!panel)return {valid:false,reason:'panel missing'};
+                          const bounds=panel.getBoundingClientRect();
+                          const children=[...panel.querySelectorAll('h2,.lens-sub,.lens-source,.lens-content,.lens-footer')];
+                          const allInside=children.every(node=>{
+                            const r=node.getBoundingClientRect();
+                            return r.top>=bounds.top-1&&r.bottom<=bounds.bottom+1&&
+                                   r.left>=bounds.left-1&&r.right<=bounds.right+1;
+                          });
+                          return {
+                            valid:allInside&&panel.scrollHeight<=panel.clientHeight+2&&
+                              bounds.width>=600&&bounds.height>=680,
+                            bounds:{width:bounds.width,height:bounds.height},
+                            reason:allInside?'height/overflow':'child overflow'
+                          };
+                        }""")
+                        if not layout["valid"]:
+                            raise RuntimeError("PREMIUM_EVIDENCE_LAYOUT_OVERFLOW")
                         if card["scene"] == "gemini":
                             voice_cue("Previously, the owner reported a Gemini skills classification. This is historical evidence, not a new Gemini request.")
                         elif card["scene"] == "paypal":
