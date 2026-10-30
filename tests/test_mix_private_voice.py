@@ -9,11 +9,11 @@ from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"scripts"))
 from mix_private_voice import mix_timeline, RATE
 
-def wav(path, frames=RATE//4):
+def wav(path, frames=RATE//4, rate=RATE):
     with wave.open(str(path),"wb") as file:
         file.setnchannels(1)
         file.setsampwidth(2)
-        file.setframerate(RATE)
+        file.setframerate(rate)
         file.writeframes(b"\x19\x22"*frames)
 
 
@@ -40,6 +40,26 @@ class OfflineVoiceTests(unittest.TestCase):
                 self.assertEqual(source.getsampwidth(),2)
             with self.assertRaises(FileExistsError):
                 mix_timeline(timeline,out)
+
+    def test_24khz_neural_voice_preserves_sample_rate_and_alignment(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            wav(root/"voice_01.wav", frames=6000, rate=24000)
+            wav(root/"voice_02.wav", frames=6000, rate=24000)
+            timeline = root/"timeline.json"
+            timeline.write_text(json.dumps({"items":[
+                {"file":"voice_01.wav","at_seconds":0.3},
+                {"file":"voice_02.wav","at_seconds":0.6}
+            ]}),encoding="utf-8")
+            out = root/"narration.wav"
+            report = mix_timeline(timeline, out, rate=24000)
+            self.assertEqual(report["cue_count"], 2)
+            self.assertGreater(report["seconds"], .8)
+            with wave.open(str(out), "rb") as source:
+                self.assertEqual(source.getframerate(), 24000)
+                self.assertEqual(source.getsampwidth(), 2)
+            with self.assertRaises(ValueError):
+                mix_timeline(timeline, root/"invalid.wav", rate=48000)
 
     def test_path_traversal_empty_or_out_of_range_fail_closed(self):
         with tempfile.TemporaryDirectory() as temp:
