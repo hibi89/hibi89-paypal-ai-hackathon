@@ -26,22 +26,28 @@ test('legacy private WebM without source SHA can never be declared owner-review-
  }
 });
 
-test('checkout tracked files must be clean in both worktree and index',()=>{
+test('source checkout must have no tracked, staged or untracked changes',()=>{
  const seen=[];
  const clean=inspectTrackedTreeClean('/fixture',(bin,args,options)=>{
-   assert.equal(bin,'git'); assert.equal(options.shell,false);
+   assert.equal(bin,'git');assert.equal(options.shell,false);
+   assert.ok(options.timeout>0&&options.maxBuffer>0);
    seen.push(args.join(' '));
-   return {status:0};
+   return {status:0,stdout:''};
  });
  assert.equal(clean,true);
- assert.deepEqual(seen,['diff --quiet --','diff --cached --quiet --']);
+ assert.deepEqual(seen,['status --porcelain=v1 --untracked-files=normal --']);
 });
 
-test('modified, staged or unreadable Git tree cannot be treated as matching',()=>{
- for(const outcomes of [[1,0],[0,1],[null,0]]){
-   let i=0;
-   assert.equal(inspectTrackedTreeClean('/fixture',()=>({status:outcomes[i++]})),false);
- }
+test('unknown, modified, staged or untracked files block clean source proof',()=>{
+ for(const state of [
+   {status:0,stdout:'?? src/fresh_module.mjs\\n'},
+   {status:0,stdout:' M src/demo_client.mjs\\n'},
+   {status:0,stdout:'M  README.md\\n'},
+   {status:1,stdout:''},
+   {status:null,stdout:''},
+   {status:0,stdout:undefined}
+ ])assert.equal(inspectTrackedTreeClean('/fixture',()=>state),false);
+ assert.equal(inspectTrackedTreeClean('/fixture',()=>{throw Error('GIT_NOT_FOUND')}),false);
 });
 
 // Release-preparation correctness: the owner-review flag must not overstate
