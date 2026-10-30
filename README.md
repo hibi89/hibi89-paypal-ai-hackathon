@@ -1,53 +1,48 @@
 # Proofline — PayPal + AI Hackathon judge entry (STAGED, NOT RELEASED)
 
-**Current consolidated QA candidate (public source branch, NOT released):**
-[`work/paypal-video-integrity-hardening-20261030`](https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/work/paypal-video-integrity-hardening-20261030).
-This branch includes both service categories, the safe private video/manifest checks, and
-one-command owner-local final verification in
-[unmerged draft integration PR #26](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/26).
-Older overlapping [QA PR #23](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/23)
-and [integration PR #24](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/24)
-overlap with PR #26; review only one approved integration route.
-This [draft LICENSE/default-entry PR #16](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/16)
-only updates the release landing, **not** the application source on `main`.
+**Current consolidated QA preview (NOT MERGED OR RELEASED):**
+[Draft PR #27](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/27),
+[`work/paypal-reviewer-assets-gate-20261030`](https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/work/paypal-reviewer-assets-gate-20261030).
+It contains the two-category offline marketplace, consent controls, private video integrity,
+source-matched owner review and all previously overlapping PR #23–#26 QA changes.
+**Do not merge PR #23/#24/#25/#26 separately.**
+This [draft README/LICENSE PR #16](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/16)
+is a release landing **only**. The actual tested marketplace is NOT on `main`.
 
-**Reproduce the offline synthetic browser (Node.js >=22.5; no credentials):**
+**QA baseline (tested SOURCE SHA, not automatically post-documentation HEAD):**
+[GitHub Actions #41064633633](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41064633633)
+on `d37215de27e80669d0d5f33ead6c8d92a5bf627d` completed **3/3 SUCCESS**:
+**643/643 Node tests, Chromium AI Work / Global Services / mobile / fake API replay, Windows
+owner review, and private synthetic WebM `ffprobe` 165.08 seconds (<180)**.
+New QA documentation commits after that SHA require their own exact-head check.
+No real PayPal/Gemini calls or capture occurred in CI.
+
+**Run the offline synthetic reviewer build (Node.js >=22.5, no provider credentials):**
 
 ```bash
 git clone https://github.com/hibi89/hibi89-paypal-ai-hackathon.git
 cd hibi89-paypal-ai-hackathon
-git switch work/paypal-video-integrity-hardening-20261030
+git switch work/paypal-reviewer-assets-gate-20261030
 npm run preflight:reviewer
 npm run judge:reproduce
 npm run demo
 ```
 
-Open the printed `http://127.0.0.1:PORT` locally. AI Work and Global Services
-use fictional sellers, approved local SQLite quotes, contract and reviewer
-screens, and fake PayPal-domain planning. **No Gemini or PayPal API is contacted
-by this demo.** The owner's October 28 Gemini + Sandbox one-shot remains
-**owner-reported historical private evidence**, not independently replayed
-by GitHub CI, a production payment, or a live judge-facing integration.
+Open the printed loopback `http://127.0.0.1:PORT`. Both categories share human-approved
+quote/contract and fictional sellers. The click-to-replay PayPal/Gemini protocol and payment
+planning use **injected fake providers only**. The October 28 owner-reported real Gemini and
+PayPal Sandbox buyer approval / capture / GET is **historical and separate**; the original
+private SQLite is never published or replayed by this browser.
 
-[Reviewer reproduction guide](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/work/paypal-video-integrity-hardening-20261030/docs/JUDGE_REPRODUCTION_EN.md) ·
-[Integration evidence boundaries](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/work/paypal-video-integrity-hardening-20261030/docs/JUDGE_PAYPAL_AI_INTEGRATION_TRACE_EN.md) ·
-[Owner release checklist](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/work/paypal-video-integrity-hardening-20261030/docs/FINAL_OWNER_SUBMISSION_CHECKLIST_20261030.md)
+[English reviewer steps](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/work/paypal-reviewer-assets-gate-20261030/docs/JUDGE_REPRODUCTION_EN.md) ·
+[Source/provenance evidence](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/work/paypal-reviewer-assets-gate-20261030/docs/JUDGE_PAYPAL_AI_INTEGRATION_TRACE_EN.md) ·
+[Owner-only release checklist](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/work/paypal-reviewer-assets-gate-20261030/docs/FINAL_OWNER_SUBMISSION_CHECKLIST_20261030.md)
 
-**CI boundaries (2026-10-30 KST):** The last fully green 3-job run
-[#41002555640](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41002555640)
-tested an *older* SHA `5c07333` (613 Node tests; browser/Windows/video).
-The latest consolidated candidate source `92afae7` has separate
-[full CI #41018496987](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41018496987)
-**QUEUED at last check, NOT PASS**. Independent P20 helper behavior tests
-do not replace Node, SQLite, Chromium, Windows or full video CI.
-Before any owner-authorized merge/release, revise this landing's source
-URL to the final *validated* release branch/commit.
-
-**Submission status:** No owner-authorized public video URL, default branch
-source release or Devpost receipt has been verified. A CI-private synthetic
-WebM is not the owner's released YouTube submission. No PayPal partnership,
-fee-sharing, real seller population, production payment or user traction is
-claimed.
+**NOT APPROVED:** No PR #27 or PR #16 merge, no `main` application release, no owner-approved
+YouTube URL or Devpost receipt. Owner must personally verify the exact clean source and
+private video (including captions/privacy and independently measured encoded duration),
+then separately approve publication and official submission. This staged landing cannot
+by itself satisfy the hackathon's publicly runnable application requirement.
 
 ---
 
