@@ -33,7 +33,8 @@
     "test:journey": "node --experimental-sqlite --test tests/complete_marketplace_journey.test.mjs",
     "video:record:premium:owner": "node scripts/prepare_and_record_video.mjs --premium --pace-ms 6500",
     "video:voice:owner": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/render_owner_offline_voice.ps1",
-    "video:voice:recover:owner": "node scripts/run_private_voice_recovery.mjs"
+    "video:voice:recover:owner": "node scripts/run_private_voice_recovery.mjs",
+    "video:voice:neural:owner": "node scripts/run_private_neural_voice.mjs"
   },
   "engines": {
     "node": ">=22.5.0"
