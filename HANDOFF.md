@@ -1,3 +1,18 @@
+## 2026-10-31 03:33 KST — PREMIUM VIDEO 174.76s RENDERED, HUMAN QA PENDING
+
+1. **Goal/stack:** Private polished Proofline PayPal Hackathon demo under 180s, slow clear opener, visible cursor and click pacing, accurate synthetic/historical distinction, natural offline English narration; Node/Playwright, Python 3.11 Kokoro ONNX FP16, FFmpeg.
+2. **Completed/decisions:** User-approved `af_heart` voice after actual 10-second preview; user Windows console now reports new premium capture and full 13 cue offline neural narration+WebM mux success. Original videos and evidence preserved.
+3. **Tests/verified:** Owner stdout `PRIVATE_OFFLINE_NEURAL_NARRATION_READY`, `NEURAL_VOICE af_heart`, `SAFE_CUES 13`, `PRIVATE_NARRATED_RECOVERY_PASS`, `INDEPENDENT_MEDIA_DURATION_SECONDS 174.76`, `NO_PROVIDER_REQUESTS NO_PAYMENT NO_PUBLIC_UPLOAD`. Duration 5.24s below 180. GitHub Actions for prior branch SHA `798ac56`: two relevant workflow runs success. **Unverified:** Independent human viewing/listening of complete video, exact source scene pacing, cue alignment/PQG score.
+4. **Work status:** TTS integration and full local film render DONE per owner log. Editorial QC IN PROGRESS; merge and public submission BLOCKED pending explicit owner permission.
+5. **Errors/causes/avoidance:** Original Windows SAPI voice failed owner quality criteria; espeak-ng path issues solved by explicit Kokoro `EspeakConfig` with ASCII asset root; no repeat diagnosis or reinstall. Former unbounded mux stalls avoided by bounded offline recovery. If final editorial quality fails, revise only affected timing/scene/voice cues and retake, preserving source.
+6. **Repo/branch/SHA:** `hibi89/hibi89-paypal-ai-hackathon`, `design/proofline-premium-film-20261031`, Draft PR29; source correction `19d82e4`, regression `1e2492f`, prior docs baseline `798ac56`; latest STATUS commit `80d3070`. Paths `scripts/record_judge_demo.py`, `scripts/render_owner_neural_voice.py`, `scripts/recover_owner_voice_mux.py`, `output/videos` (ignored owner-local).
+7. **Production/runtime:** Owner Windows PowerShell clone at local `paypal-premium-review`. Completed output `output/videos/proofline-premium-narrated-recovered-20261031-033327-f326877c.webm`. 174.76 seconds, 13 cue neural `af_heart`; Vercel Production N/A, local-only private film.
+8. **Originals/security:** Preserve original local WebM/WAV and ignored model assets; original historical PayPal/Gemini records private. No provider calls, payments, external TTS, API token exposure, uploads, merges or publications.
+9. **Next actions/acceptance:** Open final WebM and review all frames/audio: opener >=7.8s and CTA, pointer visibly reaches every click, no overly fast cuts, evidence text readable, narration intelligible/synchronized, both video and audio tracks and <180s. Request file or targeted screenshots for assistant review. Only after QA and explicit separate approval consider distribution/submission.
+10. **Timestamp/evidence scope:** 2026-10-31 03:33 KST from owner-supplied stdout; code and CI checked in GitHub. Audio sample owner listened; completed film visual/editorial quality NOT inspected. Document reflects STATUS commit `80d3070`, handoff commit itself will advance SHA.
+
+---
+
 ## 2026-10-31 KST — KOKORO eSPEAK ROOT CAUSE / CONFIG FIX / NO LOCAL AUDIO PASS YET
 
 1. **Goal, requirements, stack:** Free, offline, natural English narration for private Proofline premium PayPal Hackathon film; Python 3.11 venv, Kokoro ONNX 0.6.1 FP16, phonemizer/eSpeak-NG, Windows PowerShell, Node/FFmpeg. Original video, model, evidence and secrets must remain untouched.
