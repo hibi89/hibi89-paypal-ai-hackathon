@@ -105,7 +105,21 @@ if (-not $ffmpeg -and $env:LOCALAPPDATA) {
 if (-not $ffmpeg) { throw 'FFMPEG_NOT_FOUND__VOICE_WAV_RETAINED' }
 $encoders = (& $ffmpeg -hide_banner -encoders 2>&1 | Out-String)
 $codec = if ($encoders -match 'libopus') { 'libopus' } elseif ($encoders -match ' opus ') { 'opus' } else { $null }
-if (-not $codec) { throw 'FFMPEG_OPUS_ENCODER_UNAVAILABLE__VOICE_WAV_RETAINED' }
+if (-not $codec) {
+    # Pinned open-source portable FFmpeg fallback. Package downloads tools only,
+    # NEVER sends the script, cue text, video, receipt or private identifiers.
+    Write-Output 'Installing free pinned local FFmpeg binary (imageio-ffmpeg==0.6.0)...'
+    & $python -m pip install --disable-pip-version-check 'imageio-ffmpeg==0.6.0'
+    if ($LASTEXITCODE -ne 0) { throw 'LOCAL_FFMPEG_INSTALL_FAILED__VOICE_WAV_RETAINED' }
+    $ffmpegFromPython = (& $python -c 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())' | Out-String).Trim()
+    if (-not (Test-Path -LiteralPath $ffmpegFromPython -PathType Leaf)) {
+        throw 'LOCAL_FFMPEG_BINARY_UNAVAILABLE__VOICE_WAV_RETAINED'
+    }
+    $ffmpeg = $ffmpegFromPython
+    $encoders = (& $ffmpeg -hide_banner -encoders 2>&1 | Out-String)
+    $codec = if ($encoders -match 'libopus') { 'libopus' } elseif ($encoders -match ' opus ') { 'opus' } else { $null }
+    if (-not $codec) { throw 'FFMPEG_OPUS_ENCODER_UNAVAILABLE__VOICE_WAV_RETAINED' }
+}
 
 $movie = Join-Path $folder ('proofline-premium-narrated-' + $stamp + '.webm')
 # 'apad' fills the remaining audio with silence; '-shortest' ends on the video,
