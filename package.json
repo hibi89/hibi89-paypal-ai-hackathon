@@ -18,6 +18,7 @@
     "judge:reproduce": "node --experimental-sqlite scripts/run_judge_reproduction.mjs",
     "freeze:check": "node --experimental-sqlite scripts/check_private_freeze.mjs",
     "owner:review:local": "node --experimental-sqlite scripts/prepare_owner_review_brief.mjs",
+    "owner:evidence:local": "node --experimental-sqlite scripts/export_owner_local_evidence.mjs",
     "owner:sandbox:get:optional": "node --experimental-sqlite scripts/recheck_existing_sandbox_get.mjs",
     "mvp:status": "node --experimental-sqlite scripts/check_owner_mvp_local_status.mjs",
     "mvp:quick": "node --experimental-sqlite scripts/run_owner_mvp_operator.mjs --quick-tunnel",
