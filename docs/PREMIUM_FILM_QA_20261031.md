@@ -1,3 +1,35 @@
+## 2026-10-31 KST — Owner first-playback editorial failures and premium retake design
+
+**Owner feedback on actual Windows narrated recovery (`proofline-premium-narrated-recovered-20261031-023540-aab70e35.webm`, reported 118.12s):**
+1. The first hero/value-proposition screen disappears too quickly, with no visible CTA transition; viewer cannot see what takes them into next screen.
+2. Middle/review stages move too quickly, sometimes no visible cursor on active controls; feels like invisible synthetic system action, not a human browser workflow.
+3. Installed Windows SAPI voice is audibly unacceptable (poor audio quality and robotic delivery). **Do NOT use SAPI draft as submission audio.**
+
+**Code-level causes confirmed:**
+- Original premium recorder filled `#marketplace-brief` BEFORE showing the introduction caption/voice, which auto-scrolled away from hero.
+- `page.mouse.move(...,steps=14)` sent movement events faster than recording frame interval, and `#confirm.check()` was an actual unfilmed programmatic checkbox action.
+- Immediate back-to-back quote/contract/reviewer controls and 6.5s evidence cards outran narration in the final cut.
+
+**Retake changes (premium-only, original data and standard capture untouched):**
+- Start at top-of-page hero with **up to 7.8s readable screen** at owner's 6500ms pace, opening voice cue, on-screen `START HERE` guide. Then a **real guided cursor click on `a.hero-cta`**, navigation to marketplace, and only then enter the project brief. The viewer sees exactly what opens the next screen.
+- All premium button, dropdown and checkbox actions use actual Playwright pointer or select events. `film_move_to` moves across recorded frames with eased coordinates, and smooth-scroll only when not in view. Targets highlight at click/selection; major versioned quote, approve, delivery, reject and accept UI states hold an additional frame-visible ~1.55s at owner pace.
+- The three historical evidence-lens cards remain on-screen at least 9.5s each at owner pace to cover their associated speech; reduced small waits in 250ms CI mode. All source disclosure text and provider-call/payment safeguards remain.
+- A real owner full-length premium recording still needs to verify **encoded runtime <180s**, legibility, visible cursor, scroll and real audio synchronization after retake. No quality percentage without human/audio review.
+
+**Voice decision comparison (no downloads, provider calls or payment authorized so far):**
+
+| Method | Estimated cash | Expected voice improvement | Privacy/dependencies | Current status |
+|---|---|---|---|---|
+| A. **Local Kokoro-82M ONNX** (preferred zero-cash candidate) | $0 | Natural neural English; quality must be auditioned, not guaranteed | One-time model/voice assets ~350MB plus Python dependencies on owner Windows machine; text stays local; CPU inference, no live TTS service | Optional code only, models NOT installed or used |
+| B. **OpenAI GPT voice API** | Additional metered API fee (ChatGPT Plus is not API credit) | Controllable English accent/pacing/intonation, likely more cinematic | Sends safe narration script to provider; needs approval for API billing and external transfer; existing Speech endpoint models are marked deprecated for Jan 2027 | Not invoked, not implemented |
+| C. Windows legacy SAPI | $0 | Not acceptable after actual owner listening | Local, already generated | Reject for final film |
+
+**Local neural code, no auto-install:** `scripts/render_owner_neural_voice.py` + `scripts/run_private_neural_voice.mjs` and npm `video:voice:neural:owner`. They require a *new* matching source at exact current code SHA and pre-provisioned `output/voice-models/kokoro-v1.0.onnx`, `output/voice-models/voices-v1.0.bin`, and local `kokoro-onnx` + `soundfile` in existing `.video-venv`. No auto-download, no calls to a cloud service; existing original footage and private receipt are read-only. On local execution it generates 24kHz WAV cues, mixes them using `mix_private_voice.py --rate 24000`, then runs bounded `recover_owner_voice_mux.py`; no old SAPI required. Do not run until owner approves model download/dependencies; models/voices are NEVER committed to GitHub.
+
+**Proposed review steps:** Confirm actual owner permission for one-time free local model/runtime installation; after CI green, update owner code, capture new guided premium film and audit runtime, generate local neural voice, listen/sync both full WebM and compare with evidence-lens and provenance. If one free neural voice sample is still unsatisfactory, Stop & Pivot to user-approved cloud provider or manual licensed commercial narration. No merge/publication without explicit user approval.
+
+---
+
 # Proofline — premium film production and PQG-100 gate (2026-10-31 KST)
 
 **State: DRAFT / NOT A FINAL DEMO VIDEO.** This is an offline cinematic editing and reviewer plan, not proof of actual Gemini/PayPal calls. No public upload, submission, source release, external TTS, PayPal CREATE/CAPTURE, or new provider API requests are approved here.
