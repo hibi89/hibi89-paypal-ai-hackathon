@@ -1,3 +1,18 @@
+## 2026-10-31 KST — LATEST d52f105 PRODUCTION-FILM NAVIGATION FIX, INTEGRATED 3×3
+
+1. **Goal and stack:** 3×3 Proofline opportunity matching on premium dark frontend, preserved local Node/SQLite and real browser recorder, natural Kokoro offline `af_heart`; no live services.
+2. **Completed:** All 3-tier sets, max two refreshes, 3 historical lists, full-skill gated chooser and dark controls. Film cursor is still real Playwright pointer, fast stale-coordinate click avoided, role-switch browser reload is explicitly awaited and pointer overlay is reinstalled.
+3. **Tests:** Exact source SHA `d52f105af166316b79fce2a0cb15675f9295818f`; Node **657 PASS/0 FAIL**, two-category Chromium, fake provider and premium Evidence CSP checks PASS; Windows first-run recording PASS in [PR #41118197689](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41118197689). Full-length/private premium duration job **RUNNING**, not claimed successful. Older full-film PR failures: `62f37f8` Version 2 click, `9587374` navigation context destroyed.
+4. **Status:** Feature/source and regular tests DONE; full-film CI + owner Windows new under-180s narrated WebM + manual QA PENDING. Publication/merge/PayPal/Gemini real calls BLOCKED by explicit release approval.
+5. **Error evidence and pivot:** `web/marketplace_client.js` starts a smooth auto-scroll after profile-choice, raw coordinate can miss; migrated to stable `target.click`. `web/demo_client.js` role-switch calls `window.location.reload`, requiring `page.expect_navigation` to prevent context-destroyed eval; restored film cursor. Avoid repeating original failed raw coordinate/unguarded reload approach. If new film fails, use precise new CI log to classify.
+6. **Repo/branch/source:** `hibi89/hibi89-paypal-ai-hackathon` `design/proofline-premium-film-20261031`, Draft PR29. Latest source `d52f105`; files `scripts/record_judge_demo.py`, `tests/premium_film_contract.test.mjs`; recommendation engine/stores/UI are integrated and regression tested. Docs commit will advance HEAD.
+7. **Runtime/URL:** `npm run demo` for localhost synthetic UI; `npm run video:record:premium:owner` then `npm run video:voice:neural:owner -- --voice af_heart` for owner-local WebM after source pull and CI clearance; Vercel Production N/A. CI PR video URL above.
+8. **Original/backup/auth:** Preserve existing private `proofline-premium-narrated-recovered-20261031-033327-f326877c.webm`, WAV, TTS models, historical private Sandbox proof. No secret or owner data uploaded. SQLite recommendation history exists only for temporary offline demo process; real user account persistence not implemented.
+9. **Next priority/criteria:** Check latest PR full-length video source `d52f105`: fast click after draft, role switches, no navigation races, ffprobe duration <180, no provider/payment POST; then new owner-local film visual QA of 3×3 cards, scrolling, subtitles, narration. No main merge or public submission without separate approval.
+10. **Timestamp/scope:** 2026-10-31 KST; GitHub source CI and earlier owner baseline video only. Latest head and docs commit SHA to be verified after this update.
+
+---
+
 ## 2026-10-31 KST — PREMIUM 3×3 + FAST-FILM CLICK FIX (HANDOFF REVISION)
 
 1. **Goal/stack:** Owner-approved 3×3 opportunity discovery integrated into premium Proofline local demo, while maintaining Playwright guided under-180-second film, Kokoro `af_heart`, Node/SQLite local owner-only synthetic data, real purchase/contract safety and no external API/publishing.
