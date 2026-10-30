@@ -43,6 +43,20 @@ class RecordedVideoIntegrityTests(unittest.TestCase):
     def save(self):
         self.manifest.write_text(json.dumps(self.data), encoding="utf-8")
 
+    def test_symlinked_video_never_reads_original_private_recording(self):
+        original = self.root / "existing-private-owner-recording"
+        original.write_bytes(self.video.read_bytes())
+        self.video.unlink()
+        try:
+            self.video.symlink_to(original)
+        except (NotImplementedError, OSError):
+            self.skipTest("host does not permit symlinks")
+        with self.assertRaisesRegex(ValueError, "LOCAL_VIDEO_UNAVAILABLE"):
+            verify(self.root)
+        self.assertTrue(self.video.is_symlink())
+        self.assertEqual(original.read_bytes(), bytes.fromhex("1a45dfa3") +
+                         b"synthetic-local-video-bytes")
+
     def test_valid_pair_is_accepted(self):
         with patch("builtins.print"):
             self.assertEqual(verify(self.root), self.video)
