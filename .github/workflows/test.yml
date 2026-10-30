@@ -6,6 +6,12 @@ on:
     branches: [main, lead/paypal]
 permissions:
   contents: read
+
+# Only retain the latest push/PR revision of the same workflow. Different PRs
+# and the protected lead branch never share a cancellation group.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -27,6 +33,11 @@ jobs:
         run: |
           npm run judge:evidence
           node --input-type=module -e "import {readFileSync} from 'node:fs'; const r=JSON.parse(readFileSync('output/submission/judge_evidence_report.json')); if(r.status!=='JUDGE_SAFE_OFFLINE_EVIDENCE_READY_NOT_SUBMITTED'||r.verifiedFromThisCommand.actualProviderCalls!==0||r.verifiedFromThisCommand.actualPaymentCaptured!==false||r.releases.publicationAuthorized!==false||r.evidence[2].status!=='OWNER_REPORTED_NOT_INDEPENDENTLY_ATTESTED')process.exit(2)"
+      - name: Reproduce both judge categories and classify all four evidence sources offline
+        run: |
+          npm run judge:reproduce
+          npm run freeze:check
+          node --input-type=module -e "import {readFileSync} from 'node:fs'; const r=JSON.parse(readFileSync('output/submission/judge_reproduction_receipt.json')); const f=JSON.parse(readFileSync('output/submission/private_freeze_status.json')); if(r.status!=='JUDGE_OFFLINE_REPRODUCED_NOT_SUBMITTED'||r.reproducibleA.categories.length!==2||r.reproducibleB.actualProviderCalls!==0||r.publicationD.status!=='NOT_SUBMITTED'||!f.sourceVerified||!f.localJudgeTechnicalEvidenceVerified||f.publishingAuthorized!==false||f.submissionEligible!==false)process.exit(2)"
       - name: Install free browser test tooling
         run: |
           python3 -m venv .browser-venv
@@ -36,6 +47,8 @@ jobs:
         run: .browser-venv/bin/python tests/browser_offline_e2e.py
       - name: Global Services Chromium quote and contract journey
         run: .browser-venv/bin/python tests/browser_general_services_e2e.py
+      - name: Chromium opt-in Gemini and PayPal fake API trace panel
+        run: .browser-venv/bin/python tests/browser_synthetic_provider_protocol_e2e.py
       - name: Check recorder Python syntax and proof provenance regression
         run: |
           python3 -m py_compile scripts/record_judge_demo.py scripts/video_owner_evidence.py
@@ -46,10 +59,10 @@ jobs:
         run: npm run video:record:offline -- --pace-ms 200
       - name: Validate private synthetic WebM hash and release flags
         run: python3 scripts/check_recorded_video.py
-      - name: Build private submission candidate and assert not published
+      - name: Build private submission candidate and check duration-proof gate (no publication)
         run: |
           npm run submission:candidate:local
-          node --input-type=module -e "import {readFileSync} from 'node:fs'; const x=JSON.parse(readFileSync('output/submission/submission_candidate_status.json')); if(!x.ownerReviewReady||x.externalSubmissionEligible||x.authorizedToPublish)process.exit(2)"
+          node --input-type=module -e "import {readFileSync} from 'node:fs'; const x=JSON.parse(readFileSync('output/submission/submission_candidate_status.json')); const verified=x.privateVideoDuration?.status==='ENCODED_MEDIA_UNDER_THREE_MINUTES'&&Number.isFinite(x.privateVideoDuration?.seconds)&&x.privateVideoDuration.seconds>0&&x.privateVideoDuration.seconds<180; if(x.sourceStatus!=='LOCAL_SOURCE_DRAFTS_PRESENT'||x.videoSourceMatch!=='MATCHED_CLEAN_SOURCE'||x.technicalVideoReady!==verified||x.ownerReviewReady!==verified||x.externalSubmissionEligible!==false||x.authorizedToPublish!==false||x.devpostReceipt!=='NOT_SUBMITTED')process.exit(2)"
   owner-video-windows:
     name: Windows first-run offline video recording
     runs-on: windows-latest
@@ -66,10 +79,16 @@ jobs:
         run: python tests/video_owner_evidence_test.py
       - name: Full owner workflow from clean machine (no accounts or providers)
         run: npm run video:record:owner -- --pace-ms 200
-      - name: Build owner draft packet and assert video present / release blocked
+      - name: Build owner draft packet with fail-closed encoded-duration and release gates
         run: |
           npm run submission:candidate:local
-          node --input-type=module -e "import {readFileSync} from 'node:fs'; const x=JSON.parse(readFileSync('output/submission/submission_candidate_status.json')); if(!x.ownerReviewReady||x.externalSubmissionEligible||x.authorizedToPublish)process.exit(2)"
+          node --input-type=module -e "import {readFileSync} from 'node:fs'; const x=JSON.parse(readFileSync('output/submission/submission_candidate_status.json')); const verified=x.privateVideoDuration?.status==='ENCODED_MEDIA_UNDER_THREE_MINUTES'&&Number.isFinite(x.privateVideoDuration?.seconds)&&x.privateVideoDuration.seconds>0&&x.privateVideoDuration.seconds<180; if(x.sourceStatus!=='LOCAL_SOURCE_DRAFTS_PRESENT'||x.videoSourceMatch!=='MATCHED_CLEAN_SOURCE'||x.technicalVideoReady!==verified||x.ownerReviewReady!==verified||x.externalSubmissionEligible!==false||x.authorizedToPublish!==false||x.devpostReceipt!=='NOT_SUBMITTED')process.exit(2)"
+
+      - name: One-command owner-PC private review (synthetic only, no historical CI receipt)
+        run: |
+          npm run owner:review:local
+          node --input-type=module -e "import {readFileSync} from 'node:fs'; const r=JSON.parse(readFileSync('output/submission/owner_review_brief.json')); if(r.status!=='OWNER_LOCAL_REVIEW_PREPARED_NOT_SUBMITTED'||r.localTechnicalReplay!=='SYNTHETIC_PASS'||r.originalPrivateReceiptStatus!=='NO_LOCAL_ATTEMPT'||r.livePayPalAndGeminiJudgeReplay!=='NOT_INDEPENDENTLY_VERIFIED'||r.realProviderCalls!==0||r.paymentPosts!==0||r.devpostSubmitted!==false||r.publishingAuthorized!==false)process.exit(2)"
+
 
   full-length-video:
     name: Default-speed synthetic video under 3 minutes
