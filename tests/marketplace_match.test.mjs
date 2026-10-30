@@ -2,6 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {startOfflineDemo} from '../src/offline_demo_server.mjs';
 import {matchSyntheticMarketplaceBrief,matchSyntheticGeneralServiceBrief} from '../src/marketplace_match.mjs';
+import {createMarketplaceRecommendationStore} from '../src/marketplace_recommendation_store.mjs';
+import {mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 
 test('deterministic three-profile marketplace never fabricates seller data, AI or payment',()=>{
   const a=matchSyntheticMarketplaceBrief('Build a responsive ecommerce website with PayPal checkout');
@@ -26,7 +30,7 @@ test('Global Services has category-specific fictional workers without payment',(
   assert.equal(result.paypal.capturePerformed,false);
   assert.equal(result.price.status,'DATA_INSUFFICIENT');
   const other=matchSyntheticGeneralServiceBrief('Translate Korean content into English');
-  assert.equal(other.profiles[0].id,'synthetic-translator');
+  assert.equal(other.profiles.find(p=>p.id==='synthetic-translator')?.eligible,true);
   assert.equal(other.profiles[0].eligible,true);
   assert.ok(other.profiles.every(profile=>profile.source==='SYNTHETIC_PROFILE'));
   assert.throws(()=>matchSyntheticGeneralServiceBrief('bad'),/INVALID_SYNTHETIC_BRIEF/);
@@ -76,4 +80,92 @@ test('local marketplace API is human-triggered, CSRF-bound, origin-checked and o
     const html=await (await fetch(app.url+'/')).text();
     assert.match(html,/marketplace-form/);
   }finally{await app.close();}
+});
+
+test('3x3 opportunity tiers provide distinct candidates without invented rank or price',()=>{
+  for(const fn of [matchSyntheticMarketplaceBrief,matchSyntheticGeneralServiceBrief]){
+    const brief=fn===matchSyntheticMarketplaceBrief
+      ? 'Build an ecommerce website with PayPal checkout'
+      : 'Design a logo and brand identity';
+    const rounds=[0,1,2].map(round=>fn(brief,{round}));
+    const ids=new Set();
+    for(const r of rounds){
+      assert.equal(r.profiles.length,3);
+      assert.equal(r.candidatePoolSize,9);
+      assert.deepEqual(r.profiles.map(p=>p.tier),['professional','rising','newcomer']);
+      for(const p of r.profiles){
+        assert.equal(p.source,'SYNTHETIC_PROFILE');
+        assert.equal(p.tierEvidence,'FICTIONAL_SCENARIO_NOT_VERIFIED');
+        assert.equal(p.eligible,p.missingSkills.length===0&&r.requestedSkills.length>0);
+        assert.ok(!('price' in p)&&!('reviews' in p)&&!('seniorityVerified' in p));
+        assert.ok(!ids.has(p.id));ids.add(p.id);
+      }
+    }
+    assert.equal(ids.size,9);
+    assert.throws(()=>fn(brief,{round:3}),/INVALID_RECOMMENDATION_ROUND/);
+  }
+});
+test('SQLite recommendation history is atomic, bounded and reopenable',()=>{
+  const dir=mkdtempSync(join(tmpdir(),'paypal-match-rounds-'));
+  const filename=join(dir,'sessions.sqlite');
+  const owner='synthetic-owner',brief='Build an ecommerce website with PayPal checkout';
+  const skills=matchSyntheticMarketplaceBrief(brief).requestedSkills;
+  try{
+    let db=createMarketplaceRecommendationStore(filename);
+    const a=db.start(owner,'ai_work',brief,skills);
+    assert.equal(a.round,0);
+    const repeat=db.start(owner,'ai_work','  BUILD an ecommerce website with PayPal   checkout  ',skills);
+    assert.equal(repeat.id,a.id);
+    assert.equal(db.next(owner,a.id,1).round,1);
+    assert.throws(()=>db.next(owner,a.id,1),/STALE_RECOMMENDATION_ROUND/);
+    assert.equal(db.next(owner,a.id,2).round,2);
+    assert.throws(()=>db.next(owner,a.id,3),/REFRESH_LIMIT_REACHED/);
+    assert.equal(db.get(owner,a.id).round,2);
+    assert.equal(db.get('synthetic-reviewer',a.id),null);
+    db.close();
+    db=createMarketplaceRecommendationStore(filename);
+    assert.equal(db.get(owner,a.id).round,2);
+    assert.equal(db.start(owner,'ai_work',brief,skills).id,a.id);
+    const general=db.start(owner,'general_services','Design a logo and brand identity',['design','branding']);
+    assert.notEqual(general.id,a.id);
+    assert.equal(general.round,0);
+    db.close();
+  }finally{rmSync(dir,{recursive:true,force:true})}
+});
+test('owner API preserves prior three-member lists and limits two additional rounds',async()=>{
+  const app=await startOfflineDemo({testReviewSessions:true});
+  try{
+    const session=await (await fetch(app.url+'/demo/session')).json();
+    const post=(path,body,headers={})=>fetch(app.url+path,{method:'POST',headers:{
+      'content-type':'application/json','x-csrf-token':session.csrfToken,...headers
+    },body:JSON.stringify(body)});
+    const brief='Build an ecommerce website with PayPal checkout';
+    const initial=await (await post('/api/demo/marketplace',{brief})).json();
+    assert.equal(initial.round,1);assert.equal(initial.remainingRefreshes,2);
+    assert.equal(initial.history.length,1);
+    const firstIds=initial.profiles.map(x=>x.id);
+    const historyUrl=app.url+'/api/demo/marketplace/history?sessionId='+initial.sessionId;
+    assert.equal((await fetch(historyUrl)).status,200);
+    assert.equal((await fetch(historyUrl,{headers:{cookie:app.testReviewerCookie}})).status,403);
+    assert.equal((await post('/api/demo/marketplace/next',{sessionId:initial.sessionId,expectedRound:1},
+      {'x-csrf-token':'forged'})).status,403);
+    const second=await (await post('/api/demo/marketplace/next',
+      {sessionId:initial.sessionId,expectedRound:1})).json();
+    assert.equal(second.round,2);assert.equal(second.history.length,2);
+    assert.deepEqual(second.history[0].profiles.map(p=>p.id),firstIds);
+    assert.equal((await post('/api/demo/marketplace/next',
+      {sessionId:initial.sessionId,expectedRound:1})).status,409);
+    const third=await (await post('/api/demo/marketplace/next',
+      {sessionId:initial.sessionId,expectedRound:2})).json();
+    assert.equal(third.remainingRefreshes,0);
+    assert.equal(third.history.length,3);
+    assert.equal(new Set(third.history.flatMap(h=>h.profiles.map(p=>p.id))).size,9);
+    assert.equal((await post('/api/demo/marketplace/next',
+      {sessionId:initial.sessionId,expectedRound:3})).status,409);
+    const historical=await (await fetch(historyUrl)).json();
+    assert.equal(historical.history.length,3);
+    assert.equal(historical.round,3);
+    assert.equal((await (await post('/api/demo/marketplace',{brief})).json()).remainingRefreshes,0);
+    assert.equal((await fetch(app.url+'/api/quotes/sample-project/payment')).status,503);
+  }finally{await app.close()}
 });
