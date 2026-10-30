@@ -39,7 +39,9 @@ test('missing, extra or reordered script links cannot pass reviewer preflight',(
    html.replace('src="'+first+'"','src="/demo/not-present.js"'),
    html.replace('src="'+first+'"','src="'+second+'"'),
    html.replace(/<script src="\/demo\/marketplace.js" defer><\/script>/,''),
-   html.replace('</body>','<script src="https://example.com/js"></script></body>')
+   html.replace('</body>','<script src="https://example.com/js"></script></body>'),
+   html.replace('</body>','<script src=https://example.com/evil.js></script></body>'),
+   html.replace('</body>','<script>window.exampleOnly=true</script></body>')
  ]){
    const result=inspect({files:{...files,'web/offline_demo.html':altered}});
    assert.equal(result.ready,false);
