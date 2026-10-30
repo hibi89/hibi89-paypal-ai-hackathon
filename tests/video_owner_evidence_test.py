@@ -78,6 +78,26 @@ class VideoEvidenceSafetyTests(unittest.TestCase):
             self.assertFalse(dest.exists())
             self.assertFalse(dest.with_suffix(".manifest.json").exists())
 
+    def test_existing_manifest_symlink_is_never_replaced(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp)
+            original=root/"playwright-source.webm"
+            dest=root/"paypal-synthetic-review-20261030-160104.webm"
+            manifest=dest.with_suffix(".manifest.json")
+            protected=root/"owner-protected-evidence"
+            protected.write_text("ORIGINAL_OWNER_DATA",encoding="utf-8")
+            original.write_bytes(b"NEW_CAPTURE")
+            try:
+                manifest.symlink_to(protected)
+            except (OSError,NotImplementedError):
+                self.skipTest("OS does not permit symlink creation")
+            with self.assertRaisesRegex(RuntimeError,"PRIVATE_RECORDING_ALREADY_EXISTS"):
+                preserve_private_recording(original,dest,{})
+            self.assertEqual(protected.read_text(),"ORIGINAL_OWNER_DATA")
+            self.assertTrue(manifest.is_symlink())
+            self.assertFalse(dest.exists())
+            self.assertEqual(original.read_bytes(),b"NEW_CAPTURE")
+
     def test_verified_read_only_receipt_only_exports_small_allowlist(self):
         result=sanitize_saved_receipt(valid_receipt())
         self.assertTrue(result["local_receipt_verified"])
