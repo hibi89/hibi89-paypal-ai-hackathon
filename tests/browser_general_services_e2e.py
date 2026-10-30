@@ -102,7 +102,9 @@ try:
                 "9 in-memory fake PayPal domain stages")
             assert all(not url.startswith("https://api-m.sandbox.paypal.com")
                        for _,url in requests)
-            assert sum(method=="POST" for method,_ in requests)==posts_before_preview
+            # One explicit fake protocol replay POST occurred above; a read-only
+            # checkout preview itself must not add any further POST requests.
+            assert sum(method=="POST" for method,_ in requests)==posts_before_preview+1
             assert any(method=="GET" and url.endswith(
                 "/api/demo/quote-checkout-preview") for method,url in requests)
             expect(page.locator("#contract-fulfillment")).to_have_text("NO_CONTRACT")
