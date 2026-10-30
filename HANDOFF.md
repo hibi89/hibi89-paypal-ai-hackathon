@@ -1,3 +1,17 @@
+## 2026-10-31 02:36 KST — OWNER VOICE RECOVERY SUCCESS, EDITORIAL QC STILL PENDING
+1. **Goal/requirements/stack:** Recover existing private premium Proofline WebM and 13 SAPI English clips without re-recording or external API; retain synthetic-vs-historical evidence honesty. Python 3.11 + local imageio-ffmpeg, no payments.
+2. **Completed/decisions:** User Windows PowerShell ran `npm run video:voice:recover:owner` on code SHA `f2cc237ab5e40b9b63a5552ee24e9a3a0e408509`; output `PRIVATE_NARRATED_RECOVERY_PASS` and `INDEPENDENT_MEDIA_DURATION_SECONDS 118.12`. Saved new unique `output/videos/proofline-premium-narrated-recovered-20261031-023540-aab70e35.webm`. Used original video and 13 existing 115.27s WAV cues; no new TTS or capture.
+3. **Test/result/limitations:** Owner program output reports bounded merge, media stream and SHA/hash checks PASS. The assistant did not fetch the file nor hear/view footage: audio naturalness, cue sync, actual visual quality/PQG, playback on owner device remain UNVERIFIED. Code SHA `f2cc237` CI [#41099534544](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41099534544) queued at last check; earlier `20085ab` 3/3 SUCCESS. Don't conflate local success with official submission readiness.
+4. **State:** Recovery done; editorial film QC pending; publication/PR merge/Devpost blocked pending separate owner authorization.
+5. **Failure/pivot:** Old FFmpeg `-af apad -shortest` stuck with unchanging 12,845,056-byte output while CPU increased, exited nonzero. Bounded mux tool worked on owner PC. Don't repeat original command or recreate WAV. Check/stop lingering old FFmpeg if necessary, preserving files.
+6. **Source:** `hibi89/hibi89-paypal-ai-hackathon`, `design/proofline-premium-film-20261031`, Draft PR29, code baseline `f2cc237`, status-only document commit after owner reported success. Root source files `scripts/recover_owner_voice_mux.py`, `scripts/run_private_voice_recovery.mjs`, voice script, report in ignored `output/videos`.
+7. **Production/commands:** Vercel Production N/A. Owner may open WebM with `Start-Process ".\\output\\videos\\proofline-premium-narrated-recovered-20261031-023540-aab70e35.webm"`; no public URL.
+8. **Original/backup/security:** Original `paypal-mvp`, `paypal-final-review`, existing raw videos/WAV and private local receipt unchanged. No secrets in GitHub; user-reported `NO_PROVIDER_REQUESTS NO_PAYMENT NO_PUBLIC_UPLOAD`.
+9. **Next order/acceptance/approval:** User attaches recovered WebM, assistant inspects audio/visual, scores PQG-100 and proposes precise fixes; independently ensure decoded duration <180, evidence labels truthful and voice track intelligible; get explicit user consent before merging/publishing.
+10. **KST/check scope/document baseline:** 2026-10-31 02:36 KST from owner PowerShell log, GitHub report status separately. No independent media bytes available to assistant; docs reflect owner-reported output. Current HEAD may advance due documentation update.
+
+---
+
 ## 2026-10-31 KST — VOICE MUX STALL AND SAFE RECOVERY HANDOFF
 
 1. **Objective/requirements/stack:** Recover private premium Proofline film voice without another browser recording or Windows SAPI generation. Synthetic-only historical evidence boundaries remain. Python 3.11 stdlib + already installed `imageio-ffmpeg==0.6.0`; no providers or network.
