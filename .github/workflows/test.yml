@@ -53,6 +53,7 @@ jobs:
         run: |
           python3 -m py_compile scripts/record_judge_demo.py scripts/video_owner_evidence.py
           python3 tests/video_owner_evidence_test.py
+          python3 tests/recorded_video_integrity_test.py
       - name: Record offline synthetic reviewer footage (ephemeral, no upload)
         env:
           VIDEO_PYTHON_BIN: .browser-venv/bin/python
@@ -76,7 +77,9 @@ jobs:
         with:
           python-version: "3.11"
       - name: Historical owner evidence safety regressions
-        run: python tests/video_owner_evidence_test.py
+        run: |
+          python tests/video_owner_evidence_test.py
+          python tests/recorded_video_integrity_test.py
       - name: Full owner workflow from clean machine (no accounts or providers)
         run: npm run video:record:owner -- --pace-ms 200
       - name: Build owner draft packet with fail-closed encoded-duration and release gates
