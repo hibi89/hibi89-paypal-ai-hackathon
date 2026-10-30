@@ -1,7 +1,7 @@
 name: Offline payment-contract tests
 on:
   push:
-    branches: [lead/paypal]
+    branches: [lead/paypal, design/proofline-premium-film-20261031]
   pull_request:
     branches: [main, lead/paypal, release/paypal-main-qa-preview-20261030]
 permissions:
