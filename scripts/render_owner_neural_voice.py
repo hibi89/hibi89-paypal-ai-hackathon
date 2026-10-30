@@ -75,10 +75,10 @@ def synthesize(root: Path, voice: str):
         raise ValueError("VOICE_NOT_ALLOWLISTED")
     video_dir, source, cues = validated_source(root)
     assets = root / "output" / "voice-models"
-    model = assets / "kokoro-v1.0.onnx"
+    model = assets / "kokoro-v1.0.fp16.onnx"
     voicepack = assets / "voices-v1.0.bin"
     if (not model.is_file() or model.is_symlink() or
-        model.stat().st_size < 80_000_000 or
+        model.stat().st_size < 150_000_000 or
         not voicepack.is_file() or voicepack.is_symlink() or
         voicepack.stat().st_size < 10_000_000):
         raise ValueError("LOCAL_KOKORO_MODEL_ASSETS_REQUIRED__NO_DOWNLOAD_PERFORMED")
@@ -87,6 +87,14 @@ def synthesize(root: Path, voice: str):
         from kokoro_onnx import Kokoro
     except ImportError as exc:
         raise ValueError("LOCAL_KOKORO_RUNTIME_REQUIRED__NO_AUTOINSTALL") from exc
+    # Pinned hashes from upstream model-files-v1.1 artifacts; refuse altered
+    # models even when filenames and file sizes look plausible.
+    if hashlib.sha256(model.read_bytes()).hexdigest() != (
+            "f3a290d384fbb27966d462905c71a46cef9e5fd00516b40df32a0b4afe77ac96"):
+        raise ValueError("KOKORO_FP16_MODEL_SHA256_MISMATCH")
+    if hashlib.sha256(voicepack.read_bytes()).hexdigest() != (
+            "bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d"):
+        raise ValueError("KOKORO_VOICE_FILE_SHA256_MISMATCH")
     kokoro = Kokoro(str(model), str(voicepack))
     if voice not in kokoro.get_voices():
         raise ValueError("REQUESTED_NEURAL_VOICE_NOT_IN_LOCAL_MODEL")
@@ -111,7 +119,7 @@ def synthesize(root: Path, voice: str):
                               rate=24000)
     (wav_dir / "neural_voice_report.json").write_text(json.dumps({
         "status": "PRIVATE_OFFLINE_NEURAL_NARRATION_READY",
-        "engine": "Kokoro-82M ONNX (local)",
+        "engine": "Kokoro-82M ONNX FP16 (local)",
         "voice": voice,
         "sourceVideo": source.name,
         "cueCount": len(timeline),
