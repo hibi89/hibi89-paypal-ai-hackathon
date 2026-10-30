@@ -59,10 +59,10 @@ jobs:
         run: npm run video:record:offline -- --pace-ms 200
       - name: Validate private synthetic WebM hash and release flags
         run: python3 scripts/check_recorded_video.py
-      - name: Build private submission candidate and assert not published
+      - name: Build private submission candidate and check duration-proof gate (no publication)
         run: |
           npm run submission:candidate:local
-          node --input-type=module -e "import {readFileSync} from 'node:fs'; const x=JSON.parse(readFileSync('output/submission/submission_candidate_status.json')); if(!x.ownerReviewReady||x.externalSubmissionEligible||x.authorizedToPublish)process.exit(2)"
+          node --input-type=module -e "import {readFileSync} from 'node:fs'; const x=JSON.parse(readFileSync('output/submission/submission_candidate_status.json')); const verified=x.privateVideoDuration?.status==='ENCODED_MEDIA_UNDER_THREE_MINUTES'&&Number.isFinite(x.privateVideoDuration?.seconds)&&x.privateVideoDuration.seconds>0&&x.privateVideoDuration.seconds<180; if(x.sourceStatus!=='LOCAL_SOURCE_DRAFTS_PRESENT'||x.videoSourceMatch!=='MATCHED_CLEAN_SOURCE'||x.technicalVideoReady!==verified||x.ownerReviewReady!==verified||x.externalSubmissionEligible!==false||x.authorizedToPublish!==false||x.devpostReceipt!=='NOT_SUBMITTED')process.exit(2)"
   owner-video-windows:
     name: Windows first-run offline video recording
     runs-on: windows-latest
@@ -79,10 +79,10 @@ jobs:
         run: python tests/video_owner_evidence_test.py
       - name: Full owner workflow from clean machine (no accounts or providers)
         run: npm run video:record:owner -- --pace-ms 200
-      - name: Build owner draft packet and assert video present / release blocked
+      - name: Build owner draft packet with fail-closed encoded-duration and release gates
         run: |
           npm run submission:candidate:local
-          node --input-type=module -e "import {readFileSync} from 'node:fs'; const x=JSON.parse(readFileSync('output/submission/submission_candidate_status.json')); if(!x.ownerReviewReady||x.externalSubmissionEligible||x.authorizedToPublish)process.exit(2)"
+          node --input-type=module -e "import {readFileSync} from 'node:fs'; const x=JSON.parse(readFileSync('output/submission/submission_candidate_status.json')); const verified=x.privateVideoDuration?.status==='ENCODED_MEDIA_UNDER_THREE_MINUTES'&&Number.isFinite(x.privateVideoDuration?.seconds)&&x.privateVideoDuration.seconds>0&&x.privateVideoDuration.seconds<180; if(x.sourceStatus!=='LOCAL_SOURCE_DRAFTS_PRESENT'||x.videoSourceMatch!=='MATCHED_CLEAN_SOURCE'||x.technicalVideoReady!==verified||x.ownerReviewReady!==verified||x.externalSubmissionEligible!==false||x.authorizedToPublish!==false||x.devpostReceipt!=='NOT_SUBMITTED')process.exit(2)"
 
       - name: One-command owner-PC private review (synthetic only, no historical CI receipt)
         run: |
