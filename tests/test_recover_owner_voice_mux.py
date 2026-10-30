@@ -85,6 +85,22 @@ class RecoveryTests(unittest.TestCase):
             # Never returns a prior unfinished filename or overwrites it.
             self.assertIn("-recovered-", new_video.name)
 
+    def test_24khz_neural_wav_can_be_muxed_without_resampling_source_video(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            src, digest, voice_dir, _ = create_dummy(root, self.ffmpeg)
+            with wave.open(str(voice_dir / "narration.wav"), "wb") as audio:
+                audio.setnchannels(1)
+                audio.setsampwidth(2)
+                audio.setframerate(24000)
+                audio.writeframes(bytes([0, 0]) * 36000)
+            with patch("recover_owner_voice_mux.checked_local_ffmpeg",
+                       return_value=self.ffmpeg):
+                report = recover(root)
+            self.assertEqual(report["originalSha256"], digest)
+            self.assertEqual(hashlib.sha256(src.read_bytes()).hexdigest(), digest)
+            self.assertLess(report["recoveredSeconds"], 3.5)
+
     def test_timeline_mismatch_blocks_recovery_and_preserves_source(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
