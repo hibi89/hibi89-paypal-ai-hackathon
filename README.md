@@ -1,5 +1,14 @@
 # PayPal Global Services Marketplace — PayPal + AI Hackathon (owner proposal)
 
+> **2026-10-30 UNMERGED FINAL REVIEW CANDIDATE:** Current source on this
+> branch is in stacked [draft PR #26](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/26),
+> atop integrated [draft PR #25](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/25).
+> The last fully green 3-job Actions run [#41002555640](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41002555640)
+> verified an **older SHA**, not this latest candidate. The newer integrated
+> [CI #41017095517](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41017095517)
+> was queued at last check. No final full CI PASS, public video, release or Devpost receipt is claimed.
+> Use `npm run owner:final:local` for private owner-PC review; it neither publishes nor calls payment providers.
+
 ## For judges — Proofline in 60 seconds (English)
 
 **Concept:** AI should help skilled newcomers get their first freelance opportunity, not only automate existing jobs. Proofline is **one proposed global freelancer marketplace** with two playable categories: **AI Work** (agents, automation, development) and **Global Services** (design, translation, marketing). The current implementation is a working **offline synthetic browser demo**, not a commercial service.
@@ -9,7 +18,7 @@
 ```bash
 git clone https://github.com/hibi89/hibi89-paypal-ai-hackathon.git
 cd hibi89-paypal-ai-hackathon
-git switch work/paypal-final-qa-20261030
+git switch work/paypal-video-integrity-hardening-20261030
 npm run demo
 ```
 
@@ -25,7 +34,7 @@ Open the printed `http://127.0.0.1:PORT` URL. Select **AI Work** and click **Exp
 
 **NEW: judge command now verifies current quote-bound PayPal logic for BOTH categories:** `npm run judge:reproduce` creates isolated localhost SQLite demo sessions for AI Work (USD 15.00) and Global Services (USD 29.00), submits synthetic briefs, drafts and explicit human approval fixtures, then verifies the actual saved amount/version reaches pure `planOrder`, `planCapture` and `reconcileCapture` with nine **invented in-memory PayPal statuses** per quote. The JSON receipt includes `reproducibleQuoteBoundPlans` plus a separate fixed USD 1.50 injected-fake Gemini/PayPal adapter trace; these are **NOT real paid transactions or one combined checkout**. Zero provider calls or payment POSTs; offline payment endpoint stays disabled. `tests/judge_reproduction.test.mjs` checks both prices, response integrity and claim boundaries.
 
-**One-command reviewer reproduction (QA branch only until approved release):** `npm run judge:reproduce` uses the real loopback HTTP server to verify **both** fictional service categories and calls the real orchestration code **only with injected fake Gemini/PayPal transports**. It writes `output/submission/judge_reproduction_receipt.json` (gitignored), including the exact local source SHA and a four-class evidence boundary. No external provider, money, credentials, user-private SQLite or publication. The command **does not** prove a live integrated browser checkout; separate historical October 28 owner-reported provider tests remain labeled as such. On the unmerged QA branch run `git switch work/paypal-final-qa-20261030` before the command; the current public `lead/paypal` may not yet include it.
+**One-command reviewer reproduction (QA branch only until approved release):** `npm run judge:reproduce` uses the real loopback HTTP server to verify **both** fictional service categories and calls the real orchestration code **only with injected fake Gemini/PayPal transports**. It writes `output/submission/judge_reproduction_receipt.json` (gitignored), including the exact local source SHA and a four-class evidence boundary. No external provider, money, credentials, user-private SQLite or publication. The command **does not** prove a live integrated browser checkout; separate historical October 28 owner-reported provider tests remain labeled as such. On the unmerged QA branch run `git switch work/paypal-video-integrity-hardening-20261030` before the command; the current public `lead/paypal` may not yet include it.
 
 **Optional historic Sandbox GET (no payment creation):** `npm run owner:sandbox:get:optional` is intentionally blocked without an exact set of flags, an interactive terminal and a separate human confirmation. With *independent owner approval*, it can verify the previously recorded Sandbox order using one OAuth POST and one read-only Orders GET, without a new order or Capture. It does **not** revalidate Gemini, grant publication permission or prove a judge-facing live workflow. See the [integration evidence guide](docs/JUDGE_PAYPAL_AI_INTEGRATION_TRACE_EN.md). This command has **not** been executed against real providers in CI or by the assistant.
 
