@@ -40,3 +40,19 @@ test('premium recorder is opt-in and ordinary CI recording remains unchanged',()
   assert.match(wrapper,/args\[0\]==='--premium'/);
   assert.match(pkg.scripts['video:record:premium:owner'],/--premium --pace-ms 6500/);
 });
+
+test('premium presenter captions preserve readable UI and source disclosure',()=>{
+  assert.match(recorder,/def caption\(label, placement="bottom"\):/);
+  assert.match(recorder,/PREMIUM_CAPTION_LENGTH_OR_PLACEMENT_INVALID/);
+  assert.match(recorder,/maxWidth:'min\(62vw,620px\)'/);
+  assert.match(recorder,/WebkitLineClamp:'2'/);
+  assert.match(recorder,/background:'rgba\(8,17,31,.34\)'/);
+  assert.match(recorder,/def keep_caption_off_target\(rect\):/);
+  assert.equal((recorder.match(/keep_caption_off_target\(rect\)/g)||[]).length,3);
+  assert.match(recorder,/if premium:\s+# The evidence lens already labels its own source/);
+  assert.match(recorder,/document.getElementById\('video-presenter-caption'\)\?\.remove\(\)/);
+  assert.match(recorder,/HISTORICAL OWNER REPORT \| Gemini \+ PayPal Sandbox; not replayed here/);
+  assert.match(recorder,/FAKE API TRACE \| Simulated Gemini and PayPal. Zero real provider calls/);
+  assert.match(recorder,/HUMAN APPROVAL \| Exact quote and amount. No payment authorized/);
+  assert.doesNotMatch(recorder,/left:premium\?'10%'/);
+});
