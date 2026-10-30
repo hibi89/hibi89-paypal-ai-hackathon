@@ -56,3 +56,17 @@ test('premium presenter captions preserve readable UI and source disclosure',()=
   assert.match(recorder,/HUMAN APPROVAL \| Exact quote and amount. No payment authorized/);
   assert.doesNotMatch(recorder,/left:premium\?'10%'/);
 });
+
+test('premium viewport transitions stay frame-visible and avoid implicit jumps',()=>{
+  assert.match(recorder,/def film_scroll_to\(selector, align="center"\):/);
+  assert.match(recorder,/requestAnimationFrame\(frame\)/);
+  assert.match(recorder,/const eased=t\*t\*\(3-2\*t\)/);
+  assert.match(recorder,/durationMs":460 if pace_ms >= 1000 else 70/);
+  assert.match(recorder,/film_scroll_to\("#proof-map-panel", align="start"\)/);
+  assert.match(recorder,/hero_anchor = selector == "a.hero-cta"/);
+  assert.match(recorder,/setProperty\('scroll-behavior','smooth','important'\)/);
+  assert.match(recorder,/removeProperty\('scroll-behavior'\)/);
+  assert.equal((recorder.match(/scroll_into_view_if_needed\(\)/g)||[]).length,1);
+  assert.equal((recorder.match(/target.wait_for\(state="visible"\)/g)||[]).length,2);
+  assert.match(recorder,/page.reload\(\)/);
+});
