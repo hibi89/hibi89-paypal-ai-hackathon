@@ -73,5 +73,74 @@ test('owner evidence disclosure CLI default makes zero private reads or outbound
  assert.equal(JSON.parse(cmd.stdout).privateSqliteRead,false);
  assert.equal(JSON.parse(cmd.stdout).artifactWritten,false);
  assert.equal(JSON.parse(cmd.stdout).networkRequests,0);
- assert.doesNotMatch(cmd.stdout+/\n/+cmd.stderr,/CANARY_NEVER_ECHO/);
+ assert.doesNotMatch(cmd.stdout+'\\n'+cmd.stderr,/CANARY_NEVER_ECHO/);
+});
+
+test('explicit local owner export reads internally consistent historical synthetic fixture, without provider calls',async()=>{
+ const {mkdtempSync,mkdirSync,rmSync,readdirSync,readFileSync,unlinkSync}=await import('node:fs');
+ const {tmpdir}=await import('node:os');
+ const {join}=await import('node:path');
+ const {createSqliteLedger}=await import('../src/sqlite_ledger.mjs');
+ const {createPilotCheckoutSessionStore}=await import('../src/pilot_checkout_session_store.mjs');
+ const {createMarketplaceAiBudgetStore}=await import('../src/marketplace_ai_budget.mjs');
+ const root=mkdtempSync(join(tmpdir(),'owner-disclosure-test-'));
+ const directory=join(root,'.paypal-ai-mvp-private');
+ mkdirSync(directory,{recursive:true});
+ const merchant='A1B2C3D4E5F6G',actorId='local_operator',quoteId='operator_mvp_01';
+ const ctx={quoteId,actorId,merchantId:merchant};
+ const dest=new URL('../output/submission/owner_local_provider_disclosure_PRIVATE_REVIEW.json',import.meta.url);
+ try{
+  const ledger=createSqliteLedger({filename:join(directory,'checkout.sqlite')});
+  await ledger.insertQuote({id:quoteId,ownerId:actorId,merchantId:merchant});
+  await ledger.approve({id:quoteId,actorId,expectedVersion:1,amountMinor:150});
+  const quote=await ledger.get(quoteId);
+  const session=createPilotCheckoutSessionStore({
+   filename:join(directory,'checkout_sessions.sqlite')});
+  session.issue({quote,principal:{verified:true,actorId,merchantId:merchant}});
+  session.close();
+  const order=(status)=>({id:'DUMMY_ORDER_PRIVATE',intent:'CAPTURE',status,
+   purchase_units:[{reference_id:quoteId,payee:{merchant_id:merchant},
+    amount:{currency_code:'USD',value:'1.50'},
+    ...(status==='COMPLETED'?{payments:{captures:[{
+      id:'DUMMY_CAPTURE_PRIVATE',status:'COMPLETED',
+      amount:{currency_code:'USD',value:'1.50'}}]}}:{})}]});
+  await ledger.claimOperation({...ctx,operation:'create'});
+  await ledger.recordApprovedOrderFromGet({...ctx,order:order('APPROVED')});
+  await ledger.claimOperation({...ctx,operation:'capture'});
+  await ledger.recordCaptureFromGet({...ctx,order:order('COMPLETED'),
+    capture:{id:'DUMMY_CAPTURE_PRIVATE',orderId:'DUMMY_ORDER_PRIVATE',
+      status:'COMPLETED',amount:{currency_code:'USD',value:'1.50'}}});
+  ledger.close();
+  const ai=createMarketplaceAiBudgetStore({
+    filename:join(directory,'gemini_skills.sqlite')});
+  const scope={actorId,merchantId:merchant,
+    brief:'Build a fictional website with PayPal checkout and QA testing.'};
+  ai.claim(scope);
+  ai.commit({...scope,skills:['web','payments','qa']});
+  ai.close();
+  const before=readdirSync(directory).sort();
+  const cli=fileURLToPath(new URL('../scripts/export_owner_local_evidence.mjs',import.meta.url));
+  const env={...process.env,HOME:root,USERPROFILE:root,
+    GEMINI_API_KEY:'DO_NOT_ECHO_GEMINI_SECRET',
+    PAYPAL_SANDBOX_CLIENT_SECRET:'DO_NOT_ECHO_PAYPAL_SECRET'};
+  const cmd=spawnSync(process.execPath,['--experimental-sqlite',cli,'--review-local-only'],{
+   env,encoding:'utf8',timeout:10000,maxBuffer:100000});
+  assert.equal(cmd.status,0,cmd.stdout+' '+cmd.stderr);
+  const report=JSON.parse(cmd.stdout);
+  const saved=JSON.parse(readFileSync(dest,'utf8'));
+  assert.deepEqual(saved,report);
+  assert.equal(report.status,'LOCAL_RECORD_CONSISTENT_NOT_REMOTE_ATTESTED');
+  assert.equal(report.independentlyVerifiedByPayPal,false);
+  assert.equal(report.actualPayPalOrderGetNow,false);
+  assert.equal(report.actualGeminiCallNow,false);
+  assert.equal(report.authorizedToPublish,false);
+  assert.deepEqual(readdirSync(directory).sort(),before);
+  for(const field of [merchant,'DUMMY_ORDER_PRIVATE','DUMMY_CAPTURE_PRIVATE',
+    'DO_NOT_ECHO_GEMINI_SECRET','DO_NOT_ECHO_PAYPAL_SECRET','client_secret',
+    'PayerID','checkoutnow'])
+    assert.equal((cmd.stdout+cmd.stderr+JSON.stringify(saved)).includes(field),false,field);
+ }finally{
+  try{unlinkSync(dest)}catch{}
+  rmSync(root,{recursive:true,force:true});
+ }
 });
