@@ -279,6 +279,8 @@ try:
                 mobile.on("request",lambda req: mobile_requests.append((req.method,req.url)))
                 mobile.goto(address)
                 expect(mobile.locator("#marketplace-vertical")).to_be_visible()
+                expect(mobile.locator("#message")).to_contain_text("Offline demo ready")
+                expect(mobile.locator("#marketplace-submit")).to_be_enabled()
                 overflow=mobile.evaluate("""() => ({
                     width:window.innerWidth,
                     scroll:document.documentElement.scrollWidth,

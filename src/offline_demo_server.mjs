@@ -21,6 +21,8 @@ import { createAgentBudgetDemoApi } from './agent_budget_demo_api.mjs';
 import { createGithubDeliveryDemoApi } from './github_delivery_demo_api.mjs';
 import { createNegotiationRegistry } from './negotiation_registry.mjs';
 import { inspectLocalEvidence } from './local_evidence_inspector.mjs';
+import { createSyntheticProtocolDemoApi } from './synthetic_protocol_demo_api.mjs';
+import { createQuoteCheckoutPreviewApi } from './quote_checkout_preview_api.mjs';
 
 const html = readFileSync(new URL('../web/offline_demo.html', import.meta.url), 'utf8');
 const onlyLoopback = address => address === '127.0.0.1' ||
@@ -78,6 +80,8 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
   const checkRate = createDemoRateLimiter();
   const buyerReturn=createPaypalBuyerReturnBoundary();
   const marketplaceApi=createMarketplaceDemoApi({resolveSession});
+  const protocolApi=createSyntheticProtocolDemoApi({resolveSession});
+  const quotePreviewApi=createQuoteCheckoutPreviewApi({repository:ledger,resolveSession,quoteId});
   const negotiationRegistry=createNegotiationRegistry();
   const negotiationApi=createNegotiationDemoApi({resolveSession,repository:ledger,registry:negotiationRegistry});
   const budgetApi=createAgentBudgetDemoApi({resolveSession,quotes:ledger,budgets:budgetStore,registry:negotiationRegistry});
@@ -160,7 +164,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
         res.end(html);
         return;
       }
-      if (req.method === 'GET' && (path === '/demo/client.js' || path === '/demo/contract.js' || path === '/demo/subscription.js' || path === '/demo/integration.js' || path === '/demo/marketplace.js' || path === '/demo/agent-budget.js' || path === '/demo/github-delivery.js' || path === '/demo/evidence.js')) {
+      if (req.method === 'GET' && (path === '/demo/client.js' || path === '/demo/contract.js' || path === '/demo/subscription.js' || path === '/demo/integration.js' || path === '/demo/marketplace.js' || path === '/demo/agent-budget.js' || path === '/demo/github-delivery.js' || path === '/demo/evidence.js' || path === '/demo/provider-protocol.js' || path === '/demo/quote-checkout-preview.js')) {
         const js = readFileSync(new URL(
           path === '/demo/client.js' ? '../web/demo_client.js' :
           path === '/demo/contract.js' ? '../web/contract_client.js' :
@@ -169,6 +173,8 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
           path === '/demo/agent-budget.js' ? '../web/agent_budget_client.js' :
           path === '/demo/github-delivery.js' ? '../web/github_delivery_client.js' :
           path === '/demo/evidence.js' ? '../web/evidence_client.js' :
+          path === '/demo/provider-protocol.js' ? '../web/provider_protocol_client.js' :
+          path === '/demo/quote-checkout-preview.js' ? '../web/quote_checkout_preview_client.js' :
           '../web/integration_client.js', import.meta.url));
         res.writeHead(200, {
           'content-type': 'text/javascript; charset=utf-8',
@@ -189,6 +195,14 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
         return;
       }
       // Owner-scoped read-only evidence; no PayPal API, mutation or provider authority.
+      if(path==='/api/demo/quote-checkout-preview'){
+        const result=await quotePreviewApi(new Request(
+          'http://127.0.0.1:'+listenPort+req.url,{
+          method:req.method,headers:new Headers(req.headers)}));
+        res.writeHead(result.status,Object.fromEntries(result.headers));
+        res.end(await result.text());
+        return;
+      }
       if (path === '/api/demo/evidence') {
         if (req.method !== 'GET') {
           res.writeHead(405,{'cache-control':'no-store',
@@ -274,7 +288,8 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
       const options={method:req.method,headers:new Headers(req.headers)};
       if (req.method !== 'GET' && req.method !== 'HEAD')
         options.body=Buffer.concat(chunks);
-      const handler=path==='/api/demo/github-delivery' ? githubDeliveryApi :
+      const handler=path==='/api/demo/provider-protocol' ? protocolApi :
+        path==='/api/demo/github-delivery' ? githubDeliveryApi :
         path.startsWith('/api/demo/budget/') ? budgetApi :
         path==='/api/demo/negotiate' ? negotiationApi :
         path==='/api/demo/marketplace' ? marketplaceApi :

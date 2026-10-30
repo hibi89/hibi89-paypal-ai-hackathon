@@ -10,6 +10,7 @@ import {createPilotCheckoutSessionStore} from './pilot_checkout_session_store.mj
 import {createGeminiMarketplaceSkillProvider} from './gemini_marketplace_provider.mjs';
 import {createSandboxTransport} from './paypal_sandbox_transport.mjs';
 import {createOwnerMvpFlow} from './owner_mvp_flow.mjs';
+import {verifyInjectedProviderProtocol} from './synthetic_provider_trace.mjs';
 
 const merchantId='A1B2C3D4E5F6G';
 const orderId='FICTIONALORDER1';
@@ -28,7 +29,8 @@ export async function runOfflineOperatorMvpSmoke(){
     const isGemini=address.origin==='https://generativelanguage.googleapis.com';
     const isPayPal=address.origin==='https://api-m.sandbox.paypal.com';
     need(isGemini||isPayPal,'UNAPPROVED_FAKE_HOST');
-    calls.push({kind:isGemini?'FAKE_GEMINI':'FAKE_PAYPAL',method,path});
+    const observed={kind:isGemini?'FAKE_GEMINI':'FAKE_PAYPAL',method,path};
+    calls.push(observed);
     if(isGemini){
       need(method==='POST'&&path.includes(':generateContent'),'GEMINI_CONTRACT');
       return json({candidates:[{finishReason:'STOP',content:{
@@ -53,6 +55,7 @@ export async function runOfflineOperatorMvpSmoke(){
     if(path==='/v2/checkout/orders/'+orderId && method==='GET'){
       const status=captured?'COMPLETED':
         buyerApproved?'APPROVED':'PAYER_ACTION_REQUIRED';
+      observed.observedStatus=status;
       return json({id:orderId,intent:'CAPTURE',status,
         purchase_units:[{reference_id:quoteId,
           payee:{merchant_id:merchantId},
@@ -129,6 +132,7 @@ export async function runOfflineOperatorMvpSmoke(){
       ['GEMINI_SKILL_CLASSIFICATION_ONCE','APPROVE_SYNTHETIC_USD_1_50',
         'ISSUE_OWNER_SANDBOX_CHECKOUT_SESSION','CREATE_SANDBOX_ORDER',
         'CAPTURE_SANDBOX_ORDER'].join('|'),'EXPLICIT_STAGE_CONSENTS');
+    const fakeProviderProtocol=verifyInjectedProviderProtocol({calls,consents});
     return Object.freeze({
       status:'MOCK_MVP_E2E_PASS',
       scope:'SYNTHETIC_PROVIDER_FIXTURE_ONLY',
@@ -142,7 +146,8 @@ export async function runOfflineOperatorMvpSmoke(){
       privateSqliteLedgerVerified:true,
       syntheticOperationClaims:attempts.length,
       createPostsToFakeTransport:1,capturePostsToFakeTransport:1,
-      implicitNetworkAccess:false,automaticRetry:false
+      implicitNetworkAccess:false,automaticRetry:false,
+      fakeProviderProtocol
     });
   }finally{
     try{sessionStore?.close()}catch{}
