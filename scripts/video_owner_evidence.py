@@ -138,7 +138,7 @@ def premium_storyboard_cards(proof):
         {
             "scene": "provenance", "indexLabel": "03 / 03",
             "title": "Proof has a source.",
-            "subtitle": "Simulation and historical evidence stay on different sides of the line.",
+            "subtitle": "Simulation and historical evidence must remain separate.",
             "sourceLabel": source,
             "tags": [],
             "note": ("Owner-local history checked read-only. No new provider calls."
