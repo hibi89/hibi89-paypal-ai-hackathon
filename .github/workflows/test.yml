@@ -55,9 +55,11 @@ jobs:
         run: .browser-venv/bin/python tests/browser_premium_lens_visual.py
       - name: Check recorder Python syntax and proof provenance regression
         run: |
-          python3 -m py_compile scripts/record_judge_demo.py scripts/video_owner_evidence.py scripts/mix_private_voice.py
+          python3 -m py_compile scripts/record_judge_demo.py scripts/video_owner_evidence.py scripts/mix_private_voice.py scripts/render_owner_neural_voice.py
+          node --check scripts/run_private_neural_voice.mjs
           python3 tests/video_owner_evidence_test.py
           python3 tests/test_mix_private_voice.py
+          python3 tests/test_owner_neural_voice.py
           python3 tests/recorded_video_integrity_test.py
       - name: Record offline synthetic reviewer footage (ephemeral, no upload)
         env:
