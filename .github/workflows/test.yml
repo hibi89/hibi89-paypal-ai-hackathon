@@ -100,6 +100,15 @@ jobs:
             $parseErrors | ForEach-Object { Write-Error $_.Message }
             exit 2
           }
+          $tokens=$null
+          $parseErrors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path 'scripts/install_owner_neural_voice.ps1').Path,
+            [ref]$tokens,[ref]$parseErrors) | Out-Null
+          if ($parseErrors.Count -gt 0) {
+            $parseErrors | ForEach-Object { Write-Error $_.Message }
+            exit 2
+          }
       - name: Full owner workflow from clean machine (no accounts or providers)
         run: npm run video:record:owner -- --pace-ms 200
       - name: Build owner draft packet with fail-closed encoded-duration and release gates
