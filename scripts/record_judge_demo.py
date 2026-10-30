@@ -262,6 +262,18 @@ def capture(output_dir, pace_ms):
                 page.locator("#confirm").check()
                 page.locator("#approve-submit").click()
                 expect(page.locator("#quote-view")).to_contain_text("APPROVED")
+                page.locator("#quote-checkout-preview").click()
+                expect(page.locator("#quote-checkout-preview-result")).to_contain_text(
+                    "human-approved USD 15.00")
+                caption("APPROVED USD 15 QUOTE → PAYPAL ORDER PLAN | Real pure planner, but NO POST, buyer or payment.")
+                page.wait_for_timeout(min(pace_ms,2200))
+                page.locator("#verify-local-bridge").click()
+                expect(page.locator("#verify-local-bridge-result")).to_contain_text(
+                    "LOCAL PROOF PASS")
+                expect(page.locator("#verify-local-bridge-result")).to_contain_text(
+                    "fixed USD 1.50")
+                caption("DISTINCT PROOFS | USD 15 quote-bound plan plus separate USD 1.50 FAKE Gemini/PayPal adapter replay.")
+                page.wait_for_timeout(min(pace_ms,2200))
                 caption("OFFLINE MOCK proposal. A HUMAN approves a specific quote version and amount; no payment is authorized.")
                 pause()
 

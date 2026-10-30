@@ -206,6 +206,12 @@ strong{font-weight:750}.meta{color:#61718a;font-size:.85rem}
 <p class="meta">Inspect your exact persisted amount and quote version with the real Orders v2 planner. <strong>Fictional merchant only.</strong> No Gemini, PayPal Sandbox call, order creation, buyer action, or Capture.</p>
 <button type="button" id="quote-checkout-preview" disabled>Preview plan for approved quote (GET only)</button>
 <p id="quote-checkout-preview-result" role="status" aria-live="polite">Approve a quote first. No provider call will be sent.</p>
+<div style="margin-top:16px;border-top:1px solid #c9d9f0;padding-top:15px">
+<h3>Judge verification · quote + separate fake API</h3>
+<p class="meta">One click compares your approved SQLite quote before and after a fixed USD 1.50 injected-fake Gemini/PayPal replay. <strong>These are not one linked checkout.</strong> Zero real provider calls.</p>
+<button type="button" id="verify-local-bridge" disabled>Verify both local code paths (fake only)</button>
+<p id="verify-local-bridge-result" role="status" aria-live="polite">Approve a quote first. No provider call will be sent.</p>
+</div>
 </div>
 <details id="historical-provider-evidence">
 <summary>Historical Gemini + PayPal Sandbox evidence — owner-reported, NOT this mock</summary>

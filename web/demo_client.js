@@ -16,6 +16,7 @@ const rejectButton=document.getElementById('reject-submit');
 const refreshButton=document.getElementById('refresh');
 const paymentButton=document.getElementById('payment-status');
 const quotePreviewButton=document.getElementById('quote-checkout-preview');
+const judgeBridgeButton=document.getElementById('verify-local-bridge');
 const roleToggle=document.getElementById('demo-role-toggle');
 const protocolReplayButton=document.getElementById('protocol-replay-button');
 const marketplaceSubmitButton=document.getElementById('marketplace-submit');
@@ -33,6 +34,7 @@ function updateControls(){
   rejectButton.disabled=!initialized||busy||reviewerMode||current?.status!=='PROPOSED'||!!current?.rejection;
   roleToggle.disabled=!initialized||busy||roleToggle.hidden;
   quotePreviewButton.disabled=!initialized||busy||reviewerMode||current?.status!=='APPROVED';
+  judgeBridgeButton.disabled=!initialized||busy||reviewerMode||current?.status!=='APPROVED';
   root.setAttribute('aria-busy',String(busy));
 }
 function show(text){message.textContent=text;}

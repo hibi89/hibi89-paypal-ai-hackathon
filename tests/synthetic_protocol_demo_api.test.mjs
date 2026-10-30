@@ -151,3 +151,34 @@ test('localhost approved quote -> real PayPal Orders planner GET preserves USD 2
   },body:'{}'})).status,405);
  }finally{await app.close();}
 });
+
+test('quote-bound plan remains unchanged after opt-in independent fake provider protocol',async()=>{
+ const app=await startOfflineDemo();
+ try{
+  const url=app.url+'/api/demo/quote-checkout-preview';
+  const session=await (await fetch(app.url+'/demo/session')).json();
+  const post=async(path,data)=>{
+    const response=await fetch(app.url+path,{
+     method:'POST',headers:{origin:app.url,'content-type':'application/json',
+      'x-csrf-token':session.csrfToken},body:JSON.stringify(data)});
+    assert.equal(response.status,200);
+    return response;
+  };
+  await post('/api/quotes/sample-project/draft',{
+    expectedVersion:1,scope:'Build a synthetic accessibility-ready service website'});
+  await post('/api/quotes/sample-project/approve',{
+    expectedVersion:2,confirmed:true,amountMinor:2900});
+  const before=await (await fetch(url)).json();
+  const replay=await post('/api/demo/provider-protocol',{});
+  const proof=await replay.json();
+  const after=await (await fetch(url)).json();
+  assert.equal(before.amount,'29.00');
+  assert.equal(after.amount,'29.00');
+  assert.equal(after.quoteVersion,2);
+  assert.equal(after.amountMinor,before.amountMinor);
+  assert.equal(proof.syntheticAmount,'USD 1.50 · human approved in fixture');
+  assert.equal(proof.realProviderCalls,0);
+  assert.equal(proof.realPaymentCaptured,false);
+  assert.equal((await fetch(app.url+'/api/quotes/sample-project/payment')).status,503);
+ }finally{await app.close();}
+});

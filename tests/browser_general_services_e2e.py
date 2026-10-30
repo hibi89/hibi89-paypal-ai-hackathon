@@ -86,6 +86,17 @@ try:
             expect(page.locator("#quote-checkout-preview-result")).to_contain_text(
                 "human-approved USD 29.00")
             expect(page.locator("#quote-checkout-preview-result")).to_contain_text("version 2")
+            # Explicitly checks distinct current quote and fixed fake provider run.
+            before_fake=sum(method=="POST" for method,_ in requests)
+            page.locator("#verify-local-bridge").click()
+            expect(page.locator("#verify-local-bridge-result")).to_contain_text("LOCAL PROOF PASS")
+            expect(page.locator("#verify-local-bridge-result")).to_contain_text(
+                "Current approved quote v2 / USD 29.00")
+            expect(page.locator("#verify-local-bridge-result")).to_contain_text("fixed USD 1.50")
+            assert sum(method=="POST" for method,_ in requests)==before_fake+1
+            assert any(method=="POST" and url.endswith(
+                "/api/demo/provider-protocol") for method,url in requests)
+
             expect(page.locator("#quote-checkout-preview-result")).to_contain_text("NOT SENT")
             assert sum(method=="POST" for method,_ in requests)==posts_before_preview
             assert any(method=="GET" and url.endswith(
