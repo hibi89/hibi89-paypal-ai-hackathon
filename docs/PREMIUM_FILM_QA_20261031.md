@@ -38,6 +38,28 @@
 
 **Editorial requirement:** Narration must be actual speech, not music-only. Background music must remain below narration. No fabricated provider calls or pseudo-live claims. Narration TTS/provider choices require separate cost/privacy review; do not upload a private receipt or secret to a voice service.
 
+## 2026-10-31 evidence-lens and offline narration revisions
+
+**User feedback:** The actual browser walkthrough is substantially improved (owner estimated 85/100 *excluding* the middle evidence cards). The old full-screen presentation list was overcrowded and hard to read, and the WebM had no spoken narration.
+
+**Design comparison:** (A) keep a standalone full-screen evidence presentation with fewer bullets, vs (B) use an in-product translucent **Evidence Lens** with compact visualized proof and preserve the browser underneath. **B chosen:** source-specific short labels in ~700 px right panel, large legible typography, skill tags, three-step Sandbox history, A/B provenance comparison. Text is built with DOM `textContent`, never raw receipts; the standard recorder stays unchanged.
+
+**Code:** `scripts/premium_evidence_overlay.js`, `premium_storyboard_cards()`, and `scripts/record_judge_demo.py --premium`; browser recording now enforces evidence panel visibility and no overflow.
+
+**Narration — no microphone needed:** The premium recorder writes a safe `narration_cues` list with actual recording timestamps into its private manifest. The optional Windows-only `npm run video:voice:owner` synthesizes these cues through an **installed local English System.Speech voice**, assembles PCM WAV with Python stdlib and muxes a new private narrated WebM. Neither the original browser recording nor its manifest is altered. An available FFmpeg with Opus is used, or the command may install pinned free `imageio-ffmpeg==0.6.0` to obtain one if needed. Only tooling is downloaded; the narration, private video and receipt stay on the owner's computer. **Voice quality depends on installed voice**; robotic/unclear synthesis fails PQG sound quality and must be replaced. No voice has been heard or approved as part of GitHub code updates.
+
+### Owner-only commands after pulling the exact latest branch
+
+```powershell
+git status --short
+git rev-parse HEAD
+npm run video:record:premium:owner
+npm run video:voice:owner
+explorer ".\\output\\videos"
+```
+
+Both commands only create fresh private files in ignored `output/videos`. The second selects a source-matched premium WebM with verified hash, without touching previous recordings. It produces `proofline-premium-narrated-*.webm`, local narration WAV, and private report. It does **not** independently prove the encoded media duration or editorial polish; final viewing, timing/synchronization, voice naturalness, frame-by-frame legibility and <180 s checks remain required.
+
 ## PQG-100 evaluation — not yet graded
 
 | Dimension | Maximum |
