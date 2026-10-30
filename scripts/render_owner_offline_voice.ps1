@@ -122,9 +122,12 @@ if (-not $codec) {
 }
 
 $movie = Join-Path $folder ('proofline-premium-narrated-' + $stamp + '.webm')
-# 'apad' fills the remaining audio with silence; '-shortest' ends on the video,
-# avoiding an audio-only tail or cutting the underlying browser recording.
-& $ffmpeg -hide_banner -loglevel error -nostdin -n -i $sourceVideo -i $mix -map '0:v:0' -map '1:a:0' -c:v copy -c:a $codec -b:a 96k -af apad -shortest $movie
+# Bounded mux: original combo '-af apad -shortest' can run indefinitely when
+# FFmpeg loops on an infinite padded audio stream while copying WebM video.
+# Natural audio EOF leaves the rest of the video silent; no infinite filter.
+# The renderer already enforces <178s and the explicit -t is a safety cap.
+Write-Output 'LOCAL_BOUNDED_NARRATION_MUX_START'
+& $ffmpeg -hide_banner -loglevel error -nostdin -n -i $sourceVideo -i $mix -map '0:v:0' -map '1:a:0' -c:v copy -c:a $codec -b:a 96k -t 179 $movie
 if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $movie -PathType Leaf) -or
     (Get-Item -LiteralPath $movie).Length -lt 10240) {
     throw 'FFMPEG_NARRATION_MUX_FAILED__VOICE_WAV_RETAINED'
