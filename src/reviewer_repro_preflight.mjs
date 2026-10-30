@@ -34,8 +34,10 @@ export function inspectReviewerPrereqs({nodeVersion,manifest,files}={}){
   const license=typeof files?.LICENSE==='string'&&files.LICENSE.startsWith('MIT License\n');
   const html=typeof files?.['web/offline_demo.html']==='string'?
     files['web/offline_demo.html']:'';
-  const linkedScripts=[...html.matchAll(/<script\s+[^>]*src=["']([^"']+)["'][^>]*>/g)]
-    .map(match=>match[1]);
+  // Count every script tag, including inline and unquoted src forms.
+  // A malformed or extra tag must never be silently omitted by the parser.
+  const linkedScripts=[...html.matchAll(/<script\b[^>]*>/gi)]
+    .map(([tag])=>tag.match(/\bsrc\s*=\s*(['"])(.*?)\1/i)?.[2]||null);
   const exactScripts=linkedScripts.length===REVIEW_SCRIPT_ROUTES.length&&
     linkedScripts.every((url,index)=>url===REVIEW_SCRIPT_ROUTES[index].url);
   const checks=Object.freeze({
