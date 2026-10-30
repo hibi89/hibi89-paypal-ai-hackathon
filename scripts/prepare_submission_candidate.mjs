@@ -36,8 +36,15 @@ export function inspectLocalCheckout(root=ROOT,run=spawnSync){
 export function inspectTrackedTreeClean(root=ROOT,run=spawnSync){
   const options={cwd:root,encoding:'utf8',windowsHide:true,shell:false,
     timeout:3000,maxBuffer:4096};
-  return [['diff','--quiet','--'],['diff','--cached','--quiet','--']]
-    .every(args=>run('git',args,options)?.status===0);
+  // git diff misses untracked JS/assets. Git status covers both staged and
+  // unstaged changes plus non-ignored untracked files. Never log filenames.
+  // Ignored output/videos and isolated browser toolchains cannot be source
+  // provenance; their own integrity has separate checks.
+  try {
+    const result=run('git',['status','--porcelain=v1','--untracked-files=normal','--'],options);
+    return result?.status===0&&typeof result.stdout==='string'&&
+      result.stdout.length===0;
+  }catch{return false}
 }
 // Optional system ffprobe gives an independent container/encoded-media duration.
 // The renderer, wall-clock timer and WebM hash cannot prove the <180-second rule.
