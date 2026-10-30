@@ -13,7 +13,7 @@ $changes = @(& git -C $root status --porcelain=v1 --untracked-files=normal)
 if ($LASTEXITCODE -ne 0 -or $changes.Count -gt 0) {
     throw 'CLEAN_GIT_SOURCE_REQUIRED'
 }
-$version = (& $python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')").Trim()
+$version = (& $python -c "import sys; print(sys.version_info.major, sys.version_info.minor, sep=chr(46))").Trim()
 if ($LASTEXITCODE -ne 0 -or $version -notmatch '^3\.(10|11|12|13)$') {
     throw 'PYTHON_VERSION_UNSUPPORTED_BY_LOCAL_KOKORO'
 }
