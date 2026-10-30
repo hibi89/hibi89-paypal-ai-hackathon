@@ -1,9 +1,9 @@
 name: Offline payment-contract tests
 on:
   push:
-    branches: [lead/paypal]
+    branches: [lead/paypal, design/proofline-premium-film-20261031]
   pull_request:
-    branches: [main, lead/paypal]
+    branches: [main, lead/paypal, release/paypal-main-qa-preview-20261030]
 permissions:
   contents: read
 
@@ -24,7 +24,9 @@ jobs:
       - name: Validate entire 18-day progress dashboard
         run: python3 render_master_progress.py --check
       - name: Offline Node regression tests
-        run: npm test
+        run: |
+          node --check scripts/premium_evidence_overlay.js
+          npm test
       - name: Read-only local MVP restart preflight (no credentials or provider calls)
         run: npm run mvp:status
       - name: One-command full marketplace to payment mock MVP (no provider calls)
@@ -49,10 +51,15 @@ jobs:
         run: .browser-venv/bin/python tests/browser_general_services_e2e.py
       - name: Chromium opt-in Gemini and PayPal fake API trace panel
         run: .browser-venv/bin/python tests/browser_synthetic_provider_protocol_e2e.py
+      - name: Fast real-Chromium premium proof overlay layout / CSP check
+        run: .browser-venv/bin/python tests/browser_premium_lens_visual.py
       - name: Check recorder Python syntax and proof provenance regression
         run: |
-          python3 -m py_compile scripts/record_judge_demo.py scripts/video_owner_evidence.py
+          python3 -m py_compile scripts/record_judge_demo.py scripts/video_owner_evidence.py scripts/mix_private_voice.py scripts/render_owner_neural_voice.py
+          node --check scripts/run_private_neural_voice.mjs
           python3 tests/video_owner_evidence_test.py
+          python3 tests/test_mix_private_voice.py
+          python3 tests/test_owner_neural_voice.py
           python3 tests/recorded_video_integrity_test.py
       - name: Record offline synthetic reviewer footage (ephemeral, no upload)
         env:
@@ -79,7 +86,29 @@ jobs:
       - name: Historical owner evidence safety regressions
         run: |
           python tests/video_owner_evidence_test.py
+          python tests/test_mix_private_voice.py
           python tests/recorded_video_integrity_test.py
+      - name: Check offline Windows narration script parses without running voice or external services
+        shell: pwsh
+        run: |
+          $tokens=$null
+          $parseErrors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path 'scripts/render_owner_offline_voice.ps1').Path,
+            [ref]$tokens,[ref]$parseErrors) | Out-Null
+          if ($parseErrors.Count -gt 0) {
+            $parseErrors | ForEach-Object { Write-Error $_.Message }
+            exit 2
+          }
+          $tokens=$null
+          $parseErrors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path 'scripts/install_owner_neural_voice.ps1').Path,
+            [ref]$tokens,[ref]$parseErrors) | Out-Null
+          if ($parseErrors.Count -gt 0) {
+            $parseErrors | ForEach-Object { Write-Error $_.Message }
+            exit 2
+          }
       - name: Full owner workflow from clean machine (no accounts or providers)
         run: npm run video:record:owner -- --pace-ms 200
       - name: Build owner draft packet with fail-closed encoded-duration and release gates
@@ -97,7 +126,7 @@ jobs:
     name: Default-speed synthetic video under 3 minutes
     if: github.event_name == 'pull_request' || contains(github.event.head_commit.message, '[video-full]')
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -112,6 +141,10 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg
+      - name: Verify bounded narration mux recovers from existing synthetic media
+        run: |
+          python3 -m py_compile scripts/recover_owner_voice_mux.py
+          python3 tests/test_recover_owner_voice_mux.py
       - name: Record default-speed silent English-captioned synthetic video (private only)
         env:
           VIDEO_PYTHON_BIN: .video-venv/bin/python
@@ -128,3 +161,22 @@ jobs:
           if [ -z "$video" ]; then echo "RECORDING_MISSING" >&2; exit 2; fi
           duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$video")
           python3 -c 'import sys; d=float(sys.argv[1]); assert 100 < d < 180, "VIDEO_DURATION_INVALID"; print(f"PRIVATE_MEDIA_DURATION_VERIFIED_SECONDS={d:.2f}")' "$duration"
+      - name: Capture opt-in premium real-browser cursor footage (private only)
+        env:
+          VIDEO_PYTHON_BIN: .video-venv/bin/python
+        run: |
+          npm run video:record:offline -- --premium --pace-ms 250
+          python3 scripts/check_recorded_video.py
+          python3 -c 'import json,glob; p=sorted(glob.glob("output/videos/*.manifest.json"))[-1]; d=json.load(open(p)); assert d["presentation_mode"]=="GUIDED_REAL_BROWSER_CURSOR_NO_POST_ZOOM"; assert d["voiceover_included"] is False; assert d["provider_calls"]==0 and d["payment_posts"]==0; assert d["publicly_uploaded"] is False; print("PRIVATE_PREMIUM_CURSOR_RECORDING_PASS")'
+      - name: Verify full owner-paced premium retake stays under 3 minutes
+        env:
+          VIDEO_PYTHON_BIN: .video-venv/bin/python
+        run: |
+          npm run video:record:offline -- --premium --pace-ms 6500
+          python3 scripts/check_recorded_video.py
+          video=$(find output/videos -maxdepth 1 -type f -name 'paypal-synthetic-review-*.webm' -printf '%T@ %p\n' | sort -nr | head -1 | cut -d' ' -f2-)
+          test -n "$video"
+          duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$video")
+          python3 -c 'import sys; d=float(sys.argv[1]); assert 100 < d < 180, "OWNER_PREMIUM_RETAKE_VIDEO_DURATION_INVALID"; print(f"PREMIUM_OWNER_PACE_MEDIA_DURATION={d:.2f}s")' "$duration"
+          python3 -c 'import json,glob; p=max(glob.glob("output/videos/*.manifest.json"),key=lambda s:__import__("os").path.getmtime(s)); d=json.load(open(p)); assert d["presentation_mode"]=="GUIDED_REAL_BROWSER_CURSOR_NO_POST_ZOOM"; assert len(d["narration_cues"])>=10; assert d["provider_calls"]==0 and d["payment_posts"]==0 and d["publicly_uploaded"]==False; print("OWNER_PACED_PREMIUM_SAFE_RETAKE_PASS")'
+

@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]/"scripts"))
 from video_owner_evidence import (
-    sanitize_saved_receipt, collect_saved_receipt, storyboard_cards,
+    sanitize_saved_receipt, collect_saved_receipt, storyboard_cards, premium_storyboard_cards,
     LOCAL_STATUS, preserve_private_recording, git_source_snapshot,
 )
 
@@ -141,6 +141,27 @@ class VideoEvidenceSafetyTests(unittest.TestCase):
         self.assertEqual(result["payment"],"HISTORICAL_CAPTURE_PAID_LOCALLY_RECORDED")
         self.assertEqual(len(storyboard_cards(result)),3)
         self.assertIn("NOT a fresh provider GET"," ".join(storyboard_cards(result)[1]["lines"]))
+    def test_premium_lens_keeps_historical_proof_visible_without_dense_slides(self):
+        for proof in (sanitize_saved_receipt(valid_receipt()),
+                      sanitize_saved_receipt(None)):
+            cards=premium_storyboard_cards(proof)
+            self.assertEqual([c["scene"] for c in cards],
+                             ["gemini","paypal","provenance"])
+            for c in cards:
+                self.assertTrue(c["sourceLabel"].startswith("OWNER"))
+                self.assertLess(len(c["title"]),50)
+                self.assertLess(len(c["subtitle"]),160)
+                self.assertLess(len(c["note"]),140)
+                self.assertNotIn("NEVER_EXPOSE_ME", str(c))
+            self.assertEqual(cards[0]["tags"],
+                             [s.upper() for s in proof["skills"]])
+            self.assertIn("not",cards[1]["subtitle"].lower())
+            self.assertIn("separate",cards[2]["subtitle"].lower())
+        self.assertIn("READ-ONLY MATCH",premium_storyboard_cards(
+            sanitize_saved_receipt(valid_receipt()))[0]["sourceLabel"])
+        self.assertIn("RECEIPT NOT PRESENT",premium_storyboard_cards(
+            sanitize_saved_receipt(None))[0]["sourceLabel"])
+
     def test_rejects_provider_activity_or_invalid_user_claim(self):
         for key,value in [
             ("providerGetPerformedNow",True),("providerPostPerformedNow",True),
