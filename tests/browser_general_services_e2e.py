@@ -79,6 +79,32 @@ try:
             page.locator("#approve-submit").click()
             expect(page.locator("#quote-view")).to_contain_text("APPROVED")
             expect(page.locator("#quote-view")).to_contain_text("$29.00")
+            preview=page.locator("#quote-checkout-preview")
+            expect(preview).to_be_enabled()
+            posts_before_preview=sum(method=="POST" for method,_ in requests)
+            preview.click()
+            expect(page.locator("#quote-checkout-preview-result")).to_contain_text(
+                "human-approved USD 29.00")
+            expect(page.locator("#quote-checkout-preview-result")).to_contain_text("version 2")
+            # Explicitly checks distinct current quote and fixed fake provider run.
+            before_fake=sum(method=="POST" for method,_ in requests)
+            page.locator("#verify-local-bridge").click()
+            expect(page.locator("#verify-local-bridge-result")).to_contain_text("LOCAL PROOF PASS")
+            expect(page.locator("#verify-local-bridge-result")).to_contain_text(
+                "Current approved quote v2 / USD 29.00")
+            expect(page.locator("#verify-local-bridge-result")).to_contain_text("fixed USD 1.50")
+            assert sum(method=="POST" for method,_ in requests)==before_fake+1
+            assert any(method=="POST" and url.endswith(
+                "/api/demo/provider-protocol") for method,url in requests)
+
+            expect(page.locator("#quote-checkout-preview-result")).to_contain_text("NOT SENT")
+            expect(page.locator("#quote-checkout-preview-result")).to_contain_text(
+                "9 in-memory fake PayPal domain stages")
+            assert all(not url.startswith("https://api-m.sandbox.paypal.com")
+                       for _,url in requests)
+            assert sum(method=="POST" for method,_ in requests)==posts_before_preview
+            assert any(method=="GET" and url.endswith(
+                "/api/demo/quote-checkout-preview") for method,url in requests)
             expect(page.locator("#contract-fulfillment")).to_have_text("NO_CONTRACT")
             page.locator("#contract-create").click()
             expect(page.locator("#contract-fulfillment")).to_have_text("PENDING")

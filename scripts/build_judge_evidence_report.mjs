@@ -5,6 +5,7 @@ import {mkdirSync,writeFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {runOfflineOperatorMvpSmoke} from '../src/offline_operator_mvp_smoke.mjs';
+import {validateSyntheticProtocolProof} from '../src/synthetic_provider_trace.mjs';
 
 const REPORT_DIR=new URL('../output/submission/',import.meta.url);
 
@@ -26,6 +27,8 @@ export function summarizeSyntheticJudgeTrace(result){
    result.createPostsToFakeTransport===1 &&
    result.capturePostsToFakeTransport===1 &&
    result.automaticRetry===false,'MOCK_PAYMENT_OR_CONSENT_INVARIANT_FAILED');
+ requireTrue(validateSyntheticProtocolProof(result.fakeProviderProtocol),
+   'FAKE_PROVIDER_PROTOCOL_NOT_VERIFIED');
  requireTrue(typeof result.selectedProfile==='string' &&
    /^[a-zA-Z0-9_-]{1,64}$/.test(result.selectedProfile) &&
    Array.isArray(result.missingSkills) &&
@@ -61,6 +64,13 @@ export function summarizeSyntheticJudgeTrace(result){
      fakePayPalOrderCreateRequests:1,
      fakePayPalCaptureRequests:1,
      fakeProviderGetReconciliation:true,
+     fakeApiProtocol:Object.freeze({
+       status:result.fakeProviderProtocol.status,
+       transport:result.fakeProviderProtocol.transport,
+       stageSequence:Object.freeze([...result.fakeProviderProtocol.stageSequence]),
+       consentStages:Object.freeze([...result.fakeProviderProtocol.humanConsentStages]),
+       actualProviderCalls:0,realPaymentCaptured:false
+     }),
      persistedSyntheticSqliteClaims:2,
      actualProviderCalls:0,
      actualPaymentCaptured:false,
@@ -88,7 +98,7 @@ ${rows}
 ## One local reproducible technical path
 
 - Use \`npm run judge:evidence\` to rerun the owner MVP orchestration **with explicitly injected FAKE Gemini and PayPal Sandbox transports**. No real PayPal/Gemini API, token, capture or billing is involved.
-- The real orchestrator exercises one mock AI skill classification, deliberate human-approved USD 1.50 quote, fake buyer approval, one fake order create, one fake capture, GET-based fake reconciliation and local SQLite claims. It does **not** provide an authentic Sandbox receipt.
+- The real orchestrator exercises one mock AI skill classification, deliberate human-approved USD 1.50 quote, fake buyer approval, one fake order create, one fake capture, GET-based fake reconciliation and local SQLite claims. It does **not** provide an authentic Sandbox receipt.\n- A sanitized **fake transport API sequence** is checked: Gemini generateContent POST, PayPal OAuth, Sandbox Orders CREATE POST, pending/approved GET before a single capture POST, and completed GET after capture. The report lists only fixed symbolic stages and explicit human consent stages, never order IDs, keys, provider tokens or raw request URLs.
 - The tested UI has two visibly distinct categories, AI Work and Global Services. To independently check browser behavior use \`tests/browser_offline_e2e.py\` and \`tests/browser_general_services_e2e.py\` with Python Playwright/Chromium, or inspect the GitHub Actions browser logs.
 - The 2026-10-28 real Gemini and PayPal Sandbox run is **owner-reported historical activity**. Only the owner’s separate read-only receipt workflow may check locally stored records. No fresh provider GET is made here, and this command is not proof of a currently functional remote checkout.
 
