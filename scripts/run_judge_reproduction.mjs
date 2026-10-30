@@ -9,6 +9,7 @@ import {startOfflineDemo} from '../src/offline_demo_server.mjs';
 import {runOfflineOperatorMvpSmoke} from '../src/offline_operator_mvp_smoke.mjs';
 import {summarizeSyntheticJudgeTrace} from './build_judge_evidence_report.mjs';
 import {inspectLocalCheckout,inspectTrackedTreeClean} from './prepare_submission_candidate.mjs';
+import {reproduceQuoteBoundJudgeFlow} from '../src/judge_quote_plan_probe.mjs';
 
 const ROOT=resolve(fileURLToPath(new URL('../',import.meta.url)));
 const DEST=new URL('../output/submission/judge_reproduction_receipt.json',import.meta.url);
@@ -92,7 +93,18 @@ async function inspectTwoLocalCategories(){
 }
 export async function runJudgeReproduction({write=false}={}){
   const loopback=await inspectTwoLocalCategories();
+  // Separate localhost instances per category: human-approved quote amounts
+  // flow through genuine PayPal pure planning functions with invented in-memory
+  // order responses. The existing adapter replay below is a DIFFERENT fixed
+  // USD 1.50 fake and MUST NOT be presented as either quote's transaction.
+  const quoteBound=reproduceQuoteBoundJudgeFlow();
   const trace=summarizeSyntheticJudgeTrace(await runOfflineOperatorMvpSmoke());
+  const quoteBoundProof=await quoteBound;
+  fail(quoteBoundProof.status==='TWO_APPROVED_QUOTE_PLANS_REPRODUCED_SYNTHETIC_ONLY'&&
+    quoteBoundProof.categories.length===2&&
+    quoteBoundProof.actualPaymentPosts===0&&
+    quoteBoundProof.realPayPalCalls===0,
+    'JUDGE_QUOTE_BOUND_EVIDENCE_INVALID');
   fail(trace.verifiedFromThisCommand.actualProviderCalls===0&&
     trace.verifiedFromThisCommand.actualPaymentCaptured===false&&
     trace.evidence[2].status==='OWNER_REPORTED_NOT_INDEPENDENTLY_ATTESTED'&&
@@ -105,6 +117,9 @@ export async function runJudgeReproduction({write=false}={}){
     source:{commitSha:checkout.commitSha||null,branch:checkout.branch||null,
       trackedFilesClean:inspectTrackedTreeClean(ROOT),publicReleaseVerified:false},
     reproducibleA:loopback,
+    // Pure quote-bound Orders/Capture/GET domain logic; FAKE buyer/order/capture
+    // responses in memory, never PayPal API proof or real payment.
+    reproducibleQuoteBoundPlans:quoteBoundProof,
     reproducibleB:{
       status:trace.evidence[1].status,
       mode:'INJECTED_FAKE_GEMINI_AND_PAYPAL_ONLY',

@@ -5,6 +5,10 @@ import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {runJudgeReproduction,validateSyntheticMarketplaceResponse}
   from '../scripts/run_judge_reproduction.mjs';
+import {verifyQuoteBoundJudgeProof}
+  from '../src/judge_quote_plan_probe.mjs';
+import {deriveQuoteBoundFakePayPalFlow}
+  from '../src/quote_bound_fake_paypal_flow.mjs';
 import {matchSyntheticMarketplaceBrief,matchSyntheticGeneralServiceBrief}
   from '../src/marketplace_match.mjs';
 
@@ -21,6 +25,29 @@ test('judge one-shot exercises two real loopback match requests and fake-provide
   assert.deepEqual(report.reproducibleA.categories.map(x=>x.firstEligibleFictionalProfile),
     ['synthetic-web','synthetic-creative']);
   assert.equal(report.reproducibleA.browserAutomationExecuted,false);
+  const quoteBound=report.reproducibleQuoteBoundPlans;
+  assert.equal(quoteBound.status,'TWO_APPROVED_QUOTE_PLANS_REPRODUCED_SYNTHETIC_ONLY');
+  assert.equal(quoteBound.source,'TWO_ISOLATED_REAL_LOOPBACK_SQLITE_SESSIONS');
+  assert.deepEqual(quoteBound.categories.map(c=>[c.vertical,c.approvedAmount]),[
+    ['ai_work','15.00'],['general_services','29.00']]);
+  assert.equal(quoteBound.totalPureFakeDomainStages,18);
+  for(const category of quoteBound.categories){
+    assert.equal(category.quoteVersion,2);
+    assert.equal(category.fakeDomainStages,9);
+    assert.equal(category.prematureCaptureBlocked,true);
+    assert.equal(category.foreignAmountBlocked,true);
+    assert.equal(category.localMarketplacePosts,1);
+    assert.equal(category.localDraftPosts,1);
+    assert.equal(category.localHumanApprovalFixturePosts,1);
+    assert.equal(category.localPaymentPosts,0);
+    assert.equal(category.actualProviderCalls,0);
+    assert.equal(category.paymentEndpointStatus,503);
+    assert.equal(category.paymentReal,false);
+  }
+  assert.equal(quoteBound.realGeminiCalls,0);
+  assert.equal(quoteBound.realPayPalCalls,0);
+  assert.equal(quoteBound.actualPaymentPosts,0);
+  assert.equal(quoteBound.providerPaymentVerified,false);
   assert.equal(report.reproducibleB.status,'VERIFIED_WITH_FAKE_INJECTED_TRANSPORT');
   assert.equal(report.reproducibleB.fakePayPalCreatePosts,1);
   assert.equal(report.reproducibleB.fakePayPalCapturePosts,1);
@@ -77,6 +104,8 @@ test('one-command reviewer CLI returns classified safe JSON and saves only ignor
   assert.equal(output.safety.paymentPosts,0);
   assert.equal(output.safety.publicUploads,0);
   assert.equal(output.reproducibleB.fakeApiProtocol.actualProviderCalls,0);
+  assert.equal(output.reproducibleQuoteBoundPlans.totalPureFakeDomainStages,18);
+  assert.equal(output.reproducibleQuoteBoundPlans.actualPaymentPosts,0);
   assert.doesNotMatch(JSON.stringify(output.reproducibleB.fakeApiProtocol),
     /FICTIONALORDER|FICTIONALCAPTURE|checkoutnow|PayerID|client_secret/);
   assert.equal(output.publicationD.publicVideoUrl,null);
@@ -84,4 +113,29 @@ test('one-command reviewer CLI returns classified safe JSON and saves only ignor
   assert.doesNotMatch(cmd.stdout,/CANARY_NO_LEAK|PayerID|access_token|client_secret/);
   const saved=JSON.parse(readFileSync(new URL('../output/submission/judge_reproduction_receipt.json',import.meta.url),'utf8'));
   assert.deepEqual(saved,output);
+});
+
+test('judge quote-bound proof rejects false paid or live provider claims',()=>{
+ const q={id:'sample-project',ownerId:'synthetic-owner',merchantId:'synthetic-merchant',
+  currency:'USD',status:'APPROVED',version:2,approval:{
+   decision:'APPROVED',actorId:'synthetic-owner',quoteVersion:2,amountMinor:2900}};
+ const good={status:'LOCAL_APPROVED_QUOTE_PAYPAL_PLAN_ONLY',
+  source:'PERSISTED_SYNTHETIC_SQLITE_APPROVAL',
+  quoteId:'sample-project',quoteVersion:2,amountMinor:2900,
+  currency:'USD',amount:'29.00',plannedMethod:'POST_NOT_SENT',
+  plannedPath:'/v2/checkout/orders',externalProviderCalls:0,
+  orderCreated:false,capturePerformed:false,executionAuthorized:false,
+  sandboxMerchantConnected:false,quoteBoundFakeFlow:deriveQuoteBoundFakePayPalFlow(q)};
+ assert.equal(verifyQuoteBoundJudgeProof(good,{version:2,amountMinor:2900})
+  .fakeDomainStages,9);
+ for(const corrupt of [
+  {...good,amount:'30.00'},
+  {...good,orderCreated:true},
+  {...good,externalProviderCalls:1},
+  {...good,quoteBoundFakeFlow:{...good.quoteBoundFakeFlow,paymentWasReal:true}},
+  {...good,quoteBoundFakeFlow:{...good.quoteBoundFakeFlow,paymentPosts:1}},
+  {...good,quoteBoundFakeFlow:{...good.quoteBoundFakeFlow,steps:[]}},
+  {...good,merchantId:'synthetic-merchant'}
+ ])assert.throws(()=>verifyQuoteBoundJudgeProof(corrupt,{
+    version:2,amountMinor:2900}));
 });
