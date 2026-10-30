@@ -1,7 +1,7 @@
 // An intentionally process-local limiter for one synthetic loopback demo.
 // It is NOT distributed, identity-aware, or sufficient for public deployment.
 export function createDemoRateLimiter({
-  now = Date.now, windowMs = 60_000, maxReads = 360, maxWrites = 60
+  now = Date.now, windowMs = 60_000, maxReads = 720, maxWrites = 60
 } = {}) {
   if (typeof now !== 'function' || [windowMs, maxReads, maxWrites].some(
     n => !Number.isSafeInteger(n) || n < 1
