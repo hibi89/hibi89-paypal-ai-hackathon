@@ -22,3 +22,7 @@ One Proofline marketplace with AI Work and Global Services on the SAME offline q
 ## Premium film branch adoption (2026-10-31 KST)
 
 The code was integrated (not merged) into the pre-existing premium dark theme branch at source SHA `62f37f84f50fa56ffb08790431afa3bb7d528306`. The premium version preserves its own film recorder, evidence lens and fake provider trace; it adds only the recommendation engine/storage/router/client, semantic-dark CSS and test coverage. The original private 174.76 second film is NOT regenerated automatically, and the 3×3 control is not a real marketplace account backend. New integrated source validation: push #41116781344 (Node 655/655 plus Chromium and Windows PASS). PR owner-paced full film check was in progress during this update.
+
+## Premium guided click stabilization, 2026-10-31 KST
+
+The 3×3 source already passed the full offline suite, but the **separate PR premium short-paced film** failed at quote Version 2 on prior `page.mouse.click(x,y)`. Source `9587374e084ebc41e6765e698a27930d25ce2a5b` replaces only the click with `target.click(delay=...)` after the same animated cursor to use Playwright's stable/actionable target handling. Exact source CI Node 656 PASS and Windows PASS; PR full-length movie result was pending at this documentation snapshot. Original WebM and `af_heart` samples are not changed by code commits.
