@@ -21,7 +21,40 @@ const safeRead=name=>{
 export function assessPrivateFreeze({checkout,clean,judge,candidate}={}){
   const sha=shaOk(checkout?.commitSha)?checkout.commitSha:null;
   const sourceValid=sha!==null&&same(clean);
-  const judgeValid=Boolean(sourceValid&&
+  // Both categories must prove that their own persisted, human-approved
+  // amounts and quote versions reach pure PayPal planning via 2 independent
+  // loopback SQLite sessions. This remains 100% fabricated provider data.
+  const quoteProof=judge?.reproducibleQuoteBoundPlans;
+  const quoteCases=[
+    {vertical:'ai_work',amount:'15.00'},
+    {vertical:'general_services',amount:'29.00'}
+  ];
+  const quoteBoundValid=Boolean(
+    quoteProof?.status==='TWO_APPROVED_QUOTE_PLANS_REPRODUCED_SYNTHETIC_ONLY'&&
+    quoteProof?.source==='TWO_ISOLATED_REAL_LOOPBACK_SQLITE_SESSIONS'&&
+    Array.isArray(quoteProof.categories)&&quoteProof.categories.length===2&&
+    quoteProof.totalPureFakeDomainStages===18&&
+    quoteProof.realGeminiCalls===0&&quoteProof.realPayPalCalls===0&&
+    quoteProof.actualPaymentPosts===0&&
+    quoteProof.ownerPrivateReceiptRead===false&&
+    quoteProof.providerPaymentVerified===false&&
+    quoteProof.publicDeploymentVerified===false&&
+    quoteCases.every((expected,index)=>{
+      const row=quoteProof.categories[index];
+      return row?.vertical===expected.vertical&&
+        row.approvedAmount===expected.amount&&
+        row.quoteVersion===2&&row.fakeDomainStages===9&&
+        row.amountSource==='LOCAL_SQLITE_HUMAN_APPROVAL_FIXTURE'&&
+        row.planSource==='EXISTING_PURE_PAYPAL_ORDER_CAPTURE_RECONCILIATION_FUNCTIONS'&&
+        row.prematureCaptureBlocked===true&&
+        row.foreignAmountBlocked===true&&
+        row.actualProviderCalls===0&&row.paymentPosts===0&&
+        row.localPaymentPosts===0&&row.realProviderCalls===0&&
+        row.paymentEndpointStatus===503&&
+        row.buyerApprovalReal===false&&row.paymentReal===false;
+    })
+  );
+  const judgeValid=Boolean(sourceValid&&quoteBoundValid&&
     judge?.source?.commitSha===sha&&same(judge?.source?.trackedFilesClean)&&
     judge.status==='JUDGE_OFFLINE_REPRODUCED_NOT_SUBMITTED'&&
     judge.reproducibleA?.status==='ACTUAL_LOOPBACK_HTTP_VERIFIED_SYNTHETIC_ONLY'&&
