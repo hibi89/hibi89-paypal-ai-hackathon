@@ -220,5 +220,12 @@ marketplaceForm.addEventListener('submit',async event=>{
   }finally{
     marketplaceBusy=false;
     marketplaceButton.disabled=false;
+    // The initial submit rendered while busy: enable the refresh control
+    // only after the request finishes, without losing the current history.
+    if(activeRecommendation&&
+       activeRecommendation.brief===marketplaceBrief.value&&
+       activeRecommendation.vertical===selectedCategory())
+      renderRecommendationSet(activeRecommendation.body,
+        activeRecommendation.brief,activeRecommendation.vertical);
   }
 });

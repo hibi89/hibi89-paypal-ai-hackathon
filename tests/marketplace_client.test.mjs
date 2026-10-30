@@ -8,7 +8,8 @@ const client=readFileSync(new URL('../web/marketplace_client.js',import.meta.url
 function mount({reviewer=false,matchNone=false}={}){
   const elements=new Map();
   function element(id=''){
-    const e={id,type:'',textContent:'',value:'',disabled:false,children:[],listeners:{},
+    const e={id,type:'',textContent:'',value:'',disabled:false,children:[],listeners:{},attributes:{},
+      setAttribute(key,value){this.attributes[key]=String(value)},
       append(...children){this.children.push(...children)},
       replaceChildren(...children){this.children=[...children]},
       addEventListener(name,fn){this.listeners[name]=fn},
@@ -29,15 +30,21 @@ function mount({reviewer=false,matchNone=false}={}){
     if(path==='/demo/session')return result({
       mode:'OFFLINE_MOCK',role:reviewer?'reviewer':'owner',csrfToken:'test'
     });
-    if(path==='/api/demo/marketplace' && JSON.parse(opts.body).vertical==='general_services')return result({
+    // The actual API includes an opaque session and previous-set history.
+    const state=body=>({...body,sessionId:'fixture-session',round:1,
+      maxRounds:3,remainingRefreshes:2,
+      history:[{round:1,profiles:body.profiles}]});
+    if(path==='/api/demo/marketplace' && JSON.parse(opts.body).vertical==='general_services')return result(state({
       vertical:'general_services',requestedSkills:['design','branding'],profiles:[
         {id:'synthetic-creative',displayName:'Demo Creative Designer',eligible:true,
           matchedSkills:['design','branding'],missingSkills:[],skills:['design','branding']},
         {id:'synthetic-marketer',displayName:'Demo Marketing Specialist',eligible:false,
-          matchedSkills:[],missingSkills:['design','branding'],skills:['marketing','writing']}
+          matchedSkills:[],missingSkills:['design','branding'],skills:['marketing','writing']},
+        {id:'synthetic-translator',displayName:'Demo Translation Writer',eligible:false,
+          matchedSkills:[],missingSkills:['design','branding'],skills:['translation','writing']}
       ]
-    });
-    if(path==='/api/demo/marketplace')return result(matchNone?{
+    }));
+    if(path==='/api/demo/marketplace')return result(state(matchNone?{
       requestedSkills:[],profiles:[{id:'synthetic-web',displayName:'Demo Web Specialist',
         eligible:false,matchedSkills:[],missingSkills:[]}],
     }:{
@@ -45,9 +52,11 @@ function mount({reviewer=false,matchNone=false}={}){
         {id:'synthetic-web',displayName:'Demo Web Specialist',eligible:true,
           matchedSkills:['web','payments'],missingSkills:[]},
         {id:'synthetic-data',displayName:'Demo Data Analyst',eligible:false,
-          matchedSkills:[],missingSkills:['web','payments']}
+          matchedSkills:[],missingSkills:['web','payments']},
+        {id:'synthetic-automation',displayName:'Demo Workflow Builder',eligible:false,
+          matchedSkills:['web'],missingSkills:['payments']}
       ]
-    });
+    }));
     throw Error('UNEXPECTED_PATH');
   };
   const doc={getElementById:id=>elements.get(id),createElement:()=>element()};
