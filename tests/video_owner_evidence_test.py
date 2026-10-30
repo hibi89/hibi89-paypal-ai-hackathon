@@ -36,7 +36,7 @@ class GitSourceSnapshotTests(unittest.TestCase):
             def __init__(self, code, value):
                 self.returncode = code
                 self.stdout = value
-        with patch("subprocess.run", side_effect=[Result(0, sha + "\\n"),
+        with patch("subprocess.run", side_effect=[Result(0, sha + "\n"),
                                                   Result(0, "")]) as run:
             self.assertEqual(git_source_snapshot(Path("/fixture")),
                              {"sha": sha, "clean": True})
@@ -51,9 +51,9 @@ class GitSourceSnapshotTests(unittest.TestCase):
             def __init__(self, code, value):
                 self.returncode = code
                 self.stdout = value
-        for code, output in ((0, "?? src/new_script.py\\n"),
-                             (0, " M scripts/record_judge_demo.py\\n"),
-                             (0, "M  README.md\\n"),
+        for code, output in ((0, "?? src/new_script.py\n"),
+                             (0, " M scripts/record_judge_demo.py\n"),
+                             (0, "M  README.md\n"),
                              (1, "")):
             with patch("subprocess.run", side_effect=[Result(0, sha),
                                                       Result(code, output)]):
