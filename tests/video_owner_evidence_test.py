@@ -9,7 +9,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]/"scripts"))
 from video_owner_evidence import (
     sanitize_saved_receipt, collect_saved_receipt, storyboard_cards,
-    LOCAL_STATUS, preserve_private_recording,
+    LOCAL_STATUS, preserve_private_recording, git_source_snapshot,
 )
 
 def valid_receipt():
@@ -28,6 +28,41 @@ def valid_receipt():
         "client_secret":"NEVER_EXPOSE_ME",
         "payerEmail":"NEVER_EXPOSE_ME",
     }
+
+class GitSourceSnapshotTests(unittest.TestCase):
+    def test_exact_commit_clean_status_and_command(self):
+        sha = "a" * 40
+        class Result:
+            def __init__(self, code, value):
+                self.returncode = code
+                self.stdout = value
+        with patch("subprocess.run", side_effect=[Result(0, sha + "\\n"),
+                                                  Result(0, "")]) as run:
+            self.assertEqual(git_source_snapshot(Path("/fixture")),
+                             {"sha": sha, "clean": True})
+        self.assertEqual(run.call_args_list[1].args[0],
+                         ["git", "status", "--porcelain=v1",
+                          "--untracked-files=normal", "--"])
+        self.assertFalse(run.call_args_list[1].kwargs["check"])
+
+    def test_untracked_or_dirty_sources_never_get_clean_attestation(self):
+        sha = "a" * 40
+        class Result:
+            def __init__(self, code, value):
+                self.returncode = code
+                self.stdout = value
+        for code, output in ((0, "?? src/new_script.py\\n"),
+                             (0, " M scripts/record_judge_demo.py\\n"),
+                             (0, "M  README.md\\n"),
+                             (1, "")):
+            with patch("subprocess.run", side_effect=[Result(0, sha),
+                                                      Result(code, output)]):
+                self.assertEqual(git_source_snapshot(Path("/fixture")),
+                                 {"sha": sha, "clean": False})
+        with patch("subprocess.run", side_effect=OSError("git missing")):
+            self.assertEqual(git_source_snapshot(Path("/fixture")),
+                             {"sha": None, "clean": False})
+
 
 class VideoEvidenceSafetyTests(unittest.TestCase):
     def test_recording_and_manifest_saved_as_exclusive_pair(self):
