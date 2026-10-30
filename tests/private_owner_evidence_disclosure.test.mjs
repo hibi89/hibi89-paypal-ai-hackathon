@@ -77,7 +77,7 @@ test('owner evidence disclosure CLI default makes zero private reads or outbound
 });
 
 test('explicit local owner export reads internally consistent historical synthetic fixture, without provider calls',async()=>{
- const {mkdtempSync,mkdirSync,rmSync,readdirSync,readFileSync,unlinkSync}=await import('node:fs');
+ const {mkdtempSync,mkdirSync,rmSync,readdirSync,readFileSync,unlinkSync,existsSync}=await import('node:fs');
  const {tmpdir}=await import('node:os');
  const {join}=await import('node:path');
  const {createSqliteLedger}=await import('../src/sqlite_ledger.mjs');
@@ -88,7 +88,11 @@ test('explicit local owner export reads internally consistent historical synthet
  mkdirSync(directory,{recursive:true});
  const merchant='A1B2C3D4E5F6G',actorId='local_operator',quoteId='operator_mvp_01';
  const ctx={quoteId,actorId,merchantId:merchant};
- const dest=new URL('../output/submission/owner_local_provider_disclosure_PRIVATE_REVIEW.json',import.meta.url);
+ // Snapshot the output listing: this regression must never remove an older
+ // owner's evidence, even when run concurrently with other Node tests.
+ const outputDir=fileURLToPath(new URL('../output/submission/',import.meta.url));
+ const existingNames=new Set(existsSync(outputDir)?readdirSync(outputDir):[]);
+ let createdPath=null;
  try{
   const ledger=createSqliteLedger({filename:join(directory,'checkout.sqlite')});
   await ledger.insertQuote({id:quoteId,ownerId:actorId,merchantId:merchant});
@@ -127,7 +131,12 @@ test('explicit local owner export reads internally consistent historical synthet
    env,encoding:'utf8',timeout:10000,maxBuffer:100000});
   assert.equal(cmd.status,0,cmd.stdout+' '+cmd.stderr);
   const report=JSON.parse(cmd.stdout);
-  const saved=JSON.parse(readFileSync(dest,'utf8'));
+  assert.match(report.privateArtifactFilename,
+   /^owner_local_provider_disclosure_PRIVATE_REVIEW_[0-9a-f]{32}\.json$/);
+  assert.equal(existingNames.has(report.privateArtifactFilename),false,
+   'new export must not collide with an existing owner artifact');
+  createdPath=join(outputDir,report.privateArtifactFilename);
+  const saved=JSON.parse(readFileSync(createdPath,'utf8'));
   assert.deepEqual(saved,report);
   assert.equal(report.status,'LOCAL_RECORD_CONSISTENT_NOT_REMOTE_ATTESTED');
   assert.equal(report.independentlyVerifiedByPayPal,false);
@@ -140,7 +149,8 @@ test('explicit local owner export reads internally consistent historical synthet
     'PayerID','checkoutnow'])
     assert.equal((cmd.stdout+cmd.stderr+JSON.stringify(saved)).includes(field),false,field);
  }finally{
-  try{unlinkSync(dest)}catch{}
+  // Only unlink a newly generated path after confirming it did not preexist.
+  if(createdPath)try{unlinkSync(createdPath)}catch{}
   rmSync(root,{recursive:true,force:true});
  }
 });
