@@ -72,6 +72,17 @@ export function compareRecordedSource(video,localCheckout,trackedTreeClean){
     return 'MATCHED_CLEAN_SOURCE';
   return 'VIDEO_SOURCE_MISMATCH_OR_DIRTY';
 }
+// A source-matched video is not ready for owner editorial review until its
+// *encoded* duration is independently verified. A wall-clock estimate, missing
+// ffprobe or a forged status without a valid duration must fail closed.
+export function evaluatePrivateVideoReviewGate({localSource,videoSourceMatch,privateVideoDuration}={}){
+  const seconds=privateVideoDuration?.seconds;
+  const technicalVideoReady=videoSourceMatch==='MATCHED_CLEAN_SOURCE'&&
+    privateVideoDuration?.status==='ENCODED_MEDIA_UNDER_THREE_MINUTES'&&
+    Number.isFinite(seconds)&&seconds>0&&seconds<180;
+  return Object.freeze({technicalVideoReady,
+    ownerReviewReady:localSource===true&&technicalVideoReady});
+}
 export function verifyPrivateSyntheticVideo(dir){
   if(!existsSync(dir))return {status:'LOCAL_VIDEO_NOT_RECORDED'};
   const candidates=readdirSync(dir)
@@ -118,10 +129,10 @@ export function prepareSubmissionCandidate({root=ROOT}={}){
   const localTrackedTreeClean=inspectTrackedTreeClean(root);
   const videoSourceMatch=compareRecordedSource(video,localCheckout,localTrackedTreeClean);
   const privateVideoDuration=probePrivateVideoDuration(join(root,'output','videos'),video);
-  const technicalVideoReady=videoSourceMatch==='MATCHED_CLEAN_SOURCE'&&
-    privateVideoDuration.status==='ENCODED_MEDIA_UNDER_THREE_MINUTES';
   const localSource=assessment.localAssets.every(a=>!a.status.includes('MISSING')&&!a.status.includes('INVALID'));
-  const ownerReviewReady=localSource&&videoSourceMatch==='MATCHED_CLEAN_SOURCE';
+  const {technicalVideoReady,ownerReviewReady}=evaluatePrivateVideoReviewGate({
+    localSource,videoSourceMatch,privateVideoDuration
+  });
   const copy=files['docs/DEVPOST_ENTRY_AND_VIDEO_COPY_EN_20261029.md'];
   requireValue(copy.includes('DRAFT — NOT PUBLISHED'),'DEVPOST_COPY_DRAFT_GUARD_MISSING');
   const dest=join(root,'output','submission');

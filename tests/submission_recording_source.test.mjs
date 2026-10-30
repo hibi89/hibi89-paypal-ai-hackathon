@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {inspectTrackedTreeClean,compareRecordedSource} from '../scripts/prepare_submission_candidate.mjs';
+import {inspectTrackedTreeClean,compareRecordedSource,evaluatePrivateVideoReviewGate} from '../scripts/prepare_submission_candidate.mjs';
 
 const sha='a'.repeat(40);
 const video={status:'LOCAL_SYNTHETIC_WEBM_INTEGRITY_VERIFIED',
@@ -42,4 +42,31 @@ test('modified, staged or unreadable Git tree cannot be treated as matching',()=
    let i=0;
    assert.equal(inspectTrackedTreeClean('/fixture',()=>({status:outcomes[i++]})),false);
  }
+});
+
+// Release-preparation correctness: the owner-review flag must not overstate
+// technical readiness when ffprobe is absent or the encoded WebM is too long.
+test('owner-review-ready requires clean source AND independently probed encoded duration',()=>{
+ const ready={localSource:true,videoSourceMatch:'MATCHED_CLEAN_SOURCE',
+   privateVideoDuration:{status:'ENCODED_MEDIA_UNDER_THREE_MINUTES',seconds:153.96}};
+ assert.deepEqual(evaluatePrivateVideoReviewGate(ready),{
+   technicalVideoReady:true,ownerReviewReady:true
+ });
+ const failures=[
+   {...ready,privateVideoDuration:{status:'FFPROBE_UNAVAILABLE_OR_FAILED',seconds:null}},
+   {...ready,privateVideoDuration:{status:'ENCODED_MEDIA_UNDER_THREE_MINUTES',seconds:null}},
+   {...ready,privateVideoDuration:{status:'ENCODED_MEDIA_UNDER_THREE_MINUTES',seconds:180}},
+   {...ready,privateVideoDuration:{status:'ENCODED_MEDIA_UNDER_THREE_MINUTES',seconds:0}},
+   {...ready,privateVideoDuration:{status:'ENCODED_MEDIA_TOO_LONG',seconds:181}},
+   {...ready,videoSourceMatch:'VIDEO_SOURCE_MISMATCH_OR_DIRTY'},
+   {...ready,videoSourceMatch:'VIDEO_SOURCE_UNVERIFIED'}
+ ];
+ for(const value of failures){
+   const check=evaluatePrivateVideoReviewGate(value);
+   assert.equal(check.technicalVideoReady,false,JSON.stringify(value));
+   assert.equal(check.ownerReviewReady,false,JSON.stringify(value));
+ }
+ const insufficient=evaluatePrivateVideoReviewGate({...ready,localSource:false});
+ assert.equal(insufficient.technicalVideoReady,true);
+ assert.equal(insufficient.ownerReviewReady,false);
 });
