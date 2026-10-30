@@ -283,7 +283,7 @@ def capture(output_dir, pace_ms, premium=False):
                 expect(page.locator("#message")).to_contain_text("Offline demo ready")
                 expect(page.locator("#marketplace-submit")).to_be_enabled()
                 if premium:
-                    page.add_script_tag(content=(ROOT / "scripts" / "premium_evidence_overlay.js").read_text(encoding="utf-8"))
+                    page.evaluate((ROOT / "scripts" / "premium_evidence_overlay.js").read_text(encoding="utf-8"))
                     install_film_cursor()
                     guided_fill("#marketplace-brief","Build an ecommerce website with PayPal checkout")
                 caption("PROOFLINE | AI should open the first door to work — not just automate existing work. OFFLINE SYNTHETIC DEMO.")
