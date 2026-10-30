@@ -2,6 +2,8 @@
 
 **Status (2026-10-30 KST):** [Draft PR #28](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/28) candidate `771ba6f4fb61b86af1530df51b2acda8fac9013b` had a private synthetic dual-category CI recording independently verified as **165.84 seconds (<180)** by [Actions #41073098696](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41073098696), **3/3 jobs PASS**. The owner-PC final source-matched, visually/privacy-reviewed video is **NOT verified**, not publicly uploaded to YouTube and not submitted on Devpost. The 2026-10-28 actual PayPal Sandbox/Gemini activity remains **separately owner-reported historical evidence**; the CI video is fake-provider only.
 
+**Video proof boundary (release-gate literal):** Final owner-approved submission recording **NOT filmed** as part of this GitHub CI or independently reviewed on the owner's original PC at this exact SHA. **OWNER-OBSERVED** refers only to the separate historical 2026-10-28 Gemini/PayPal Sandbox report; neither this storyboard nor the CI generates or uploads fresh third-party proof. This is a draft, not a YouTube video.
+
 **Key message:** AI should help people access their first freelance opportunities, not simply automate existing work.
 
 ## Screen sequence (target under 3 minutes)
@@ -31,14 +33,20 @@
 
 ## Owner recording and gate
 
-From `lead/paypal` on the owner computer:
+On the original owner's computer, inspect uncommitted files first and use the **unmerged PR28** review source. Never reset the private SQLite or old videos; if the branch already exists locally, use `git switch release/paypal-main-qa-preview-20261030` then `git pull --ff-only` instead of recreating the tracking branch:
 
 ```powershell
-git pull --ff-only
-npm run video:record:owner
-npm run submission:candidate:local
+git status --short
+git fetch origin
+git switch --track origin/release/paypal-main-qa-preview-20261030
+git rev-parse HEAD
+npm run owner:final:local
+# Owner may explicitly opt in to one missing/stale private recording:
+# npm run owner:final:local -- --record-if-missing
 ```
 
-Review the latest ignored `output/videos/paypal-synthetic-review-*.webm`, its `.manifest.json`, and the local candidate. The new video manifest records `storyboard_version=OPPORTUNITY_FIRST_V2` and `demonstrated_categories=[ai_work,general_services]` after the automated browser scene assertions succeed. This does **not** independently attest to PayPal or Gemini or certify a final public submission.
+The optional recording path may install pinned free browser tools. Review and approve any download before using it. Check the exact source SHA and resulting private manifest/video; no real provider calls, uploads or Devpost submission are authorized.
+
+Review the latest ignored `output/videos/paypal-synthetic-review-*.webm`, its `.manifest.json`, and the local candidate. The new video manifest records `storyboard_version=OPPORTUNITY_FIRST_V3_FAKE_API_TRACE` and `demonstrated_categories=[ai_work,general_services]` after the automated browser scene assertions succeed. This does **not** independently attest to PayPal or Gemini or certify a final public submission.
 
 **Owner-PC final video with latest QA changes: not yet recorded or approved. Public YouTube link and Devpost receipt: not yet provided.**
