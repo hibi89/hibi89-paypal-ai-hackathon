@@ -84,6 +84,18 @@ jobs:
           python tests/video_owner_evidence_test.py
           python tests/test_mix_private_voice.py
           python tests/recorded_video_integrity_test.py
+      - name: Check offline Windows narration script parses without running voice or external services
+        shell: pwsh
+        run: |
+          $tokens=$null
+          $parseErrors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path 'scripts/render_owner_offline_voice.ps1').Path,
+            [ref]$tokens,[ref]$parseErrors) | Out-Null
+          if ($parseErrors.Count -gt 0) {
+            $parseErrors | ForEach-Object { Write-Error $_.Message }
+            exit 2
+          }
       - name: Full owner workflow from clean machine (no accounts or providers)
         run: npm run video:record:owner -- --pace-ms 200
       - name: Build owner draft packet with fail-closed encoded-duration and release gates
