@@ -25,7 +25,12 @@ test('premium recorder is opt-in and ordinary CI recording remains unchanged',()
   assert.match(recorder,/def capture\(output_dir, pace_ms, premium=False\):/);
   assert.match(recorder,/parser.add_argument\("--premium", action="store_true"/);
   assert.match(recorder,/if not premium:\s+target.click\(\)/);
-  assert.match(recorder,/page.mouse.move\(x,y,steps=14\)/);
+  // Premium pointer movement must persist across actual captured frames.
+  assert.match(recorder,/def film_move_to\(x, y\):/);
+  assert.match(recorder,/page.wait_for_timeout\(45 if pace_ms >= 1000 else 4\)/);
+  assert.match(recorder,/page.mouse.click\(x,y,delay=140 if pace_ms >= 1000 else 40\)/);
+  assert.match(recorder,/page.wait_for_timeout\(min\(7800, max\(950, pace_ms\+1200\)\)\)/);
+  assert.match(recorder,/guided_click\("a.hero-cta"\)/);
   assert.match(recorder,/target.type\(value,delay=22\)/);
   assert.match(recorder,/html\{scroll-behavior:auto!important\}/);
   assert.match(recorder,/video_started < 178|video_started < 178|video_started < 178|time.monotonic\(\)-video_started < 178/);
