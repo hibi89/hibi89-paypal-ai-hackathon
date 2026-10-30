@@ -70,10 +70,9 @@ def validated_source(root: Path):
     raise ValueError("RECORDED_PREMIUM_CLEAN_SOURCE_NOT_FOUND__RECORD_NEW_FILM")
 
 
-def synthesize(root: Path, voice: str):
+def load_engine(root: Path, voice: str):
     if voice not in VOICES:
         raise ValueError("VOICE_NOT_ALLOWLISTED")
-    video_dir, source, cues = validated_source(root)
     assets = root / "output" / "voice-models"
     model = assets / "kokoro-v1.0.fp16.onnx"
     voicepack = assets / "voices-v1.0.bin"
@@ -98,7 +97,40 @@ def synthesize(root: Path, voice: str):
     kokoro = Kokoro(str(model), str(voicepack))
     if voice not in kokoro.get_voices():
         raise ValueError("REQUESTED_NEURAL_VOICE_NOT_IN_LOCAL_MODEL")
+    return kokoro, sf, model, voicepack
 
+
+def sample_voice(root: Path, voice: str):
+    # Listen to the voice before recording the complete film. No source
+    # recording required, no private receipt or dynamic user text accessed.
+    kokoro, sf, _, _ = load_engine(root, voice)
+    text = (
+        "Talent is everywhere. Access to opportunity is not. "
+        "Proofline opens a new path for independent specialists, "
+        "while keeping every important decision in human hands."
+    )
+    samples, sample_rate = kokoro.create(
+        text, voice=voice, speed=0.96, lang="en-us")
+    if sample_rate != 24000 or not 12000 < len(samples) < 24000*35:
+        raise ValueError("NEURAL_SAMPLE_INVALID")
+    out_dir = root / "output" / "videos" / "private-neural-samples"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    filename = ("proofline-voice-preview-" + voice + "-"
+                + uuid.uuid4().hex[:8] + ".wav")
+    dest = out_dir / filename
+    if dest.exists() or dest.is_symlink():
+        raise FileExistsError("NEURAL_SAMPLE_ALREADY_EXISTS")
+    sf.write(str(dest), samples, sample_rate, subtype="PCM_16")
+    print("LOCAL_NEURAL_VOICE_SAMPLE_PASS " + str(dest), flush=True)
+    print("VOICE_SAMPLE_PROVIDER_CALLS=0 PRIVATE_MEDIA_EXPORT=NO", flush=True)
+    return dest
+
+
+def synthesize(root: Path, voice: str):
+    if voice not in VOICES:
+        raise ValueError("VOICE_NOT_ALLOWLISTED")
+    video_dir, source, cues = validated_source(root)
+    kokoro, sf, model, voicepack = load_engine(root, voice)
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:6]
     wav_dir = video_dir / ("private-voice-kokoro-" + stamp)
     wav_dir.mkdir(mode=0o700)
@@ -140,9 +172,13 @@ def synthesize(root: Path, voice: str):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--voice", default="af_heart", choices=sorted(VOICES))
+    parser.add_argument("--sample-only", action="store_true")
     args = parser.parse_args()
     try:
-        synthesize(ROOT, args.voice)
+        if args.sample_only:
+            sample_voice(ROOT, args.voice)
+        else:
+            synthesize(ROOT, args.voice)
     except (OSError, ValueError, subprocess.SubprocessError) as exc:
         print("NEURAL_VOICE_FAILED " + str(exc), file=sys.stderr)
         sys.exit(2)
