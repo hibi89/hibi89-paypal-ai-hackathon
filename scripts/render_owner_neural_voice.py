@@ -86,7 +86,7 @@ def load_engine(root: Path, voice: str):
         raise ValueError("LOCAL_KOKORO_MODEL_ASSETS_REQUIRED__NO_DOWNLOAD_PERFORMED")
     try:
         import soundfile as sf
-        from kokoro_onnx import Kokoro
+        from kokoro_onnx import Kokoro, EspeakConfig
     except ImportError as exc:
         raise ValueError("LOCAL_KOKORO_RUNTIME_REQUIRED__NO_AUTOINSTALL") from exc
     # Pinned hashes from upstream model-files-v1.1 artifacts; refuse altered
@@ -99,6 +99,7 @@ def load_engine(root: Path, voice: str):
         raise ValueError("KOKORO_VOICE_FILE_SHA256_MISMATCH")
     # The Windows espeakng-loader wheel can retain a CI build-time data path.
     # Point eSpeak to the installed local phoneme tables before initialization.
+    espeak_config = None
     if sys.platform == "win32":
         import espeakng_loader
         data = Path(espeakng_loader.__file__).resolve().parent / "espeak-ng-data"
@@ -117,14 +118,14 @@ def load_engine(root: Path, voice: str):
         if not (dest / "phontab").is_file():
             raise ValueError("ASCII_ESPEAK_PHONTAB_NOT_FOUND")
         os.environ["ESPEAK_DATA_PATH"] = str(dest)
-        from phonemizer.backend.espeak.wrapper import EspeakWrapper
-        EspeakWrapper.set_library(espeakng_loader.get_library_path())
-        from phonemizer.backend import EspeakBackend
-        languages = EspeakBackend.supported_languages()
-        if "en-us" not in languages:
-            raise ValueError("LOCAL_ESPEAK_EN_US_NOT_AVAILABLE")
-        print("LOCAL_ESPEAK_EN_US_PRECHECK_PASS", flush=True)
-    kokoro = Kokoro(str(model), str(voicepack))
+        # Kokoro Tokenizer resets EspeakWrapper.set_data_path() on init.
+        # Pass the parent of espeak-ng-data via its public API so the
+        # non-ASCII site-packages path is never restored during synthesis.
+        espeak_config = EspeakConfig(
+            data_path=str(ascii_root),
+            lib_path=str(Path(espeakng_loader.get_library_path()).resolve()),
+        )
+    kokoro = Kokoro(str(model), str(voicepack), espeak_config=espeak_config)
     if voice not in kokoro.get_voices():
         raise ValueError("REQUESTED_NEURAL_VOICE_NOT_IN_LOCAL_MODEL")
     return kokoro, sf, model, voicepack
