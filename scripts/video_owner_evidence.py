@@ -148,7 +148,7 @@ def preserve_private_recording(source_path, dest_path, manifest):
                 shutil.copyfileobj(original, output, length=1024 * 1024)
         with manifest_path.open("x", encoding="utf-8") as output:
             made_manifest = True
-            output.write(json.dumps(manifest, indent=2) + "\\n")
+            output.write(json.dumps(manifest, indent=2) + "\n")
     except BaseException:
         if made_manifest:
             manifest_path.unlink(missing_ok=True)
