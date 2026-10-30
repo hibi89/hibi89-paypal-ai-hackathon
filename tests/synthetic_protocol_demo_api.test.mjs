@@ -110,3 +110,44 @@ test('synthetic replay failure is not misreported as real provider proof',async(
  assert.equal(response.status,503);
  assert.equal((await response.text()).includes('PROVIDER_SECRET_SHOULD_NEVER_LEAK'),false);
 });
+
+test('localhost approved quote -> real PayPal Orders planner GET preserves USD 29 and never posts payment',async()=>{
+ const app=await startOfflineDemo();
+ try{
+  const session=await (await fetch(app.url+'/demo/session')).json();
+  const url=app.url+'/api/demo/quote-checkout-preview';
+  const before=await fetch(url);
+  assert.equal(before.status,409);
+  const send=async(path,body)=>{
+   const response=await fetch(app.url+path,{method:'POST',headers:{
+    origin:app.url,'content-type':'application/json',
+    'x-csrf-token':session.csrfToken},body:JSON.stringify(body)});
+   assert.equal(response.status,200,await response.text());
+   return response;
+  };
+  await send('/api/quotes/sample-project/draft',{
+   expectedVersion:1,scope:'Design a synthetic logo and brand identity package'
+  });
+  await send('/api/quotes/sample-project/approve',{
+   expectedVersion:2,confirmed:true,amountMinor:2900
+  });
+  const preview=await fetch(url);
+  assert.equal(preview.status,200);
+  const proof=await preview.json();
+  assert.equal(proof.status,'LOCAL_APPROVED_QUOTE_PAYPAL_PLAN_ONLY');
+  assert.equal(proof.source,'PERSISTED_SYNTHETIC_SQLITE_APPROVAL');
+  assert.equal(proof.quoteVersion,2);
+  assert.equal(proof.amount,'29.00');
+  assert.equal(proof.plannedMethod,'POST_NOT_SENT');
+  assert.equal(proof.externalProviderCalls,0);
+  assert.equal(proof.orderCreated,false);
+  assert.equal(proof.capturePerformed,false);
+  const current=await (await fetch(app.url+'/api/quotes/sample-project')).json();
+  assert.equal(current.quote.version,2);
+  assert.equal(current.quote.approval.amountMinor,2900);
+  assert.equal((await fetch(app.url+'/api/quotes/sample-project/payment')).status,503);
+  assert.equal((await fetch(url,{method:'POST',headers:{
+   origin:app.url,'content-type':'application/json'
+  },body:'{}'})).status,405);
+ }finally{await app.close();}
+});

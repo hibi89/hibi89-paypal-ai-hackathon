@@ -79,6 +79,17 @@ try:
             page.locator("#approve-submit").click()
             expect(page.locator("#quote-view")).to_contain_text("APPROVED")
             expect(page.locator("#quote-view")).to_contain_text("$29.00")
+            preview=page.locator("#quote-checkout-preview")
+            expect(preview).to_be_enabled()
+            posts_before_preview=sum(method=="POST" for method,_ in requests)
+            preview.click()
+            expect(page.locator("#quote-checkout-preview-result")).to_contain_text(
+                "human-approved USD 29.00")
+            expect(page.locator("#quote-checkout-preview-result")).to_contain_text("version 2")
+            expect(page.locator("#quote-checkout-preview-result")).to_contain_text("NOT SENT")
+            assert sum(method=="POST" for method,_ in requests)==posts_before_preview
+            assert any(method=="GET" and url.endswith(
+                "/api/demo/quote-checkout-preview") for method,url in requests)
             expect(page.locator("#contract-fulfillment")).to_have_text("NO_CONTRACT")
             page.locator("#contract-create").click()
             expect(page.locator("#contract-fulfillment")).to_have_text("PENDING")
