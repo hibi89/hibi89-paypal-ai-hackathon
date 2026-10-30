@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import os
 import json
 import re
 import subprocess
@@ -94,6 +95,14 @@ def load_engine(root: Path, voice: str):
     if hashlib.sha256(voicepack.read_bytes()).hexdigest() != (
             "bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d"):
         raise ValueError("KOKORO_VOICE_FILE_SHA256_MISMATCH")
+    # The Windows espeakng-loader wheel can retain a CI build-time data path.
+    # Point eSpeak to the installed local phoneme tables before initialization.
+    if sys.platform == "win32":
+        import espeakng_loader
+        data = Path(espeakng_loader.__file__).resolve().parent / "espeak-ng-data"
+        if not (data / "phontab").is_file():
+            raise ValueError("LOCAL_ESPEAK_PHONTAB_NOT_FOUND")
+        os.environ["ESPEAK_DATA_PATH"] = str(data)
     kokoro = Kokoro(str(model), str(voicepack))
     if voice not in kokoro.get_voices():
         raise ValueError("REQUESTED_NEURAL_VOICE_NOT_IN_LOCAL_MODEL")
