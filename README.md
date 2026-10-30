@@ -1,3 +1,51 @@
+# Proofline — PayPal + AI Hackathon judge entry (STAGED, NOT RELEASED)
+
+**Current consolidated QA preview (NOT MERGED OR RELEASED):**
+[Draft PR #27](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/27),
+[`work/paypal-reviewer-assets-gate-20261030`](https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/work/paypal-reviewer-assets-gate-20261030).
+It contains the two-category offline marketplace, consent controls, private video integrity,
+source-matched owner review and all previously overlapping PR #23–#26 QA changes.
+**Do not merge PR #23/#24/#25/#26 separately.**
+This [draft README/LICENSE PR #16](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/16)
+is a release landing **only**. The actual tested marketplace is NOT on `main`.
+
+**QA baseline (tested SOURCE SHA, not automatically post-documentation HEAD):**
+[GitHub Actions #41064633633](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41064633633)
+on `d37215de27e80669d0d5f33ead6c8d92a5bf627d` completed **3/3 SUCCESS**:
+**643/643 Node tests, Chromium AI Work / Global Services / mobile / fake API replay, Windows
+owner review, and private synthetic WebM `ffprobe` 165.08 seconds (<180)**.
+New QA documentation commits after that SHA require their own exact-head check.
+No real PayPal/Gemini calls or capture occurred in CI.
+
+**Run the offline synthetic reviewer build (Node.js >=22.5, no provider credentials):**
+
+```bash
+git clone https://github.com/hibi89/hibi89-paypal-ai-hackathon.git
+cd hibi89-paypal-ai-hackathon
+git switch work/paypal-reviewer-assets-gate-20261030
+npm run preflight:reviewer
+npm run judge:reproduce
+npm run demo
+```
+
+Open the printed loopback `http://127.0.0.1:PORT`. Both categories share human-approved
+quote/contract and fictional sellers. The click-to-replay PayPal/Gemini protocol and payment
+planning use **injected fake providers only**. The October 28 owner-reported real Gemini and
+PayPal Sandbox buyer approval / capture / GET is **historical and separate**; the original
+private SQLite is never published or replayed by this browser.
+
+[English reviewer steps](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/work/paypal-reviewer-assets-gate-20261030/docs/JUDGE_REPRODUCTION_EN.md) ·
+[Source/provenance evidence](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/work/paypal-reviewer-assets-gate-20261030/docs/JUDGE_PAYPAL_AI_INTEGRATION_TRACE_EN.md) ·
+[Owner-only release checklist](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/work/paypal-reviewer-assets-gate-20261030/docs/FINAL_OWNER_SUBMISSION_CHECKLIST_20261030.md)
+
+**NOT APPROVED:** No PR #27 or PR #16 merge, no `main` application release, no owner-approved
+YouTube URL or Devpost receipt. Owner must personally verify the exact clean source and
+private video (including captions/privacy and independently measured encoded duration),
+then separately approve publication and official submission. This staged landing cannot
+by itself satisfy the hackathon's publicly runnable application requirement.
+
+---
+
 > **[현재 운영 안내 — 2026-10-24] 새 ChatGPT 채팅방에는 다음 한 문장만 입력:** `[페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈]`.  
 > **PayPal 총괄 겸 개발자는** [`lead/paypal` 최신 시작 문서](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/lead/paypal/CHAT_BOOTSTRAP.md) → [현재 작업 포인터](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/lead/paypal/docs/roles/lead/LEAD_ACTIVE_WORK.md) → [검증·진행률 원장](https://github.com/hibi89/hibi89-paypal-ai-hackathon/blob/lead/paypal/data/paypal_daily_progress.json)을 보고 해당 NEXT 작업을 직접 구현·검수·GitHub 기록한다.  
 > **`main`은 과거 릴리스/문서 스냅샷이며, 아래 오래된 4채팅/기능별 worker 구조 및 작업 미착수 설명은 역사적 기록이다.** 작업용 지시는 반드시 `lead/paypal`을 우선한다. 최근 확인 기준 NEXT D07 0%/100%·잔여 예상 4h/안전 8h, D03 Sandbox/AI 접근 차단·D04 실제 AI 미검증. 배경 자동 개발/커밋은 아니다.
