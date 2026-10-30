@@ -70,3 +70,12 @@ test('premium viewport transitions stay frame-visible and avoid implicit jumps',
   assert.equal((recorder.match(/target.wait_for\(state="visible"\)/g)||[]).length,2);
   assert.match(recorder,/page.reload\(\)/);
 });
+
+test('premium opportunity history and career cards retain film behavior',()=>{
+  assert.match(html,/up to nine unique examples per category/);
+  assert.match(html,/\.recommendation-controls/);
+  assert.match(html,/#marketplace-panel \.profile-tier/);
+  assert.match(html,/\.recommendation-history-button\[aria-pressed=true\]/);
+  assert.match(recorder,/guided_click\("#marketplace-submit"\)/);
+  assert.match(recorder,/voice_cue\("The same marketplace also supports/);
+});

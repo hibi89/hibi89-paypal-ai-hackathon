@@ -86,6 +86,14 @@ button:disabled{opacity:.48;cursor:not-allowed}
 .profile-gap{font-size:.78rem;color:#965f34;margin-bottom:8px}
 .profile-card .profile-action{width:100%;margin:auto 0 0;font-size:.81rem}
 #marketplace-selection-status{border-left:3px solid #8cacdf;padding:11px 13px;margin-top:16px;background:#f7f9fe;border-radius:0 8px 8px 0;font-size:.85rem}
+.profile-tier{display:inline-block;margin:5px 0 0;font-size:.72rem;font-weight:750;color:#5269b1}
+.recommendation-explainer{font-size:.8rem;color:#627995;margin:6px 0 14px}
+.recommendation-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:15px 0 0;padding:14px;border:1px solid #cedcf1;border-radius:12px;background:#f6f9fd}
+.recommendation-count{flex:1 1 100%;margin:0;font-size:.82rem;font-weight:700}
+.recommendation-next{margin:0}
+.recommendation-history{display:flex;flex-wrap:wrap;gap:8px}
+.recommendation-history-button{font-size:.75rem;padding:8px 12px;min-height:36px}
+.recommendation-history-button[aria-pressed=true]{border:2px solid #4787dc}
 #quote-view,#integration-detail,#evidence-details,#contract-view,#subscription-details,#subscription-message,#integration-message,#contract-message{word-break:break-word;overflow-wrap:anywhere}
 .contract-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.contract-grid>div{border-radius:10px;background:#f4f7fb;padding:12px;min-width:0}
 .contract-grid p{margin:4px 0}.delivery-status{font-weight:800;color:#234a87}
@@ -215,6 +223,13 @@ button:disabled{opacity:.49;box-shadow:none}
 .skill-chip.is-match{background:#1b4b44;color:#b5ffde}
 .profile-gap{color:#ebc394}
 #marketplace-selection-status{background:#122a3e;border-left-color:#4e9bcc;color:#b9d1ee}
+/* Recommendation history inherits the dark Proofline design without losing contrast. */
+#marketplace-panel .profile-tier{color:#83dfd1;font-size:.73rem;letter-spacing:.02em}
+#marketplace-panel .recommendation-explainer{color:#aebfd5;line-height:1.55}
+#marketplace-panel .recommendation-controls{background:#0c2036;border-color:#31547a;box-shadow:inset 0 1px #ffffff12;color:#d3e5ff}
+#marketplace-panel .recommendation-count{color:#c6dcf9}
+#marketplace-panel .recommendation-history-button{background:#1d3756;border-color:#3e6893;color:#d8ebff;box-shadow:none}
+#marketplace-panel .recommendation-history-button[aria-pressed=true]{border:2px solid #70cebd;background:#234962;color:#fff}
 .contract-grid>div,details .contract-grid>div{background:#14283f;color:#c0d2e8}
 .delivery-status{color:#8cbcff}
 details{border-color:#344961;background:#101d30}
@@ -286,7 +301,7 @@ code{background:#253751;color:#dbe9fa}
 <section class="panel" id="marketplace-panel" aria-labelledby="marketplace-heading">
 <p class="section-kicker">01 / Explore the marketplace</p>
 <h2 id="marketplace-heading">Find the right specialist for your next project</h2>
-<p class="meta">Choose AI Work or Global Services. Both use one matching/quote/approval workflow. Three fictional specialists per category; no live sellers, Gemini API, fee-sharing agreement, or PayPal checkout. Input synthetic briefs only.</p>
+<p class="meta">Choose AI Work or Global Services. Both use one matching/quote/approval workflow. Three fictional specialists per recommendation set (up to nine unique examples per category, two optional refreshes). Career tiers are illustrative, not verified expertise, price or seller reviews; no live sellers, Gemini API, fee-sharing agreement, or PayPal checkout. Input synthetic briefs only.</p>
 <form id="marketplace-form">
 <label for="marketplace-vertical">Service category</label>
 <select id="marketplace-vertical" name="vertical"><option value="ai_work">AI Work — development and automation</option><option value="general_services">Global Services — design, translation, marketing</option></select>
