@@ -1,3 +1,17 @@
+## 2026-10-30 KST — P19 untracked source → private video integrity hardening
+1. **Scope:** One dual-category Proofline synthetic judge app, old one-shot real Sandbox/Gemini receipt separate, private owner video integrity.
+2. **Completed:** Node submission source proof and Python recorder's before/after source snapshots now reject untracked non-ignored source files, not only modified tracked files. Kept a single conservative Git command, no raw filename output; isolated Python/Chromium byproducts ignored. Added regression tests. No user data touched.
+3. **Verification:** Previous immutable QA `ac12e3e0d04215d91696ff58727d03cbbf418366` [CI #41066340165](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41066340165) **3/3 SUCCESS**, 643/643 Node, Chromium, Windows, 166.32-sec ffprobe. Newly edited P19 code/test through `0a8c180e2ca64bba039e6e008c4f3c8367851674` **PENDING new exact-HEAD CI**, not automatically covered by prior PASS.
+4. **State:** Draft PR27 updated source/tests, existing PR16 still Draft landing only. Local owner editorial/video/source decision, public repository release, YouTube, Devpost and independent actual current provider checkout remain pending.
+5. **Failure/pivot:** Diff-only source validation could attest clean SHA despite untracked JS; switched to `git status --porcelain=v1 --untracked-files=normal --` with no filename logs. CI failure must be investigated on exact-source logs; no weakening source clean gate to force video pass.
+6. **Repo:** `hibi89/hibi89-paypal-ai-hackathon` / `work/paypal-reviewer-assets-gate-20261030` / [PR27](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/27). Baseline branch `lead/paypal@0f50d0d` and main `b8e7f79` unmodified; obtain current PR head post-documentation update.
+7. **Runtime:** `npm test`, CI Node/Chromium, Python `tests/video_owner_evidence_test.py`, Windows private `npm run owner:final:local`; local loopback only, no Production URL.
+8. **Original/rollback:** Previous green SHA `ac12e3e0` and P19 commits allow restoration. Owner `~/.paypal-ai-mvp-private` read-only, all WebMs preserved. No credential/ID exposure or payment replay.
+9. **Next:** Verify exact new HEAD 3-job CI, inspect video recorded source match and Python unit logs. If PASS, do not rerun. Owner reviews local source-matched private WebM and explicitly approves any PR merge/public YouTube/Devpost; new provider activity requires separate narrowly-scoped approval.
+10. **Evidence/time:** 2026-10-30 KST, GitHub source and earlier CI checked; new P19 source test execution pending, not declared complete yet.
+
+---
+
 ## 2026-10-30 KST — CONSOLIDATED PR27 VERIFIED QA + REVIEWER DOC ALIGNMENT
 1. **Goal / confirmed scope / stack:** Single Proofline marketplace, AI Work and Global Services sharing Node 22.5+ native SQLite quote/approval/contract, synthetic browser and separately owner-reported Gemini/PayPal Sandbox history. Not a production site or PayPal partner platform.
 2. **Completed this turn:** Confirmed exact source PR27 `d37215de27e80669d0d5f33ead6c8d92a5bf627d` green CI; corrected stale branch/PR links and current source-provenance caveats in QA `README.md`, `docs/FINAL_OWNER_SUBMISSION_CHECKLIST_20261030.md`, `docs/JUDGE_REPRODUCTION_EN.md`, and `docs/DEVPOST_ENTRY_AND_VIDEO_COPY_EN_20261029.md`. Retained DRAFT/no-publication language. No runtime/payment code or merge altered.
