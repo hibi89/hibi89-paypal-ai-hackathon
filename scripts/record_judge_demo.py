@@ -209,6 +209,7 @@ def capture(output_dir, pace_ms, premium=False):
                     rect=target.bounding_box()
                     if rect is None:
                         raise RuntimeError("FILM_TARGET_NOT_VISIBLE")
+                    keep_caption_off_target(rect)
                     x=rect["x"]+rect["width"]/2
                     y=rect["y"]+rect["height"]/2
                     film_move_to(x,y)
@@ -226,6 +227,7 @@ def capture(output_dir, pace_ms, premium=False):
                         rect=target.bounding_box()
                         if rect is None:
                             raise RuntimeError("FILM_SELECT_NOT_VISIBLE")
+                        keep_caption_off_target(rect)
                         film_move_to(rect["x"]+rect["width"]/2,
                                      rect["y"]+rect["height"]/2)
                         page.evaluate("(s)=>document.querySelector(s)?.classList.add('film-target')",selector)
@@ -252,17 +254,18 @@ def capture(output_dir, pace_ms, premium=False):
                             "text": text,
                         })
 
-                def caption(label):
-                    # Presenter captions are part of the video, never injected into
-                    # the trusted application or sent to a provider.
-                    page.evaluate("""({label,premium}) => {
+                def caption(label, placement="bottom"):
+                    # Premium captions are small editorial hints, not giant bars.
+                    # Keep the ordinary (non-premium) recorder unchanged.
+                    if premium and (len(label) > 96 or placement not in ("top", "bottom")):
+                        raise RuntimeError("PREMIUM_CAPTION_LENGTH_OR_PLACEMENT_INVALID")
+                    page.evaluate("""({label,premium,placement}) => {
                       let e=document.getElementById('video-presenter-caption');
                       if(!e){
                         e=document.createElement('div');
                         e.id='video-presenter-caption';
-                        Object.assign(e.style,{
-                          position:'fixed',left:premium?'10%':'4%',right:premium?'10%':'4%',
-                          bottom:premium?'108px':'8px',
+                        if(!premium)Object.assign(e.style,{
+                          position:'fixed',left:'4%',right:'4%',bottom:'8px',
                           background:'rgba(11,22,39,.94)',color:'#fff',
                           font:'bold 20px/1.35 system-ui,sans-serif',
                           padding:'12px 18px',borderRadius:'9px',
@@ -270,8 +273,45 @@ def capture(output_dir, pace_ms, premium=False):
                         });
                         document.body.append(e);
                       }
+                      if(premium){
+                        // Text-sized 2-line translucent chip, not a full-width bar.
+                        Object.assign(e.style,{
+                          position:'fixed',left:'50%',right:'auto',
+                          top:placement==='top'?'84px':'auto',
+                          bottom:placement==='bottom'?'92px':'auto',
+                          transform:'translateX(-50%)',
+                          width:'max-content',maxWidth:'min(62vw,620px)',
+                          boxSizing:'border-box',background:'rgba(8,17,31,.34)',
+                          color:'#fff',font:'600 17px/1.35 system-ui,sans-serif',
+                          padding:'7px 12px',borderRadius:'10px',
+                          textShadow:'0 1px 3px #000,0 0 7px #000c',
+                          display:'-webkit-box',WebkitBoxOrient:'vertical',
+                          WebkitLineClamp:'2',whiteSpace:'normal',
+                          overflowWrap:'break-word',overflow:'hidden',
+                          zIndex:'9999',pointerEvents:'none',textAlign:'center'
+                        });
+                        e.dataset.placement=placement;
+                      }
                       e.textContent=label;
-                    }""",{"label":label,"premium":premium})
+                    }""",{"label":label,"premium":premium,"placement":placement})
+
+                def keep_caption_off_target(rect):
+                    if not premium:
+                        return
+                    # The actual mouse/checkbox/dropdown must never sit under the
+                    # caption: flip to the other safe edge if they intersect.
+                    page.evaluate("""r => {
+                      const c=document.getElementById('video-presenter-caption');
+                      if(!c)return;
+                      const b=c.getBoundingClientRect(),pad=14;
+                      if(r.x<b.right+pad&&r.x+r.width>b.left-pad&&
+                         r.y<b.bottom+pad&&r.y+r.height>b.top-pad){
+                        const next=c.dataset.placement==='top'?'bottom':'top';
+                        c.dataset.placement=next;
+                        c.style.top=next==='top'?'84px':'auto';
+                        c.style.bottom=next==='bottom'?'92px':'auto';
+                      }
+                    }""",rect)
                 def evidence_overlay(card):
                     # Strict allowlisted display data only. Text nodes, never HTML;
                     # original private receipt values/IDs are not copied to a page.
@@ -336,11 +376,11 @@ def capture(output_dir, pace_ms, premium=False):
                     # First the title is legible. THEN the viewer sees the real
                     # pointer click 'Explore two service markets' before the
                     # app scrolls to the actual input workflow.
-                    caption("START HERE | Explore the two service markets. Follow the cursor into a real, local browser walkthrough.")
+                    caption("START HERE | Two service markets. Follow the cursor.")
                     voice_cue("Talent is everywhere. Access to opportunity is not. Proofline is designed to open the first door to work.")
                     page.wait_for_timeout(min(7800, max(950, pace_ms+1200)))
                     guided_click("a.hero-cta")
-                    caption("DISCOVER | The cursor opens the marketplace. All specialists and transactions shown here are fictional.")
+                    caption("DISCOVER | Two markets. Fictional profiles and transactions.")
                     film_action_hold()
                     guided_fill("#marketplace-brief","Build an ecommerce website with PayPal checkout")
                 else:
@@ -353,7 +393,7 @@ def capture(output_dir, pace_ms, premium=False):
                 expect(proof_map).to_contain_text("OWNER-REPORTED HISTORY")
                 expect(proof_map).to_contain_text("NOT YET SUBMITTED")
                 proof_map.scroll_into_view_if_needed()
-                caption("EVIDENCE MAP | Offline browser + injected fake APIs are NOT the owner's historical Gemini/PayPal Sandbox receipt.")
+                caption("EVIDENCE MAP | Local fake APIs are NOT historical Sandbox proof.", placement="top")
                 voice_cue("Every result has a source. This fictional offline demo is not a live PayPal checkout.")
                 page.wait_for_timeout(min(pace_ms, 4500))
 
@@ -370,7 +410,7 @@ def capture(output_dir, pace_ms, premium=False):
                 assert page.locator("#protocol-replay-list li").count() >= 7, "FAKE_PROTOCOL_STAGES_MISSING"
                 assert post_paths.count("/api/demo/provider-protocol") == 1, "FAKE_PROTOCOL_REPLAY_NOT_EXPLICIT"
                 synthetic_protocol_replay_verified = True
-                caption("INJECTED FAKE API TRACE | Gemini skills → simulated PayPal order → buyer approval GET → simulated Capture → GET. ZERO real provider calls.")
+                caption("FAKE API TRACE | Simulated Gemini and PayPal. Zero real provider calls.", placement="top")
                 voice_cue("We demonstrate Gemini and PayPal integration logic using fake responses. No real provider request is made here.")
                 page.wait_for_timeout(min(pace_ms, 5000))
 
@@ -379,7 +419,7 @@ def capture(output_dir, pace_ms, premium=False):
                 guided_click("#marketplace-submit")
                 expect(page.locator(".match-summary")).to_contain_text("AI Work")
                 expect(page.locator("#marketplace-choose-synthetic-web")).to_be_visible()
-                caption("AI WORK | AI agents, automation and development. Three FICTIONAL specialists, with visible skill gaps.")
+                caption("AI WORK | Fictional specialists for development and automation.")
                 voice_cue("Explore specialists in AI development, automation and software engineering.")
                 pause()
 
@@ -387,7 +427,7 @@ def capture(output_dir, pace_ms, premium=False):
                 guided_click("#marketplace-submit")
                 expect(page.locator(".match-summary")).to_contain_text("Global Services")
                 expect(page.locator(".profile-card")).to_have_count(3)
-                caption("GLOBAL SERVICES | Design, translation, marketing: a second category sharing the SAME marketplace workflow. FICTIONAL profiles.")
+                caption("GLOBAL SERVICES | Fictional design, writing and translation specialists.")
                 voice_cue("The same marketplace also supports design, writing and translation.")
                 page.wait_for_timeout(min(pace_ms, 5500))
 
@@ -418,7 +458,7 @@ def capture(output_dir, pace_ms, premium=False):
                     "human-approved USD 15.00")
                 expect(page.locator("#quote-checkout-preview-result")).to_contain_text(
                     "9 in-memory fake PayPal domain stages")
-                caption("APPROVED USD 15 QUOTE → ORDER AND CAPTURE DOMAIN FLOW | 9 FAKE in-memory stages, no API POST or payment.")
+                caption("USD 15 APPROVED QUOTE | 9 fake payment stages. No real payment.", placement="top")
                 voice_cue("A human approves the exact quote and amount. This fifteen-dollar example does not send a payment.")
                 page.wait_for_timeout(min(pace_ms,2200))
                 guided_click("#verify-local-bridge")
@@ -426,14 +466,18 @@ def capture(output_dir, pace_ms, premium=False):
                     "LOCAL PROOF PASS")
                 expect(page.locator("#verify-local-bridge-result")).to_contain_text(
                     "fixed USD 1.50")
-                caption("DISTINCT PROOFS | USD 15 quote-bound plan plus separate USD 1.50 FAKE Gemini/PayPal adapter replay.")
+                caption("SEPARATE DEMOS | USD 15 mock quote; USD 1.50 fake adapter replay.", placement="top")
                 page.wait_for_timeout(min(pace_ms,2200))
-                caption("OFFLINE MOCK proposal. A HUMAN approves a specific quote version and amount; no payment is authorized.")
+                caption("HUMAN APPROVAL | Exact quote and amount. No payment authorized.", placement="top")
                 pause()
 
                 # Three attributed provider-evidence slides; do not imply fresh API use.
                 # Default caption pace is reduced to make room for both markets
                 # while retaining a safety margin under the 3-minute limit.
+                if premium:
+                    # The evidence lens already labels its own source; never
+                    # let a stale caption obscure its proof panel.
+                    page.evaluate("document.getElementById('video-presenter-caption')?.remove()")
                 film_cards = premium_storyboard_cards(proof) if premium else storyboard_cards(proof)
                 for card in film_cards:
                     if premium:
@@ -481,7 +525,7 @@ def capture(output_dir, pace_ms, premium=False):
                 film_action_hold()
                 guided_click("#delivery-submit")
                 expect(page.locator("#contract-fulfillment")).to_have_text("SUBMITTED")
-                caption("Owner creates an unpaid contract and submits a synthetic delivery for an independent reviewer decision.")
+                caption("UNPAID CONTRACT | Synthetic delivery awaits independent review.", placement="top")
                 voice_cue("A synthetic delivery is submitted for a separate reviewer's decision.")
                 pause()
 
@@ -491,7 +535,7 @@ def capture(output_dir, pace_ms, premium=False):
                 guided_click("#review-reject")
                 expect(page.locator("#contract-fulfillment")).to_have_text("REJECTED")
                 film_action_hold()
-                caption("Synthetic reviewer REJECTED delivery. The owner must revise and resubmit; previous review cannot be silently reused.")
+                caption("REJECTED | Synthetic reviewer requests a revision.", placement="top")
                 voice_cue("The reviewer can reject the work and request a revision.")
                 pause()
 
@@ -510,7 +554,7 @@ def capture(output_dir, pace_ms, premium=False):
                 expect(page.locator("#contract-events")).to_contain_text("REJECTED")
                 expect(page.locator("#contract-events")).to_contain_text("ACCEPTED")
                 expect(page.locator("#contract-payment")).to_have_text("NOT_CAPTURED")
-                caption("Read-only SQLite audit timeline: CREATED → SUBMITTED → REJECTED → RESUBMITTED → ACCEPTED. Payment remains NOT_CAPTURED.")
+                caption("AUDIT TRAIL | Rejected → resubmitted → accepted. Payment NOT CAPTURED.", placement="top")
                 voice_cue("Every decision stays in the local audit trail. The synthetic transaction remains unpaid.")
                 pause()
 
@@ -518,12 +562,12 @@ def capture(output_dir, pace_ms, premium=False):
                 expect(page.locator("#evidence-details")).to_contain_text("local audit chain: PASS")
                 guided_click("#historical-provider-evidence summary")
                 expect(page.locator("#historical-provider-evidence")).to_contain_text("NOT INDEPENDENTLY REPRODUCED")
-                caption("Separate owner-observed 2026-10-28 Gemini + PayPal SANDBOX test. Historical proof only; this browser never contacts providers.")
+                caption("HISTORICAL OWNER REPORT | Gemini + PayPal Sandbox; not replayed here.", placement="top")
                 pause()
 
                 page.reload()
                 expect(page.locator("#contract-events")).to_contain_text("ACCEPTED")
-                caption("Technology is the evidence. The marketplace is the mechanism. More opportunity for people is the goal. OFFLINE SYNTHETIC.")
+                caption("PROOFLINE | Opportunity first. Human approval. Offline synthetic demo.")
                 voice_cue("Proofline is about making opportunity more accessible, with people in control of trust and approval.")
                 pause()
                 assert not unsafe_requests, "EXTERNAL_REQUEST_BLOCKED"
