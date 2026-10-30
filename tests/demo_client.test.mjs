@@ -8,7 +8,8 @@ const client=readFileSync(new URL('../web/demo_client.js',import.meta.url),'utf8
 function mount({deferredApproval=false}={}){
   const ids=['quote-view','message','demo-main','demo-role-toggle','demo-session-role','draft-form','approve-form','reject-form','reject-reason','scope',
     'dollars','confirm','draft-submit','approve-submit','reject-submit','refresh','payment-status',
-    'protocol-replay-button','marketplace-submit'];
+    'protocol-replay-button','marketplace-submit',
+    'quote-checkout-preview','verify-local-bridge'];
   const elements=new Map(ids.map(id=>[id,{
     id,textContent:'',disabled:false,value:'',checked:false,attrs:{},listeners:{},
     setAttribute(k,v){this.attrs[k]=v;},
