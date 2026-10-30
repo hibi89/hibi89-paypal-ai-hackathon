@@ -1,3 +1,37 @@
+## 2026-10-31 — Owner approved free offline neural voice provisioning
+
+User explicitly accepted the free local Kokoro route. After consulting upstream [thewh1teagle/kokoro-onnx model-files-v1.1](https://github.com/thewh1teagle/kokoro-onnx/releases/tag/model-files-v1.1), we selected the **FP16 English model** (upstream ~164MB, near-FP32 signal correlation 0.999) plus ~28MB English voices instead of 326MB full-precision weights. No paid API or text/video uploads. **The model has NOT been installed on the user's PC by ChatGPT; the user must run the one-time command below.** The installed runtime is isolated to the existing gitignored `.video-venv` Python environment; public model files remain in ignored `output/voice-models` and never GitHub.
+
+**One-time Windows PowerShell provisioning (requires existing clean `paypal-premium-review`, local Python video venv and explicit user approval already given):**
+
+```powershell
+git status --porcelain
+git -c gc.auto=0 -c maintenance.auto=false pull --ff-only origin design/proofline-premium-film-20261031
+npm run video:voice:setup:owner
+```
+
+The installer `scripts/install_owner_neural_voice.ps1` downloads public model files from **only upstream GitHub model-files-v1.1** using TLS/HTTPS, verifies full SHA-256 against `f3a290d384fbb27966d462905c71a46cef9e5fd00516b40df32a0b4afe77ac96` (FP16) and `bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d` (voices), refuses existing corrupted assets or overwrite, installs pinned local `kokoro-onnx==0.6.1` + `soundfile==0.13.1` through pip wheels, does not change global Python or original media. Hash references from release-compatible offline deployment reference [JakeTTS](https://socket.dev/pypi/package/jaketts/overview/1.0.10) and upstream artifacts. The hashes are validated against actual downloaded bytes before use. On failed download checksum the temporary file is removed and the command stops.
+
+**Audition BEFORE recording or doing 13 full cue syntheses:**
+
+```powershell
+npm run video:voice:neural:owner -- --sample-only --voice af_heart
+# Alternative male English sample:
+npm run video:voice:neural:owner -- --sample-only --voice am_michael
+```
+
+These commands synthesize a *fixed sanitized English Proofline sample*, without private historical evidence, provider calls, accounts or a browser recording. Saved isolated under `output/videos/private-neural-samples/`; owner plays the WAV locally to accept/reject voice. Do **not** claim quality without owner hearing it. No model/runtime calls are made by GitHub CI.
+
+**After voice is accepted and latest exact-HEAD full-length CI passed, create fresh film and merge voice** (new film must match the new source SHA and remain <180s):
+
+```powershell
+npm run video:record:premium:owner
+npm run video:voice:neural:owner -- --voice af_heart
+```
+
+This writes **new private WebM**, does not overwrite the old 118.12s rejected draft, does not regenerate Windows SAPI or call Gemini/PayPal. It reuses the existing bounded mux and checks media duration/2 streams. Source integrity and `NO_PROVIDER_REQUESTS` required. Capture/narration quality still require actual viewing and listening to recorded film. **No public upload, PR merge or Devpost submission without separate approval.**
+
+---
 ## 2026-10-31 KST — Owner first-playback editorial failures and premium retake design
 
 **Owner feedback on actual Windows narrated recovery (`proofline-premium-narrated-recovered-20261031-023540-aab70e35.webm`, reported 118.12s):**
