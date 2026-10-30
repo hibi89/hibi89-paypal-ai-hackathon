@@ -248,7 +248,17 @@ def capture(output_dir, pace_ms, premium=False):
                         # silently hit the background after the target moves.
                         # Locator click waits for a stable, actionable target;
                         # film_move_to above still records the visible cursor.
-                        target.click(delay=140 if pace_ms >= 1000 else 40)
+                        if selector == "#demo-role-toggle":
+                            # The real local app calls window.location.reload()
+                            # after switching synthetic owner/reviewer cookies.
+                            # Wait for the navigation before touching DOM again,
+                            # then reinstall only the pointer overlay lost on reload.
+                            with page.expect_navigation(wait_until="domcontentloaded",
+                                                        timeout=12000):
+                                target.click(delay=140 if pace_ms >= 1000 else 40)
+                            install_film_cursor()
+                        else:
+                            target.click(delay=140 if pace_ms >= 1000 else 40)
                         page.wait_for_timeout(
                             (650 if pace_ms >= 1000 else 130)
                             if hero_anchor else (420 if pace_ms >= 1000 else 40))

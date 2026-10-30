@@ -87,3 +87,11 @@ test('premium trusted click targets survive native smooth scrolling',()=>{
   assert.match(recorder,/target.click\(delay=140 if pace_ms >= 1000 else 40\)/);
   assert.doesNotMatch(recorder,/page.mouse.click\(x,y,delay=/);
 });
+
+test('synthetic owner/reviewer switch waits for actual page reload and reinstalls cursor',()=>{
+  assert.match(recorder,/if selector == "#demo-role-toggle":/);
+  assert.match(recorder,/with page.expect_navigation\(wait_until="domcontentloaded",/);
+  assert.match(recorder,/timeout=12000\):/);
+  assert.match(recorder,/install_film_cursor\(\)\s+else:/);
+  assert.match(recorder,/target.click\(delay=140 if pace_ms >= 1000 else 40\)/);
+});
