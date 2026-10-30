@@ -105,6 +105,48 @@ def collect_saved_receipt(root):
         return sanitize_saved_receipt(None)
 
 
+
+def premium_storyboard_cards(proof):
+    """Condensed human-readable evidence lens, never raw receipt fields.
+    This presentation is available ONLY to the opt-in premium recorder.
+    Original detailed storyboard_cards() remains unchanged for standard CI.
+    """
+    verified = proof["local_receipt_verified"]
+    source = ("OWNER-REPORTED · LOCAL RECEIPT READ-ONLY MATCH"
+              if verified else "OWNER REPORT ONLY · RECEIPT NOT PRESENT HERE")
+    return [
+        {
+            "scene": "gemini", "indexLabel": "01 / 03",
+            "title": "AI identified the skills.",
+            "subtitle": "A previous Gemini classification, clearly separated from today's synthetic matching.",
+            "sourceLabel": source,
+            "tags": [str(skill).upper() for skill in proof["skills"]],
+            "note": ("Saved local result checked read-only. No fresh Gemini call."
+                     if verified else
+                     "Original provider result not present. Owner report only; no Gemini call."),
+        },
+        {
+            "scene": "paypal", "indexLabel": "02 / 03",
+            "title": "Human approval first.",
+            "subtitle": "A separately reported October 28 Sandbox sequence—not a payment performed in this video.",
+            "sourceLabel": source,
+            "tags": [],
+            "note": ("Local saved capture state checked read-only, not a fresh PayPal GET."
+                     if verified else
+                     "Previously reported by owner; not reproduced or verified on this machine."),
+        },
+        {
+            "scene": "provenance", "indexLabel": "03 / 03",
+            "title": "Proof has a source.",
+            "subtitle": "Simulation and historical evidence stay on different sides of the line.",
+            "sourceLabel": source,
+            "tags": [],
+            "note": ("Owner-local history checked read-only. No new provider calls."
+                     if verified else
+                     "Historical provider activity not verified in this local session."),
+        },
+    ]
+
 def storyboard_cards(proof):
     verified = proof["local_receipt_verified"]
     source = ("OWNER DEVICE · PREVIOUS LOCAL RECEIPT PASSED READ-ONLY CHECK"
