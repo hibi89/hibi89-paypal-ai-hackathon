@@ -13,7 +13,7 @@ Do not infer that the synthetic browser demo is a real-provider session. No priv
 
 **Project website:** Not deployed; the judge reproducibility route is the public source branch below.
 
-**Open-source repository:** https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/lead/paypal
+**Open-source repository (CURRENT UNMERGED QA PREVIEW; UPDATE TO OWNER-APPROVED PUBLIC RELEASE URL BEFORE SUBMISSION):** https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/work/paypal-final-qa-20261030
 
 **Video URL:** [OWNER TO ADD AFTER APPROVED PUBLIC YOUTUBE UPLOAD]
 
@@ -83,7 +83,7 @@ PayPal Sandbox REST API (OAuth and Orders v2, owner-operated test); Gemini API (
 ```bash
 git clone https://github.com/hibi89/hibi89-paypal-ai-hackathon.git
 cd hibi89-paypal-ai-hackathon
-git switch lead/paypal
+git switch work/paypal-final-qa-20261030  # QA preview only; final release ref needs owner approval
 node --version  # Node 22.5+
 npm run preflight:reviewer
 npm run demo
