@@ -2,6 +2,7 @@
 // No real user accounts, seller performance claims, confidential briefs or payments.
 import {DatabaseSync} from 'node:sqlite';
 import {createHash,randomBytes} from 'node:crypto';
+import {matchSyntheticMarketplaceSkills,matchSyntheticGeneralServiceSkills} from './marketplace_match.mjs';
 
 const validOwner=x=>typeof x==='string'&&/^[a-zA-Z0-9_-]{1,64}$/.test(x);
 const validId=x=>typeof x==='string'&&/^[a-f0-9]{32}$/.test(x);
@@ -16,19 +17,35 @@ export function createMarketplaceRecommendationStore(filename) {
     vertical TEXT NOT NULL CHECK(vertical IN ('ai_work','general_services')),
     brief_hash TEXT NOT NULL,
     skills_json TEXT NOT NULL,
+    roster_json TEXT,
     round INTEGER NOT NULL CHECK(round BETWEEN 0 AND 2),
     created_at INTEGER NOT NULL,
     UNIQUE(owner,vertical,brief_hash)
   )`);
+  // Existing databases have an older fixed roster. Reading them must never
+  // silently rewrite the prior 3x3 history into today's scoring order.
+  const columns=db.prepare('PRAGMA table_info(recommendation_sessions)').all();
+  if(!columns.some(c=>c.name==='roster_json'))
+    db.exec('ALTER TABLE recommendation_sessions ADD COLUMN roster_json TEXT');
+  const makeRoster=(vertical,skills,legacyOrder=false)=>
+    Array.from({length:3},(_,round)=>
+      (vertical==='ai_work'
+        ? matchSyntheticMarketplaceSkills(skills,{round,legacyOrder})
+        : matchSyntheticGeneralServiceSkills(skills,{round,legacyOrder})
+      ).profiles.map(p=>p.id));
   const tx=fn=>{
     db.exec('BEGIN IMMEDIATE');
     try{const result=fn();db.exec('COMMIT');return result}
     catch(e){db.exec('ROLLBACK');throw e}
   };
-  const rowToPublic=row=>row?({
-    id:row.id,vertical:row.vertical,round:row.round,
-    skills:JSON.parse(row.skills_json)
-  }):null;
+  const rowToPublic=row=>{
+    if(!row)return null;
+    const skills=JSON.parse(row.skills_json);
+    const roster=row.roster_json===null
+      ? makeRoster(row.vertical,skills,true) // unchanged legacy rounds
+      : JSON.parse(row.roster_json);
+    return {id:row.id,vertical:row.vertical,round:row.round,skills,roster};
+  };
   function start(owner,vertical,brief,skills){
     if(!validOwner(owner)||!['ai_work','general_services'].includes(vertical)||
        typeof brief!=='string'||brief.length<8||brief.length>500||
@@ -44,8 +61,9 @@ export function createMarketplaceRecommendationStore(filename) {
         const used=db.prepare('SELECT COUNT(*) AS count FROM recommendation_sessions WHERE owner=?').get(owner).count;
         if(used>=24)throw failure('SYNTHETIC_SESSION_QUOTA_EXHAUSTED',429);
         const id=randomBytes(16).toString('hex');
-        db.prepare('INSERT INTO recommendation_sessions(id,owner,vertical,brief_hash,skills_json,round,created_at) VALUES(?,?,?,?,?,0,?)')
-          .run(id,owner,vertical,briefHash,JSON.stringify(skills),Date.now());
+        const roster=makeRoster(vertical,skills);
+        db.prepare('INSERT INTO recommendation_sessions(id,owner,vertical,brief_hash,skills_json,roster_json,round,created_at) VALUES(?,?,?,?,?,?,0,?)')
+          .run(id,owner,vertical,briefHash,JSON.stringify(skills),JSON.stringify(roster),Date.now());
         row=db.prepare('SELECT * FROM recommendation_sessions WHERE id=?').get(id);
       }
       return rowToPublic(row);
