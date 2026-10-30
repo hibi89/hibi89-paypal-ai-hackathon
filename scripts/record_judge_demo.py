@@ -243,7 +243,12 @@ def capture(output_dir, pace_ms, premium=False):
                         page.evaluate("""() => document.documentElement.style
                           .setProperty('scroll-behavior','smooth','important')""")
                     try:
-                        page.mouse.click(x,y,delay=140 if pace_ms >= 1000 else 40)
+                        # A prior profile-choice click may have started a
+                        # native smooth-scroll. A raw coordinate click can then
+                        # silently hit the background after the target moves.
+                        # Locator click waits for a stable, actionable target;
+                        # film_move_to above still records the visible cursor.
+                        target.click(delay=140 if pace_ms >= 1000 else 40)
                         page.wait_for_timeout(
                             (650 if pace_ms >= 1000 else 130)
                             if hero_anchor else (420 if pace_ms >= 1000 else 40))

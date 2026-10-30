@@ -28,7 +28,8 @@ test('premium recorder is opt-in and ordinary CI recording remains unchanged',()
   // Premium pointer movement must persist across actual captured frames.
   assert.match(recorder,/def film_move_to\(x, y\):/);
   assert.match(recorder,/page.wait_for_timeout\(45 if pace_ms >= 1000 else 4\)/);
-  assert.match(recorder,/page.mouse.click\(x,y,delay=140 if pace_ms >= 1000 else 40\)/);
+  assert.match(recorder,/target.click\(delay=140 if pace_ms >= 1000 else 40\)/);
+  assert.doesNotMatch(recorder,/page.mouse.click\(x,y,delay=/);
   assert.match(recorder,/page.wait_for_timeout\(min\(7800, max\(950, pace_ms\+1200\)\)\)/);
   assert.match(recorder,/guided_click\("a.hero-cta"\)/);
   assert.match(recorder,/target.type\(value,delay=52 if pace_ms >= 1000 else 5\)/);
@@ -78,4 +79,11 @@ test('premium opportunity history and career cards retain film behavior',()=>{
   assert.match(html,/\.recommendation-history-button\[aria-pressed=true\]/);
   assert.match(recorder,/guided_click\("#marketplace-submit"\)/);
   assert.match(recorder,/voice_cue\("The same marketplace also supports/);
+});
+
+test('premium trusted click targets survive native smooth scrolling',()=>{
+  assert.match(recorder,/native smooth-scroll/);
+  assert.match(recorder,/Locator click waits for a stable, actionable target/);
+  assert.match(recorder,/target.click\(delay=140 if pace_ms >= 1000 else 40\)/);
+  assert.doesNotMatch(recorder,/page.mouse.click\(x,y,delay=/);
 });
