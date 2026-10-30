@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {startOfflineDemo} from '../src/offline_demo_server.mjs';
-import {matchSyntheticMarketplaceBrief,matchSyntheticGeneralServiceBrief} from '../src/marketplace_match.mjs';
+import {matchSyntheticMarketplaceBrief,matchSyntheticGeneralServiceBrief,
+  matchSyntheticMarketplaceSkills,matchSyntheticGeneralServiceSkills} from '../src/marketplace_match.mjs';
 import {createMarketplaceRecommendationStore} from '../src/marketplace_recommendation_store.mjs';
 import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
@@ -193,15 +194,20 @@ test('UI affordances keep per-set history, three tiers and bounded refresh CTA',
 });
 
 test('opportunity discovery selects full skill coverage first within each of 3 career lanes',()=>{
+  const oldMatch=matchSyntheticMarketplaceSkills(['web','qa']);
+  assert.deepEqual(oldMatch.profiles.map(p=>p.id),
+    ['synthetic-web','synthetic-automation','synthetic-data']);
+  // The new method is opt-in; previously verified proof clips and
+  // owner Gemini/PayPal orchestration must retain their fixed scenario.
   const requested=['web','qa'];
-  const rounds=[0,1,2].map(round=>matchSyntheticMarketplaceSkills(requested,{round}));
+  const rounds=[0,1,2].map(round=>matchSyntheticMarketplaceSkills(requested,{round,legacyOrder:false}));
   assert.deepEqual(rounds[0].profiles.map(p=>p.id),
     ['synthetic-commerce','synthetic-ui','synthetic-tester']);
   assert.ok(rounds[0].profiles.every(p=>p.eligible));
   assert.deepEqual(rounds.map(r=>r.profiles.map(p=>p.tier)),
     Array(3).fill(['professional','rising','newcomer']));
   assert.equal(new Set(rounds.flatMap(r=>r.profiles.map(p=>p.id))).size,9);
-  const design=matchSyntheticGeneralServiceBrief('Design a logo and brand identity');
+  const design=matchSyntheticGeneralServiceSkills(['design','branding'],{legacyOrder:false});
   assert.equal(design.profiles.find(p=>p.tier==='newcomer').id,'synthetic-illustrator');
   assert.equal(design.profiles.find(p=>p.tier==='newcomer').eligible,true);
   assert.equal(matchSyntheticMarketplaceSkills(requested,{round:0,

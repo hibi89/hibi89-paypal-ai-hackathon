@@ -56,7 +56,7 @@ function chooseOpportunitySet(profiles,required,round,{profileIds,legacyOrder=fa
 
 // A closed skill taxonomy is used by both regex-only and AI-assisted matching.
 export const MARKETPLACE_SKILL_NAMES=Object.freeze(SKILLS.map(([name])=>name));
-export function matchSyntheticMarketplaceSkills(requestedSkills,{source='OFFLINE_REGEX',round=0,profileIds,legacyOrder=false}={}) {
+export function matchSyntheticMarketplaceSkills(requestedSkills,{source='OFFLINE_REGEX',round=0,profileIds,legacyOrder=true}={}) {
   if(!Array.isArray(requestedSkills)||requestedSkills.length>MARKETPLACE_SKILL_NAMES.length ||
      !requestedSkills.every(skill=>typeof skill==='string'&&MARKETPLACE_SKILL_NAMES.includes(skill))||
      new Set(requestedSkills).size!==requestedSkills.length ||
@@ -124,7 +124,7 @@ export function matchSyntheticGeneralServiceBrief(brief,{round=0}={}) {
   const requestedSkills=GENERAL_SERVICE_SKILLS.filter(([,pattern])=>pattern.test(brief)).map(([skill])=>skill);
   return matchSyntheticGeneralServiceSkills(requestedSkills,{round});
 }
-export function matchSyntheticGeneralServiceSkills(requestedSkills,{round=0,profileIds,legacyOrder=false}={}) {
+export function matchSyntheticGeneralServiceSkills(requestedSkills,{round=0,profileIds,legacyOrder=true}={}) {
   const allowed=GENERAL_SERVICE_SKILLS.map(([name])=>name);
   if(!Array.isArray(requestedSkills)||requestedSkills.length>allowed.length||
      requestedSkills.some(skill=>typeof skill!=='string'||!allowed.includes(skill))||
