@@ -4,7 +4,7 @@
 
 ## One command for reproducible local technical evidence (QA branch until release)
 
-On the currently unmerged `work/paypal-final-qa-20261030` branch, run `npm run judge:reproduce` with Node.js 22.5+ (no keys, PayPal login, Playwright, payment or package installation). This exercises **real localhost HTTP** for both AI Work and Global Services with deterministic fictional profiles, a CSRF-bound local matching request for each category and a GET check confirming payment remains disabled and the quote unchanged. It then executes the **real owner orchestrator** against **injected fake** Gemini and PayPal transports, including human-approved mock amount, fake buyer approval, one fake create/capture each and fake GET reconciliation. The sanitized result is written only to gitignored `output/submission/judge_reproduction_receipt.json`. Source commit and clean-tree status are recorded, not a public release assertion.
+On the currently unmerged `work/paypal-reviewer-assets-gate-20261030` branch, run `npm run judge:reproduce` with Node.js 22.5+ (no keys, PayPal login, Playwright, payment or package installation). This exercises **real localhost HTTP** for both AI Work and Global Services with deterministic fictional profiles, a CSRF-bound local matching request for each category and a GET check confirming payment remains disabled and the quote unchanged. It then executes the **real owner orchestrator** against **injected fake** Gemini and PayPal transports, including human-approved mock amount, fake buyer approval, one fake create/capture each and fake GET reconciliation. The sanitized result is written only to gitignored `output/submission/judge_reproduction_receipt.json`. Source commit and clean-tree status are recorded, not a public release assertion.
 
 **Current quote-bound judge verification (NEW):** `npm run judge:reproduce` separately starts real local SQLite demo sessions for each marketplace category, drafts and approves fictional USD 15 (AI Work) and USD 29 (Global Services) quotes, then verifies the **approved version and amount** pass the real pure PayPal Orders/Capture/reconciliation functions with nine invented fake payment states each. The receipt contains a `reproducibleQuoteBoundPlans` section for these checks. The existing USD 1.50 injected-fake adapter is independent. These tests make **no actual Gemini or PayPal API calls**, do not charge or capture funds and are **NOT independent Sandbox provider evidence**.
 
@@ -26,14 +26,14 @@ Proofline presents **one local synthetic marketplace**, with two selected servic
 
 **Automated evidence:** `tests/browser_general_services_e2e.py` reproduces the entire Global Services browser sequence on a fresh local server. `tests/browser_offline_e2e.py` covers AI Work, full delivery/review state changes and responsive Global Services mobile UI. Both run in GitHub Actions without any payment POST.
 
-**Latest verified pre-P15 QA:** `work/paypal-final-qa-20261030@36ced8f` completed [Actions #40925142424](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40925142424) with **596/596 Node PASS**, both synthetic Chromium categories, Windows owner review, and **149.60 seconds** independently measured private synthetic WebM. P15 adapter-protocol additions need their own exact-head CI. None of this is the owner's approved public YouTube video or a live PayPal/Gemini browser session.
+**Latest independently verified technical QA (source `d37215de27e80669d0d5f33ead6c8d92a5bf627d`):** [Actions #41064633633](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41064633633) completed 3/3 jobs with **643/643 Node PASS**, Chromium AI Work, Global Services, fake-provider replay and responsive mobile journeys PASS, Windows owner recording PASS and independent **165.08-second** synthetic WebM duration PASS. This is the code baseline before later documentation edits, NOT the owner-approved public video or independent live PayPal/Gemini browser proof.
 
-**Submission caveat:** the public repository's older default `main` branch is not the runnable `lead/paypal` build. Draft [PR #16](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/16) adds the missing default-branch MIT license and judge directions; draft [QA PR #23](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/23) has newer UI, consent and submission-candidate fixes not yet in `lead/paypal`. Both require owner review. Do not claim the default branch, final video or Devpost is submitted. For the release steps use the [owner-only checklist](FINAL_OWNER_SUBMISSION_CHECKLIST_20261030.md).
+**Submission caveat:** Default `main` is an older historical branch, not the verified app. Current [Draft PR #27](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/27) is the consolidated unmerged QA candidate; [Draft PR #16](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/16) is the unmerged default-branch MIT/license landing. Do not separately merge overlapping PRs #23–#26. Public video, owner approval, Devpost link and receipt remain missing. See [owner checklist](FINAL_OWNER_SUBMISSION_CHECKLIST_20261030.md).
 
 ## Current verified scope
 
 - Root [MIT LICENSE](../LICENSE) is present and approved; `package.json` says `MIT`.
-- The latest tested QA work is in `work/paypal-final-qa-20261030`, not yet merged into `lead/paypal`. The default `main` branch is older and does **not** expose the final QA build.
+- The latest independently tested code is `work/paypal-reviewer-assets-gate-20261030` at `d37215de27e80669d0d5f33ead6c8d92a5bf627d`; current documentation-only revisions require a new exact-head CI check. Default `main` is older and not the reviewed app.
 - GitHub Actions verifies `npm test`, the 18-day dashboard and an actual Chromium **localhost** UI journey. The CI logs contain the exact SHA/results; they do **not** prove third-party API integration, production authentication or Devpost submission.
 - This demo uses SQLite and a loopback Node server. No npm package installation or developer credentials are needed to run the offline demo.
 
@@ -42,7 +42,7 @@ Proofline presents **one local synthetic marketplace**, with two selected servic
 ```bash
 git clone https://github.com/hibi89/hibi89-paypal-ai-hackathon.git
 cd hibi89-paypal-ai-hackathon
-git switch work/paypal-final-qa-20261030
+git switch work/paypal-reviewer-assets-gate-20261030
 node --version
 npm run verify:local
 npm run demo
@@ -53,7 +53,7 @@ npm run demo
 ```powershell
 git clone https://github.com/hibi89/hibi89-paypal-ai-hackathon.git
 Set-Location hibi89-paypal-ai-hackathon
-git switch work/paypal-final-qa-20261030
+git switch work/paypal-reviewer-assets-gate-20261030
 node --version
 npm run verify:local
 npm run demo
@@ -61,7 +61,7 @@ npm run demo
 
 **Prerequisites:** Node.js **22.5+** (or newer major), Git, and Python 3 to check the generated progress dashboard. Node 22.0–22.4 lacks the built-in experimental `node:sqlite` module used by the demo. `npm test` invokes Node's `--experimental-sqlite` local driver and built-in test runner. No PayPal account, API keys, paid plan, additional server or production database is required for this offline walkthrough.
 
-`npm run preflight:reviewer` is the **green local readiness check**. It starts an isolated loopback instance, performs eight local **GET** smoke requests across the page, session, quote, subscription, integration and evidence read models, including post-rejection state rechecks, and two local **POST rejection probes** against the integration/evidence read models (HTTP 405; no payment endpoint), closes its temporary SQLite-backed server and prints `REVIEWER_LOCAL_READY` with **exit 0** on success. No external PayPal/AI calls, paid services, public ports or payment POSTs occur. The POST rejection probe never creates a payment or changes the synthetic ledger. This result **does not prove** the real providers or final submission. `npm test` then checks Node contracts; `npm run demo` launches the separate interactive page.
+`npm run preflight:reviewer` is the **green local readiness check**. It starts an isolated loopback instance, performs eighteen local **GET** smoke requests (including all ten exact browser JS asset routes) across the page, session, quote, subscription, integration and evidence read models, including post-rejection state rechecks, and two local **POST rejection probes** against the integration/evidence read models (HTTP 405; no payment endpoint), closes its temporary SQLite-backed server and prints `REVIEWER_LOCAL_READY` with **exit 0** on success. No external PayPal/AI calls, paid services, public ports or payment POSTs occur. The POST rejection probe never creates a payment or changes the synthetic ledger. This result **does not prove** the real providers or final submission. `npm test` then checks Node contracts; `npm run demo` launches the separate interactive page.
 
 `npm run verify:local` is the one-command offline verification: it checks the Git HEAD, Node runtime, generated schedule, Node suite, synthetic MVP, reviewer loopback and—when Python Playwright is installed—the real Chromium UI journey. It strips credential-like environment variables from child processes and records sanitized logs in a temporary directory. On Windows it locates a standard Chrome installation automatically; set `BROWSER_CHROME_PATH` only when Chrome/Chromium is installed in a nonstandard location. Three symlink-rejection cases are reported as **SKIP** on Windows only when the host denies symlink creation; they remain enabled wherever symlinks are permitted.
 
