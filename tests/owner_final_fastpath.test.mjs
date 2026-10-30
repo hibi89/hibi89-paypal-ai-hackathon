@@ -77,6 +77,37 @@ test('cannot record when synthetic checkout is unverified or media state is unsa
     assert.throws(()=>decideRecording(x));
   }
 });
+test('a source SHA change during recording cannot pass final readiness',async()=>{
+  let count=0,recordings=0;
+  const outcome=await runOwnerFinalFastpath({
+    recordIfMissing:true,
+    review:async()=>{const x=++count===1?fixture():
+      fixture('SOURCE_MATCHED_UNDER_180_SECONDS','OWNER_WATCH_AND_REDACT_FINAL_VIDEO');
+      if(count===2)x.sourceSha='b'.repeat(40);
+      return x;},
+    record:async()=>{recordings++;return true;}
+  });
+  assert.equal(count,2);
+  assert.equal(recordings,1);
+  assert.equal(outcome.recommendation,'SOURCE_CHANGED_DURING_PRIVATE_RECORDING');
+  assert.equal(outcome.status,'PRIVATE_FINAL_REVIEW_ACTION_REQUIRED');
+  assert.equal(outcome.publishingAuthorized,false);
+});
+test('unverified source sha cannot authorize a recording or technical readiness',async()=>{
+  let recordings=0;
+  for(const sha of [null,'invalid','f'.repeat(39)]){
+    const input=fixture();
+    input.sourceSha=sha;
+    assert.equal(decideRecording(input),'SOURCE_SHA_UNVERIFIED');
+    const result=await runOwnerFinalFastpath({
+      recordIfMissing:true,review:async()=>input,
+      record:async()=>{recordings++;return true;}
+    });
+    assert.equal(result.status,'PRIVATE_FINAL_REVIEW_ACTION_REQUIRED');
+    assert.equal(result.recordingAttempted,false);
+  }
+  assert.equal(recordings,0);
+});
 test('failed recorder makes no synthetic-ready or publication claim',async()=>{
   let count=0;
   const status=await runOwnerFinalFastpath({

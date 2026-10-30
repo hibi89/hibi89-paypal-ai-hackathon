@@ -26,6 +26,10 @@ export function decideRecording(summary){
      summary?.livePayPalAndGeminiJudgeReplay!=='NOT_INDEPENDENTLY_VERIFIED'||
      !Array.isArray(summary?.nextActions))
     throw Error('UNTRUSTED_OWNER_REVIEW_SUMMARY');
+  // Without immutable, valid source provenance, neither a pre-existing WebM
+  // nor a fresh capture can be represented as a release-review candidate.
+  if(!/^[a-f0-9]{40}$/.test(summary.sourceSha||''))
+    return 'SOURCE_SHA_UNVERIFIED';
   if(summary.localVideo==='SOURCE_MATCHED_UNDER_180_SECONDS')
     return 'EXISTING_VIDEO_TECHNICALLY_READY';
   if(summary.localVideo!=='NEEDS_REVIEW')
@@ -44,6 +48,7 @@ export async function runOwnerFinalFastpath({
 }={}){
   let summary=await review();
   let recommendation=decideRecording(summary);
+  const initialSourceSha=summary.sourceSha;
   let recordingAttempted=false,recordingSucceeded=false;
   // Never record automatically on plain invocation. An explicit opt-in
   // is still insufficient unless the exact clean source replay passed.
@@ -52,10 +57,14 @@ export async function runOwnerFinalFastpath({
     recordingSucceeded=await record()===true;
     if(recordingSucceeded){
       summary=await review(); // Includes a fresh ffprobe/source/media check.
-      recommendation=decideRecording(summary);
+      // Even if both independently look clean, do not approve a recording
+      // when the source SHA changed across the recording boundary.
+      recommendation=summary.sourceSha===initialSourceSha?
+        decideRecording(summary):'SOURCE_CHANGED_DURING_PRIVATE_RECORDING';
     }else recommendation='LOCAL_PRIVATE_RECORDING_FAILED';
   }
-  const technicalReady=summary.localTechnicalReplay==='SYNTHETIC_PASS'&&
+  const technicalReady=/^[a-f0-9]{40}$/.test(summary.sourceSha||'')&&
+    summary.localTechnicalReplay==='SYNTHETIC_PASS'&&
     recommendation==='EXISTING_VIDEO_TECHNICALLY_READY';
   return Object.freeze({
     status:technicalReady?'PRIVATE_TECHNICAL_PACKET_READY_OWNER_REVIEW_REQUIRED':
