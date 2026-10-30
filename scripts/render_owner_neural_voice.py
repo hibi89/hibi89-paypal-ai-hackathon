@@ -117,6 +117,11 @@ def load_engine(root: Path, voice: str):
         if not (dest / "phontab").is_file():
             raise ValueError("ASCII_ESPEAK_PHONTAB_NOT_FOUND")
         os.environ["ESPEAK_DATA_PATH"] = str(dest)
+        from phonemizer.backend.espeak.wrapper import EspeakWrapper
+        EspeakWrapper.set_library(espeakng_loader.get_library_path())
+        supported = EspeakWrapper().available_voices()
+        if not any(v.language == "en-us" for v in supported):
+            raise ValueError("LOCAL_ESPEAK_EN_US_NOT_AVAILABLE")
     kokoro = Kokoro(str(model), str(voicepack))
     if voice not in kokoro.get_voices():
         raise ValueError("REQUESTED_NEURAL_VOICE_NOT_IN_LOCAL_MODEL")
