@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {inspectTrackedTreeClean,compareRecordedSource,evaluatePrivateVideoReviewGate} from '../scripts/prepare_submission_candidate.mjs';
+import {inspectTrackedTreeClean,compareRecordedSource,evaluatePrivateVideoReviewGate,probePrivateVideoDuration} from '../scripts/prepare_submission_candidate.mjs';
 
 const sha='a'.repeat(40);
 const video={status:'LOCAL_SYNTHETIC_WEBM_INTEGRITY_VERIFIED',
@@ -69,4 +69,63 @@ test('owner-review-ready requires clean source AND independently probed encoded 
  const insufficient=evaluatePrivateVideoReviewGate({...ready,localSource:false});
  assert.equal(insufficient.technicalVideoReady,true);
  assert.equal(insufficient.ownerReviewReady,false);
+});
+
+test('encoded media proof requires an actual successful ffprobe duration strictly below 180s',()=>{
+ const fake={...video,filename:'paypal-synthetic-review-20261030-133333.webm'};
+ for(const [stdout,expectedStatus,expectedSeconds] of [
+   ['149.600000','ENCODED_MEDIA_UNDER_THREE_MINUTES',149.6],
+   ['179.999999','ENCODED_MEDIA_UNDER_THREE_MINUTES',179.999999],
+   ['180.000000','ENCODED_MEDIA_TOO_LONG',180],
+   ['181.000000','ENCODED_MEDIA_TOO_LONG',181]
+ ]){
+   let calls=0;
+   const actual=probePrivateVideoDuration('/safe/local/videos',fake,{run:(bin,args,opt)=>{
+     calls++;
+     assert.equal(bin,'ffprobe');
+     assert.deepEqual(args.slice(0,4),['-v','error','-show_entries','format=duration']);
+     assert.equal(args.at(-2),'-i');
+     assert.ok(args.at(-1).endsWith(fake.filename));
+     assert.equal(opt.shell,false);
+     assert.ok(opt.timeout>0);
+     return {status:0,stdout};
+   }});
+   assert.equal(calls,1);
+   assert.equal(actual.status,expectedStatus);
+   assert.equal(actual.seconds,expectedSeconds);
+ }
+});
+
+test('malformed, fabricated or missing ffprobe output never verifies video duration',()=>{
+ const fake={...video,filename:'paypal-synthetic-review-20261030-133333.webm'};
+ for(const stdout of ['', 'NaN', 'Infinity', '-1.000000', '0', '180.000000 garbage',
+    '1e2', '000150', '150.0000000', '150\n180']){
+   const result=probePrivateVideoDuration('/safe/local/videos',fake,
+      {run:()=>({status:0,stdout})});
+   assert.equal(result.status,'FFPROBE_UNAVAILABLE_OR_FAILED',JSON.stringify(stdout));
+   assert.equal(result.seconds,null);
+ }
+ for(const run of [
+   ()=>({status:1,stdout:'149.600000'}),
+   ()=>{throw Error('PROBE_BINARY_NOT_FOUND')}
+ ]){
+   const result=probePrivateVideoDuration('/safe/local/videos',fake,{run});
+   assert.equal(result.status,'FFPROBE_UNAVAILABLE_OR_FAILED');
+   assert.equal(result.seconds,null);
+ }
+});
+
+test('unverified or unsafe video metadata never invokes ffprobe',()=>{
+ const bad=[
+   {status:'LOCAL_VIDEO_NOT_RECORDED'},
+   {...video,filename:'../../escape.webm'},
+   {...video,filename:'owner-private.webm'}
+ ];
+ for(const candidate of bad){
+   const result=probePrivateVideoDuration('/safe/local/videos',candidate,{
+     run:()=>{throw Error('FFPROBE_MUST_NOT_BE_CALLED')}
+   });
+   assert.equal(result.status,'NO_VERIFIED_VIDEO_TO_PROBE');
+   assert.equal(result.seconds,null);
+ }
 });
