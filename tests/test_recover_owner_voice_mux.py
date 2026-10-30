@@ -19,8 +19,8 @@ def create_dummy(root, ffmpeg):
     vids.mkdir(parents=True)
     source = vids / "paypal-synthetic-review-20261031-120000.webm"
     subprocess.run([ffmpeg, "-y", "-hide_banner", "-loglevel", "error",
-                    "-f", "lavfi", "-i", "color=size=320x180:rate=25:color=navy",
-                    "-t", "2.0", "-c:v", "libvpx", "-b:v", "100k", str(source)],
+                    "-f", "lavfi", "-i", "testsrc2=size=640x360:rate=25",
+                    "-t", "2.0", "-c:v", "libvpx", "-b:v", "450k", str(source)],
                    check=True, timeout=25)
     sha = hashlib.sha256(source.read_bytes()).hexdigest()
     cues = [{"at_seconds": round(.01 + .1 * i, 2),
