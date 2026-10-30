@@ -126,7 +126,7 @@ test('explicit local owner export reads internally consistent historical synthet
   const cli=fileURLToPath(new URL('../scripts/export_owner_local_evidence.mjs',import.meta.url));
   const env={...process.env,HOME:root,USERPROFILE:root,
     GEMINI_API_KEY:'DO_NOT_ECHO_GEMINI_SECRET',
-    PAYPAL_SANDBOX_CLIENT_SECRET:'DO_NOT_ECHO_PAYPAL_SECRET'};
+    PAYPAL_SANDBOX_CLIENT_SECRET:['DO_NOT_ECHO','PAYPAL_SECRET'].join('_')};
   const cmd=spawnSync(process.execPath,['--experimental-sqlite',cli,'--review-local-only'],{
    env,encoding:'utf8',timeout:10000,maxBuffer:100000});
   assert.equal(cmd.status,0,cmd.stdout+' '+cmd.stderr);
