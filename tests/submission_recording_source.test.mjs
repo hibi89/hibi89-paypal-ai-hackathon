@@ -98,13 +98,18 @@ test('encoded media proof requires an actual successful ffprobe duration strictl
 
 test('malformed, fabricated or missing ffprobe output never verifies video duration',()=>{
  const fake={...video,filename:'paypal-synthetic-review-20261030-133333.webm'};
- for(const stdout of ['', 'NaN', 'Infinity', '-1.000000', '0', '180.000000 garbage',
+ for(const stdout of ['', 'NaN', 'Infinity', '-1.000000', '180.000000 garbage',
     '1e2', '000150', '150.0000000', '150\n180']){
    const result=probePrivateVideoDuration('/safe/local/videos',fake,
       {run:()=>({status:0,stdout})});
    assert.equal(result.status,'FFPROBE_UNAVAILABLE_OR_FAILED',JSON.stringify(stdout));
    assert.equal(result.seconds,null);
  }
+ const zero=probePrivateVideoDuration('/safe/local/videos',fake,{
+   run:()=>({status:0,stdout:'0'})
+ });
+ assert.equal(zero.status,'ENCODED_MEDIA_DURATION_INVALID');
+ assert.equal(zero.seconds,null);
  for(const run of [
    ()=>({status:1,stdout:'149.600000'}),
    ()=>{throw Error('PROBE_BINARY_NOT_FOUND')}
