@@ -97,9 +97,11 @@ export async function runJudgeReproduction({write=false}={}){
   // flow through genuine PayPal pure planning functions with invented in-memory
   // order responses. The existing adapter replay below is a DIFFERENT fixed
   // USD 1.50 fake and MUST NOT be presented as either quote's transaction.
-  const quoteBound=reproduceQuoteBoundJudgeFlow();
+  // Await this fully before starting the independent fixed-amount fake
+  // provider fixture, so a failed loopback probe never becomes an orphaned
+  // rejected promise while another fixture is still running.
+  const quoteBoundProof=await reproduceQuoteBoundJudgeFlow();
   const trace=summarizeSyntheticJudgeTrace(await runOfflineOperatorMvpSmoke());
-  const quoteBoundProof=await quoteBound;
   fail(quoteBoundProof.status==='TWO_APPROVED_QUOTE_PLANS_REPRODUCED_SYNTHETIC_ONLY'&&
     quoteBoundProof.categories.length===2&&
     quoteBoundProof.actualPaymentPosts===0&&
