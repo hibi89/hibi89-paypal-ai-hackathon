@@ -19,7 +19,8 @@ test('one-command full operator MVP runs with no credentials and two persisted c
    assert.equal(x.mockCaptureState,'PAID_VERIFIED_BY_INJECTED_PROVIDER_GET');
    assert.equal(x.createPostsToFakeTransport,1);
    assert.equal(x.capturePostsToFakeTransport,1);
-   assert.deepEqual(x.missingSkills,['qa']);
+   assert.equal(x.selectedProfile,'synthetic-commerce');
+    assert.deepEqual(x.missingSkills,[]);
  }finally{globalThis.fetch=originalFetch}
 });
 test('CLI can be executed without private environment, reports offline scope only',()=>{

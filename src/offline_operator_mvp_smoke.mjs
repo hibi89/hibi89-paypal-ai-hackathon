@@ -101,8 +101,9 @@ export async function runOfflineOperatorMvpSmoke(){
     });
     const match=await flow.classify();
     need(match.skills.join(',')==='web,payments,qa','AI_SKILLS');
-    need(match.missingSkills.includes('qa')&&!match.selectedProfileEligible,
-      'MISSING_SKILLS_MUST_BE_DISCLOSED');
+    need(match.selectedProfileEligible&&match.missingSkills.length===0 &&
+      match.selectedSyntheticProfile==='synthetic-commerce',
+      'FULL_SKILL_MATCH_MUST_BE_ELIGIBLE');
     const approved=await flow.approveQuote();
     need(approved.amountMinor===150&&approved.amountSource==='HUMAN_ONLY','PRICE_CONSENT');
     const opened=await flow.createOrder();
