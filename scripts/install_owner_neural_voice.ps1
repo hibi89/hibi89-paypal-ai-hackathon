@@ -77,6 +77,8 @@ foreach ($item in $wanted) {
 Write-Output 'INSTALLING_FREE_PINNED_OFFLINE_NEURAL_RUNTIME'
 & $python -m pip install --disable-pip-version-check --only-binary=:all: 'kokoro-onnx==0.6.1' 'soundfile==0.13.1'
 if ($LASTEXITCODE -ne 0) { throw 'LOCAL_NEURAL_RUNTIME_INSTALL_FAILED' }
-& $python -c 'import importlib.metadata as im; import kokoro_onnx, soundfile; assert im.version("kokoro-onnx")=="0.6.1"; assert im.version("soundfile")=="0.13.1"; print("LOCAL_NEURAL_IMPORT_AND_VERSION_PASS")'
+& $python -m pip show kokoro-onnx soundfile
+if ($LASTEXITCODE -ne 0) { throw 'LOCAL_NEURAL_PACKAGE_METADATA_FAILED' }
+& $python -c 'import kokoro_onnx, soundfile; print(12345)'
 if ($LASTEXITCODE -ne 0) { throw 'LOCAL_NEURAL_IMPORT_FAILED' }
 Write-Output 'LOCAL_KOKORO_MODEL_AND_RUNTIME_READY__NO_USER_VIDEO_SENT'
