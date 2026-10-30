@@ -34,7 +34,7 @@ export function inspectReviewerPrereqs({nodeVersion,manifest,files}={}){
   const license=typeof files?.LICENSE==='string'&&files.LICENSE.startsWith('MIT License\n');
   const html=typeof files?.['web/offline_demo.html']==='string'?
     files['web/offline_demo.html']:'';
-  const linkedScripts=[...html.matchAll(/<script\\s+[^>]*src=["']([^"']+)["'][^>]*>/g)]
+  const linkedScripts=[...html.matchAll(/<script\s+[^>]*src=["']([^"']+)["'][^>]*>/g)]
     .map(match=>match[1]);
   const exactScripts=linkedScripts.length===REVIEW_SCRIPT_ROUTES.length&&
     linkedScripts.every((url,index)=>url===REVIEW_SCRIPT_ROUTES[index].url);
