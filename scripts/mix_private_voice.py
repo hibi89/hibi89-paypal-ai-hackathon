@@ -17,7 +17,9 @@ MAX_SECONDS = 179.0
 GAP_SECONDS = 0.18
 
 
-def mix_timeline(timeline_path: Path, output: Path):
+def mix_timeline(timeline_path: Path, output: Path, rate: int = RATE):
+    if rate not in (22050, 24000):
+        raise ValueError("UNSUPPORTED_VOICE_SAMPLE_RATE")
     root = timeline_path.resolve().parent
     data = json.loads(timeline_path.read_text(encoding="utf-8-sig"))
     items = data.get("items")
@@ -41,31 +43,31 @@ def mix_timeline(timeline_path: Path, output: Path):
         if clip.parent != root or not clip.is_file() or clip.is_symlink():
             raise ValueError("CUE_FILE_NOT_LOCAL")
         with wave.open(str(clip), "rb") as wav:
-            if wav.getframerate() != RATE or wav.getsampwidth() != WIDTH or wav.getnchannels() != CHANNELS or wav.getcomptype() != "NONE":
+            if wav.getframerate() != rate or wav.getsampwidth() != WIDTH or wav.getnchannels() != CHANNELS or wav.getcomptype() != "NONE":
                 raise ValueError("VOICE_WAV_FORMAT_UNEXPECTED")
             frames = wav.readframes(wav.getnframes())
         if not frames:
             raise ValueError("EMPTY_CUE_AUDIO")
-        planned = round(seconds * RATE)
-        start = max(planned, last_end + round(GAP_SECONDS * RATE) if lines else 0)
+        planned = round(seconds * rate)
+        start = max(planned, last_end + round(GAP_SECONDS * rate) if lines else 0)
         end = start + len(frames) // WIDTH
-        if end / RATE >= MAX_SECONDS:
+        if end / rate >= MAX_SECONDS:
             raise ValueError("VOICE_EXCEEDS_THREE_MINUTE_SAFETY_MARGIN")
         if len(pcm) < start * WIDTH:
             pcm.extend(b"\x00" * (start * WIDTH - len(pcm)))
         pcm.extend(frames)
-        lines.append({"cue": len(lines)+1, "start_seconds": round(start/RATE, 2),
-                      "end_seconds": round(end/RATE, 2)})
+        lines.append({"cue": len(lines)+1, "start_seconds": round(start/rate, 2),
+                      "end_seconds": round(end/rate, 2)})
         last_end = end
     if not output.parent.is_dir():
         raise ValueError("OUTPUT_DIRECTORY_REQUIRED")
     with wave.open(str(output), "wb") as wav:
         wav.setnchannels(CHANNELS)
         wav.setsampwidth(WIDTH)
-        wav.setframerate(RATE)
+        wav.setframerate(rate)
         wav.writeframes(pcm)
     return {"status": "LOCAL_VOICE_WAV_MIX_CREATED",
-            "cue_count": len(lines), "seconds": round(last_end/RATE, 2),
+            "cue_count": len(lines), "seconds": round(last_end/rate, 2),
             "cue_timing": lines, "external_provider_calls": 0}
 
 
@@ -73,9 +75,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--timeline", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--rate", type=int, choices=(22050, 24000), default=RATE)
     args = parser.parse_args()
     try:
-        print(json.dumps(mix_timeline(args.timeline, args.output)))
+        print(json.dumps(mix_timeline(args.timeline, args.output, rate=args.rate)))
     except (OSError, ValueError, wave.Error, KeyError) as exc:
         print("VOICE_MIX_FAILED " + str(exc), file=sys.stderr)
         sys.exit(1)
