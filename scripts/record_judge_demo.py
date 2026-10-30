@@ -75,7 +75,7 @@ def start_demo():
     raise RuntimeError("LOCAL_DEMO_START_FAILED")
 
 
-def capture(output_dir, pace_ms):
+def capture(output_dir, pace_ms, premium=False):
     source_snapshot = git_source_snapshot()
     binary = chrome_binary()
     # Explicit local read-only snapshot of the owner's earlier evidence.
@@ -114,6 +114,88 @@ def capture(output_dir, pace_ms):
 
                 page.route("**/*", intercept)
                 pause = lambda: page.wait_for_timeout(pace_ms)
+                def install_film_cursor():
+                    # Overlay tracks REAL Playwright mouse events. It never sends
+                    # network requests or invents UI behavior.
+                    page.evaluate("""() => {
+                      if(document.getElementById('film-cursor'))return;
+                      const css=document.createElement('style');
+                      css.textContent=`
+                        html{scroll-behavior:auto!important}
+                        #film-cursor{position:fixed;top:0;left:0;width:23px;height:23px;
+                          pointer-events:none;z-index:2147483647;opacity:0;
+                          transform:translate(-50%,-50%);transition:opacity .12s}
+                        #film-cursor:before{content:'';position:absolute;inset:0;
+                          border:3px solid white;border-radius:55% 55% 55% 0%;
+                          transform:rotate(-45deg);background:#2262c9;
+                          box-shadow:0 2px 12px #000a}
+                        .film-target{outline:3px solid #90daff!important;
+                          outline-offset:4px!important;
+                          box-shadow:0 0 0 8px #3b91ff27!important}
+                        .film-ripple{position:fixed;pointer-events:none;
+                          z-index:2147483646;width:14px;height:14px;
+                          border:3px solid #77d7ff;border-radius:100%;
+                          animation:film-ripple .48s ease-out forwards}
+                        @keyframes film-ripple{from{transform:translate(-50%,-50%) scale(.25);opacity:1}
+                          to{transform:translate(-50%,-50%) scale(3.7);opacity:0}}
+                      `;
+                      document.head.append(css);
+                      const c=document.createElement('div');c.id='film-cursor';
+                      document.body.append(c);
+                      document.addEventListener('pointermove',e=>{
+                        c.style.left=e.clientX+'px';c.style.top=e.clientY+'px';
+                        c.style.opacity='1';
+                      },{passive:true});
+                      document.addEventListener('pointerdown',e=>{
+                        const ring=document.createElement('div');
+                        ring.className='film-ripple';ring.style.left=e.clientX+'px';
+                        ring.style.top=e.clientY+'px';document.body.append(ring);
+                        setTimeout(()=>ring.remove(),520);
+                      },{passive:true});
+                    }""")
+
+                def guided_click(selector):
+                    target=page.locator(selector)
+                    if not premium:
+                        target.click()
+                        return
+                    target.scroll_into_view_if_needed()
+                    rect=target.bounding_box()
+                    if rect is None:
+                        raise RuntimeError("FILM_TARGET_NOT_VISIBLE")
+                    x=rect["x"]+rect["width"]/2
+                    y=rect["y"]+rect["height"]/2
+                    page.mouse.move(x,y,steps=14)
+                    page.evaluate("(s)=>document.querySelector(s)?.classList.add('film-target')",selector)
+                    page.wait_for_timeout(125)
+                    page.mouse.click(x,y,delay=80)
+                    page.wait_for_timeout(90)
+                    page.evaluate("(s)=>document.querySelector(s)?.classList.remove('film-target')",selector)
+
+                def guided_select(selector,value):
+                    target=page.locator(selector)
+                    if premium:
+                        target.scroll_into_view_if_needed()
+                        rect=target.bounding_box()
+                        if rect is None:
+                            raise RuntimeError("FILM_SELECT_NOT_VISIBLE")
+                        page.mouse.move(rect["x"]+rect["width"]/2,
+                                        rect["y"]+rect["height"]/2,steps=12)
+                        page.evaluate("(s)=>document.querySelector(s)?.classList.add('film-target')",selector)
+                        page.wait_for_timeout(145)
+                    target.select_option(value)
+                    if premium:
+                        page.evaluate("(s)=>document.querySelector(s)?.classList.remove('film-target')",selector)
+
+                def guided_fill(selector,value):
+                    target=page.locator(selector)
+                    if not premium:
+                        target.fill(value)
+                        return
+                    guided_click(selector)
+                    target.fill("")
+                    target.type(value,delay=22)
+
                 def caption(label):
                     # Presenter captions are part of the video, never injected into
                     # the trusted application or sent to a provider.
@@ -190,6 +272,9 @@ def capture(output_dir, pace_ms):
                 page.goto(address, wait_until="domcontentloaded")
                 expect(page.locator("#message")).to_contain_text("Offline demo ready")
                 expect(page.locator("#marketplace-submit")).to_be_enabled()
+                if premium:
+                    install_film_cursor()
+                    guided_fill("#marketplace-brief","Build an ecommerce website with PayPal checkout")
                 caption("PROOFLINE | AI should open the first door to work — not just automate existing work. OFFLINE SYNTHETIC DEMO.")
                 pause()
 
@@ -205,7 +290,7 @@ def capture(output_dir, pace_ms):
                 # Real owner orchestration, injected FAKE Gemini/PayPal only.
                 # This opt-in visual trace is a distinct technical evidence
                 # class, NOT historical live Sandbox proof.
-                page.locator("#protocol-replay-button").click()
+                guided_click("#protocol-replay-button")
                 expect(page.locator("#protocol-replay-status")).to_contain_text(
                     "0 real provider calls")
                 expect(page.locator("#protocol-replay-list")).to_contain_text(
@@ -220,42 +305,42 @@ def capture(output_dir, pace_ms):
 
                 # Show BOTH real, clickable service categories in one marketplace.
                 # Category transitions never create a quote or call PayPal/Gemini.
-                page.locator("#marketplace-submit").click()
+                guided_click("#marketplace-submit")
                 expect(page.locator(".match-summary")).to_contain_text("AI Work")
                 expect(page.locator("#marketplace-choose-synthetic-web")).to_be_visible()
                 caption("AI WORK | AI agents, automation and development. Three FICTIONAL specialists, with visible skill gaps.")
                 pause()
 
-                page.locator("#marketplace-vertical").select_option("general_services")
-                page.locator("#marketplace-submit").click()
+                guided_select("#marketplace-vertical","general_services")
+                guided_click("#marketplace-submit")
                 expect(page.locator(".match-summary")).to_contain_text("Global Services")
                 expect(page.locator(".profile-card")).to_have_count(3)
                 caption("GLOBAL SERVICES | Design, translation, marketing: a second category sharing the SAME marketplace workflow. FICTIONAL profiles.")
                 page.wait_for_timeout(min(pace_ms, 5500))
 
                 # Return to AI Work for the common quote -> contract journey.
-                page.locator("#marketplace-vertical").select_option("ai_work")
-                page.locator("#marketplace-submit").click()
+                guided_select("#marketplace-vertical","ai_work")
+                guided_click("#marketplace-submit")
                 expect(page.locator(".match-summary")).to_contain_text("AI Work")
                 expect(page.locator("#marketplace-choose-synthetic-web")).to_be_visible()
                 two_verticals_verified = True
-                page.locator("#marketplace-choose-synthetic-web").click()
+                guided_click("#marketplace-choose-synthetic-web")
                 expect(page.locator("#scope")).to_have_value(re.compile("Synthetic candidate: synthetic-web"))
 
-                page.locator("#draft-submit").click()
+                guided_click("#draft-submit")
                 expect(page.locator("#quote-view")).to_contain_text("Version 2")
-                page.locator("#dollars").fill("15.00")
+                guided_fill("#dollars","15.00")
                 page.locator("#confirm").check()
-                page.locator("#approve-submit").click()
+                guided_click("#approve-submit")
                 expect(page.locator("#quote-view")).to_contain_text("APPROVED")
-                page.locator("#quote-checkout-preview").click()
+                guided_click("#quote-checkout-preview")
                 expect(page.locator("#quote-checkout-preview-result")).to_contain_text(
                     "human-approved USD 15.00")
                 expect(page.locator("#quote-checkout-preview-result")).to_contain_text(
                     "9 in-memory fake PayPal domain stages")
                 caption("APPROVED USD 15 QUOTE → ORDER AND CAPTURE DOMAIN FLOW | 9 FAKE in-memory stages, no API POST or payment.")
                 page.wait_for_timeout(min(pace_ms,2200))
-                page.locator("#verify-local-bridge").click()
+                guided_click("#verify-local-bridge")
                 expect(page.locator("#verify-local-bridge-result")).to_contain_text(
                     "LOCAL PROOF PASS")
                 expect(page.locator("#verify-local-bridge-result")).to_contain_text(
@@ -273,30 +358,30 @@ def capture(output_dir, pace_ms):
                     pause()
                 page.evaluate("document.getElementById('owner-evidence-video-slide')?.remove()")
 
-                page.locator("#contract-create").click()
+                guided_click("#contract-create")
                 expect(page.locator("#contract-fulfillment")).to_have_text("PENDING")
-                page.locator("#delivery-submit").click()
+                guided_click("#delivery-submit")
                 expect(page.locator("#contract-fulfillment")).to_have_text("SUBMITTED")
                 caption("Owner creates an unpaid contract and submits a synthetic delivery for an independent reviewer decision.")
                 pause()
 
-                page.locator("#demo-role-toggle").click()
+                guided_click("#demo-role-toggle")
                 expect(page.locator("#demo-session-role")).to_contain_text("synthetic reviewer")
-                page.locator("#review-reject").click()
+                guided_click("#review-reject")
                 expect(page.locator("#contract-fulfillment")).to_have_text("REJECTED")
                 caption("Synthetic reviewer REJECTED delivery. The owner must revise and resubmit; previous review cannot be silently reused.")
                 pause()
 
-                page.locator("#demo-role-toggle").click()
+                guided_click("#demo-role-toggle")
                 expect(page.locator("#demo-session-role")).to_contain_text("synthetic owner")
-                page.locator("#delivery-note").fill("Revised synthetic project deliverables, version 2")
-                page.locator("#delivery-submit").click()
+                guided_fill("#delivery-note","Revised synthetic project deliverables, version 2")
+                guided_click("#delivery-submit")
                 expect(page.locator("#contract-fulfillment")).to_have_text("SUBMITTED")
-                page.locator("#demo-role-toggle").click()
+                guided_click("#demo-role-toggle")
                 expect(page.locator("#demo-session-role")).to_contain_text("synthetic reviewer")
-                page.locator("#review-accept").click()
+                guided_click("#review-accept")
                 expect(page.locator("#contract-fulfillment")).to_have_text("ACCEPTED")
-                page.locator("#demo-role-toggle").click()
+                guided_click("#demo-role-toggle")
                 expect(page.locator("#demo-session-role")).to_contain_text("synthetic owner")
                 expect(page.locator("#contract-events")).to_contain_text("REJECTED")
                 expect(page.locator("#contract-events")).to_contain_text("ACCEPTED")
@@ -304,9 +389,9 @@ def capture(output_dir, pace_ms):
                 caption("Read-only SQLite audit timeline: CREATED → SUBMITTED → REJECTED → RESUBMITTED → ACCEPTED. Payment remains NOT_CAPTURED.")
                 pause()
 
-                page.locator("#evidence-refresh").click()
+                guided_click("#evidence-refresh")
                 expect(page.locator("#evidence-details")).to_contain_text("local audit chain: PASS")
-                page.locator("#historical-provider-evidence summary").click()
+                guided_click("#historical-provider-evidence summary")
                 expect(page.locator("#historical-provider-evidence")).to_contain_text("NOT INDEPENDENTLY REPRODUCED")
                 caption("Separate owner-observed 2026-10-28 Gemini + PayPal SANDBOX test. Historical proof only; this browser never contacts providers.")
                 pause()
@@ -344,6 +429,8 @@ def capture(output_dir, pace_ms):
         manifest = {
             "evidence_class": "OFFLINE_SYNTHETIC_BROWSER_CAPTURE_ONLY",
             "storyboard_version": "OPPORTUNITY_FIRST_V3_FAKE_API_TRACE",
+            "presentation_mode": ("GUIDED_REAL_BROWSER_CURSOR_NO_POST_ZOOM" if premium else "STANDARD_BROWSER_RECORDING"),
+            "voiceover_included": False,
             "demonstrated_categories": (["ai_work", "general_services"] if two_verticals_verified else []),
             "interactive_fake_api_trace_replayed_locally": synthetic_protocol_replay_verified,
             "interactive_fake_api_trace_actual_provider_calls": 0,
@@ -388,11 +475,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Private OFFLINE browser walkthrough recording; never publishes.")
     parser.add_argument("--output-dir", default=str(ROOT / "output" / "videos"))
     parser.add_argument("--pace-ms", type=int, default=12000)
+    parser.add_argument("--premium", action="store_true", help="Optional guided browser cursor and typed interaction; still silent and synthetic")
     args = parser.parse_args()
     if not (200 <= args.pace_ms <= 18000):
         parser.error("pace must be 200–18000 milliseconds")
     try:
-        capture(Path(args.output_dir).resolve(), args.pace_ms)
+        capture(Path(args.output_dir).resolve(), args.pace_ms, premium=args.premium)
     except Exception as exc:
         # Do not print subprocess environment, traceback or private filesystem internals.
         print("RECORDING_FAILED " + str(exc), file=sys.stderr)
