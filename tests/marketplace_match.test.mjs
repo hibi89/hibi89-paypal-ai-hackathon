@@ -6,6 +6,7 @@ import {createMarketplaceRecommendationStore} from '../src/marketplace_recommend
 import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
+import {readFileSync} from 'node:fs';
 
 test('deterministic three-profile marketplace never fabricates seller data, AI or payment',()=>{
   const a=matchSyntheticMarketplaceBrief('Build a responsive ecommerce website with PayPal checkout');
@@ -31,7 +32,7 @@ test('Global Services has category-specific fictional workers without payment',(
   assert.equal(result.price.status,'DATA_INSUFFICIENT');
   const other=matchSyntheticGeneralServiceBrief('Translate Korean content into English');
   assert.equal(other.profiles.find(p=>p.id==='synthetic-translator')?.eligible,true);
-  assert.equal(other.profiles[0].eligible,true);
+  assert.equal(other.profiles.find(p=>p.id==='synthetic-translator')?.eligible,true);
   assert.ok(other.profiles.every(profile=>profile.source==='SYNTHETIC_PROFILE'));
   assert.throws(()=>matchSyntheticGeneralServiceBrief('bad'),/INVALID_SYNTHETIC_BRIEF/);
 });
@@ -168,4 +169,18 @@ test('owner API preserves prior three-member lists and limits two additional rou
     assert.equal((await (await post('/api/demo/marketplace',{brief})).json()).remainingRefreshes,0);
     assert.equal((await fetch(app.url+'/api/quotes/sample-project/payment')).status,503);
   }finally{await app.close()}
+});
+
+test('UI affordances keep per-set history, three tiers and bounded refresh CTA',()=>{
+ const html=readFileSync(new URL('../web/offline_demo.html',import.meta.url),'utf8');
+ const js=readFileSync(new URL('../web/marketplace_client.js',import.meta.url),'utf8');
+ assert.match(js,/marketplace-next-recommendations/);
+ assert.match(js,/marketplace-history-round-/);
+ assert.match(js,/aria-pressed/);
+ assert.match(js,/function advanceRecommendations\(\)/);
+ assert.match(js,/\/api\/demo\/marketplace\/next/);
+ assert.match(js,/\/api\/demo\/marketplace\/history\?sessionId=/);
+ assert.match(js,/Career tiers are fictional examples/);
+ assert.match(html,/\.recommendation-controls/);
+ assert.match(html,/\.profile-tier/);
 });

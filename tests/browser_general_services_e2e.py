@@ -62,6 +62,17 @@ try:
             expect(page.locator(".match-summary")).to_contain_text("Global Services")
             expect(page.locator(".profile-card")).to_have_count(3)
             expect(page.locator("#marketplace-choose-synthetic-creative")).to_be_visible()
+            # All three archetype cards remain visible and user can browse
+            # two more sets, including earlier history, without submitting a quote.
+            expect(page.locator(".profile-tier")).to_have_count(3)
+            expect(page.locator("#marketplace-next-recommendations")).to_be_enabled()
+            page.locator("#marketplace-next-recommendations").click()
+            expect(page.locator("#marketplace-history-round-2")).to_be_visible()
+            page.locator("#marketplace-next-recommendations").click()
+            expect(page.locator("#marketplace-history-round-3")).to_be_visible()
+            expect(page.locator("#marketplace-next-recommendations")).to_be_disabled()
+            page.locator("#marketplace-history-round-1").click()
+            expect(page.locator("#marketplace-choose-synthetic-creative")).to_be_visible()
             before_choice = sum(method == "POST" for method, _ in requests)
             page.locator("#marketplace-choose-synthetic-creative").click()
             expect(page.locator("#scope")).to_have_value(
