@@ -24,7 +24,9 @@ jobs:
       - name: Validate entire 18-day progress dashboard
         run: python3 render_master_progress.py --check
       - name: Offline Node regression tests
-        run: npm test
+        run: |
+          node --check scripts/premium_evidence_overlay.js
+          npm test
       - name: Read-only local MVP restart preflight (no credentials or provider calls)
         run: npm run mvp:status
       - name: One-command full marketplace to payment mock MVP (no provider calls)
@@ -51,8 +53,9 @@ jobs:
         run: .browser-venv/bin/python tests/browser_synthetic_provider_protocol_e2e.py
       - name: Check recorder Python syntax and proof provenance regression
         run: |
-          python3 -m py_compile scripts/record_judge_demo.py scripts/video_owner_evidence.py
+          python3 -m py_compile scripts/record_judge_demo.py scripts/video_owner_evidence.py scripts/mix_private_voice.py
           python3 tests/video_owner_evidence_test.py
+          python3 tests/test_mix_private_voice.py
           python3 tests/recorded_video_integrity_test.py
       - name: Record offline synthetic reviewer footage (ephemeral, no upload)
         env:
@@ -79,6 +82,7 @@ jobs:
       - name: Historical owner evidence safety regressions
         run: |
           python tests/video_owner_evidence_test.py
+          python tests/test_mix_private_voice.py
           python tests/recorded_video_integrity_test.py
       - name: Full owner workflow from clean machine (no accounts or providers)
         run: npm run video:record:owner -- --pace-ms 200
