@@ -7,6 +7,8 @@ import json
 import os
 import re
 import subprocess
+import shutil
+from pathlib import Path
 
 SAFE_SKILLS = ("web", "design", "payments", "automation", "data", "qa")
 SENSITIVE_ENV = re.compile(
@@ -124,3 +126,34 @@ def storyboard_cards(proof):
             ],
         },
     ]
+
+
+def preserve_private_recording(source_path, dest_path, manifest):
+    """Exclusively save a private video and manifest without replacing earlier evidence.
+
+    The original Playwright recording stays intact until both outputs exist.
+    If a write fails, only newly created outputs are rolled back.
+    """
+    source, dest = Path(source_path), Path(dest_path)
+    manifest_path = dest.with_suffix(".manifest.json")
+    if source == dest or any(path.exists() or path.is_symlink()
+                             for path in (dest, manifest_path)):
+        raise RuntimeError("PRIVATE_RECORDING_ALREADY_EXISTS")
+    made_video = False
+    made_manifest = False
+    try:
+        with source.open("rb") as original:
+            with dest.open("xb") as output:
+                made_video = True
+                shutil.copyfileobj(original, output, length=1024 * 1024)
+        with manifest_path.open("x", encoding="utf-8") as output:
+            made_manifest = True
+            output.write(json.dumps(manifest, indent=2) + "\\n")
+    except BaseException:
+        if made_manifest:
+            manifest_path.unlink(missing_ok=True)
+        if made_video:
+            dest.unlink(missing_ok=True)
+        raise
+    source.unlink()
+    return manifest_path

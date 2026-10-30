@@ -1,12 +1,15 @@
 """Pure, no-network safety regression for final-video historical proof cards."""
 import sys
 import unittest
+import json
+import tempfile
+import hashlib
 from pathlib import Path
 from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]/"scripts"))
 from video_owner_evidence import (
     sanitize_saved_receipt, collect_saved_receipt, storyboard_cards,
-    LOCAL_STATUS,
+    LOCAL_STATUS, preserve_private_recording,
 )
 
 def valid_receipt():
@@ -27,6 +30,54 @@ def valid_receipt():
     }
 
 class VideoEvidenceSafetyTests(unittest.TestCase):
+    def test_recording_and_manifest_saved_as_exclusive_pair(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp)
+            original=root/"playwright-temp.webm"
+            dest=root/"paypal-synthetic-review-20261030-160101.webm"
+            payload=b"TEST_WEBM_SYNTHETIC"
+            original.write_bytes(payload)
+            report={"video_filename":dest.name,"video_bytes":len(payload),
+                    "video_sha256":hashlib.sha256(payload).hexdigest(),
+                    "provider_calls":0,"payment_posts":0}
+            manifest=preserve_private_recording(original,dest,report)
+            self.assertFalse(original.exists())
+            self.assertEqual(dest.read_bytes(),payload)
+            self.assertEqual(json.loads(manifest.read_text()),report)
+
+    def test_existing_video_or_orphaned_manifest_cannot_be_overwritten(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp)
+            source=root/"playwright-source.webm"
+            dest=root/"paypal-synthetic-review-20261030-160102.webm"
+            manifest=dest.with_suffix(".manifest.json")
+            source.write_bytes(b"NEW_CAPTURE")
+            manifest.write_text("OLDER_OWNER_MANIFEST",encoding="utf-8")
+            with self.assertRaisesRegex(RuntimeError,"PRIVATE_RECORDING_ALREADY_EXISTS"):
+                preserve_private_recording(source,dest,{})
+            self.assertEqual(manifest.read_text(),"OLDER_OWNER_MANIFEST")
+            self.assertFalse(dest.exists())
+            self.assertEqual(source.read_bytes(),b"NEW_CAPTURE")
+            manifest.unlink()
+            dest.write_bytes(b"OLDER_OWNER_VIDEO")
+            with self.assertRaisesRegex(RuntimeError,"PRIVATE_RECORDING_ALREADY_EXISTS"):
+                preserve_private_recording(source,dest,{})
+            self.assertEqual(dest.read_bytes(),b"OLDER_OWNER_VIDEO")
+            self.assertFalse(manifest.exists())
+            self.assertEqual(source.read_bytes(),b"NEW_CAPTURE")
+
+    def test_invalid_manifest_rolls_back_only_new_output_not_source(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp)
+            original=root/"playwright-source.webm"
+            dest=root/"paypal-synthetic-review-20261030-160103.webm"
+            original.write_bytes(b"NEW_CAPTURE")
+            with self.assertRaises(TypeError):
+                preserve_private_recording(original,dest,{"bad":{1,2}})
+            self.assertEqual(original.read_bytes(),b"NEW_CAPTURE")
+            self.assertFalse(dest.exists())
+            self.assertFalse(dest.with_suffix(".manifest.json").exists())
+
     def test_verified_read_only_receipt_only_exports_small_allowlist(self):
         result=sanitize_saved_receipt(valid_receipt())
         self.assertTrue(result["local_receipt_verified"])

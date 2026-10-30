@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlsplit
 from playwright.sync_api import sync_playwright, expect
-from video_owner_evidence import collect_saved_receipt, storyboard_cards
+from video_owner_evidence import collect_saved_receipt, storyboard_cards, preserve_private_recording
 
 ROOT = Path(__file__).resolve().parents[1]
 SECRET = re.compile(r"(SECRET|TOKEN|PASSWORD|CREDENTIAL|API_KEY|CLIENT_ID|MERCHANT_ID|GEMINI|PAYPAL|OPENAI|AUTHORIZATION|PRIVATE_KEY|NODE_OPTIONS)", re.I)
@@ -345,13 +345,14 @@ def capture(output_dir, pace_ms):
             raise RuntimeError("EMPTY_VIDEO_RECORDING")
         filename = "paypal-synthetic-review-" + datetime.now().strftime("%Y%m%d-%H%M%S") + ".webm"
         dest = output_dir / filename
-        if dest.exists():
-            raise RuntimeError("OUTPUT_WOULD_OVERWRITE")
-        shutil.move(source, dest)
-        # Prevent a recording from silently claiming a different source version.
+        # Reject changed source before creating final private output files.
         current_source = git_source_snapshot()
         if current_source != source_snapshot:
             raise RuntimeError("SOURCE_CHANGED_DURING_RECORDING")
+        if (dest.exists() or dest.is_symlink() or
+                dest.with_suffix(".manifest.json").exists() or
+                dest.with_suffix(".manifest.json").is_symlink()):
+            raise RuntimeError("OUTPUT_WOULD_OVERWRITE")
         # Manifest is not an attestation of PayPal, Gemini or uploaded footage:
         # it identifies this private, synthetic file for human editorial review.
         manifest = {
@@ -362,8 +363,8 @@ def capture(output_dir, pace_ms):
             "interactive_fake_api_trace_actual_provider_calls": 0,
             "interactive_fake_api_trace_payment_posts": 0,
             "video_filename": dest.name,
-            "video_sha256": hashlib.sha256(dest.read_bytes()).hexdigest(),
-            "video_bytes": dest.stat().st_size,
+            "video_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+            "video_bytes": source.stat().st_size,
             "source_commit_sha": source_snapshot["sha"],
             "source_tracked_tree_clean": source_snapshot["clean"],
             "created_utc": datetime.now(timezone.utc).isoformat(),
@@ -379,11 +380,9 @@ def capture(output_dir, pace_ms):
             "owner_approval_for_publication": False,
             "notes": "Local synthetic content with historical owner-reported provider disclaimer. Human review required."
         }
-        dest.with_suffix(".manifest.json").write_text(
-            json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
-        )
+        manifest_path = preserve_private_recording(source, dest, manifest)
         print("RECORDED_SYNTHETIC_ONLY " + str(dest))
-        print("PRIVATE_VIDEO_MANIFEST " + str(dest.with_suffix(".manifest.json")))
+        print("PRIVATE_VIDEO_MANIFEST " + str(manifest_path))
         print("SOURCE_SCOPE=LOCALHOST_ONLY PROVIDER_CALLS=0 PAYMENT_POSTS=0 PUBLIC_UPLOAD=NO")
         print("OWNER_HISTORICAL_RECEIPT="+
               ("LOCAL_READ_ONLY_MATCH" if proof["local_receipt_verified"]
