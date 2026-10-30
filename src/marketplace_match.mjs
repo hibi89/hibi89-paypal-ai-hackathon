@@ -23,10 +23,40 @@ const PROFILES = Object.freeze([
   Object.freeze({id:'synthetic-builder',displayName:'Demo Growing App Builder',tier:'rising',skills:Object.freeze(['web','automation','data']),language:'en',source:'SYNTHETIC_PROFILE'}),
   Object.freeze({id:'synthetic-tester',displayName:'Demo Entry QA Learner',tier:'newcomer',skills:Object.freeze(['qa','web']),language:'en',source:'SYNTHETIC_PROFILE'}),
 ]);
+
 const error=(code,status=400)=>Object.assign(new Error(code),{code,status});
+// Three distinct opportunity lanes per round. Rank candidates ONLY within
+// their lane by explicit required-skill coverage; never infer reputation,
+// real experience, pricing, popularity or verified portfolio quality.
+const TIERS=Object.freeze(['professional','rising','newcomer']);
+function chooseOpportunitySet(profiles,required,round,{profileIds,legacyOrder=false}={}) {
+  if(profileIds!==undefined){
+    if(!Array.isArray(profileIds)||profileIds.length!==3||
+       new Set(profileIds).size!==3)throw error('INVALID_RECOMMENDATION_ROSTER');
+    return TIERS.map((tier,i)=>{
+      const found=profiles.find(p=>p.id===profileIds[i]);
+      if(!found||found.tier!==tier)throw error('INVALID_RECOMMENDATION_ROSTER');
+      return found;
+    });
+  }
+  if(legacyOrder)return profiles.slice(round*3,round*3+3);
+  return TIERS.map(tier=>{
+    const ordered=profiles.filter(profile=>profile.tier===tier)
+      .map((profile,index)=>({
+        profile,index,coverage:required.filter(skill=>profile.skills.includes(skill)).length
+      })).sort((a,b)=>{
+        const fullA=required.length>0&&a.coverage===required.length;
+        const fullB=required.length>0&&b.coverage===required.length;
+        return Number(fullB)-Number(fullA)||b.coverage-a.coverage||a.index-b.index;
+      });
+    if(ordered.length!==3)throw error('UNEXPECTED_SYNTHETIC_TIER_POOL');
+    return ordered[round].profile;
+  });
+}
+
 // A closed skill taxonomy is used by both regex-only and AI-assisted matching.
 export const MARKETPLACE_SKILL_NAMES=Object.freeze(SKILLS.map(([name])=>name));
-export function matchSyntheticMarketplaceSkills(requestedSkills,{source='OFFLINE_REGEX',round=0}={}) {
+export function matchSyntheticMarketplaceSkills(requestedSkills,{source='OFFLINE_REGEX',round=0,profileIds,legacyOrder=true}={}) {
   if(!Array.isArray(requestedSkills)||requestedSkills.length>MARKETPLACE_SKILL_NAMES.length ||
      !requestedSkills.every(skill=>typeof skill==='string'&&MARKETPLACE_SKILL_NAMES.includes(skill))||
      new Set(requestedSkills).size!==requestedSkills.length ||
@@ -34,7 +64,7 @@ export function matchSyntheticMarketplaceSkills(requestedSkills,{source='OFFLINE
   if(!Number.isInteger(round)||round<0||round>2)throw error('INVALID_RECOMMENDATION_ROUND');
   const canonical=MARKETPLACE_SKILL_NAMES.filter(skill=>requestedSkills.includes(skill));
   const mode=source==='GEMINI_API'?'GEMINI_ASSISTED_SYNTHETIC_PROFILES':'OFFLINE_SYNTHETIC_NO_AI';
-  const profiles=PROFILES.slice(round*3,round*3+3).map(profile=>{
+  const profiles=chooseOpportunitySet(PROFILES,canonical,round,{profileIds,legacyOrder}).map(profile=>{
     const matchedSkills=canonical.filter(skill=>profile.skills.includes(skill));
     const missingSkills=canonical.filter(skill=>!profile.skills.includes(skill));
     return {
@@ -94,7 +124,7 @@ export function matchSyntheticGeneralServiceBrief(brief,{round=0}={}) {
   const requestedSkills=GENERAL_SERVICE_SKILLS.filter(([,pattern])=>pattern.test(brief)).map(([skill])=>skill);
   return matchSyntheticGeneralServiceSkills(requestedSkills,{round});
 }
-export function matchSyntheticGeneralServiceSkills(requestedSkills,{round=0}={}) {
+export function matchSyntheticGeneralServiceSkills(requestedSkills,{round=0,profileIds,legacyOrder=true}={}) {
   const allowed=GENERAL_SERVICE_SKILLS.map(([name])=>name);
   if(!Array.isArray(requestedSkills)||requestedSkills.length>allowed.length||
      requestedSkills.some(skill=>typeof skill!=='string'||!allowed.includes(skill))||
@@ -102,7 +132,7 @@ export function matchSyntheticGeneralServiceSkills(requestedSkills,{round=0}={})
     throw error('INVALID_MATCH_SKILLS');
   if(!Number.isInteger(round)||round<0||round>2)throw error('INVALID_RECOMMENDATION_ROUND');
   const canonical=allowed.filter(skill=>requestedSkills.includes(skill));
-  const profiles=GENERAL_PROFILES.slice(round*3,round*3+3).map(profile=>{
+  const profiles=chooseOpportunitySet(GENERAL_PROFILES,canonical,round,{profileIds,legacyOrder}).map(profile=>{
     const matchedSkills=canonical.filter(skill=>profile.skills.includes(skill));
     const missingSkills=canonical.filter(skill=>!profile.skills.includes(skill));
     return {
@@ -135,8 +165,8 @@ export function createMarketplaceDemoApi({resolveSession,store}={}) {
   if(typeof resolveSession!=='function'||!store)throw new TypeError('VERIFIED_SESSION_AND_STORE_REQUIRED');
   const render=(row)=>{
     const matchFor=i=>row.vertical==='ai_work'
-      ? {...matchSyntheticMarketplaceSkills(row.skills,{round:i}),vertical:'ai_work'}
-      : matchSyntheticGeneralServiceSkills(row.skills,{round:i});
+      ? {...matchSyntheticMarketplaceSkills(row.skills,{round:i,profileIds:row.roster[i]}),vertical:'ai_work'}
+      : matchSyntheticGeneralServiceSkills(row.skills,{round:i,profileIds:row.roster[i]});
     const current=matchFor(row.round);
     return {...current,sessionId:row.id,round:row.round+1,
       maxRounds:3,remainingRefreshes:2-row.round,

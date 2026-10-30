@@ -1,12 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {startOfflineDemo} from '../src/offline_demo_server.mjs';
-import {matchSyntheticMarketplaceBrief,matchSyntheticGeneralServiceBrief} from '../src/marketplace_match.mjs';
+import {matchSyntheticMarketplaceBrief,matchSyntheticGeneralServiceBrief,
+  matchSyntheticMarketplaceSkills,matchSyntheticGeneralServiceSkills} from '../src/marketplace_match.mjs';
 import {createMarketplaceRecommendationStore} from '../src/marketplace_recommendation_store.mjs';
 import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {readFileSync} from 'node:fs';
+import {DatabaseSync} from 'node:sqlite';
+import {createHash} from 'node:crypto';
 
 test('deterministic three-profile marketplace never fabricates seller data, AI or payment',()=>{
   const a=matchSyntheticMarketplaceBrief('Build a responsive ecommerce website with PayPal checkout');
@@ -115,6 +118,10 @@ test('SQLite recommendation history is atomic, bounded and reopenable',()=>{
     let db=createMarketplaceRecommendationStore(filename);
     const a=db.start(owner,'ai_work',brief,skills);
     assert.equal(a.round,0);
+    assert.equal(a.roster.length,3);
+    assert.equal(a.roster.every(set=>set.length===3),true);
+    assert.equal(new Set(a.roster.flat()).size,9);
+    const frozenRoster=a.roster;
     const repeat=db.start(owner,'ai_work','  BUILD an ecommerce website with PayPal   checkout  ',skills);
     assert.equal(repeat.id,a.id);
     assert.equal(db.next(owner,a.id,1).round,1);
@@ -126,6 +133,7 @@ test('SQLite recommendation history is atomic, bounded and reopenable',()=>{
     db.close();
     db=createMarketplaceRecommendationStore(filename);
     assert.equal(db.get(owner,a.id).round,2);
+    assert.deepEqual(db.get(owner,a.id).roster,frozenRoster);
     assert.equal(db.start(owner,'ai_work',brief,skills).id,a.id);
     const general=db.start(owner,'general_services','Design a logo and brand identity',['design','branding']);
     assert.notEqual(general.id,a.id);
@@ -183,4 +191,62 @@ test('UI affordances keep per-set history, three tiers and bounded refresh CTA',
  assert.match(js,/Career tiers are fictional examples/);
  assert.match(html,/\.recommendation-controls/);
  assert.match(html,/\.profile-tier/);
+});
+
+test('opportunity discovery selects full skill coverage first within each of 3 career lanes',()=>{
+  const oldMatch=matchSyntheticMarketplaceSkills(['web','qa']);
+  assert.deepEqual(oldMatch.profiles.map(p=>p.id),
+    ['synthetic-web','synthetic-automation','synthetic-data']);
+  // The new method is opt-in; previously verified proof clips and
+  // owner Gemini/PayPal orchestration must retain their fixed scenario.
+  const requested=['web','qa'];
+  const rounds=[0,1,2].map(round=>matchSyntheticMarketplaceSkills(requested,{round,legacyOrder:false}));
+  assert.deepEqual(rounds[0].profiles.map(p=>p.id),
+    ['synthetic-commerce','synthetic-ui','synthetic-tester']);
+  assert.ok(rounds[0].profiles.every(p=>p.eligible));
+  assert.deepEqual(rounds.map(r=>r.profiles.map(p=>p.tier)),
+    Array(3).fill(['professional','rising','newcomer']));
+  assert.equal(new Set(rounds.flatMap(r=>r.profiles.map(p=>p.id))).size,9);
+  const design=matchSyntheticGeneralServiceSkills(['design','branding'],{legacyOrder:false});
+  assert.equal(design.profiles.find(p=>p.tier==='newcomer').id,'synthetic-illustrator');
+  assert.equal(design.profiles.find(p=>p.tier==='newcomer').eligible,true);
+  assert.equal(matchSyntheticMarketplaceSkills(requested,{round:0,
+    profileIds:['synthetic-web','synthetic-automation','synthetic-data']}).profiles[0].id,
+    'synthetic-web');
+  assert.throws(()=>matchSyntheticMarketplaceSkills(requested,{round:0,
+    profileIds:['synthetic-web','synthetic-web','synthetic-data']}),/INVALID_RECOMMENDATION_ROSTER/);
+  assert.throws(()=>matchSyntheticMarketplaceSkills(requested,{round:0,
+    profileIds:['synthetic-web','synthetic-data','synthetic-automation']}),/INVALID_RECOMMENDATION_ROSTER/);
+});
+test('legacy SQLite recommendation sessions retain original fixed 3x3 order without GET mutations',()=>{
+  const dir=mkdtempSync(join(tmpdir(),'paypal-legacy-marketplace-'));
+  const filename=join(dir,'sessions.sqlite');
+  const brief='Build a website with checkout and QA';
+  const owner='synthetic-owner';
+  const hash=createHash('sha256').update(brief.trim().replace(/\s+/g,' ').toLowerCase()).digest('hex');
+  try{
+    const db=new DatabaseSync(filename);
+    db.exec(`CREATE TABLE recommendation_sessions(
+      id TEXT PRIMARY KEY,owner TEXT NOT NULL,vertical TEXT NOT NULL,
+      brief_hash TEXT NOT NULL,skills_json TEXT NOT NULL,
+      round INTEGER NOT NULL,created_at INTEGER NOT NULL,
+      UNIQUE(owner,vertical,brief_hash))`);
+    const id='b'.repeat(32);
+    db.prepare('INSERT INTO recommendation_sessions VALUES(?,?,?,?,?,?,?)')
+      .run(id,owner,'ai_work',hash,JSON.stringify(['web','payments','qa']),2,0);
+    db.close();
+    const store=createMarketplaceRecommendationStore(filename);
+    const old=store.get(owner,id);
+    assert.deepEqual(old.roster[0],
+      ['synthetic-web','synthetic-automation','synthetic-data']);
+    assert.deepEqual(old.roster[1],
+      ['synthetic-commerce','synthetic-ui','synthetic-layout']);
+    assert.equal(old.round,2);
+    assert.deepEqual(store.start(owner,'ai_work',brief,['web','payments','qa']).roster,old.roster);
+    store.close();
+    const check=new DatabaseSync(filename,{readOnly:true});
+    const row=check.prepare('SELECT roster_json FROM recommendation_sessions WHERE id=?').get(id);
+    assert.equal(row.roster_json,null); // reads/legacy migration did not rewrite historical data
+    check.close();
+  }finally{rmSync(dir,{recursive:true,force:true})}
 });
