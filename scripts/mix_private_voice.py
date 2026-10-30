@@ -19,7 +19,7 @@ GAP_SECONDS = 0.18
 
 def mix_timeline(timeline_path: Path, output: Path):
     root = timeline_path.resolve().parent
-    data = json.loads(timeline_path.read_text(encoding="utf-8"))
+    data = json.loads(timeline_path.read_text(encoding="utf-8-sig"))
     items = data.get("items")
     if not isinstance(items, list) or not (1 <= len(items) <= 24):
         raise ValueError("NARRATION_CUE_COUNT_INVALID")
