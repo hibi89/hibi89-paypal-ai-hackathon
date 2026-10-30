@@ -18,6 +18,30 @@ SENSITIVE_ENV = re.compile(
 LOCAL_STATUS = "LOCAL_PROVIDER_RESULT_RECORDED_NOT_FRESH_GET"
 
 
+def git_source_snapshot(root):
+    """Read exact Git SHA and all non-ignored worktree changes, without network.
+
+    Untracked source modules/assets must not be presented as committed code.
+    Git status output is handled only in memory and never printed; ignored
+    recordings and isolated toolchain files are checked separately.
+    """
+    try:
+        sha = subprocess.run(
+            ["git", "rev-parse", "--verify", "HEAD"], cwd=root,
+            capture_output=True, text=True, timeout=4, check=True
+        ).stdout.strip()
+        if not re.fullmatch(r"[0-9a-f]{40}", sha):
+            return {"sha": None, "clean": False}
+        state = subprocess.run(
+            ["git", "status", "--porcelain=v1", "--untracked-files=normal", "--"],
+            cwd=root, capture_output=True, text=True, timeout=4, check=False
+        )
+        return {"sha": sha, "clean": state.returncode == 0
+                and isinstance(state.stdout, str) and len(state.stdout) == 0}
+    except (OSError, subprocess.SubprocessError):
+        return {"sha": None, "clean": False}
+
+
 def sanitize_saved_receipt(report):
     """Expose only a tiny allowlist of observed boolean facts and taxonomy."""
     fallback = {
