@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PayPal Global Services Marketplace — Offline Demo</title>
+<style>
+:root{font:16px/1.55 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#142440;background:#f5f7fc;font-synthesis:none}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{max-width:1240px;margin:0 auto;padding:0 28px 70px}
+a{color:inherit}h1,h2,h3,p{margin-top:0}h1,h2,h3{letter-spacing:-.035em;line-height:1.16}h1{font-size:clamp(2.65rem,5.8vw,5rem);font-weight:800;margin:9px 0 18px}h2{font-size:1.5rem;margin-bottom:10px}h3{font-size:1.1rem}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:24px;min-height:82px;border-bottom:1px solid #dce4f1}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.04em;text-decoration:none;font-size:1.35rem}
+.brand-mark{display:grid;place-items:center;width:39px;height:39px;border-radius:12px;background:#142950;color:white;font-size:1.35rem;box-shadow:0 8px 24px #14295029}
+.topbar nav{display:flex;align-items:center;gap:24px;font-size:.87rem;font-weight:650;color:#536580}
+.topbar nav a{text-decoration:none}.topbar nav a:hover,.topbar nav a:focus-visible{color:#215be3}
+.topbar .nav-pill{border:1px solid #ccd8eb;padding:9px 14px;border-radius:50px;color:#263b5b}
+.hero{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(240px,.6fr);gap:28px;padding:54px 0 35px;align-items:center}
+.eyebrow{text-transform:uppercase;font-size:.76rem;letter-spacing:.16em;font-weight:750;color:#3264be}
+.hero h1 em{font-style:normal;color:#3269dd}
+.hero-lead{max-width:660px;color:#526682;font-size:1.12rem;line-height:1.75;margin-bottom:24px}
+.hero-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.hero-cta{display:inline-flex;align-items:center;justify-content:center;min-height:47px;padding:10px 20px;border-radius:11px;background:#254eae;color:white;text-decoration:none;font-weight:700;box-shadow:0 10px 25px #284a9630}
+.hero-cta:hover{background:#173b93}
+.hero-note{font-size:.78rem;color:#64748b}
+.hero-visual{min-height:240px;border-radius:24px;background:linear-gradient(150deg,#1c3769,#162955 62%,#263e85);padding:24px;color:white;position:relative;overflow:hidden;box-shadow:0 22px 40px #1c38621e}
+.hero-visual:before{content:"";position:absolute;width:180px;height:180px;right:-60px;top:-45px;border-radius:50%;background:#5da4ff4b;filter:blur(5px)}
+.hero-visual:after{content:"";position:absolute;width:140px;height:140px;left:-58px;bottom:-56px;border-radius:50%;background:#55d6c63a}
+.hero-visual>*{position:relative;z-index:1}
+.hero-visual .visual-top{display:flex;justify-content:space-between;gap:10px;align-items:center;color:#c3d5fc;font-size:.75rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase}
+.visual-top .dot{width:8px;height:8px;border-radius:50%;background:#6ee6c4;display:inline-block;margin-right:6px}
+.visual-title{font-size:1.6rem;font-weight:800;letter-spacing:-.04em;line-height:1.2;margin:32px 0 16px}
+.visual-flow{display:flex;flex-wrap:wrap;gap:7px}.visual-flow span{padding:7px 10px;background:#ffffff20;border:1px solid #ffffff24;border-radius:8px;font-size:.79rem}
+.proof-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}.proof-cell{border:1px solid #d9e3f0;border-radius:12px;padding:14px 15px;background:#f8faff;min-width:0}.proof-cell h3{font-size:.85rem;letter-spacing:0;line-height:1.45;margin:4px 0 9px}.proof-cell p{font-size:.77rem;line-height:1.55;margin:0;color:#4b6080}.proof-source{font-size:.68rem;font-weight:800;letter-spacing:.06em;color:#315da3}.proof-cell.proof-pending{background:#fffaf1;border-color:#ebdfc5}.proof-cell.proof-pending .proof-source{color:#916325}
+.protocol-lab{margin-top:20px;padding:21px 23px;border-radius:16px;border:1px solid #c9d9f0;background:linear-gradient(125deg,#f6faff,#fff);box-shadow:0 6px 18px #1739660b}
+.protocol-lab-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.protocol-lab-head h3{font-size:1.15rem;margin:2px 0 0;color:#1a3458}
+.protocol-lab button{margin:0;min-height:44px}
+.protocol-lab .meta{margin:10px 0}
+#protocol-replay-status{font-size:.85rem;font-weight:750;color:#305a92;min-height:1.5em;margin:12px 0 0}
+#protocol-replay-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));list-style:none;counter-reset:protocol;gap:8px;padding:0;margin:16px 0}
+#protocol-replay-list[hidden]{display:none}
+#protocol-replay-list li{counter-increment:protocol;display:flex;align-items:start;gap:10px;padding:11px 12px;border:1px solid #dce7f4;border-radius:10px;background:white;color:#314863;font-size:.8rem;overflow-wrap:anywhere}
+#protocol-replay-list li:before{content:counter(protocol,decimal-leading-zero);font-size:.72rem;font-weight:800;color:#2459b4;min-width:22px}
+#protocol-replay-detail{font-size:.8rem;color:#556d8b;margin:0}
+@media(max-width:620px){.protocol-lab{padding:17px}.protocol-lab-head button{width:100%}#protocol-replay-list{grid-template-columns:1fr}}
+@media(max-width:900px){.proof-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:620px){.proof-grid{grid-template-columns:1fr}}
+.warning{padding:15px 18px;border:1px solid #e6dbaa;border-left:4px solid #c38a32;border-radius:12px;background:#fffaf0;color:#76501e;font-size:.87rem;line-height:1.6;margin:3px 0 18px}
+main{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:20px;margin-top:24px}
+.panel{grid-column:span 12;background:#fff;border:1px solid #e0e7f1;border-radius:20px;padding:27px;box-shadow:0 7px 24px #16345809;min-width:0}
+#marketplace-panel{background:linear-gradient(180deg,#fff,#fcfdff)}
+#demo-session-panel{padding:15px 20px;background:#eff4ff;box-shadow:none}
+#demo-session-panel h2{font-size:.95rem;margin:0 0 3px}#demo-session-panel .meta{display:inline;font-size:.8rem}#demo-session-panel button{font-size:.8rem}
+#quote-panel{grid-column:span 5}#draft-panel{grid-column:span 7}#approval-panel{grid-column:span 7}#payment-panel{grid-column:span 5}
+#contract-panel{grid-column:span 12}#subscription-panel{grid-column:span 6}#evidence-panel{grid-column:span 6}#integration-panel{grid-column:span 12}
+.section-kicker{font-size:.78rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#3763b1;margin-bottom:7px}
+.panel>.meta,.panel>p{color:#576a85}.panel>h2{max-width:660px}
+label{display:block;font-size:.88rem;font-weight:750;color:#2d4260;margin:15px 0 7px}
+textarea,input,select{display:block;width:100%;padding:13px 14px;border:1px solid #bccbe0;border-radius:10px;background:#fff;font:inherit;color:#1b2c48;outline:none;transition:border-color .16s,box-shadow .16s}
+textarea:focus-visible,input:focus-visible,select:focus-visible{border-color:#3168d4;box-shadow:0 0 0 4px #326cdb24}
+textarea{resize:vertical;min-height:95px}input[type=checkbox]{accent-color:#2859bd;vertical-align:middle;min-height:0}
+button{cursor:pointer;font:inherit;font-size:.88rem;font-weight:750;border:0;border-radius:10px;padding:11px 16px;background:#2852b0;color:white;margin:10px 7px 0 0;transition:background-color .16s,transform .16s}
+button:hover:not(:disabled){background:#174294;transform:translateY(-1px)}button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #6091fa;outline-offset:3px}
+button:disabled{opacity:.48;cursor:not-allowed}
+#marketplace-form{display:grid;grid-template-columns:minmax(220px,.7fr) minmax(0,1.3fr);column-gap:18px;align-items:end}
+#marketplace-form label[for=marketplace-vertical]{grid-column:1}#marketplace-form label[for=marketplace-brief]{grid-column:2;grid-row:1}
+#marketplace-vertical{grid-column:1;grid-row:2;height:54px;font-weight:700}
+#marketplace-brief{grid-column:2;grid-row:2;min-height:96px;height:auto}
+#marketplace-submit{grid-column:1/-1;justify-self:start;min-height:46px;margin:16px 0 8px}
+#marketplace-results{margin-top:18px}#marketplace-results>p:first-child{font-size:.85rem;color:#657793}
+.match-summary{font-size:.86rem;color:#4d6480;padding:12px 14px;background:#f2f6fe;border-radius:10px;margin-bottom:16px}
+.profile-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:16px}
+.profile-card{padding:18px;display:flex;flex-direction:column;min-height:252px;border-radius:17px;border:1px solid #dce5f1;background:#fff;box-shadow:0 5px 14px #1b38520b;overflow-wrap:anywhere}
+.profile-card.eligible{border-color:#9ab6ec;background:linear-gradient(160deg,#f9fbff,#fff)}
+.profile-top{display:flex;gap:11px;align-items:center;margin-bottom:13px}
+.profile-avatar{display:grid;place-items:center;flex:0 0 48px;width:48px;height:48px;border-radius:14px;background:linear-gradient(140deg,#c7d9fb,#e9f0ff);color:#244a93;font-weight:850;font-size:1rem}
+.profile-card:nth-child(2) .profile-avatar{background:#f5eaf4;color:#8b4a82}
+.profile-card:nth-child(3) .profile-avatar{background:#e5f4e9;color:#376c55}
+.profile-name{font-size:.98rem;font-weight:800;line-height:1.3;color:#172d51}
+.profile-label{font-size:.7rem;color:#687b97;margin-top:3px;letter-spacing:.015em}
+.match-status{display:inline-flex;align-items:center;align-self:start;border-radius:100px;padding:4px 9px;background:#e5eefc;color:#315da3;font-size:.72rem;font-weight:800;margin-bottom:11px}
+.profile-card:not(.eligible) .match-status{background:#f1f3f6;color:#5f6c80}
+.profile-description{font-size:.82rem;color:#566a83;margin-bottom:12px}
+.skill-list{display:flex;gap:5px;flex-wrap:wrap;margin:3px 0 11px}
+.skill-chip{border-radius:6px;padding:4px 7px;background:#eff3fa;color:#4d6584;font-size:.72rem;font-weight:650}
+.skill-chip.is-match{background:#e8f5ee;color:#22624b}
+.profile-gap{font-size:.78rem;color:#965f34;margin-bottom:8px}
+.profile-card .profile-action{width:100%;margin:auto 0 0;font-size:.81rem}
+#marketplace-selection-status{border-left:3px solid #8cacdf;padding:11px 13px;margin-top:16px;background:#f7f9fe;border-radius:0 8px 8px 0;font-size:.85rem}
+#quote-view,#integration-detail,#evidence-details,#contract-view,#subscription-details,#subscription-message,#integration-message,#contract-message{word-break:break-word;overflow-wrap:anywhere}
+.contract-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.contract-grid>div{border-radius:10px;background:#f4f7fb;padding:12px;min-width:0}
+.contract-grid p{margin:4px 0}.delivery-status{font-weight:800;color:#234a87}
+.contract-actions{display:flex;flex-wrap:wrap;gap:6px}
+details{border:1px solid #e0e7f1;border-radius:12px;margin:16px 0;padding:12px 14px}summary{cursor:pointer;font-weight:750;color:#2b456d}
+details .contract-grid>div{background:#f9fafd}
+code{background:#edf2f9;padding:3px 6px;border-radius:5px;overflow-wrap:anywhere;font-size:.86em}
+#message{grid-column:1/-1;min-height:2em;padding:12px;color:#31507a}#message[role=status]{white-space:pre-wrap}
+strong{font-weight:750}.meta{color:#61718a;font-size:.85rem}
+@media(max-width:900px){body{padding:0 18px 55px}.hero{grid-template-columns:1fr}.hero-visual{min-height:180px}.visual-title{margin:18px 0}#quote-panel,#draft-panel,#approval-panel,#payment-panel,#subscription-panel,#evidence-panel{grid-column:span 12}.profile-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){body{padding:0 12px 42px}.topbar{min-height:67px}.topbar nav{gap:10px;font-size:.75rem}.topbar nav a:first-child,.topbar nav a:nth-child(2){display:none}.topbar .nav-pill{padding:7px 9px}.hero{padding:29px 3px 20px}.hero-lead{font-size:1rem}.hero-visual{min-height:158px;padding:18px}.hero-visual .visual-title{font-size:1.3rem}main{gap:13px;margin-top:15px}.panel{padding:19px;border-radius:15px}#marketplace-form{grid-template-columns:1fr}#marketplace-form label[for=marketplace-vertical],#marketplace-form label[for=marketplace-brief],#marketplace-vertical,#marketplace-brief,#marketplace-submit{grid-column:1;grid-row:auto}.profile-grid{grid-template-columns:1fr}.profile-card{min-height:0}.contract-grid{grid-template-columns:1fr}h2{font-size:1.3rem}button{max-width:100%}}
+@media(max-width:620px){.panel,.hero-visual,.hero-cta,.brand-mark,.profile-card{box-shadow:none}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+<div class="topbar">
+<a class="brand" href="#marketplace-panel" aria-label="Proofline marketplace home"><span class="brand-mark">p.</span> proofline</a>
+<nav aria-label="Main navigation"><a href="#marketplace-panel">Explore services</a><a href="#draft-panel">Project flow</a><a class="nav-pill" href="#historical-provider-evidence">Sandbox evidence</a></nav>
+</div>
+<div class="hero">
+<div>
+<p class="eyebrow">Independent PayPal AI Hackathon concept</p>
+<h1>A wider world<br>of <em>opportunity.</em></h1>
+<p class="hero-lead">From AI engineering to design and translation: one marketplace where projects meet expertise, and every quote stays under human control.</p>
+<div class="hero-actions"><a class="hero-cta" href="#marketplace-panel">Explore two service markets &darr;</a><span class="hero-note">Two categories. One shared transaction workflow.</span></div>
+</div>
+<div class="hero-visual" aria-label="Conceptual transaction workflow">
+<div class="visual-top"><span><span class="dot"></span> Market creation</span><span>Concept · 2026</span></div>
+<div class="visual-title">A request becomes<br>a real opportunity.</div>
+<div class="visual-flow"><span>Discover</span><span>Match</span><span>Approve</span><span>PayPal Sandbox</span></div>
+</div>
+</div>
+<p class="warning"><strong>Offline demonstration — NOT REAL AI OR PAYPAL.</strong> All listed specialists and quotes are fictional. This local browser does not call Gemini or PayPal, create payments, or represent a PayPal partnership. Historical owner-observed provider evidence is labeled separately below.</p>
+</header>
+<main id="demo-main" aria-busy="false">
+<section class="panel" id="proof-map-panel" aria-labelledby="proof-map-heading">
+<p class="section-kicker">What is verified — and what is not</p>
+<h2 id="proof-map-heading">Every result has a source.</h2>
+<p class="meta">Four separate evidence classes. The current browser is offline; a previously reported Sandbox test is historical, not a live checkout.</p>
+<div class="proof-grid">
+<div class="proof-cell" id="proof-browser"><div class="proof-source">A / OFFLINE BROWSER</div><h3>Two service markets, one local workflow</h3><p>AI Work + Global Services use fictional specialists, human quote approval, unpaid contracts and SQLite records. Chromium tests exercise both routes.</p></div>
+<div class="proof-cell" id="proof-fake-provider"><div class="proof-source">B / INJECTED FAKE APIS</div><h3>Integration logic, not a PayPal transaction</h3><p>A separate offline test runs the real orchestration code with simulated Gemini, buyer approval, PayPal order/capture and GET. Provider calls: 0. Run npm run judge:evidence.</p></div>
+<div class="proof-cell" id="proof-owner-history"><div class="proof-source">C / OWNER-REPORTED HISTORY</div><h3>October 28 Sandbox + Gemini</h3><p>The owner reported a Gemini classification and a Sandbox buyer-approved capture verified by provider GET. Original private evidence is not independently reproduced in this browser or CI.</p></div>
+<div class="proof-cell proof-pending" id="proof-release"><div class="proof-source">D / NOT YET SUBMITTED</div><h3>Final public hackathon entry</h3><p>Public approved video, Devpost receipt and judge-accessible real integration evidence are not established by this offline demo.</p></div>
+</div>
+<div class="protocol-lab" id="protocol-lab">
+  <div class="protocol-lab-head">
+    <div><p class="section-kicker">Interactive proof / simulated APIs only</p><h3>Explore the Gemini → PayPal integration logic</h3></div>
+    <button type="button" id="protocol-replay-button" disabled>Run synthetic API replay</button>
+  </div>
+  <p class="meta">Runs the actual orchestration functions with injected FAKE Gemini/PayPal HTTP responses in an isolated local test. A simulated buyer approval is checked before a simulated capture. It does <strong>not</strong> call either provider, make payments or confirm the historic owner test.</p>
+  <p id="protocol-replay-status" role="status" aria-live="polite">Press the button to inspect a fake-only, opt-in API call sequence. No replay occurs on page load.</p>
+  <ol id="protocol-replay-list" aria-label="Simulated provider call order" hidden></ol>
+  <p id="protocol-replay-detail" aria-live="polite"></p>
+</div>
+</section>
+<section class="panel" id="demo-session-panel" aria-labelledby="demo-session-heading">
+<h2 id="demo-session-heading">Demo participants — synthetic only</h2>
+<p class="meta" id="demo-session-role">Loading local demo session…</p>
+<button type="button" id="demo-role-toggle" hidden disabled>Switch to synthetic reviewer</button>
+<p class="meta">This explicit local role switch demonstrates separate owner and reviewer sessions. It is not real authentication or a production identity system.</p>
+</section>
+<section class="panel" id="marketplace-panel" aria-labelledby="marketplace-heading">
+<p class="section-kicker">01 / Explore the marketplace</p>
+<h2 id="marketplace-heading">Find the right specialist for your next project</h2>
+<p class="meta">Choose AI Work or Global Services. Both use one matching/quote/approval workflow. Three fictional specialists per category; no live sellers, Gemini API, fee-sharing agreement, or PayPal checkout. Input synthetic briefs only.</p>
+<form id="marketplace-form">
+<label for="marketplace-vertical">Service category</label>
+<select id="marketplace-vertical" name="vertical"><option value="ai_work">AI Work — development and automation</option><option value="general_services">Global Services — design, translation, marketing</option></select>
+<label for="marketplace-brief">Synthetic client project request</label>
+<textarea id="marketplace-brief" rows="3" minlength="8" maxlength="500" required>Build an ecommerce website with PayPal checkout</textarea>
+<button type="submit" id="marketplace-submit" disabled>Explore matching specialists &rarr;</button>
+</form>
+<div id="marketplace-results" role="status" aria-live="polite">Click Match to inspect fictional skills and eligibility. Reference price: DATA_INSUFFICIENT.</div>
+<p class="meta" id="marketplace-selection-status" role="status" aria-live="polite">No candidate selected. Quote and payment unchanged.</p>
+</section>
+<section class="panel" id="quote-panel" aria-labelledby="current-heading">
+<p class="section-kicker">02 / Quote workspace</p>
+<h2 id="current-heading">Your current proposal</h2>
+<p id="quote-view">Loading local example…</p>
+<button type="button" id="refresh">Refresh quote (GET only)</button>
+</section>
+<section class="panel" id="draft-panel">
+<p class="section-kicker">03 / Define the work</p>
+<h2>Create a project proposal</h2>
+<form id="draft-form">
+<label for="scope">Project scope (synthetic data only)</label>
+<textarea id="scope" rows="3" minlength="8" maxlength="500" required>Build an accessible and responsive freelancer portfolio landing page</textarea>
+<button type="submit" id="draft-submit">Generate OFFLINE MOCK draft</button>
+</form>
+<p class="meta">Editing or replacing a proposal increments the quote version and invalidates previous approval. If a payment was ever claimed for a quote, revisions are blocked.</p>
+</section>
+<section class="panel" id="approval-panel">
+<p class="section-kicker">04 / Your decision</p>
+<h2>Approve terms, not algorithms</h2>
+<form id="approve-form">
+<label for="dollars">Approved amount (USD; human chosen, not AI)</label>
+<input id="dollars" type="number" min="1" max="10000" step="0.01" value="50.00" required>
+<label><input id="confirm" type="checkbox" required style="display:inline;width:auto"> I approve this quote version and amount.</label>
+<button type="submit" id="approve-submit">Approve current quote</button>
+</form>
+<form id="reject-form">
+<label for="reject-reason">Reason for rejecting this quote</label>
+<textarea id="reject-reason" rows="2" minlength="3" maxlength="500" required></textarea>
+<button type="submit" id="reject-submit">Reject current quote</button>
+</form>
+<p class="meta">PayPal order and capture POST remain disabled until actual Sandbox verification.</p>
+</section>
+<section class="panel" id="payment-panel">
+<p class="section-kicker">05 / PayPal evidence</p>
+<h2>Payment status &amp; verified provenance</h2>
+<p><strong>Payment is DISABLED.</strong> No Live transactions, no Sandbox charges, no deployed provider integration.</p>
+<button type="button" id="payment-status">Check payment status (GET)</button>
+<div class="protocol-lab" id="quote-checkout-plan-panel">
+<h3>Approved quote → PayPal Orders plan (offline)</h3>
+<p class="meta">Inspect your exact persisted amount and quote version with the real Orders v2 planner. <strong>Fictional merchant only.</strong> No Gemini, PayPal Sandbox call, order creation, buyer action, or Capture.</p>
+<button type="button" id="quote-checkout-preview" disabled>Preview plan for approved quote (GET only)</button>
+<p id="quote-checkout-preview-result" role="status" aria-live="polite">Approve a quote first. No provider call will be sent.</p>
+<div style="margin-top:16px;border-top:1px solid #c9d9f0;padding-top:15px">
+<h3>Judge verification · quote + separate fake API</h3>
+<p class="meta">One click compares your approved SQLite quote before and after a fixed USD 1.50 injected-fake Gemini/PayPal replay. <strong>These are not one linked checkout.</strong> Zero real provider calls.</p>
+<button type="button" id="verify-local-bridge" disabled>Verify both local code paths (fake only)</button>
+<p id="verify-local-bridge-result" role="status" aria-live="polite">Approve a quote first. No provider call will be sent.</p>
+</div>
+</div>
+<details id="historical-provider-evidence">
+<summary>Historical Gemini + PayPal Sandbox evidence — owner-reported, NOT this mock</summary>
+<p><strong>OWNER-REPORTED · NOT INDEPENDENTLY REPRODUCED · 2026-10-28</strong></p>
+<div id="provider-evidence-matrix" class="contract-grid" aria-label="Explicit evidence provenance for judge">
+<div><strong>Gemini API · owner one-shot</strong>
+<p>Previously classified technical skills: <code>web, payments, qa</code>. This local browser instead uses a deterministic fixture.</p>
+<p><strong>Proof class:</strong> Historical owner report, not current model output.</p></div>
+<div><strong>PayPal Sandbox · owner one-shot</strong>
+<p>Prior report: human USD 1.50 approval → Sandbox buyer approval → CAPTURE → provider GET verification. This page never performs any payment action.</p>
+<p><strong>Proof class:</strong> Historical owner report, not a new GET or independent replay.</p></div>
+</div>
+<p class="meta">On the original owner's computer only: <code>npm run mvp:receipt</code> checks saved local SQLite read-only; <code>npm run mvp:review</code> opens an isolated private read-only evidence worksheet. Neither is a public judge login, fresh provider GET or payment. Never upload a private DB, terminal credentials, order/capture ID or reviewer URL.</p>
+<p>Prior private run reported Gemini skill classification <code>web, payments, qa</code>; a person set the USD 1.50 quote; a separate Sandbox buyer approved it; the owner then captured and reported a subsequent PayPal GET verification.</p>
+<p>This is a historical owner observation, not this offline demo’s ledger or a fresh provider check. No credentials, account details, tokens, order IDs, or capture IDs are displayed. The browser walkthrough below remains synthetic and payment-disabled.</p>
+<p>Source record: <code>docs/technical/PPL_OWNER_REAL_SANDBOX_LOCAL_RECEIPT_20261028.md</code>.</p>
+</details>
+</section>
+<section class="panel" aria-labelledby="contract-heading" id="contract-panel">
+<p class="section-kicker">06 / Delivery lifecycle</p>
+<h2 id="contract-heading">Contract &amp; milestones — OFFLINE MOCK</h2>
+<p class="meta" id="session-role">Synthetic session loading…</p>
+<p class="meta">A signed-off quote is not a paid or delivered contract. Use the demo participant switch above to inspect the separate synthetic reviewer flow.</p>
+<div class="contract-grid">
+<div><p>Payment status</p><p id="contract-payment" class="delivery-status">NOT_CAPTURED</p></div>
+<div><p>Fulfillment status</p><p id="contract-fulfillment" class="delivery-status">NO_CONTRACT</p></div>
+</div>
+<p id="contract-view" role="status" aria-live="polite">Contract not yet created.</p>
+<details id="contract-audit-panel" open>
+<summary>Contract audit timeline — local synthetic events, read-only</summary>
+<p class="meta">Events come from the owner/reviewer-scoped SQLite contract ledger. They are not independently signed or real PayPal payment events. Refresh and page reload perform GET only.</p>
+<ol id="contract-events" aria-live="polite"><li>No contract events recorded.</li></ol>
+</details>
+<div class="contract-actions">
+<button type="button" id="contract-create">Create contract from approved quote</button>
+<button type="button" id="contract-refresh">Refresh contract (GET only)</button>
+</div>
+<form id="delivery-form" hidden>
+<label for="delivery-note">Delivery evidence (synthetic only)</label>
+<textarea id="delivery-note" minlength="8" maxlength="1000" rows="2" required>Uploaded the completed synthetic deliverables</textarea>
+<button type="submit" id="delivery-submit">Submit milestone for review</button>
+</form>
+<div id="review-actions" hidden>
+<label for="review-note">Rejection reason (required for rejection)</label>
+<textarea id="review-note" rows="2" minlength="8" maxlength="1000">Missing requested synthetic assets</textarea>
+<button type="button" id="review-accept">Accept delivery</button>
+<button type="button" id="review-reject">Reject delivery</button>
+</div>
+<p id="contract-message" role="status" aria-live="polite"></p>
+</section>
+<section class="panel" id="subscription-panel" aria-labelledby="subscription-heading">
+<p class="section-kicker">Optional / Local scenario</p>
+<h2 id="subscription-heading">Subscription simulation — OFFLINE ONLY</h2>
+<p class="meta">No PayPal plans, subscriptions, billing, charges, webhooks or provider GETs are invoked. Each transition is a local training scenario. Cancellation is terminal for this synthetic subscription.</p>
+<div class="contract-grid">
+<div><p>Subscription lifecycle</p><p class="delivery-status" id="subscription-state">NOT_STARTED</p></div>
+<div><p>Payment evidence</p><p class="delivery-status" id="subscription-payment">NOT_VERIFIED</p></div>
+</div>
+<p id="subscription-details" role="status" aria-live="polite">Local subscription loading…</p>
+<div class="contract-actions">
+<button type="button" id="subscription-start">Simulate activation</button>
+<button type="button" id="subscription-fail">Simulate renewal failure</button>
+<button type="button" id="subscription-recover">Simulate GET-first recovery</button>
+<button type="button" id="subscription-cancel">Simulate cancellation</button>
+<button type="button" id="subscription-refresh">Read state (GET only)</button>
+</div>
+<p id="subscription-message" role="status" aria-live="polite"></p>
+</section>
+<section class="panel" id="evidence-panel" aria-labelledby="evidence-heading">
+<p class="section-kicker">Optional / Read-only diagnostics</p>
+<h2 id="evidence-heading">Transaction record integrity — local SQLite</h2>
+<p class="meta">Read-only local transaction diagnostics, SQLite integrity, and synthetic quote/activity counts. These are real reads from the local demo database, including SHA-256 chained local change metadata (not independently signed/anchored). No live PayPal transactions or verified real market demand.</p>
+<p id="evidence-details" role="status" aria-live="polite">Loading local read-only evidence…</p>
+<button type="button" id="evidence-refresh">Refresh local evidence (GET only)</button>
+</section>
+<section class="panel" id="integration-panel" aria-labelledby="integration-heading">
+<p class="section-kicker">Optional / Technical status</p>
+<h2 id="integration-heading">Cross-feature readiness — synthetic only</h2>
+<p class="meta">This read-only local projection checks quote/contract/subscription consistency. A local demo candidate is NEVER a real PayPal integration, charge, production deployment or submitted entry.</p>
+<div class="contract-grid">
+<div><p>Local demo integration</p><p class="delivery-status" id="integration-state">CHECKING</p></div>
+<div><p>Real PayPal provider</p><p class="delivery-status" id="integration-paypal">NOT_TESTED</p></div>
+</div>
+<p id="integration-detail" role="status" aria-live="polite">Loading synthetic consistency…</p>
+<button type="button" id="integration-refresh">Review integration (GET only)</button>
+<p id="integration-message" role="status" aria-live="polite"></p>
+</section>
+<section class="panel" id="agent-budget-panel" aria-labelledby="agent-budget-heading">
+<p class="section-kicker">Optional / Negotiation and budget guardrails</p>
+<h2 id="agent-budget-heading">Bounded negotiation and spending limit</h2>
+<p class="meta">Deterministic OFFLINE POLICY simulation, not a live Gemini agent. Prices are USD. No PayPal authorization or escrow.</p>
+<form id="agent-negotiation-form">
+<label>Buyer maximum (USD)<input name="buyerMax" type="number" min="1" max="10000" step="0.01" value="300.00" required></label>
+<label>Seller minimum (USD)<input name="sellerMin" type="number" min="1" max="10000" step="0.01" value="200.00" required></label>
+<label>Seller opening (USD)<input name="opening" type="number" min="1" max="10000" step="0.01" value="280.00" required></label>
+<button type="submit">Generate offline negotiation proposal</button>
+</form>
+<p id="agent-negotiation-result" role="status" aria-live="polite">No proposal yet.</p>
+<p class="meta">To reserve budget, approve the exact proposal amount in the separate human approval section above.</p>
+<form id="agent-budget-form">
+<label>Maximum spending budget (USD)<input name="limit" type="number" min="1" max="10000" step="0.01" value="500.00" required></label>
+<button type="submit">Confirm offline budget limit</button>
+</form>
+<button type="button" id="agent-budget-reserve" disabled>Reserve approved amount in SQLite</button>
+<p id="agent-budget-result" role="status" aria-live="polite">No reservation.</p>
+<button type="button" id="agent-budget-history-refresh">View SQLite reservation history</button>
+<pre id="agent-budget-history" role="status" aria-live="polite">No history loaded.</pre>
+</section>
+<section class="panel" id="github-delivery-panel" aria-labelledby="github-delivery-heading">
+<p class="section-kicker">Optional / Synthetic GitHub delivery check</p>
+<h2 id="github-delivery-heading">Review delivered work before settlement</h2>
+<p class="meta">FICTIONAL GitHub PR, commit and CI fixture. This demo does NOT fetch GitHub checks, run Gemini or initiate PayPal payouts. The decision only identifies eligibility for separate human review.</p>
+<form id="github-delivery-form">
+<label><input type="checkbox" name="checkPassed"> Synthetic required CI check passed</label>
+<label><input type="checkbox" name="reviewApproved"> Synthetic human delivery review approved</label>
+<button type="submit">Evaluate fictional delivery evidence</button>
+</form>
+<p id="github-delivery-result" role="status" aria-live="polite">No synthetic evaluation yet.</p>
+</section>
+<p id="message" role="status" aria-live="polite"></p>
+</main>
+<script src="/demo/marketplace.js" defer></script>
+<script src="/demo/agent-budget.js" defer></script>
+<script src="/demo/github-delivery.js" defer></script>
+<script src="/demo/client.js" defer></script>
+<script src="/demo/contract.js" defer></script>
+<script src="/demo/subscription.js" defer></script>
+<script src="/demo/integration.js" defer></script>
+<script src="/demo/evidence.js" defer></script>
+<script src="/demo/provider-protocol.js" defer></script>
+<script src="/demo/quote-checkout-preview.js" defer></script>
+</body>
+</html>
+

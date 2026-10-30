@@ -1,0 +1,130 @@
+name: Offline payment-contract tests
+on:
+  push:
+    branches: [lead/paypal]
+  pull_request:
+    branches: [main, lead/paypal]
+permissions:
+  contents: read
+
+# Only retain the latest push/PR revision of the same workflow. Different PRs
+# and the protected lead branch never share a cancellation group.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate entire 18-day progress dashboard
+        run: python3 render_master_progress.py --check
+      - name: Offline Node regression tests
+        run: npm test
+      - name: Read-only local MVP restart preflight (no credentials or provider calls)
+        run: npm run mvp:status
+      - name: One-command full marketplace to payment mock MVP (no provider calls)
+        run: npm run mvp:simulate
+      - name: Generate judge evidence matrix from fake transport only
+        run: |
+          npm run judge:evidence
+          node --input-type=module -e "import {readFileSync} from 'node:fs'; const r=JSON.parse(readFileSync('output/submission/judge_evidence_report.json')); if(r.status!=='JUDGE_SAFE_OFFLINE_EVIDENCE_READY_NOT_SUBMITTED'||r.verifiedFromThisCommand.actualProviderCalls!==0||r.verifiedFromThisCommand.actualPaymentCaptured!==false||r.releases.publicationAuthorized!==false||r.evidence[2].status!=='OWNER_REPORTED_NOT_INDEPENDENTLY_ATTESTED')process.exit(2)"
+      - name: Reproduce both judge categories and classify all four evidence sources offline
+        run: |
+          npm run judge:reproduce
+          npm run freeze:check
+          node --input-type=module -e "import {readFileSync} from 'node:fs'; const r=JSON.parse(readFileSync('output/submission/judge_reproduction_receipt.json')); const f=JSON.parse(readFileSync('output/submission/private_freeze_status.json')); if(r.status!=='JUDGE_OFFLINE_REPRODUCED_NOT_SUBMITTED'||r.reproducibleA.categories.length!==2||r.reproducibleB.actualProviderCalls!==0||r.publicationD.status!=='NOT_SUBMITTED'||!f.sourceVerified||!f.localJudgeTechnicalEvidenceVerified||f.publishingAuthorized!==false||f.submissionEligible!==false)process.exit(2)"
+      - name: Install free browser test tooling
+        run: |
+          python3 -m venv .browser-venv
+          .browser-venv/bin/pip install --disable-pip-version-check playwright==1.56.0
+          .browser-venv/bin/python -m playwright install ffmpeg
+      - name: Actual Chromium offline UI journey
+        run: .browser-venv/bin/python tests/browser_offline_e2e.py
+      - name: Global Services Chromium quote and contract journey
+        run: .browser-venv/bin/python tests/browser_general_services_e2e.py
+      - name: Chromium opt-in Gemini and PayPal fake API trace panel
+        run: .browser-venv/bin/python tests/browser_synthetic_provider_protocol_e2e.py
+      - name: Check recorder Python syntax and proof provenance regression
+        run: |
+          python3 -m py_compile scripts/record_judge_demo.py scripts/video_owner_evidence.py
+          python3 tests/video_owner_evidence_test.py
+          python3 tests/recorded_video_integrity_test.py
+      - name: Record offline synthetic reviewer footage (ephemeral, no upload)
+        env:
+          VIDEO_PYTHON_BIN: .browser-venv/bin/python
+        run: npm run video:record:offline -- --pace-ms 200
+      - name: Validate private synthetic WebM hash and release flags
+        run: python3 scripts/check_recorded_video.py
+      - name: Build private submission candidate and check duration-proof gate (no publication)
+        run: |
+          npm run submission:candidate:local
+          node --input-type=module -e "import {readFileSync} from 'node:fs'; const x=JSON.parse(readFileSync('output/submission/submission_candidate_status.json')); const verified=x.privateVideoDuration?.status==='ENCODED_MEDIA_UNDER_THREE_MINUTES'&&Number.isFinite(x.privateVideoDuration?.seconds)&&x.privateVideoDuration.seconds>0&&x.privateVideoDuration.seconds<180; if(x.sourceStatus!=='LOCAL_SOURCE_DRAFTS_PRESENT'||x.videoSourceMatch!=='MATCHED_CLEAN_SOURCE'||x.technicalVideoReady!==verified||x.ownerReviewReady!==verified||x.externalSubmissionEligible!==false||x.authorizedToPublish!==false||x.devpostReceipt!=='NOT_SUBMITTED')process.exit(2)"
+  owner-video-windows:
+    name: Windows first-run offline video recording
+    runs-on: windows-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Historical owner evidence safety regressions
+        run: |
+          python tests/video_owner_evidence_test.py
+          python tests/recorded_video_integrity_test.py
+      - name: Full owner workflow from clean machine (no accounts or providers)
+        run: npm run video:record:owner -- --pace-ms 200
+      - name: Build owner draft packet with fail-closed encoded-duration and release gates
+        run: |
+          npm run submission:candidate:local
+          node --input-type=module -e "import {readFileSync} from 'node:fs'; const x=JSON.parse(readFileSync('output/submission/submission_candidate_status.json')); const verified=x.privateVideoDuration?.status==='ENCODED_MEDIA_UNDER_THREE_MINUTES'&&Number.isFinite(x.privateVideoDuration?.seconds)&&x.privateVideoDuration.seconds>0&&x.privateVideoDuration.seconds<180; if(x.sourceStatus!=='LOCAL_SOURCE_DRAFTS_PRESENT'||x.videoSourceMatch!=='MATCHED_CLEAN_SOURCE'||x.technicalVideoReady!==verified||x.ownerReviewReady!==verified||x.externalSubmissionEligible!==false||x.authorizedToPublish!==false||x.devpostReceipt!=='NOT_SUBMITTED')process.exit(2)"
+
+      - name: One-command owner-PC private review (synthetic only, no historical CI receipt)
+        run: |
+          npm run owner:review:local
+          node --input-type=module -e "import {readFileSync} from 'node:fs'; const r=JSON.parse(readFileSync('output/submission/owner_review_brief.json')); if(r.status!=='OWNER_LOCAL_REVIEW_PREPARED_NOT_SUBMITTED'||r.localTechnicalReplay!=='SYNTHETIC_PASS'||r.originalPrivateReceiptStatus!=='NO_LOCAL_ATTEMPT'||r.livePayPalAndGeminiJudgeReplay!=='NOT_INDEPENDENTLY_VERIFIED'||r.realProviderCalls!==0||r.paymentPosts!==0||r.devpostSubmitted!==false||r.publishingAuthorized!==false)process.exit(2)"
+
+
+  full-length-video:
+    name: Default-speed synthetic video under 3 minutes
+    if: github.event_name == 'pull_request' || contains(github.event.head_commit.message, '[video-full]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install isolated video tools
+        run: |
+          python3 -m venv .video-venv
+          .video-venv/bin/pip install --disable-pip-version-check playwright==1.56.0
+          .video-venv/bin/python -m playwright install ffmpeg
+      - name: Install free ffprobe metadata verifier
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Record default-speed silent English-captioned synthetic video (private only)
+        env:
+          VIDEO_PYTHON_BIN: .video-venv/bin/python
+        run: npm run video:record:offline
+      - name: Verify WebM file + independent ffprobe media duration below three minutes
+        run: |
+          python3 scripts/check_recorded_video.py
+          python3 -c 'import json,glob; p=sorted(glob.glob("output/videos/*.manifest.json"))[-1]; d=json.load(open(p)); assert d["historical_owner_receipt_checked_locally"] is False; assert d["historical_owner_receipt_source"]=="OWNER_REPORTED_2026_10_28_NOT_VERIFIED_ON_THIS_DEVICE"; print("NO_PRIVATE_CI_PROVIDER_PROOF_CLAIM_PASS")'
+          if ! command -v ffprobe >/dev/null 2>&1; then
+            echo "FFPROBE_UNAVAILABLE; no true media duration verified" >&2
+            exit 2
+          fi
+          video=$(find output/videos -maxdepth 1 -type f -name 'paypal-synthetic-review-*.webm' -print -quit)
+          if [ -z "$video" ]; then echo "RECORDING_MISSING" >&2; exit 2; fi
+          duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$video")
+          python3 -c 'import sys; d=float(sys.argv[1]); assert 100 < d < 180, "VIDEO_DURATION_INVALID"; print(f"PRIVATE_MEDIA_DURATION_VERIFIED_SECONDS={d:.2f}")' "$duration"

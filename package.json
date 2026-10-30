@@ -1,0 +1,39 @@
+{
+  "name": "paypal-freelancer-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-sqlite --test tests/*.test.mjs",
+    "demo": "node --experimental-sqlite scripts/run_demo.mjs",
+    "preflight:hosting": "node scripts/check_hosting_preflight.mjs",
+    "preflight:p0": "node scripts/check_p0_provider_readiness.mjs",
+    "preflight:submission": "node scripts/check_submission_evidence.mjs",
+    "preflight:reviewer": "node --experimental-sqlite scripts/check_reviewer_repro.mjs",
+    "pilot:gemini": "node --experimental-sqlite scripts/run_owner_gemini_pilot.mjs",
+    "mvp:operator": "node --experimental-sqlite scripts/run_owner_mvp_operator.mjs",
+    "mvp:callback": "node --experimental-sqlite scripts/run_owner_mvp_callback.mjs",
+    "mvp:simulate": "node --experimental-sqlite scripts/run_mvp_mock_smoke.mjs",
+    "judge:evidence": "node --experimental-sqlite scripts/build_judge_evidence_report.mjs",
+    "judge:reproduce": "node --experimental-sqlite scripts/run_judge_reproduction.mjs",
+    "freeze:check": "node --experimental-sqlite scripts/check_private_freeze.mjs",
+    "owner:review:local": "node --experimental-sqlite scripts/prepare_owner_review_brief.mjs",
+    "owner:final:local": "node --experimental-sqlite scripts/run_owner_final_fastpath.mjs",
+    "owner:evidence:local": "node --experimental-sqlite scripts/export_owner_local_evidence.mjs",
+    "owner:sandbox:get:optional": "node --experimental-sqlite scripts/recheck_existing_sandbox_get.mjs",
+    "mvp:status": "node --experimental-sqlite scripts/check_owner_mvp_local_status.mjs",
+    "mvp:quick": "node --experimental-sqlite scripts/run_owner_mvp_operator.mjs --quick-tunnel",
+    "mvp:receipt": "node --experimental-sqlite scripts/print_owner_mvp_receipt.mjs",
+    "verify:local": "node scripts/verify_local.mjs",
+    "mvp:fast": "node --experimental-sqlite scripts/run_owner_mvp_operator.mjs --quick-tunnel --fast-operator",
+    "mvp:review": "node --experimental-sqlite scripts/run_owner_mvp_review.mjs",
+    "video:record:offline": "node scripts/run_record_demo.mjs",
+    "video:record:owner": "node scripts/prepare_and_record_video.mjs",
+    "submission:candidate:local": "node scripts/prepare_submission_candidate.mjs",
+    "test:journey": "node --experimental-sqlite --test tests/complete_marketplace_journey.test.mjs"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "license": "MIT"
+}

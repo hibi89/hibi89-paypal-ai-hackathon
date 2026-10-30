@@ -1,18 +1,18 @@
-# Credentials and local state
 .env
 .env.*
 !.env.example
-*.pem
-*.key
-credentials/
-secrets/
-*.sqlite
-*.sqlite3
 node_modules/
-__pycache__/
-.pytest_cache/
-.venv/
-dist/
-build/
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
 .DS_Store
-Thumbs.db
+output/
+.video-venv/
+
+# Isolated free CI/browser/recorder tooling and Python bytecode only.
+# Source files outside these directories remain visible to git status.
+.browser-venv/
+__pycache__/
+*.pyc
+.pytest_cache/
