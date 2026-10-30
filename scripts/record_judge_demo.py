@@ -287,6 +287,7 @@ def capture(output_dir, pace_ms, premium=False):
                     install_film_cursor()
                     guided_fill("#marketplace-brief","Build an ecommerce website with PayPal checkout")
                 caption("PROOFLINE | AI should open the first door to work — not just automate existing work. OFFLINE SYNTHETIC DEMO.")
+                voice_cue("Talent is everywhere. Access to opportunity is not. Proofline is designed to open the first door to work.")
                 pause()
 
                 # Show source classes directly in the product before any mock transaction.
@@ -296,6 +297,7 @@ def capture(output_dir, pace_ms, premium=False):
                 expect(proof_map).to_contain_text("NOT YET SUBMITTED")
                 proof_map.scroll_into_view_if_needed()
                 caption("EVIDENCE MAP | Offline browser + injected fake APIs are NOT the owner's historical Gemini/PayPal Sandbox receipt.")
+                voice_cue("Every result has a source. This fictional offline demo is not a live PayPal checkout.")
                 page.wait_for_timeout(min(pace_ms, 4500))
 
                 # Real owner orchestration, injected FAKE Gemini/PayPal only.
@@ -312,6 +314,7 @@ def capture(output_dir, pace_ms, premium=False):
                 assert post_paths.count("/api/demo/provider-protocol") == 1, "FAKE_PROTOCOL_REPLAY_NOT_EXPLICIT"
                 synthetic_protocol_replay_verified = True
                 caption("INJECTED FAKE API TRACE | Gemini skills → simulated PayPal order → buyer approval GET → simulated Capture → GET. ZERO real provider calls.")
+                voice_cue("We demonstrate Gemini and PayPal integration logic using fake responses. No real provider request is made here.")
                 page.wait_for_timeout(min(pace_ms, 5000))
 
                 # Show BOTH real, clickable service categories in one marketplace.
@@ -320,6 +323,7 @@ def capture(output_dir, pace_ms, premium=False):
                 expect(page.locator(".match-summary")).to_contain_text("AI Work")
                 expect(page.locator("#marketplace-choose-synthetic-web")).to_be_visible()
                 caption("AI WORK | AI agents, automation and development. Three FICTIONAL specialists, with visible skill gaps.")
+                voice_cue("Explore specialists in AI development, automation and software engineering.")
                 pause()
 
                 guided_select("#marketplace-vertical","general_services")
@@ -327,6 +331,7 @@ def capture(output_dir, pace_ms, premium=False):
                 expect(page.locator(".match-summary")).to_contain_text("Global Services")
                 expect(page.locator(".profile-card")).to_have_count(3)
                 caption("GLOBAL SERVICES | Design, translation, marketing: a second category sharing the SAME marketplace workflow. FICTIONAL profiles.")
+                voice_cue("The same marketplace also supports design, writing and translation.")
                 page.wait_for_timeout(min(pace_ms, 5500))
 
                 # Return to AI Work for the common quote -> contract journey.
@@ -350,6 +355,7 @@ def capture(output_dir, pace_ms, premium=False):
                 expect(page.locator("#quote-checkout-preview-result")).to_contain_text(
                     "9 in-memory fake PayPal domain stages")
                 caption("APPROVED USD 15 QUOTE → ORDER AND CAPTURE DOMAIN FLOW | 9 FAKE in-memory stages, no API POST or payment.")
+                voice_cue("A human approves the exact quote and amount. This fifteen-dollar example does not send a payment.")
                 page.wait_for_timeout(min(pace_ms,2200))
                 guided_click("#verify-local-bridge")
                 expect(page.locator("#verify-local-bridge-result")).to_contain_text(
@@ -387,6 +393,7 @@ def capture(output_dir, pace_ms, premium=False):
                 guided_click("#delivery-submit")
                 expect(page.locator("#contract-fulfillment")).to_have_text("SUBMITTED")
                 caption("Owner creates an unpaid contract and submits a synthetic delivery for an independent reviewer decision.")
+                voice_cue("A synthetic delivery is submitted for a separate reviewer's decision.")
                 pause()
 
                 guided_click("#demo-role-toggle")
@@ -394,6 +401,7 @@ def capture(output_dir, pace_ms, premium=False):
                 guided_click("#review-reject")
                 expect(page.locator("#contract-fulfillment")).to_have_text("REJECTED")
                 caption("Synthetic reviewer REJECTED delivery. The owner must revise and resubmit; previous review cannot be silently reused.")
+                voice_cue("The reviewer can reject the work and request a revision.")
                 pause()
 
                 guided_click("#demo-role-toggle")
@@ -411,6 +419,7 @@ def capture(output_dir, pace_ms, premium=False):
                 expect(page.locator("#contract-events")).to_contain_text("ACCEPTED")
                 expect(page.locator("#contract-payment")).to_have_text("NOT_CAPTURED")
                 caption("Read-only SQLite audit timeline: CREATED → SUBMITTED → REJECTED → RESUBMITTED → ACCEPTED. Payment remains NOT_CAPTURED.")
+                voice_cue("Every decision stays in the local audit trail. The synthetic transaction remains unpaid.")
                 pause()
 
                 guided_click("#evidence-refresh")
@@ -423,6 +432,7 @@ def capture(output_dir, pace_ms, premium=False):
                 page.reload()
                 expect(page.locator("#contract-events")).to_contain_text("ACCEPTED")
                 caption("Technology is the evidence. The marketplace is the mechanism. More opportunity for people is the goal. OFFLINE SYNTHETIC.")
+                voice_cue("Proofline is about making opportunity more accessible, with people in control of trust and approval.")
                 pause()
                 assert not unsafe_requests, "EXTERNAL_REQUEST_BLOCKED"
                 assert not any("/orders" in x or "/capture" in x for x in post_paths), "PAYMENT_POST_FORBIDDEN"
