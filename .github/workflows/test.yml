@@ -3,7 +3,7 @@ on:
   push:
     branches: [lead/paypal]
   pull_request:
-    branches: [main, lead/paypal]
+    branches: [main, lead/paypal, release/paypal-main-qa-preview-20261030]
 permissions:
   contents: read
 
