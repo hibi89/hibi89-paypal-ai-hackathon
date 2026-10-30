@@ -139,6 +139,11 @@ test('localhost approved quote -> real PayPal Orders planner GET preserves USD 2
   assert.equal(proof.quoteVersion,2);
   assert.equal(proof.amount,'29.00');
   assert.equal(proof.plannedMethod,'POST_NOT_SENT');
+  assert.equal(proof.quoteBoundFakeFlow.amount,'29.00');
+  assert.equal(proof.quoteBoundFakeFlow.mode,'PURE_DOMAIN_FAKE_PAYPAL_EVENTS_NO_HTTP');
+  assert.equal(proof.quoteBoundFakeFlow.blockedPrematureCapture,true);
+  assert.equal(proof.quoteBoundFakeFlow.blockedMismatchedCapture,true);
+  assert.equal(proof.quoteBoundFakeFlow.paymentPosts,0);
   assert.equal(proof.externalProviderCalls,0);
   assert.equal(proof.orderCreated,false);
   assert.equal(proof.capturePerformed,false);

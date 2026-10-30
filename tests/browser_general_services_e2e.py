@@ -98,6 +98,10 @@ try:
                 "/api/demo/provider-protocol") for method,url in requests)
 
             expect(page.locator("#quote-checkout-preview-result")).to_contain_text("NOT SENT")
+            expect(page.locator("#quote-checkout-preview-result")).to_contain_text(
+                "9 in-memory fake PayPal domain stages")
+            assert all(not url.startswith("https://api-m.sandbox.paypal.com")
+                       for _,url in requests)
             assert sum(method=="POST" for method,_ in requests)==posts_before_preview
             assert any(method=="GET" and url.endswith(
                 "/api/demo/quote-checkout-preview") for method,url in requests)

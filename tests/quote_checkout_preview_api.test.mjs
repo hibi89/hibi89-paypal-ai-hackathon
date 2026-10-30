@@ -60,3 +60,37 @@ test('stale approval and invalid amount never generate a plan',async()=>{
   assert.equal((await api(db)(req())).status,503);
  }
 });
+
+test('quote-bound fake PayPal lifecycle uses the SAME human-approved amount and no HTTP',async()=>{
+ for(const [version,minor,amount] of [[2,1500,'15.00'],[6,2900,'29.00']]){
+  const db=createMemoryQuoteRepository([q(version)]);
+  await db.approve({id:'sample-project',actorId:'synthetic-owner',
+    expectedVersion:version,amountMinor:minor});
+  const response=await api(db)(req());
+  assert.equal(response.status,200);
+  const plan=await response.json(),trace=plan.quoteBoundFakeFlow;
+  assert.equal(trace.mode,'PURE_DOMAIN_FAKE_PAYPAL_EVENTS_NO_HTTP');
+  assert.equal(trace.quoteVersion,version);
+  assert.equal(trace.amountMinor,minor);
+  assert.equal(trace.amount,amount);
+  assert.deepEqual(trace.steps,[
+    'STORED_HUMAN_APPROVAL','ORDER_CREATE_PLANNED_NOT_SENT',
+    'FICTIONAL_BUYER_PENDING','EARLY_CAPTURE_BLOCKED',
+    'FICTIONAL_BUYER_APPROVED','CAPTURE_PLANNED_NOT_SENT',
+    'FICTIONAL_GET_COMPLETED','FOREIGN_AMOUNT_BLOCKED',
+    'FAKE_DOMAIN_RECONCILIATION_MATCHED']);
+  assert.equal(trace.blockedPrematureCapture,true);
+  assert.equal(trace.blockedMismatchedCapture,true);
+  assert.equal(trace.fakeDomainReconcilePassed,true);
+  assert.deepEqual([trace.providerCalls,trace.paymentPosts,trace.ledgerMutations],[0,0,0]);
+  assert.equal(trace.paymentWasReal,false);
+  assert.equal(trace.buyerApprovalWasReal,false);
+ }
+});
+test('no fake lifecycle or synthetic Capture plan is exposed before human quote approval',async()=>{
+ const db=createMemoryQuoteRepository([q(2)]);
+ const unapproved=await api(db)(req());
+ assert.equal(unapproved.status,409);
+ const data=await unapproved.json();
+ assert.equal(Object.hasOwn(data,'quoteBoundFakeFlow'),false);
+});

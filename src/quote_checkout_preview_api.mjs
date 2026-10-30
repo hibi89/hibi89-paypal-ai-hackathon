@@ -1,6 +1,7 @@
 // Local synthetic quote -> genuine pure PayPal Orders v2 planning code.
 // GET only; no credentials, external PayPal/Gemini calls, order or capture.
 import {planOrder,approvedAmount} from './payment_contract.mjs';
+import {deriveQuoteBoundFakePayPalFlow} from './quote_bound_fake_paypal_flow.mjs';
 const reply=(status,value,extra={})=>new Response(JSON.stringify(value),{
  status,headers:{'content-type':'application/json; charset=utf-8',
  'cache-control':'no-store','x-content-type-options':'nosniff',...extra}});
@@ -39,7 +40,8 @@ export function createQuoteCheckoutPreviewApi({repository,resolveSession,quoteId
      plannedMethod:'POST_NOT_SENT',plannedPath:plan.path,
      sandboxMerchantConnected:false,buyerApprovalObserved:false,
      orderCreated:false,capturePerformed:false,externalProviderCalls:0,
-     executionAuthorized:false,liveCheckout:false});
+     executionAuthorized:false,liveCheckout:false,
+     quoteBoundFakeFlow:deriveQuoteBoundFakePayPalFlow(quote)});
   }catch{return reply(503,{error:'LOCAL_ORDER_PREVIEW_NOT_VERIFIED'});}
  };
 }

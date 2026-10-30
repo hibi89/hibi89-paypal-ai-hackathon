@@ -265,7 +265,9 @@ def capture(output_dir, pace_ms):
                 page.locator("#quote-checkout-preview").click()
                 expect(page.locator("#quote-checkout-preview-result")).to_contain_text(
                     "human-approved USD 15.00")
-                caption("APPROVED USD 15 QUOTE → PAYPAL ORDER PLAN | Real pure planner, but NO POST, buyer or payment.")
+                expect(page.locator("#quote-checkout-preview-result")).to_contain_text(
+                    "9 in-memory fake PayPal domain stages")
+                caption("APPROVED USD 15 QUOTE → ORDER AND CAPTURE DOMAIN FLOW | 9 FAKE in-memory stages, no API POST or payment.")
                 page.wait_for_timeout(min(pace_ms,2200))
                 page.locator("#verify-local-bridge").click()
                 expect(page.locator("#verify-local-bridge-result")).to_contain_text(

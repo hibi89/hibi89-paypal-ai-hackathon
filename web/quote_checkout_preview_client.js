@@ -27,12 +27,24 @@
       d.plannedPath!=='/v2/checkout/orders'||
       d.executionAuthorized!==false||d.orderCreated!==false||
       d.capturePerformed!==false||d.externalProviderCalls!==0||
-      d.sandboxMerchantConnected!==false)throw Error('UNVERIFIED');
+      d.sandboxMerchantConnected!==false||
+      d.quoteBoundFakeFlow?.mode!=='PURE_DOMAIN_FAKE_PAYPAL_EVENTS_NO_HTTP'||
+      d.quoteBoundFakeFlow?.quoteVersion!==d.quoteVersion||
+      d.quoteBoundFakeFlow?.amountMinor!==d.amountMinor||
+      d.quoteBoundFakeFlow?.providerCalls!==0||
+      d.quoteBoundFakeFlow?.paymentPosts!==0||
+      d.quoteBoundFakeFlow?.ledgerMutations!==0||
+      d.quoteBoundFakeFlow?.blockedPrematureCapture!==true||
+      d.quoteBoundFakeFlow?.blockedMismatchedCapture!==true||
+      d.quoteBoundFakeFlow?.fakeDomainReconcilePassed!==true||
+      d.quoteBoundFakeFlow?.paymentWasReal!==false)throw Error('UNVERIFIED');
    status.textContent='Quote '+d.quoteId+' · version '+d.quoteVersion+
      ' · human-approved USD '+d.amount+
      ' → PayPal Orders v2 CREATE plan (NOT SENT). Real provider calls: 0. '+
      'Fictional merchant; no Sandbox buyer or Capture. '+
-     'This reads your approved quote, unlike the separate fixed USD 1.50 fake API replay.';
+     'This same approved amount also passed 9 in-memory fake PayPal domain stages: '+
+     'buyer approval gate, Capture plan and GET reconciliation; 0 real transactions. '+
+     'The separate fixed USD 1.50 fake Gemini API replay remains an independent test.';
   }catch{status.textContent='Read-only plan proof unavailable.';}
   finally{busy=false;button.disabled=false;}
  });
@@ -101,11 +113,19 @@
      const after=await checkedPlan();
      if(before.quoteId!==after.quoteId||
        before.quoteVersion!==after.quoteVersion||
-       before.amountMinor!==after.amountMinor)
+       before.amountMinor!==after.amountMinor||
+       before.quoteBoundFakeFlow?.mode!=='PURE_DOMAIN_FAKE_PAYPAL_EVENTS_NO_HTTP'||
+       after.quoteBoundFakeFlow?.amountMinor!==after.amountMinor||
+       after.quoteBoundFakeFlow?.steps?.length!==9||
+       after.quoteBoundFakeFlow?.blockedPrematureCapture!==true||
+       after.quoteBoundFakeFlow?.blockedMismatchedCapture!==true||
+       after.quoteBoundFakeFlow?.fakeDomainReconcilePassed!==true||
+       after.quoteBoundFakeFlow?.providerCalls!==0||
+       after.quoteBoundFakeFlow?.paymentPosts!==0)
        throw Error('QUOTE_CHANGED_DURING_REPLAY');
      out.textContent='LOCAL PROOF PASS — Current approved quote v'+after.quoteVersion+
        ' / USD '+after.amount+
-       ' → PayPal Orders pure planner (NOT SENT). Separately, a fixed USD 1.50 '+
+       ' → Orders and Capture pure planning + 9 in-memory FAKE payment gates (NONE SENT). Separately, a fixed USD 1.50 '+
        'Gemini/PayPal injection fixture completed 7 ordered stages and 5 simulated '+
        'human approvals. These are NOT one transaction. Real provider calls: 0; '+
        'real Capture: 0.';
