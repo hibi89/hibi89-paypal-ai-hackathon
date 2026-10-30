@@ -1,6 +1,6 @@
 # Proofline — opportunity-first judging video storyboard
 
-**Status:** New dual-category video NOT filmed and not released. OWNER-OBSERVED external provider evidence is historical only. Owner review draft. The video recording script now traverses both service categories. No new owner-PC video, public video upload, or Devpost submission is claimed by this document.
+**Status:** A private synthetic dual-category CI video was recorded at `020d7cc`, verified as **154.08 seconds (2:34.08)** in [Actions #40904439915](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40904439915). The owner-PC final video is **NOT filmed** or reviewed; this is not a public release. OWNER-OBSERVED Gemini/PayPal evidence remains separately attributed historical evidence. No final owner-reviewed footage, public YouTube video or Devpost receipt is verified.
 
 **Key message:** AI should help people access their first freelance opportunities, not simply automate existing work.
 
@@ -41,4 +41,4 @@ npm run submission:candidate:local
 
 Review the latest ignored `output/videos/paypal-synthetic-review-*.webm`, its `.manifest.json`, and the local candidate. The new video manifest records `storyboard_version=OPPORTUNITY_FIRST_V2` and `demonstrated_categories=[ai_work,general_services]` after the automated browser scene assertions succeed. This does **not** independently attest to PayPal or Gemini or certify a final public submission.
 
-**Final video: not yet recorded and reviewed with the new two-category storyboard. Public YouTube link and Devpost receipt: not yet provided.**
+**Owner-PC final video with latest QA changes: not yet recorded or approved. Public YouTube link and Devpost receipt: not yet provided.**

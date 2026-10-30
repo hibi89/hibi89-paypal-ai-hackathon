@@ -2,7 +2,8 @@
 
 # PayPal AI Hackathon — Devpost entry and video copy (owner review draft)
 
-Status: **DRAFT — NOT PUBLISHED / NOT SUBMITTED**. The 2026-10-29 synthetic review WebM was locally created and owner viewed it; the upgraded evidence-first candidate is not yet owner-reviewed, public or submitted.
+Status: **DRAFT — NOT PUBLISHED / NOT SUBMITTED**.
+**Final review caution (2026-10-30):** The source link below is an **unmerged draft PR #26 candidate**, not the owner-approved public release reference. Latest P25 combined 3-job CI was QUEUED at last check; P26 Python video hardening tests ran 6/6 PASS in a separate local reproduction, but full exact-head GitHub CI is unverified. Before real Devpost submission, replace this preview link with the exact verified, owner-approved release URL. No public YouTube or Devpost receipt exists yet. The 2026-10-29 synthetic review WebM was locally created and owner viewed it; the upgraded evidence-first candidate is not yet owner-reviewed, public or submitted.
 Do not infer that the synthetic browser demo is a real-provider session. No private IDs, tokens, SQLite database, buyer details or account credentials belong in this package.
 
 ## Devpost project fields — ready to edit
@@ -13,7 +14,7 @@ Do not infer that the synthetic browser demo is a real-provider session. No priv
 
 **Project website:** Not deployed; the judge reproducibility route is the public source branch below.
 
-**Open-source repository:** https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/lead/paypal
+**Open-source repository (CURRENT UNMERGED QA PREVIEW; UPDATE TO OWNER-APPROVED PUBLIC RELEASE URL BEFORE SUBMISSION):** https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/work/paypal-video-integrity-hardening-20261030
 
 **Video URL:** [OWNER TO ADD AFTER APPROVED PUBLIC YOUTUBE UPLOAD]
 
@@ -83,7 +84,7 @@ PayPal Sandbox REST API (OAuth and Orders v2, owner-operated test); Gemini API (
 ```bash
 git clone https://github.com/hibi89/hibi89-paypal-ai-hackathon.git
 cd hibi89-paypal-ai-hackathon
-git switch lead/paypal
+git switch work/paypal-video-integrity-hardening-20261030  # QA preview only; final release ref needs owner approval
 node --version  # Node 22.5+
 npm run preflight:reviewer
 npm run demo
@@ -112,7 +113,7 @@ authorized by this recording command. No new Sandbox payment should be made.
 
 ## Judge video — English caption/narration guide for the CURRENT dual-category recording
 
-**Status:** Editorial draft for a future owner-reviewed video. The CI recorded and independently measured a **148.72-second** private synthetic WebM at commit `0061d278` ([Actions proof](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40876399546)); the encoded file was ephemeral in CI. **No owner-PC final version, publicly approved YouTube link or Devpost receipt exists.** Actual scene timestamps must be checked against the owner's final recording, not assumed from this guide.
+**Status (latest QA CI evidence):** Editorial draft for a future owner-reviewed video. A newer default-speed evidence-map recording on `work/paypal-final-qa-20261030` at commit `020d7cc` measured **154.08 seconds (2:34.08)** in [GitHub Actions #40904439915](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40904439915), alongside **572/572 Node PASS**, both synthetic Chromium category journeys and Windows recording PASS. This supersedes the earlier `d58b415` 152.64-second CI candidate; those CI media files were ephemeral. **No owner-PC final review, approved public YouTube link, or Devpost receipt is verified.** Gemini and PayPal Sandbox evidence remains owner-reported local history, not independently re-executed by CI. Draft [QA PR #23](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/23) must be reviewed before release, and final scene timestamps must match the owner's actual recording.
 
 The current automated screen sequence is: **opening → AI Work matches → Global Services matches → AI Work quote approval → historical Gemini/PayPal provenance cards → contract/delivery/reviewer rejection and acceptance → SQLite audit → historical disclosure → closing**. This sequence is not the earlier quote-first storyboard.
 

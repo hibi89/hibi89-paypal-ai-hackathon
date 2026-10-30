@@ -15,9 +15,17 @@ const approveButton=document.getElementById('approve-submit');
 const rejectButton=document.getElementById('reject-submit');
 const refreshButton=document.getElementById('refresh');
 const paymentButton=document.getElementById('payment-status');
+const quotePreviewButton=document.getElementById('quote-checkout-preview');
+const judgeBridgeButton=document.getElementById('verify-local-bridge');
 const roleToggle=document.getElementById('demo-role-toggle');
+const protocolReplayButton=document.getElementById('protocol-replay-button');
+const marketplaceSubmitButton=document.getElementById('marketplace-submit');
 const sessionRole=document.getElementById('demo-session-role');
 const controls=[draftButton,approveButton,rejectButton,refreshButton,paymentButton];
+// A checkbox is consent to the amount currently displayed, never to a later edit.
+// Changes in a second tab are also caught by the quote-version refresh below.
+dollars.addEventListener('input',()=>{confirmBox.checked=false;});
+dollars.addEventListener('change',()=>{confirmBox.checked=false;});
 let csrfToken=null,quoteId=null,current=null,initialized=false,busy=false,reviewerMode=false;
 function updateControls(){
   for(const element of controls) element.disabled=!initialized||busy||reviewerMode;
@@ -25,6 +33,8 @@ function updateControls(){
   approveButton.disabled=!initialized||busy||reviewerMode||current?.status!=='PROPOSED'||!!current?.rejection;
   rejectButton.disabled=!initialized||busy||reviewerMode||current?.status!=='PROPOSED'||!!current?.rejection;
   roleToggle.disabled=!initialized||busy||roleToggle.hidden;
+  quotePreviewButton.disabled=!initialized||busy||reviewerMode||current?.status!=='APPROVED';
+  judgeBridgeButton.disabled=!initialized||busy||reviewerMode||current?.status!=='APPROVED';
   root.setAttribute('aria-busy',String(busy));
 }
 function show(text){message.textContent=text;}
@@ -44,6 +54,7 @@ async function api(path,method='GET',data) {
 async function refresh(){
   if(!quoteId)throw new Error('SESSION_NOT_READY');
   const value=await api('/api/quotes/'+quoteId);
+  if(current?.version!==value.quote.version)confirmBox.checked=false;
   current=value.quote;
   const decisionStatus=current.rejection?'REJECTED':current.status;
   view.textContent='Version '+current.version+' · '+decisionStatus+
@@ -85,12 +96,15 @@ async function init(){
     reviewerMode=session.role==='reviewer';
     roleToggle.hidden=session.syntheticReviewerEnabled!==true;
     roleToggle.textContent=reviewerMode?'Return to synthetic owner view':'Switch to synthetic reviewer view';
+    protocolReplayButton.hidden=reviewerMode;
+    protocolReplayButton.disabled=reviewerMode;
     sessionRole.textContent='Current local demo session: '+(reviewerMode?'synthetic reviewer':'synthetic owner');
     if(reviewerMode){
       for(const id of ['marketplace-panel','quote-panel','draft-panel','approval-panel','payment-panel'])
         document.getElementById(id).hidden=true;
     }else await refresh();
     initialized=true;
+    marketplaceSubmitButton.disabled=reviewerMode;
     show('Offline demo ready. No AI or PayPal external calls.');
   }catch(error){show('Cannot load local demo: '+(error instanceof Error?error.message:'REQUEST_FAILED'));}
   finally{busy=false;updateControls();}
