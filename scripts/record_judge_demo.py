@@ -255,13 +255,14 @@ def capture(output_dir, pace_ms, premium=False):
                 def caption(label):
                     # Presenter captions are part of the video, never injected into
                     # the trusted application or sent to a provider.
-                    page.evaluate("""(label) => {
+                    page.evaluate("""({label,premium}) => {
                       let e=document.getElementById('video-presenter-caption');
                       if(!e){
                         e=document.createElement('div');
                         e.id='video-presenter-caption';
                         Object.assign(e.style,{
-                          position:'fixed',left:'4%',right:'4%',bottom:'8px',
+                          position:'fixed',left:premium?'10%':'4%',right:premium?'10%':'4%',
+                          bottom:premium?'108px':'8px',
                           background:'rgba(11,22,39,.94)',color:'#fff',
                           font:'bold 20px/1.35 system-ui,sans-serif',
                           padding:'12px 18px',borderRadius:'9px',
@@ -270,7 +271,7 @@ def capture(output_dir, pace_ms, premium=False):
                         document.body.append(e);
                       }
                       e.textContent=label;
-                    }""",label)
+                    }""",{"label":label,"premium":premium})
                 def evidence_overlay(card):
                     # Strict allowlisted display data only. Text nodes, never HTML;
                     # original private receipt values/IDs are not copied to a page.
