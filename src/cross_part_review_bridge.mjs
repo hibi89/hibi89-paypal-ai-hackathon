@@ -39,9 +39,13 @@ export function createCrossPartReviewBridge({
    "actor TEXT NOT NULL,merchant TEXT NOT NULL,quote_id TEXT NOT NULL,"+
    "consent_id TEXT NOT NULL,quote_version INTEGER NOT NULL,"+
    "amount_minor INTEGER NOT NULL,review_fingerprint TEXT NOT NULL,"+
-   "created_at INTEGER NOT NULL,expires_at INTEGER NOT NULL,"+
+   "created_at INTEGER NOT NULL,expires_at INTEGER NOT NULL,revoked_at INTEGER,"+
    "PRIMARY KEY(actor,merchant,quote_id),"+
    "UNIQUE(actor,merchant,consent_id))");
+ // Keep the contents of existing local review databases during migration.
+ if(!db.prepare('PRAGMA table_info(cross_part_review_links)').all()
+   .some(column=>column.name==='revoked_at'))
+  db.exec('ALTER TABLE cross_part_review_links ADD COLUMN revoked_at INTEGER');
  const q=sql=>db.prepare(sql);
  function clock(){
   const ms=now();
@@ -117,6 +121,7 @@ export function createCrossPartReviewBridge({
     "WHERE actor=? AND merchant=? AND quote_id=?").get(
       after.payload.actorId,after.payload.merchantId,quoteId);
    if(previous){
+    if(previous.revoked_at!==null)fail('CROSS_PART_LINK_REVOKED');
     if(previous.consent_id!==consentId||
        previous.review_fingerprint!==after.fingerprint)
      fail('CROSS_PART_LINK_CONFLICT');
@@ -161,7 +166,8 @@ export function createCrossPartReviewBridge({
   const row=q("SELECT * FROM cross_part_review_links "+
    "WHERE actor=? AND merchant=? AND quote_id=?").get(
      grant.actorId,grant.merchantId,quoteId);
-  if(!row||row.expires_at<=clock())fail('CROSS_PART_LINK_UNAVAILABLE');
+  if(!row||row.revoked_at!==null||row.expires_at<=clock())
+   fail('CROSS_PART_LINK_UNAVAILABLE');
   const current=await evidence(hostHandle,quoteId,row.consent_id);
   // Evidence reads can await across DBs; expiration must be checked again
   // after those reads, not only before them.
@@ -172,7 +178,43 @@ export function createCrossPartReviewBridge({
    fail('CROSS_PART_LINK_STALE');
   return resultView({...current.payload,reviewFingerprint:row.review_fingerprint});
  }
- return Object.freeze({link,inspect,close:()=>db.close(),
+ // Buyer withdrawal is a local review action, never payment consent.
+ // Preserve a tombstone so the same consent cannot silently be reused.
+ async function revoke({hostHandle,quoteId}={}){
+  if(!valid(quoteId))fail('CROSS_PART_IDENTIFIERS_REQUIRED');
+  const proof=await identityPolicy.issueProof(hostHandle);
+  const quote=await ledger.get(quoteId);
+  if(!quote||quote.id!==quoteId)fail('CROSS_PART_LINK_UNAVAILABLE');
+  const grant=await identityPolicy.authorize(proof,{
+   action:'quote.read',resource:{quoteId,ownerId:quote.ownerId,
+    merchantId:quote.merchantId}
+  });
+  if(grant.role!=='buyer'||grant.actorId!==quote.ownerId||
+     grant.merchantId!==quote.merchantId)
+   fail('CROSS_PART_VERIFIED_BUYER_REQUIRED');
+  const again=await identityPolicy.issueProof(hostHandle);
+  const current=await identityPolicy.authorize(again,{
+   action:'quote.read',resource:{quoteId,ownerId:quote.ownerId,
+    merchantId:quote.merchantId}
+  });
+  if(current.role!=='buyer'||current.actorId!==grant.actorId||
+     current.merchantId!==grant.merchantId)
+   fail('CROSS_PART_VERIFIED_BUYER_REQUIRED');
+  const stamp=clock();
+  db.exec('BEGIN IMMEDIATE');
+  try{
+   const changed=q('UPDATE cross_part_review_links SET revoked_at=? '+
+    'WHERE actor=? AND merchant=? AND quote_id=? '+
+    'AND revoked_at IS NULL AND expires_at>?').run(
+     stamp,current.actorId,current.merchantId,quoteId,stamp);
+   if(changed.changes!==1)fail('CROSS_PART_LINK_UNAVAILABLE');
+   db.exec('COMMIT');
+  }catch(e){db.exec('ROLLBACK');throw e}
+  return Object.freeze({status:'SYNTHETIC_REVIEW_REVOKED',quoteId,
+   paymentAuthorized:false,paypalCapturePerformed:false,
+   providerCalls:0,realProviderEvidence:false});
+ }
+ return Object.freeze({link,inspect,revoke,close:()=>db.close(),
   mode:'INTERNAL_SYNTHETIC_REVIEW_ONLY',publicHttpEnabled:false,
   paypalProviderCalls:0,autoPaymentAuthorized:false});
 }
