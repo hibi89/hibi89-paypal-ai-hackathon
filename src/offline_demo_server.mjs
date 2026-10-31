@@ -173,7 +173,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
         req.resume();
         const requestOrigin='http://127.0.0.1:'+listenPort;
         const bodyLength=req.headers['content-length'];
-        if (!enableSyntheticReviewer || !reviewerToken) {
+        if (!(enableSyntheticReviewer || enableSyntheticSeller) || !reviewerToken) {
           res.writeHead(404,{'cache-control':'no-store'});res.end('NOT_FOUND');return;
         }
         if (req.headers.origin!==requestOrigin ||
