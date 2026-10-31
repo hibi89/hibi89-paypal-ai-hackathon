@@ -54,6 +54,18 @@ for(const [vertical,brief] of [
       assert.equal(create.status,201);
       assert.equal(create.data.contract.paymentState,'NOT_CAPTURED');
       assert.equal((await req('GET','/api/contracts/'+s.contractId)).status,200);
+      const evidence=await req('GET','/api/contracts/'+s.contractId+'/candidate');
+      assert.equal(evidence.status,200);
+      assert.equal(evidence.data.evidence.profileId,good.id);
+      assert.equal(evidence.data.evidence.quoteVersion,version);
+      assert.equal(evidence.data.evidence.source,'LOCAL_SYNTHETIC_SNAPSHOT');
+      assert.equal(evidence.data.evidence.paymentAuthorized,false);
+      const reviewer=await client(app,s.csrfToken,app.testReviewerCookie)(
+        'GET','/api/contracts/'+s.contractId+'/candidate');
+      assert.equal(reviewer.status,200);
+      assert.equal(reviewer.data.evidence.profileId,good.id);
+      const absent=await req('GET','/api/contracts/does-not-exist/candidate');
+      assert.equal(absent.status,404);
       assert.equal((await req('POST','/api/quotes/'+s.quoteId+'/orders',{})).status,503);
     }finally{await app.close();}
   });
