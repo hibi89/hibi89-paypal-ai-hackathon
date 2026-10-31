@@ -157,6 +157,22 @@ export function createSqliteLedger({ filename } = {}) {
     `CREATE TRIGGER IF NOT EXISTS trg_candidate_evidence_no_${event.toLowerCase()}
      BEFORE ${event} ON contract_candidate_evidence
      BEGIN SELECT RAISE(ABORT,'IMMUTABLE_CANDIDATE_EVIDENCE'); END`);
+  // Durable, local-only preprovisioned membership and contract assignment.
+  // Membership is not a browser registration, provider account or entitlement.
+  db.exec(`CREATE TABLE IF NOT EXISTS marketplace_actor_memberships (
+    actor_id TEXT PRIMARY KEY, merchant_id TEXT NOT NULL,
+    role TEXT NOT NULL CHECK(role IN ('buyer','seller','reviewer','merchant_operator')),
+    seller_profile_id TEXT,
+    active INTEGER NOT NULL CHECK(active IN (0,1)),
+    revision INTEGER NOT NULL DEFAULT 1 CHECK(revision>0),
+    CHECK((role='seller' AND seller_profile_id IS NOT NULL) OR
+          (role<>'seller' AND seller_profile_id IS NULL))
+  )`);
+  db.exec(`CREATE TABLE IF NOT EXISTS marketplace_contract_sellers (
+    contract_id TEXT PRIMARY KEY REFERENCES contracts(id) ON DELETE RESTRICT,
+    merchant_id TEXT NOT NULL, seller_profile_id TEXT NOT NULL
+  )`);
+  const memberRow=actorId=>stmt('SELECT * FROM marketplace_actor_memberships WHERE actor_id=?').get(actorId);
   const candidateRow = id => stmt('SELECT * FROM quote_candidate_bindings WHERE quote_id=?').get(id);
   const digest = scope => createHash('sha256').update(scope).digest('hex');
   function lockedCandidateGuard(quote){
@@ -196,6 +212,89 @@ export function createSqliteLedger({ filename } = {}) {
   const api = {
     ...contractStore,
     async get(id) { return convertQuote(getRow(id)); },
+    // Trusted-host-only operations. NEVER expose provisioning or membership
+    // writes to a public HTTP route without an independent administrator gate.
+    async provisionLocalMember({actorId,merchantId,role,sellerProfileId=null}={}){
+      reject(!idOk(actorId)||!idOk(merchantId)||
+        !['buyer','seller','reviewer','merchant_operator'].includes(role)||
+        (role==='seller'?!idOk(sellerProfileId):sellerProfileId!==null),
+        'INVALID_LOCAL_MEMBER');
+      return transaction(()=>{
+        const current=memberRow(actorId);
+        if(current){
+          reject(current.merchant_id!==merchantId||current.role!==role||
+            current.seller_profile_id!==sellerProfileId,
+            'LOCAL_MEMBERSHIP_CONFLICT',409);
+          return {created:false,actorId}; // never silently reactivate revoked actors
+        }
+        stmt(`INSERT INTO marketplace_actor_memberships
+          (actor_id,merchant_id,role,seller_profile_id,active) VALUES(?,?,?,?,1)`)
+          .run(actorId,merchantId,role,sellerProfileId);
+        return {created:true,actorId};
+      });
+    },
+    async setLocalMemberActive({actorId,expectedRevision,active}={}){
+      reject(!idOk(actorId)||!Number.isSafeInteger(expectedRevision)||
+        expectedRevision<1||typeof active!=='boolean','INVALID_MEMBER_REVISION');
+      return transaction(()=>{
+        const done=stmt(`UPDATE marketplace_actor_memberships
+          SET active=?,revision=revision+1 WHERE actor_id=? AND revision=?`)
+          .run(Number(active),actorId,expectedRevision);
+        reject(done.changes!==1,'STALE_OR_UNKNOWN_MEMBERSHIP',409);
+        return {actorId,active,revision:expectedRevision+1};
+      });
+    },
+    async getLocalMember(actorId){
+      if(!idOk(actorId))return null;
+      const row=memberRow(actorId);
+      if(!row)return null;
+      return {actorId:row.actor_id,merchantId:row.merchant_id,role:row.role,
+        ...(row.role==='seller'?{sellerProfileId:row.seller_profile_id}:{}),
+        active:row.active===1,revision:row.revision};
+    },
+    async assignLocalContractSeller({contractId,merchantId,sellerProfileId}={}){
+      reject(!idOk(contractId)||!idOk(merchantId)||!idOk(sellerProfileId),
+        'INVALID_CONTRACT_SELLER_ASSIGNMENT');
+      return transaction(()=>{
+        const c=stmt('SELECT merchant_id FROM contracts WHERE id=?').get(contractId);
+        reject(!c||c.merchant_id!==merchantId,'CONTRACT_NOT_FOUND',404);
+        const prior=stmt('SELECT * FROM marketplace_contract_sellers WHERE contract_id=?')
+          .get(contractId);
+        if(prior){
+          reject(prior.merchant_id!==merchantId||
+            prior.seller_profile_id!==sellerProfileId,
+            'CONTRACT_SELLER_ALREADY_ASSIGNED',409);
+        }else{
+          // A seller role membership must exist in this merchant tenant.
+          reject(!stmt(`SELECT 1 FROM marketplace_actor_memberships
+             WHERE merchant_id=? AND role='seller' AND seller_profile_id=?
+               AND active=1 LIMIT 1`).get(merchantId,sellerProfileId),
+             'ACTIVE_SELLER_MEMBERSHIP_REQUIRED',409);
+          stmt(`INSERT INTO marketplace_contract_sellers
+             (contract_id,merchant_id,seller_profile_id) VALUES(?,?,?)`)
+             .run(contractId,merchantId,sellerProfileId);
+        }
+        return {contractId,merchantId,sellerProfileId};
+      });
+    },
+    // Resource metadata for server-side policy; no client-supplied owner/tenant.
+    async getQuoteAuthorityResource(quoteId){
+      if(!idOk(quoteId))return null;
+      const q=getRow(quoteId);
+      return q?{quoteId:q.id,ownerId:q.owner_id,merchantId:q.merchant_id}:null;
+    },
+    async getContractAuthorityResource(contractId){
+      if(!idOk(contractId))return null;
+      const c=stmt(`SELECT c.id,c.quote_id,c.owner_id,c.merchant_id,
+        c.reviewer_id,c.state,s.seller_profile_id
+        FROM contracts c LEFT JOIN marketplace_contract_sellers s
+          ON s.contract_id=c.id AND s.merchant_id=c.merchant_id
+        WHERE c.id=?`).get(contractId);
+      if(!c)return null;
+      return {contractId:c.id,quoteId:c.quote_id,ownerId:c.owner_id,
+        merchantId:c.merchant_id,reviewerId:c.reviewer_id,
+        sellerProfileId:c.seller_profile_id,contractState:c.state};
+    },
     async getMarketplaceCandidate({quoteId,ownerId,merchantId}={}){
       if(!idOk(quoteId)||!dbSafeText(ownerId)||!dbSafeText(merchantId))return null;
       const quote=convertQuote(getRow(quoteId));

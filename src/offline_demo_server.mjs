@@ -18,6 +18,7 @@ import { createMarketplaceDemoApi } from './marketplace_match.mjs';
 import { createMarketplaceRecommendationStore } from './marketplace_recommendation_store.mjs';
 import { createLedgerMarketplaceSelectionStore, createMarketplaceSelectionApi } from './marketplace_selection_store.mjs';
 import {createMarketplaceIdentityPolicy,createMarketplaceIdentityReadOnlyApi} from './marketplace_identity_policy.mjs';
+import {createMarketplaceProtectedReadApi} from './marketplace_protected_read_api.mjs';
 import { createNegotiationDemoApi } from './agent_negotiation_demo_api.mjs';
 import { createAgentBudgetStore } from './agent_budget_store.mjs';
 import { createAgentBudgetDemoApi } from './agent_budget_demo_api.mjs';
@@ -68,16 +69,17 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
     }
     return {verified:true,actorId,merchantId:'synthetic-merchant',csrfToken};
   };
+  await ledger.provisionLocalMember({actorId,merchantId:'synthetic-merchant',role:'buyer'});
+  await ledger.provisionLocalMember({actorId:reviewerId,merchantId:'synthetic-merchant',
+    role:'reviewer'});
   // FIXED synthetic identity fixture, never from HTTP body or role headers.
   // No seller session or merchant ownership is established by this demo.
   const identityPolicy=createMarketplaceIdentityPolicy({
     resolveTrustedSession:resolveSession,
-    members:[
-      {actorId,merchantId:'synthetic-merchant',role:'buyer',active:true},
-      {actorId:reviewerId,merchantId:'synthetic-merchant',role:'reviewer',active:true}
-    ]
+    resolveMembership:actor=>ledger.getLocalMember(actor)
   });
   const identityApi=createMarketplaceIdentityReadOnlyApi({policy:identityPolicy});
+  const protectedReadApi=createMarketplaceProtectedReadApi({policy:identityPolicy,ledger});
   const api = createQuoteApi({
     repository: ledger,
     draftProvider: createOfflineMockDraftProvider(),
@@ -292,7 +294,8 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
       const options={method:req.method,headers:new Headers(req.headers)};
       if (req.method !== 'GET' && req.method !== 'HEAD')
         options.body=Buffer.concat(chunks);
-      const handler=path==='/api/demo/identity' ? identityApi :
+      const handler=path.startsWith('/api/demo/protected/') ? protectedReadApi :
+        path==='/api/demo/identity' ? identityApi :
         path==='/api/demo/github-delivery' ? githubDeliveryApi :
         path.startsWith('/api/demo/budget/') ? budgetApi :
         path==='/api/demo/negotiate' ? negotiationApi :

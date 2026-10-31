@@ -51,12 +51,14 @@ function canAccess(member,action,resource){
   }
   return resource.ownerId===member.actorId && id(resource.quoteId);
 }
-export function createMarketplaceIdentityPolicy({resolveTrustedSession,members}={}){
-  if(typeof resolveTrustedSession!=='function'||!Array.isArray(members)||
-     members.length<1||members.length>1000)
+export function createMarketplaceIdentityPolicy({resolveTrustedSession,members,resolveMembership}={}){
+  if(typeof resolveTrustedSession!=='function'||
+     (typeof resolveMembership!=='function'&&(!Array.isArray(members)||
+       members.length<1||members.length>1000))||
+     (members!==undefined&&!Array.isArray(members)))
     throw new TypeError('TRUSTED_IDENTITY_SOURCE_REQUIRED');
   const byActor=new Map();
-  for(const raw of members){
+  for(const raw of members||[]){
     const member=memberOf(raw);
     if(byActor.has(member.actorId))throw new TypeError('AMBIGUOUS_IDENTITY_MEMBERSHIP');
     byActor.set(member.actorId,member);
@@ -68,7 +70,12 @@ export function createMarketplaceIdentityPolicy({resolveTrustedSession,members}=
     const session=await resolveTrustedSession(handle);
     if(!shape(session)||session.verified!==true||!id(session.actorId)||
        !id(session.merchantId))fail('TRUSTED_SESSION_REQUIRED',401);
-    const membership=byActor.get(session.actorId);
+    const raw=resolveMembership?await resolveMembership(session.actorId):null;
+    const membership=resolveMembership?(raw?memberOf({
+      actorId:raw.actorId,merchantId:raw.merchantId,role:raw.role,
+      ...(raw.role==='seller'?{sellerProfileId:raw.sellerProfileId}:{}),
+      active:raw.active
+    }):null):byActor.get(session.actorId);
     if(!membership||!membership.active||membership.merchantId!==session.merchantId||
        (own(session,'role')&&session.role!==membership.role))
       fail('TRUSTED_MEMBERSHIP_REQUIRED',403);
