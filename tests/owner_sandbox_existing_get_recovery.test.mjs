@@ -197,7 +197,6 @@ test('local ledger mutation while remote GET is in flight prevents stale payment
  fixture(async dir=>{
   await seed(dir);
   let changed=false;
-  const t=transport({status:'COMPLETED'});
   const fetchImpl=async(url,init)=>{
    const path=new URL(url).pathname;
    if(path==='/v2/checkout/orders/SYNTHETIC_ORDER_1'&&!changed){
