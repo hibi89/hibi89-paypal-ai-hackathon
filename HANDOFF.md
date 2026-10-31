@@ -1,3 +1,12 @@
+## 2026-11-01 KST — ISOLATED READ API TEST EVIDENCE
+
+- Repo/branch: hibi89/hibi89-paypal-ai-hackathon / lead/paypal. Functional SHA unchanged 384c0e383c510503c8ac7e14b26e5c2da76a35ae.
+- Local environment: Node v22.16.0; direct git clone DNS failed. GitHub connector supplied `src/cross_part_review_read_api.mjs` and `tests/cross_part_review_read_api.test.mjs` content, reconstructed in a temporary workspace. `quote_api.mjs` was replaced with a minimal test-only reply() shim.
+- Command: `node --test /mnt/data/paypal-targeted/tests/cross_part_review_read_api.test.mjs`. Result 4/4 PASS, 0 FAIL, 0 SKIP. This does NOT verify original dependency, full npm test, browser, SQLite bridge or CI; do not promote to full pass.
+- No code or original data changed; no provider call, payment, deployment or video.
+- Next: actual full-repo test / CI on current SHA, then trusted host opt-in and browser E2E. External API requires approval. Completion estimate 80%, remaining 20%, 15–25 hours planning only.
+
+---
 ## 2026-10-31 KST — REVIEW EXPIRY FINAL RECHECK, VALIDATION PENDING
 
 1. Objective: prevent stale synthetic review association being returned when async cross-ledger validation passes persisted expiry.
