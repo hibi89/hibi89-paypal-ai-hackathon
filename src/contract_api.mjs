@@ -70,11 +70,12 @@ export function createContractApi({repository,resolveSession,identityPolicy,
       }
       const ctx={actorId:session.actorId,merchantId:session.merchantId};
       const grantCheck=async(action,resource)=>{
-        if(!identityPolicy)return;
+        if(!identityPolicy)return undefined;
         const proof=await identityPolicy.issueProof(request);
         const grant=await identityPolicy.authorize(proof,{action,resource});
         fail(grant.actorId!==session.actorId||grant.merchantId!==session.merchantId,
           'TRUSTED_IDENTITY_MISMATCH',403);
+        return grant.membershipRevision;
       };
       if(identityPolicy&&r.method==='GET'){
         const scope=await repository.getContractAuthorityResource(r.contractId);
@@ -117,7 +118,7 @@ export function createContractApi({repository,resolveSession,identityPolicy,
         if(identityPolicy){
           const scope=await repository.getQuoteAuthorityResource(body.quoteId);
           fail(!scope,'QUOTE_NOT_FOUND',404);
-          await grantCheck('contract.create',scope);
+          ctx.expectedMembershipRevision=await grantCheck('contract.create',scope);
         }
         const contract=await repository.createContract({...ctx,id:body.id,
           quoteId:body.quoteId,reviewerId:body.reviewerId,
@@ -134,7 +135,7 @@ export function createContractApi({repository,resolveSession,identityPolicy,
         const action=r.kind==='submit'
           ?(allowLegacyOwnerDelivery&&session.actorId===scope.ownerId
             ?'contract.read':'delivery.submit'):'delivery.review';
-        await grantCheck(action,scope);
+        ctx.expectedMembershipRevision=await grantCheck(action,scope);
       }
       validEvent(body);
       if(r.kind==='submit')

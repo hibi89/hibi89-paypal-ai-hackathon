@@ -103,7 +103,9 @@ export function createMarketplaceIdentityPolicy({resolveTrustedSession,members,r
       fail('ROLE_ACTION_FORBIDDEN',403);
     // Evidence only. Never a merchant or PayPal entitlement.
     return Object.freeze({actorId:membership.actorId,merchantId:membership.merchantId,
-      role:membership.role,action,merchantOwnershipVerified:false,
+      role:membership.role,action,
+      ...(membership.revision===undefined?{}:{membershipRevision:membership.revision}),
+      merchantOwnershipVerified:false,
       sellerIdentityVerified:false,paymentAuthorized:false});
   }
   async function inspect(proof){

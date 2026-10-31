@@ -184,6 +184,7 @@ export function createQuoteApi({ repository, resolveSession, draftProvider,
       // 404 for foreign actors prevents quote-id enumeration.
       fail(!quote || quote.ownerId !== session.actorId, 'QUOTE_NOT_FOUND', 404);
       validateQuote(quote);
+      let expectedMembershipRevision;
       if(identityPolicy){
         const grant=await identityPolicy.authorize(
           await identityPolicy.issueProof(request),{
@@ -193,6 +194,7 @@ export function createQuoteApi({ repository, resolveSession, draftProvider,
           });
         fail(grant.actorId!==session.actorId||grant.merchantId!==session.merchantId,
           'TRUSTED_IDENTITY_MISMATCH',403);
+        expectedMembershipRevision=grant.membershipRevision;
       }
       if (r.resource === 'quote') return reply({ quote });
       if (r.resource === 'payment')
@@ -248,7 +250,7 @@ export function createQuoteApi({ repository, resolveSession, draftProvider,
         }
         // Durable one-shot CAS/finite budget, performed before any third-party call.
         const claimArgs={id:r.id,actorId:session.actorId,
-          expectedVersion:data.expectedVersion};
+          expectedVersion:data.expectedVersion,expectedMembershipRevision};
         if(externalAI)await repository.claimAiDraft(claimArgs);
         try{
           // A durable claim can await SQLite. Revocation after that claim must
@@ -264,7 +266,7 @@ export function createQuoteApi({ repository, resolveSession, draftProvider,
           const revised=await repository.revise({
             id:r.id,actorId:session.actorId,expectedVersion:data.expectedVersion,
             scope:data.scope,suggestedMinor:proposal.suggestedMinor,
-            suggestionSource:proposal.source,
+            suggestionSource:proposal.source,expectedMembershipRevision,
           });
           return reply({quote:revised,provider:expectedSource,
             warning:externalAI?'AI estimate only; human approval required before payment':
@@ -286,7 +288,8 @@ export function createQuoteApi({ repository, resolveSession, draftProvider,
           data.reason.trim().length > 500 || /[\u0000-\u0008\u000b-\u001f]/.test(data.reason),
         'INVALID_REJECTION_REASON');
         return reply({quote:await repository.reject({id:r.id,actorId:session.actorId,
-          expectedVersion:data.expectedVersion,reason:data.reason.trim()})});
+          expectedVersion:data.expectedVersion,reason:data.reason.trim(),
+          expectedMembershipRevision})});
       }
       fail(data.confirmed !== true, 'EXPLICIT_CONFIRMATION_REQUIRED');
       fail(!Number.isSafeInteger(data.expectedVersion) || data.expectedVersion < 1,
@@ -300,7 +303,7 @@ export function createQuoteApi({ repository, resolveSession, draftProvider,
       });
       const approved = await repository.approve({
         id: r.id, expectedVersion: data.expectedVersion, actorId: session.actorId,
-        amountMinor: data.amountMinor,
+        amountMinor: data.amountMinor,expectedMembershipRevision,
       });
       return reply({ quote: approved });
     } catch (error) {
