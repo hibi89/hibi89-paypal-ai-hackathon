@@ -15,7 +15,6 @@ const fixture=fn=>async()=>{
   enforceLocalMemberWrites:true});
  try{
   await db.insertQuote({id:'projectA',ownerId:'buyerA',merchantId:'tenantA'});
-  await db.approve({id:'projectA',actorId:'buyerA',expectedVersion:1,amountMinor:2400});
   await db.insertQuote({id:'projectB',ownerId:'buyerB',merchantId:'tenantB'});
   for(const membership of [
    {actorId:'buyerA',merchantId:'tenantA',role:'buyer'},
@@ -27,6 +26,7 @@ const fixture=fn=>async()=>{
    {actorId:'sellerB',merchantId:'tenantB',role:'seller',
     sellerProfileId:'profileB'}])
    await db.provisionLocalMember(membership);
+  await db.approve({id:'projectA',actorId:'buyerA',expectedVersion:1,amountMinor:2400});
   await db.createContract({id:'contractA',quoteId:'projectA',actorId:'buyerA',
    merchantId:'tenantA',reviewerId:'reviewerA',expectedVersion:1,
    eventId:'contractA-created',
