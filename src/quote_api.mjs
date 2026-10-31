@@ -134,11 +134,16 @@ function route(path) {
 // or csrfToken from arbitrary browser headers/body. No insecure fallback.
 export function createQuoteApi({ repository, resolveSession, draftProvider,
   authorizeExternalAi, allowAiPricingExperiment=false,
-  assertSelectionBeforeApprove } = {}) {
+  assertSelectionBeforeApprove, identityPolicy } = {}) {
   if (!repository || typeof repository.get !== 'function' ||
       typeof repository.approve !== 'function' ||
       typeof resolveSession !== 'function')
     throw new TypeError('TRUSTED_SESSION_AND_REPOSITORY_REQUIRED');
+  if(identityPolicy!==undefined&&(
+      typeof identityPolicy.issueProof!=='function'||
+      typeof identityPolicy.authorize!=='function'||
+      typeof repository.getQuoteAuthorityResource!=='function'))
+    throw new TypeError('TRUSTED_QUOTE_ROLE_POLICY_REQUIRED');
   if(assertSelectionBeforeApprove!==undefined && typeof assertSelectionBeforeApprove!=='function')
     throw new TypeError('INVALID_SELECTION_APPROVAL_GUARD');
   if (draftProvider !== undefined &&
@@ -179,6 +184,16 @@ export function createQuoteApi({ repository, resolveSession, draftProvider,
       // 404 for foreign actors prevents quote-id enumeration.
       fail(!quote || quote.ownerId !== session.actorId, 'QUOTE_NOT_FOUND', 404);
       validateQuote(quote);
+      if(identityPolicy){
+        const grant=await identityPolicy.authorize(
+          await identityPolicy.issueProof(request),{
+            action:({approve:'quote.approve',reject:'quote.reject',
+              draft:'quote.draft'}[r.resource]||'quote.read'),
+            resource:await repository.getQuoteAuthorityResource(r.id)
+          });
+        fail(grant.actorId!==session.actorId||grant.merchantId!==session.merchantId,
+          'TRUSTED_IDENTITY_MISMATCH',403);
+      }
       if (r.resource === 'quote') return reply({ quote });
       if (r.resource === 'payment')
         return reply({ error: 'PERSISTENT_PAYMENT_LEDGER_NOT_READY' }, 503);

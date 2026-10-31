@@ -129,10 +129,12 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
     // This is intentionally a fixed synthetic demo session bound to 127.0.0.1.
     // Real deployment MUST replace with a verified identity/CSRF cookie provider.
     resolveSession,
+    identityPolicy,
     assertSelectionBeforeApprove: async ({id,actorId,merchantId,expectedVersion}) =>
       selectionStore.assertCurrent({quoteId:id,ownerId:actorId,merchantId,expectedQuoteVersion:expectedVersion}),
   });
-  const contractApi = createContractApi({repository:ledger,resolveSession});
+  const contractApi = createContractApi({repository:ledger,resolveSession,
+    identityPolicy,allowLegacyOwnerDelivery:!enableSyntheticSeller});
   subscriptionStore.seed({subscriptionId,ownerId:actorId,merchantId:'synthetic-merchant'});
   const subscriptionApi=createSubscriptionDemoApi({
     subscriptionId,store:subscriptionStore,resolveSession,offlineOnly:true

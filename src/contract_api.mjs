@@ -40,11 +40,18 @@ function sessionIsTrusted(session){
 }
 // Never accept actor, merchant or role from the HTTP body/headers. Trusted resolver
 // maps browser request to an authenticated merchant-bound server session.
-export function createContractApi({repository,resolveSession}={}){
+export function createContractApi({repository,resolveSession,identityPolicy,
+  allowLegacyOwnerDelivery=false}={}){
   if(!repository || ['createContract','getContract','listContractEvents',
       'transitionMilestone'].some(name=>typeof repository[name]!=='function') ||
       typeof resolveSession!=='function')
     throw new TypeError('TRUSTED_CONTRACT_SESSION_AND_LEDGER_REQUIRED');
+  if(identityPolicy!==undefined&&(
+    typeof identityPolicy.issueProof!=='function'||
+    typeof identityPolicy.authorize!=='function'||
+    typeof repository.getContractAuthorityResource!=='function'||
+    typeof repository.getQuoteAuthorityResource!=='function'))
+    throw new TypeError('TRUSTED_CONTRACT_ROLE_POLICY_REQUIRED');
   return async function handleContractRequest(request) {
     try {
       if(!(request instanceof Request)) throw new QuoteApiError('REQUEST_REQUIRED');
@@ -62,6 +69,22 @@ export function createContractApi({repository,resolveSession}={}){
         'CSRF_REQUIRED',403);
       }
       const ctx={actorId:session.actorId,merchantId:session.merchantId};
+      const grantCheck=async(action,resource)=>{
+        if(!identityPolicy)return;
+        const proof=await identityPolicy.issueProof(request);
+        const grant=await identityPolicy.authorize(proof,{action,resource});
+        fail(grant.actorId!==session.actorId||grant.merchantId!==session.merchantId,
+          'TRUSTED_IDENTITY_MISMATCH',403);
+      };
+      if(identityPolicy&&r.kind!=='create'){
+        const scope=await repository.getContractAuthorityResource(r.contractId);
+        fail(!scope,'CONTRACT_NOT_FOUND',404);
+        const action=['contract','events','candidate'].includes(r.kind)
+          ?'contract.read':r.kind==='submit'
+            ?(allowLegacyOwnerDelivery&&session.actorId===scope.ownerId
+              ?'contract.read':'delivery.submit'):'delivery.review';
+        await grantCheck(action,scope);
+      }
       if(r.kind==='contract') {
         const contract=await repository.getContract({...ctx,contractId:r.contractId});
         return reply({contract});
@@ -90,6 +113,11 @@ export function createContractApi({repository,resolveSession}={}){
           fail(!m||typeof m!=='object'||Array.isArray(m)||
             Object.keys(m).some(k=>!['id','step','amountMinor'].includes(k)),
             'INVALID_MILESTONE');
+        }
+        if(identityPolicy){
+          const scope=await repository.getQuoteAuthorityResource(body.quoteId);
+          fail(!scope,'QUOTE_NOT_FOUND',404);
+          await grantCheck('contract.create',scope);
         }
         const contract=await repository.createContract({...ctx,id:body.id,
           quoteId:body.quoteId,reviewerId:body.reviewerId,
