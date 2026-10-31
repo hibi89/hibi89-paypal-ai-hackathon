@@ -4,6 +4,7 @@ import {randomUUID,createHash} from 'node:crypto';
 import {QuoteApiError,reply,parseSmallJson} from './quote_api.mjs';
 import {authorizePersistedLocalAction} from './marketplace_identity_policy.mjs';
 import {runBoundedA2A,createOfflineRoleAgents} from './agentic_a2a_protocol.mjs';
+import {buildSyntheticMerchantDossier} from './merchant_dossier.mjs';
 const validId=x=>typeof x==='string'&&/^[A-Za-z0-9_-]{1,64}$/.test(x);
 const err=(code,status=400)=>{throw new QuoteApiError(code,status)};
 const hash=o=>createHash('sha256').update(JSON.stringify(o)).digest('hex');
@@ -41,7 +42,8 @@ export function saveChurnOffer(){
   currentMinor:2500,discountMinor:2000,alternative:'PAUSE_REQUEST',
   approvalRequired:true,paypalPlanChanged:false,source:'SYNTHETIC_SCENARIO'};
 }
-export function prepareInvoiceDispute(){
+export function prepareInvoiceDispute(input){
+ if(input!==undefined)return buildSyntheticMerchantDossier(input);
  return {status:'DRAFT_ONLY',invoice:{amountMinor:29900,currency:'USD',sent:false},
   dispute:{submitted:false,evidence:['Synthetic contract terms','Synthetic delivery checklist',
     'Synthetic reviewer decision']},paypalInvoiceCreated:false,source:'SYNTHETIC_SCENARIO'};
@@ -199,10 +201,17 @@ export function createInnovationLab({filename,now=Date.now,agentsFactory=createO
    return safe({status:'DELEGATION_REVOKED',consentId,paymentState:'NOT_PAID'});
   }});
  }
- function skill({actor,merchant,key,kind}={}){
+ function skill({actor,merchant,key,kind,dossierInput}={}){
   if(!['churn','invoice'].includes(kind))err('UNSUPPORTED_SKILL');
-  return action({actor,merchant,key,kind,input:{kind},
-   execute:()=>safe(kind==='churn'?saveChurnOffer():prepareInvoiceDispute())});
+  if(kind!=='invoice'&&dossierInput!==undefined)err('INVALID_BODY');
+  return action({actor,merchant,key,kind,
+   input:dossierInput===undefined?{kind}:{kind,dossierInput},
+   execute:()=>{
+    let draft;
+    try{draft=kind==='churn'?saveChurnOffer():prepareInvoiceDispute(dossierInput);}
+    catch(e){if(e?.code==='INVALID_SYNTHETIC_DOSSIER')err(e.code);throw e;}
+    return safe(draft);
+   }});
  }
  function state({actor,merchant}={}){
   if(!validId(actor)||!validId(merchant))err('INVALID_ACTOR');
@@ -248,6 +257,16 @@ export function createInnovationApi({store,resolveSession,identityPolicy}={}){
    if(route==='a2a'||route==='gift'){
     if(!exact(body,['idempotencyKey','consentId']))err('INVALID_BODY');
     return reply(route==='a2a'?await store.a2a({actor,merchant,key,consentId:body.consentId}):store.trade({actor,merchant,key,kind:route,consentId:body.consentId}));
+   }
+   if(route==='invoice'&&exact(body,[
+    'idempotencyKey','contractRef','amountMinor','issueType',
+    'deliveryStatus','evidenceKinds'
+   ])){
+    return reply(store.skill({actor,merchant,key,kind:'invoice',dossierInput:{
+     contractRef:body.contractRef,amountMinor:body.amountMinor,
+     issueType:body.issueType,deliveryStatus:body.deliveryStatus,
+     evidenceKinds:body.evidenceKinds
+    }}));
    }
    if(!exact(body,['idempotencyKey']))err('INVALID_BODY');
    return reply(store.skill({actor,merchant,key,kind:route}));

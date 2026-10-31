@@ -10,6 +10,7 @@ p{color:#566987}.warning{background:#fff5df;border:1px solid #e4c992;border-radi
 .wide{grid-column:span 2}.badge{font-size:.73rem;font-weight:750;color:#396bb6;text-transform:uppercase;letter-spacing:.07em}
 h2{font-size:1.25rem;margin:10px 0}label{display:block;font-weight:700;margin-top:10px}
 input,select{padding:11px;width:100%;border:1px solid #c2d0e4;border-radius:9px;font:inherit}
+fieldset{border:1px solid #c2d0e4;border-radius:9px;padding:12px;margin-top:14px}fieldset legend{font-weight:700}fieldset label{font-weight:400}fieldset input[type=checkbox]{width:auto;margin-right:9px}
 button{cursor:pointer;padding:11px 16px;margin:13px 5px 0 0;border:0;border-radius:10px;background:#2857b1;color:white;font:inherit;font-weight:700}
 button:disabled{opacity:.5;cursor:not-allowed}
 #mandate-state{font-size:.85rem;color:#415a7f;overflow-wrap:anywhere}
@@ -54,7 +55,20 @@ pre{white-space:pre-wrap;word-break:break-word;background:#132643;color:#d9edff;
 <p>Prepare a 20% discount or pause proposal. Real customer approval and PayPal revision remain required.</p>
 <button type="button" id="churn">Generate retention proposal</button><pre id="churn-output">Ready for an offline scenario.</pre></section>
 <section class="card"><span class="badge">05 · Merchant Copilot</span><h2>Invoice / Dispute dossier</h2>
-<p>Generate synthetic invoice details and a dispute evidence checklist. Never files a real response.</p>
+<p>Enter a fictional milestone and self-reported evidence. A local checklist checks completeness and contradictions; nothing is verified or filed with PayPal.</p>
+<label for="invoice-contract">Fictional contract reference</label>
+<input id="invoice-contract" type="text" value="demo-contract-001" minlength="8" maxlength="37" pattern="demo-[a-z0-9-]{3,32}">
+<label for="invoice-amount">Invoice total (USD)</label>
+<input id="invoice-amount" type="number" min="1" max="10000" step="0.01" value="299.00">
+<label for="invoice-issue">Dispute reason</label>
+<select id="invoice-issue"><option value="QUALITY">Quality / acceptance</option><option value="NON_DELIVERY">Non-delivery</option><option value="BILLING">Billing disagreement</option></select>
+<label for="invoice-delivery">Reported delivery state</label>
+<select id="invoice-delivery"><option value="REVIEWED">Reviewed</option><option value="DELIVERED">Delivered</option><option value="NOT_DELIVERED">Not delivered</option></select>
+<fieldset><legend>Fictional evidence present (self-reported; not verified)</legend>
+<label><input type="checkbox" id="invoice-evidence-contract"> Contract terms</label>
+<label><input type="checkbox" id="invoice-evidence-delivery"> Delivery record</label>
+<label><input type="checkbox" id="invoice-evidence-review"> Reviewer decision</label>
+</fieldset>
 <button type="button" id="invoice">Generate merchant dossier</button><pre id="invoice-output">Ready for an offline scenario.</pre></section>
 <section class="card wide"><span class="badge">Read-only history</span><h2>Auditable synthetic results</h2>
 <button type="button" id="refresh">Refresh (GET only)</button>

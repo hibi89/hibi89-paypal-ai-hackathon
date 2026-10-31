@@ -170,10 +170,27 @@ el('gift').addEventListener('click',()=>run('Gift',async()=>{
  if(!model.consents.gifts)throw Object.assign(new Error('CONFIGURE_GIFTS_MANDATE_FIRST'),{code:'CONFIGURE_GIFTS_MANDATE_FIRST'});
  show('gift-output',await api('gift',{consentId:model.consents.gifts,idempotencyKey:key()}));
 }));
-for(const kind of ['churn','invoice'])
- el(kind).addEventListener('click',()=>run(kind,async()=>{
-  show(kind+'-output',await api(kind,{idempotencyKey:key()}));
- }));
+el('churn').addEventListener('click',()=>run('churn',async()=>{
+ show('churn-output',await api('churn',{idempotencyKey:key()}));
+}));
+el('invoice').addEventListener('click',()=>run('invoice',async()=>{
+ // Parse decimal USD to minor units without floating-point rounding.
+ const raw=el('invoice-amount').value.trim();
+ if(!/^\d{1,5}(\.\d{1,2})?$/.test(raw))
+  throw Object.assign(new Error('INVALID_AMOUNT'),{code:'INVALID_SYNTHETIC_DOSSIER'});
+ const dollars=raw.split('.');
+ const amountMinor=Number(dollars[0])*100+Number((dollars[1]||'').padEnd(2,'0'));
+ const list=[['contract_terms','invoice-evidence-contract'],
+  ['delivery_record','invoice-evidence-delivery'],
+  ['review_decision','invoice-evidence-review']];
+ const evidenceKinds=list.filter(([,id])=>el(id).checked).map(([kind])=>kind);
+ const result=await api('invoice',{
+  idempotencyKey:key(),contractRef:el('invoice-contract').value,
+  amountMinor,issueType:el('invoice-issue').value,
+  deliveryStatus:el('invoice-delivery').value,evidenceKinds
+ });
+ show('invoice-output',result);
+}));
 el('refresh').addEventListener('click',async()=>{
  try{await refresh();show('message','Read-only audit completed locally. No duplicate A2A or payment POST.');}
  catch(e){show('message','Audit unavailable: '+(e.code||e.message||'ERROR'));}
