@@ -7,6 +7,7 @@ import {createSqliteLedger} from '../src/sqlite_ledger.mjs';
 import {createPilotCheckoutSessionStore} from '../src/pilot_checkout_session_store.mjs';
 import {createMarketplaceAiBudgetStore} from '../src/marketplace_ai_budget.mjs';
 import {createOwnerPrivateGeminiInnovationLab} from '../src/owner_private_gemini_innovation_lab.mjs';
+import {createA2ABudgetStore,hashEvidence} from '../src/gemini_a2a_budget_store.mjs';
 import {inspectPrivatePart2A2A,inspectOwnerTwoPartEvidence}
  from '../src/owner_private_two_part_evidence.mjs';
 
@@ -171,4 +172,21 @@ test('owner read-only CLI refuses missing private evidence without network or se
   assert.equal(run.stdout.includes('FAKE_TEST_SECRET_1'),false);
   assert.deepEqual(readdirSync(dir).sort(),old);
  }finally{rmSync(dir,{recursive:true,force:true})}
+});
+
+test('crash between durable Gemini quota claim and Part2 event refuses clean retry',()=>{
+ const directory=path();
+ try{
+  const quota=createA2ABudgetStore({filename:join(directory,'quota.sqlite')});
+  const claim=quota.claim({...scope,turn:1,role:'seller',
+   promptHash:hashEvidence('fake bounded prompt')});
+  quota.uncertain(claim);quota.close();
+  const out=inspectPrivatePart2A2A({
+   filename:join(directory,'missing-part2.sqlite'),
+   budgetFilename:join(directory,'quota.sqlite'),scope
+  });
+  assert.equal(out.status,'PART2_ATTEMPT_WITHOUT_RESULT_NO_RETRY');
+  assert.equal(out.quotaClaims,1);
+  assert.equal(out.amountMinor,null);
+ }finally{rmSync(directory,{recursive:true,force:true})}
 });
