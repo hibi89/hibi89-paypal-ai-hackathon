@@ -30,8 +30,11 @@ export function createMarketplaceContractWorkflowApi({ledger,policy,resolveSessi
    const [_,contractId,milestoneId,verb]=match;
    const scope=await ledger.getContractAuthorityResource(contractId);
    if(!scope)fail('MARKETPLACE_CONTRACT_NOT_FOUND',404);
-   await policy.authorize(proof,{action:verb==='submit'?'delivery.submit':'delivery.review',
-     resource:scope});
+   const grant=await policy.authorize(proof,{
+     action:verb==='submit'?'delivery.submit':'delivery.review',resource:scope
+   });
+   if(grant.actorId!==session.actorId||grant.merchantId!==session.merchantId)
+     fail('IDENTITY_RESOLVER_MISMATCH',403);
    const body=await parseSmallJson(request);
    if(!body||typeof body!=='object'||Array.isArray(body)||
       Object.keys(body).some(k=>!['expectedVersion','expectedState','eventId','detail'].includes(k)))
@@ -46,8 +49,8 @@ export function createMarketplaceContractWorkflowApi({ledger,policy,resolveSessi
    if(verb!=='submit'&&Object.hasOwn(body,'expectedState')&&body.expectedState!=='SUBMITTED')
       fail('INVALID_MILESTONE_TRANSITION',409);
    const result=await ledger.transitionMarketplaceMilestone({
-     contractId,milestoneId,actorId:session.actorId,
-     merchantId:session.merchantId,expectedVersion:body.expectedVersion,
+     contractId,milestoneId,actorId:grant.actorId,
+     merchantId:grant.merchantId,expectedVersion:body.expectedVersion,
      expectedState:expected,nextState:state,eventId:body.eventId,
      detail:body.detail??null
    });
