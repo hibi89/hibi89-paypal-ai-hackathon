@@ -94,7 +94,8 @@ test('budget reservation rejects reactivated old grant before reserve in separat
     }
     return ledger.get(id);
   },getQuoteAuthorityResource:id=>ledger.getQuoteAuthorityResource(id)};
-  const budgets={
+  // This mock verifies a pre-write denial only; no mock reserve may commit.
+  const budgets={atomicRoleRevisionReservation:true,
     status:()=>({configured:true,limitMinor:5000,reservedMinor:0}),
     existing:()=>null,
     reserve:()=>{writes++;return {ok:true}},
@@ -133,7 +134,9 @@ test('extra REST authorization fails closed for unversioned members and foreign 
   const members=[{actorId:'synthetic-owner',merchantId:'synthetic-merchant',
     role:'buyer',active:true}]; // no durable revision
   const policy=createMarketplaceIdentityPolicy({resolveTrustedSession:resolveSession,members});
-  const budgets={status:()=>({configured:true,limitMinor:5000,reservedMinor:0}),
+  // Unversioned grant is denied before any fake budget method can run.
+  const budgets={atomicRoleRevisionReservation:true,
+    status:()=>({configured:true,limitMinor:5000,reservedMinor:0}),
     history:()=>[],configure:()=>({ok:true}),reserve:()=>({ok:false})};
   const budget=createAgentBudgetDemoApi({resolveSession,quotes:ledger,budgets,
     identityPolicy:policy,registry:{verify:()=>false}});

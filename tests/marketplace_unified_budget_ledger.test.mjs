@@ -84,8 +84,10 @@ test('overspend and double reservation are impossible under same SQLite lock',()
 }));
 test('budget cannot be authorized from unversioned or seller/reviewer grants',()=>fixture(async({ledger,budgets})=>{
  await ledger.approve({id:'q1',actorId:owner,expectedVersion:1,amountMinor:minor});
- assert.throws(()=>configure(budgets,3000,undefined),{code:'TRUSTED_MEMBERSHIP_REVISION_REQUIRED'});
- assert.throws(()=>reserve(budgets,'q1',1,minor,undefined),
+ assert.throws(()=>budgets.configure(owner,tenant,3000,undefined),
+   {code:'TRUSTED_MEMBERSHIP_REVISION_REQUIRED'});
+ assert.throws(()=>budgets.reserve({owner,merchant:tenant,quote:'q1',
+   version:1,amount:minor,expectedMembershipRevision:undefined}),
    {code:'TRUSTED_MEMBERSHIP_REVISION_REQUIRED'});
  assert.throws(()=>budgets.configure('reviewer',tenant,3000,1),
    {code:'LOCAL_WRITE_ROLE_REVOKED'});
