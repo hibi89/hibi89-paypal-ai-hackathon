@@ -1,3 +1,17 @@
+## 2026-10-31 KST — PRIVATE CROSS-PART READ-ONLY ADAPTER (VERIFICATION PENDING)
+
+1. Goal: opt-in host-only evidence projection for Part1 approved quote ↔ Part2 synthetic A2A; preserve both apps and no payment authority.
+2. Changes: `src/cross_part_review_read_api.mjs` GET-only exact quoteId query, trusted Request delegated to bridge.inspect, no role/merchant from request parameters, fail-closed response. Four tests `tests/cross_part_review_read_api.test.mjs`. Previous TTL async recheck in bridge and race test also added.
+3. Tests: new tests committed but NOT EXECUTED/CI NOT VERIFIED in this session. Prior known green 700/700 at functional SHA 147d6257; do not attribute that result to new SHA.
+4. State: implementation committed, validation pending; no browser/dashboard route, live AI/PayPal or production.
+5. Risk: adapter is intentionally unmounted; host must supply verified sessions and proper authorization. No payment POST or external calls.
+6. Repo: hibi89/hibi89-paypal-ai-hackathon, lead/paypal, functional SHA b4e2187ed0e4316412a761c77b5b2a90302555d1. Git history rollback available.
+7. Production: NOT_APPLIED, no URL; Node >=22.5, npm test.
+8. Secrets/data: none transmitted; original data and Part1/Part2 routes untouched.
+9. Next: CI verify both commits; integrate opt-in trusted host read path with local role proof and UI, run browser E2E; external provider requires owner approval.
+10. Timestamp: 2026-10-31 KST; documentation commit following functional SHA not separately tested.
+
+---
 ## 2026-10-31 KST — PART1 APPROVED QUOTE ↔ PART2 SYNTHETIC A2A PRIVATE REVIEW BRIDGE VERIFIED
 
 1. Objective / requirements / tech: After completing all five offline Part2 modules, connect the Part1 buyer-approved quote ledger to Part2 bounded A2A consent and transcript evidence without authorizing live PayPal actions, cloud deployment or real personal data. Existing private hibi89/hibi89-paypal-ai-hackathon lead/paypal Node >=22.5 ESM, SQLite, role membership and host-authorized review callback.
