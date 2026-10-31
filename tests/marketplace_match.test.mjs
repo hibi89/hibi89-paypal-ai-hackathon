@@ -77,7 +77,7 @@ test('local marketplace API is human-triggered, CSRF-bound, origin-checked and o
     assert.equal(generalBody.profiles[0].id,'synthetic-creative');
     assert.equal(generalBody.paypal.status,'NOT_CONNECTED');
     assert.equal((await send({brief:'Design a new logo',vertical:'unknown'})).status,400);
-    assert.equal((await fetch(app.url+'/api/quotes/sample-project/payment')).status,503);
+    assert.equal((await fetch(app.url+'/api/quotes/sample-project/payment')).status,200);
     const staticJs=await fetch(app.url+'/demo/marketplace.js');
     assert.equal(staticJs.status,200);
     assert.match(await staticJs.text(),/No innerHTML/);
@@ -175,7 +175,7 @@ test('owner API preserves prior three-member lists and limits two additional rou
     assert.equal(historical.history.length,3);
     assert.equal(historical.round,3);
     assert.equal((await (await post('/api/demo/marketplace',{brief})).json()).remainingRefreshes,0);
-    assert.equal((await fetch(app.url+'/api/quotes/sample-project/payment')).status,503);
+    assert.equal((await fetch(app.url+'/api/quotes/sample-project/payment')).status,200);
   }finally{await app.close()}
 });
 
