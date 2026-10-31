@@ -21,6 +21,8 @@ button:disabled{opacity:.5;cursor:not-allowed}
 #a2a-progress,#pending-status{font-size:.85rem;color:#405a7d;overflow-wrap:anywhere}
 #a2a-transcript{list-style:none;padding:0;display:grid;gap:8px}
 #a2a-transcript li{border:1px solid #d9e3ef;border-radius:9px;padding:10px 12px;background:#f6f9fe;font-size:.85rem;overflow-wrap:anywhere}
+#a2a-history-tools{border-top:1px solid #dce4ef;margin-top:17px;padding-top:12px}
+#a2a-history-tools p{font-size:.85rem;margin-bottom:0}
 pre{white-space:pre-wrap;word-break:break-word;background:#132643;color:#d9edff;border-radius:11px;padding:14px;max-height:230px;overflow:auto}
 @media(max-width:680px){body{padding:15px}.grid{grid-template-columns:1fr}.wide{grid-column:auto}}
 </style></head><body>
@@ -48,7 +50,11 @@ pre{white-space:pre-wrap;word-break:break-word;background:#132643;color:#d9edff;
 <button type="button" id="a2a">Run A2A transaction</button>
 <p id="a2a-progress" role="status" aria-live="polite">No negotiation started. Synthetic agents only.</p>
 <ol id="a2a-transcript" aria-label="Buyer Seller agent negotiation transcript"></ol>
-<pre id="a2a-output">Issue a service mandate first.</pre></section>
+<pre id="a2a-output">Issue a service mandate first.</pre>
+<div id="a2a-history-tools"><label for="a2a-history">Previous negotiations · saved SQLite history</label>
+<select id="a2a-history" aria-describedby="a2a-history-status"><option value="">No completed negotiation yet</option></select>
+<button type="button" id="show-a2a-history" disabled>View saved negotiation</button>
+<p id="a2a-history-status" role="status" aria-live="polite">Stored results are read-only. Viewing them never runs agents or creates PayPal orders.</p></div></section>
 <section class="card"><span class="badge">03 · Gift Finder</span><h2>Gift preference matching</h2>
 <p>Choose a fictional category, preferred style and price ceiling. Compare a fixed local catalog and require an unused gift mandate; no inventory lookup or PayPal checkout.</p>
 <label for="gift-category">Gift category</label><select id="gift-category"><option value="lighting">Desk lighting</option><option value="mug">Mugs</option><option value="stationery">Stationery</option></select>
