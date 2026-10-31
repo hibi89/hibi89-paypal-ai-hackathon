@@ -51,8 +51,9 @@ test('real local HTTP: owner can view budget, fictional recommendation history a
   const proposed=await call('/api/demo/negotiate',{method:'POST',body:neg});
   assert.equal(proposed.status,200,JSON.stringify(proposed));
   assert.equal(proposed.data.paymentAuthorized,false);
+  // Existing quote ownership boundary masks foreign quote IDs with 404.
   for(const cookie of [app.testReviewerCookie,app.testSellerCookie])
-   assert.equal((await call('/api/demo/negotiate',{method:'POST',cookie,body:neg})).status,403);
+   assert.equal((await call('/api/demo/negotiate',{method:'POST',cookie,body:neg})).status,404);
   const noSelection=await call('/api/demo/marketplace/selection?quoteId='+sess.quoteId);
   assert.equal(noSelection.status,404);
   assert.equal((await call('/api/demo/marketplace/selection?quoteId='+sess.quoteId,
