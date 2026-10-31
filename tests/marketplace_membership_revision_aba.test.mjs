@@ -168,3 +168,14 @@ test('separate SQLite connection revoke and reactivate invalidates older reserva
   assert.equal(allowed.action,'FIRST_CLAIM_ONLY_NO_PROVIDER_CALL');
  }finally{second.close();}
 }));
+
+test('legacy REST fails closed if trusted host supplied a static, unversioned identity fixture',()=>withLedger(async({ledger,resolveSession,call})=>{
+ const staticPolicy=createMarketplaceIdentityPolicy({resolveTrustedSession:resolveSession,
+   members:[{actorId:'buyer',merchantId:'tenantA',role:'buyer',active:true}]});
+ const api=createQuoteApi({repository:ledger,resolveSession,identityPolicy:staticPolicy});
+ const denied=await call(api,'buyer',post('/api/quotes/q1/approve',{
+   confirmed:true,expectedVersion:1,amountMinor:1500}));
+ assert.equal(denied.status,403);
+ assert.equal(denied.body.error,'TRUSTED_MEMBERSHIP_REVISION_REQUIRED');
+ assert.equal((await ledger.get('q1')).status,'PROPOSED');
+}));

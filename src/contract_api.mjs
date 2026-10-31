@@ -75,6 +75,8 @@ export function createContractApi({repository,resolveSession,identityPolicy,
         const grant=await identityPolicy.authorize(proof,{action,resource});
         fail(grant.actorId!==session.actorId||grant.merchantId!==session.merchantId,
           'TRUSTED_IDENTITY_MISMATCH',403);
+        fail(!Number.isSafeInteger(grant.membershipRevision)||
+          grant.membershipRevision<1,'TRUSTED_MEMBERSHIP_REVISION_REQUIRED',403);
         return grant.membershipRevision;
       };
       if(identityPolicy&&r.method==='GET'){

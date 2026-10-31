@@ -194,6 +194,10 @@ export function createQuoteApi({ repository, resolveSession, draftProvider,
           });
         fail(grant.actorId!==session.actorId||grant.merchantId!==session.merchantId,
           'TRUSTED_IDENTITY_MISMATCH',403);
+        // A static role fixture without a persisted revision must never
+        // silently turn the protected REST route into an ABA-unsafe writer.
+        fail(!Number.isSafeInteger(grant.membershipRevision)||
+          grant.membershipRevision<1,'TRUSTED_MEMBERSHIP_REVISION_REQUIRED',403);
         expectedMembershipRevision=grant.membershipRevision;
       }
       if (r.resource === 'quote') return reply({ quote });
