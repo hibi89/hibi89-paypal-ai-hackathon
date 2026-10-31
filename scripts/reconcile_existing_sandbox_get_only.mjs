@@ -9,6 +9,7 @@ import {createSqliteLedger} from '../src/sqlite_ledger.mjs';
 import {createPilotCheckoutSessionStore} from '../src/pilot_checkout_session_store.mjs';
 import {createMarketplaceAiBudgetStore} from '../src/marketplace_ai_budget.mjs';
 import {createSandboxTransport} from '../src/paypal_sandbox_transport.mjs';
+import {createExistingSandboxGetOnlyFetch} from '../src/sandbox_existing_get_only_fetch.mjs';
 import {createOwnerMvpFlow} from '../src/owner_mvp_flow.mjs';
 import {inspectOwnerMvpLocalState} from '../src/owner_mvp_local_status.mjs';
 
@@ -30,7 +31,7 @@ if(!exact){
  const rl=createInterface({input:stdin,output:stderr,terminal:true});
  const confirm=async(text,msg)=>(await rl.question(msg+' Type '+text+': '))===text;
  let ledger=null,sessions=null,ai=null;
- const count={oauthPost:0,orderGet:0};
+ let firewall=null;
  try{
   // No private env read until a human gives explicit consent.
   if(!await confirm('REVIEW EXISTING SANDBOX ORDER',
@@ -51,26 +52,15 @@ if(!exact){
      typeof clientSecret!=='string'||!clientSecret||
      typeof publicOrigin!=='string'||!publicOrigin)
    throw Object.assign(new Error('CONFIG'),{code:'PRIVATE_SANDBOX_CONFIG_REQUIRED'});
-  // OAuth grant POST is needed to authenticate a fresh sandbox GET.
-  // The fetch boundary NEVER permits Orders CREATE or Capture, regardless
-  // of which internal method is accidentally called.
-  const guardedFetch=async(url,init)=>{
-   const request=new URL(url);
-   const method=init?.method??'GET';
-   if(request.origin!=='https://api-m.sandbox.paypal.com'||
-      (method==='POST'&&request.pathname!=='/v1/oauth2/token')||
-      (method==='GET'&&!/^\/v2\/checkout\/orders\/[A-Za-z0-9_-]{1,64}$/.test(request.pathname))||
-      !['GET','POST'].includes(method)||request.search||request.hash)
-    throw Object.assign(new Error('BLOCKED'),{code:'RECOVERY_PAYMENT_POST_FORBIDDEN'});
-   if(method==='POST')count.oauthPost++;
-   else count.orderGet++;
-   return globalThis.fetch(url,init);
-  };
+  // A second, bounded PayPal-host-only network boundary prevents ALL
+  // Orders CREATE/Capture POST even if an internal caller misbehaves.
+  firewall=createExistingSandboxGetOnlyFetch({fetchImpl:(...args)=>globalThis.fetch(...args),
+   maxOrderGets:3,maxOauthPosts:3});
   ledger=createSqliteLedger({filename:join(dir,'checkout.sqlite')});
   sessions=createPilotCheckoutSessionStore({filename:join(dir,'checkout_sessions.sqlite')});
   ai=createMarketplaceAiBudgetStore({filename:join(dir,'gemini_skills.sqlite')});
   const transport=createSandboxTransport({clientId,clientSecret,
-   fetchImpl:guardedFetch});
+   fetchImpl:firewall.fetch});
   const authorizeStage=async action=>{
    if(action?.action==='REAUTHORIZE_EXISTING_SANDBOX_GET_ONLY')
     return confirm('REAUTHORIZE EXISTING ORDER',
@@ -95,8 +85,7 @@ if(!exact){
   report('SANDBOX_GET_ONLY_COMPLETED',{
    paymentState:result.paymentState??'NOT_CONFIRMED',
    remoteStatus:result.status??'UNKNOWN',
-   localSessionWritten:true,orderGetRequests:count.orderGet,
-   oauthPostRequests:count.oauthPost,orderCreatePosts:0,capturePosts:0,
+   localSessionWritten:true,...firewall.status(),
    paymentVerifiedByFreshGet:result.status==='PAID'&&
     result.paymentState==='VERIFIED_BY_GET',
    externallyIndependentlyAttested:false,retryPost:false
@@ -106,8 +95,8 @@ if(!exact){
   report('SANDBOX_GET_ONLY_REVIEW_REQUIRED',{
    errorClass:typeof e?.code==='string'&&/^[A-Z0-9_]{3,90}$/.test(e.code)
     ?e.code:'PRIVATE_RECOVERY_FAILED',
-   orderGetRequests:count.orderGet,oauthPostRequests:count.oauthPost,
-   orderCreatePosts:0,capturePosts:0,
+   ...(firewall?.status()??{orderGetRequests:0,oauthPostRequests:0,
+    orderCreatePosts:0,capturePosts:0}),
    providerResultUnverified:true,retryPost:false
   });
   process.exitCode=2;
