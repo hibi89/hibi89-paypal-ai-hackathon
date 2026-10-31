@@ -279,6 +279,71 @@ export function createSqliteLedger({ filename } = {}) {
         return {contractId,merchantId,sellerProfileId};
       });
     },
+    // Opt-in synthetic marketplace delivery workflow. Role/assignment, grant
+    // and CAS state are ALL checked under the same BEGIN IMMEDIATE SQLite lock.
+    // This does not grant access to PayPal or change legacy owner-delivery APIs.
+    async transitionMarketplaceMilestone({contractId,milestoneId,actorId,merchantId,
+      expectedVersion,expectedState,nextState,eventId,detail=null}={}){
+      reject(!idOk(contractId)||!idOk(milestoneId)||!idOk(actorId)||
+        !idOk(merchantId)||!idOk(eventId),
+        'INVALID_MARKETPLACE_WORKFLOW_ID');
+      reject(!Number.isSafeInteger(expectedVersion)||expectedVersion<1,
+        'CONTRACT_VERSION_REQUIRED');
+      const submit=nextState==='SUBMITTED'&&
+        ['PENDING','REJECTED'].includes(expectedState);
+      const review=expectedState==='SUBMITTED'&&
+        ['ACCEPTED','REJECTED'].includes(nextState);
+      reject(!submit&&!review,'INVALID_MILESTONE_TRANSITION',409);
+      reject(detail!==null&&(typeof detail!=='string'||detail.length>1000),
+        'INVALID_EVENT_DETAIL');
+      reject((submit||nextState==='REJECTED')&&
+        (typeof detail!=='string'||detail.trim().length<8),
+        submit?'DELIVERY_NOTE_REQUIRED':'REJECTION_REASON_REQUIRED');
+      return transaction(()=>{
+        const context=stmt(\`SELECT c.id,c.merchant_id,c.reviewer_id,c.owner_id,c.version,
+          c.state,c.quote_id,m.role,m.merchant_id AS actor_tenant,
+          m.seller_profile_id,m.active,
+          s.seller_profile_id AS assigned_profile
+          FROM contracts c
+          LEFT JOIN marketplace_actor_memberships m ON m.actor_id=?
+          LEFT JOIN marketplace_contract_sellers s ON s.contract_id=c.id
+          WHERE c.id=?\`).get(actorId,contractId);
+        reject(!context||context.merchant_id!==merchantId||
+          context.actor_tenant!==merchantId||context.active!==1,
+          'MARKETPLACE_CONTRACT_NOT_FOUND',404);
+        reject(context.state!=='ACTIVE','CONTRACT_NOT_ACTIVE',409);
+        const assignedSeller=context.role==='seller'&&submit&&
+          context.seller_profile_id!==null&&
+          context.seller_profile_id===context.assigned_profile;
+        const assignedReviewer=context.role==='reviewer'&&review&&
+          context.reviewer_id===actorId;
+        reject(!assignedSeller&&!assignedReviewer,'MARKETPLACE_WORKFLOW_ROLE_FORBIDDEN',403);
+        reject(context.version!==expectedVersion,'STALE_CONTRACT_VERSION',409);
+        const milestone=stmt(\`SELECT state FROM contract_milestones
+          WHERE id=? AND contract_id=?\`).get(milestoneId,contractId);
+        reject(!milestone,'MILESTONE_NOT_FOUND',404);
+        reject(milestone.state!==expectedState,'STALE_MILESTONE_STATE',409);
+        reject(!!stmt('SELECT 1 FROM contract_events WHERE event_id=?').get(eventId),
+          'DUPLICATE_EVENT_ID',409);
+        const changed=stmt(\`UPDATE contracts SET version=version+1
+          WHERE id=? AND version=?\`).run(contractId,expectedVersion);
+        reject(changed.changes!==1,'CONTRACT_CAS_CONFLICT',409);
+        const updated=stmt(\`UPDATE contract_milestones
+          SET state=?,delivery_note=CASE WHEN ?='SUBMITTED' THEN ? ELSE delivery_note END,
+          updated_at=CURRENT_TIMESTAMP
+          WHERE id=? AND contract_id=? AND state=?\`)
+          .run(nextState,nextState,detail,milestoneId,contractId,expectedState);
+        reject(updated.changes!==1,'MILESTONE_CAS_CONFLICT',409);
+        stmt(\`INSERT INTO contract_events
+          (event_id,contract_id,milestone_id,actor_id,event_type,from_state,to_state,
+          contract_version,detail) VALUES(?,?,?,?,?,?,?,?,?)\`)
+          .run(eventId,contractId,milestoneId,actorId,nextState,expectedState,
+            nextState,expectedVersion+1,detail);
+        return Object.freeze({contractId,milestoneId,version:expectedVersion+1,
+          fromState:expectedState,state:nextState,eventId,actorId,
+          paymentAuthorized:false,paymentState:'NOT_AUTHORIZED_BY_WORKFLOW'});
+      });
+    },
     // Resource metadata for server-side policy; no client-supplied owner/tenant.
     async getQuoteAuthorityResource(quoteId){
       if(!idOk(quoteId))return null;
