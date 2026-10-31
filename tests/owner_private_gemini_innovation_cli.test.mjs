@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
-const file=new URL('../scripts/run_owner_private_gemini_innovation.mjs',import.meta.url);
-const call=args=>spawnSync(process.execPath,['--experimental-sqlite',file.pathname,...args],{
+import {fileURLToPath} from 'node:url';
+const file=fileURLToPath(new URL('../scripts/run_owner_private_gemini_innovation.mjs',import.meta.url));
+const call=args=>spawnSync(process.execPath,['--experimental-sqlite',file,...args],{
  encoding:'utf8',timeout:9000,
  env:{...process.env,GEMINI_API_KEY:'FAKE_NOT_REAL_TEST_KEY'}
 });
