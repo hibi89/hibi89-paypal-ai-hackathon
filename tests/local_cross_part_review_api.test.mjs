@@ -10,7 +10,7 @@ const review=Object.freeze({status:'SYNTHETIC_CROSS_PART_REVIEW_ONLY',
  paypalOrderCreated:false,paypalCapturePerformed:false,
  realProviderEvidence:false});
 function fixture(){
- const trusted=new WeakMap();let saved=null,calls=0;
+ const trusted=new WeakMap();let saved=null,calls=0,revocations=0;
  const bridge=Object.freeze({mode:'INTERNAL_SYNTHETIC_REVIEW_ONLY',
   publicHttpEnabled:false,autoPaymentAuthorized:false,paypalProviderCalls:0,
   async link({hostHandle,quoteId,consentId}){
@@ -19,6 +19,13 @@ function fixture(){
    assert.equal(consentId,'consent');
    assert.equal(trusted.get(hostHandle)?.actorId,'buyer');
    saved=review;return saved;
+  },
+  async revoke({hostHandle,quoteId}){
+   assert.equal(quoteId,'quote');
+   assert.equal(trusted.get(hostHandle)?.actorId,'buyer');
+   revocations++;saved=null;
+   return {status:'SYNTHETIC_REVIEW_REVOKED',quoteId,paymentAuthorized:false,
+    paypalCapturePerformed:false,providerCalls:0,realProviderEvidence:false};
   },
   async inspect({hostHandle,quoteId}){
    assert.equal(quoteId,'quote');
@@ -40,7 +47,7 @@ function fixture(){
    ?{...session,actorId:'reviewer'}:session);
   return r;
  };
- return {handler,request,count:()=>calls};
+ return {handler,request,count:()=>calls,revocations:()=>revocations};
 }
 test('local bridge requires a private non-paying host, never a public payment permission',()=>{
  assert.throws(()=>createLocalCrossPartReviewApi({}),/LOCAL_CROSS_PART_TRUSTED_DEPENDENCIES_REQUIRED/);
@@ -64,6 +71,23 @@ test('explicit owner POST stores; GET reads without new link, discloses no provi
  assert.equal((await read.json()).review.amountMinor,29900);
  assert.equal(f.count(),1);
 });
+test('authenticated review DELETE revokes once without a provider call',async()=>{
+ const f=fixture();
+ assert.equal((await f.handler(f.request('POST',{consentId:'consent'}))).status,201);
+ for(const opts of [{origin:false},{csrf:false},{role:'reviewer'},
+  {trusted:false},{query:'?actorId=buyer'}]){
+  assert.notEqual((await f.handler(f.request('DELETE',undefined,opts))).status,200);
+ }
+ assert.equal(f.revocations(),0);
+ const response=await f.handler(f.request('DELETE'));
+ assert.equal(response.status,200);
+ const result=await response.json();
+ assert.equal(result.status,'SYNTHETIC_REVIEW_REVOKED');
+ assert.equal(result.paymentAuthorized,false);
+ assert.equal(result.providerCalls,0);
+ assert.equal(f.revocations(),1);
+ assert.equal((await f.handler(f.request())).status,404);
+});
 test('origin, CSRF, identity, body shape and query cannot forge association',async()=>{
  const f=fixture();
  for(const req of [
@@ -79,6 +103,6 @@ test('origin, CSRF, identity, body shape and query cannot forge association',asy
  assert.equal(f.count(),0);
  assert.equal((await f.handler(f.request('GET',undefined,{role:'reviewer'}))).status,404);
  assert.equal((await f.handler(f.request('GET',undefined,{query:'?merchantId=merchant'}))).status,404);
- const badMethod=new Request(url,{method:'DELETE'});
+ const badMethod=new Request(url,{method:'PUT'});
  assert.equal((await f.handler(badMethod)).status,405);
 });
