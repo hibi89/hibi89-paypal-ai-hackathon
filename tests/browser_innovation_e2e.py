@@ -221,6 +221,16 @@ try:
    page.locator("#crosspart-inspect").click()
    expect(page.locator("#crosspart-association")).to_contain_text("VERIFIED SAVED REVIEW")
    assert sum(method=="POST" for method,_ in requests)==before_compare
+   # Buyer explicitly withdraws the saved synthetic review; this never pays.
+   expect(page.locator("#crosspart-revoke")).to_be_enabled()
+   page.locator("#crosspart-revoke").click()
+   expect(page.locator("#crosspart-association")).to_contain_text("WITHDRAWN")
+   assert sum(method=="DELETE" and url.endswith("/api/demo/cross-part/review")
+              for method,url in requests)==1
+   page.reload()
+   page.locator("#crosspart-inspect").click()
+   expect(page.locator("#crosspart-association")).to_contain_text("NO VALID SAVED REVIEW")
+   assert sum(method=="POST" for method,_ in requests)==before_compare
    assert not errors,errors
    assert not any("paypal.com" in url or "generativelanguage.googleapis.com" in url for _,url in requests)
    print("CHROMIUM_INNOVATION_PART2_E2E_PASS: five skills, human approved price, explicit 15m persisted review and GET-only reload")
