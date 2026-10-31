@@ -150,8 +150,16 @@ approveForm.addEventListener('submit',event=>{
   });
 });
 paymentButton.addEventListener('click',()=>runOnce(async()=>{
-  try{await api('/api/quotes/'+quoteId+'/payment');show('No payments configured.');}
-  catch(error){show('Payment safety: '+error.message+'. No payment action executed.');}
+  try{
+    const result=await api('/api/quotes/'+quoteId+'/payment');
+    const payment=result.payment;
+    if(payment?.source!=='LOCAL_SQLITE_ONLY_NO_PROVIDER_REQUEST'||
+       payment.providerCalls!==0||payment.livePaymentVerifiedThisRead!==false||
+       payment.paymentAuthorizedByRead!==false)
+      throw new Error('UNVERIFIED_PAYMENT_SNAPSHOT');
+    show('Local SQLite payment state: '+payment.paymentState+
+      '. This GET is not a live PayPal check. No payment action executed.');
+  }catch(error){show('Payment safety: '+error.message+'. No payment action executed.');}
 }));
 roleToggle.addEventListener('click',()=>runOnce(async()=>{
   await api('/demo/synthetic-role','POST');
