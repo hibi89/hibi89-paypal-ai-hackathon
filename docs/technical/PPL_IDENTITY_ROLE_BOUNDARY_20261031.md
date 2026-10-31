@@ -36,3 +36,11 @@ Unknown actions and all payment/PayPal operations are fail-closed. The policy on
 2. Persist principal↔tenant↔seller and quote/contract assignments in a single production-safe DB transaction; add negative multi-tenant, stale grant, revocation, replay and no-provider test cases. Reconcile seller submit/reviewer acceptance separately from existing local owner-submits-demo semantics.
 3. Gate actual sensitive endpoints behind server-derived resource metadata, never browser role claims. Maintain CSRF and separate PayPal purchase authorization.
 4. Verify in actual HTTPS browser and genuine consented Sandbox/AI only after the owner approves those activities; do not call local CI real provider proof.
+
+## 2026-10-31 P0 persisted membership implementation addendum
+
+**Option A implemented (offline):** reuse same quote/contract ledger SQLite for preprovisioned synthetic `marketplace_actor_memberships` (unique principal/tenant seller profile, versioned revocation) and `marketplace_contract_sellers` (one trusted seller assignment per contract), read the authoritative quote/contract owner/merchant/reviewer/seller profile from persisted database before role authorization. Owner and reviewer identities in loopback use these records. Explicit GET-only `/api/demo/protected/{quotes|contracts}/:id` gates access; existing primary APIs are not migrated. The branded local proof includes stored membership revision and therefore never regains authority after revoke/reactivate.
+
+**Option B deferred:** standalone identity database / third-party login service with new accounts, permissions, hosting, costs and schema migrations would increase cross-DB consistency risk before real customer trust model is chosen; separate approval required.
+
+**Evidence:** exact source `ab61475ff33fdf120d4f9bb694d42735da0ea6c2`: [597/597 Node, Chromium dual-category and Windows SUCCESS](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41187964996), [offline smoke SUCCESS](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41187965003). Existing local temporary demo DB still deleted on shutdown; persistence across restart tested separately using a persistent test fixture. Not real production auth / seller ownership / PayPal merchant proof / checkout / deployment.
