@@ -6,6 +6,7 @@ import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
 import {createSqliteLedger} from '../src/sqlite_ledger.mjs';
+import {DatabaseSync} from 'node:sqlite';
 import {createPilotCheckoutSessionStore} from '../src/pilot_checkout_session_store.mjs';
 import {createSandboxTransport} from '../src/paypal_sandbox_transport.mjs';
 import {createExistingSandboxGetOnlyFetch} from '../src/sandbox_existing_get_only_fetch.mjs';
@@ -173,3 +174,64 @@ test('owner GET-only CLI requires exact flags and private TTY before credentials
   assert.doesNotMatch(response.stdout,/FAKE_PRIVATE_SENTINEL/);
  }
 });
+
+test('audit hash-chain tampering blocks saved capture as a reconciliation source before GET',
+ fixture(async dir=>{
+  await seed(dir);const x=transport();
+  const filename=join(dir,'checkout.sqlite');
+  const db=new DatabaseSync(filename);
+  try{
+   db.exec('DROP TRIGGER local_audit_deny_update');
+   db.prepare('UPDATE local_audit_events SET event_hash=? WHERE seq=1')
+    .run('f'.repeat(64));
+  }finally{db.close()}
+  const reader=createOwnerExistingSandboxGetRecovery({
+   directory:dir,merchantId:MERCHANT,transport:x.paypal,
+   authorizeRead:async()=>true
+  });
+  assert.throws(()=>reader.inspect(),e=>e.code==='EXISTING_ORDER_AUDIT_REVIEW_REQUIRED');
+  await assert.rejects(reader.refresh(),e=>e.code==='EXISTING_ORDER_AUDIT_REVIEW_REQUIRED');
+  assert.equal(x.calls.length,0);
+ }));
+test('local ledger mutation while remote GET is in flight prevents stale payment verification',
+ fixture(async dir=>{
+  await seed(dir);
+  let changed=false;
+  const t=transport({status:'COMPLETED'});
+  const fetchImpl=async(url,init)=>{
+   const path=new URL(url).pathname;
+   if(path==='/v2/checkout/orders/SYNTHETIC_ORDER_1'&&!changed){
+    changed=true;
+    const ledger=createSqliteLedger({filename:join(dir,'checkout.sqlite')});
+    try{
+     await ledger.insertQuote({id:'other_quote',ownerId:ACTOR,
+      merchantId:MERCHANT});
+    }finally{ledger.close()}
+   }
+   return (async()=>{
+    if(path==='/v1/oauth2/token')
+     return {status:200,json:async()=>({
+      access_token:'FAKE_ACCESS_TOKEN',token_type:'Bearer'})};
+    if(path==='/v2/checkout/orders/SYNTHETIC_ORDER_1')
+     return {status:200,json:async()=>order('COMPLETED')};
+    throw new Error('UNEXPECTED_STUB');
+   })();
+  };
+  const firewall=createExistingSandboxGetOnlyFetch({fetchImpl});
+  const transport=createSandboxTransport({
+   clientId:'FAKE_CLIENT',clientSecret:'FAKE_SECRET',fetchImpl:firewall.fetch
+  });
+  const reader=createOwnerExistingSandboxGetRecovery({
+   directory:dir,merchantId:MERCHANT,transport,
+   authorizeRead:async()=>true
+  });
+  assert.equal(reader.inspect().status,'EXISTING_ORDER_AVAILABLE_FOR_AUTHORIZED_GET');
+  const result=await reader.refresh();
+  assert.equal(changed,true);
+  assert.equal(result.status,'EXISTING_ORDER_LOCAL_CHANGED_DURING_GET');
+  assert.equal(result.paymentVerifiedByFreshGet,false);
+  assert.equal(result.freshSandboxOrderGet,false);
+  assert.equal(result.localLedgerMutated,false);
+  assert.equal(firewall.status().orderCreatePosts,0);
+  assert.equal(firewall.status().capturePosts,0);
+ }));
