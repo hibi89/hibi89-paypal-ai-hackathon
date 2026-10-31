@@ -123,11 +123,12 @@ test('explicit revocation cannot be bypassed by an earlier stage or restart',fix
 }));
 test('reject private JWK material, weak, symmetric, duplicate and malformed key sets before staging',fixture(async({open})=>{
  const m=open();
- const weak=publicJwk(keypair(),'OTHER');
+ const weak=publicJwk(generateKeyPairSync('rsa',{modulusLength:1024}),'WEAK-1024');
  const malformed=[
   jwks({...jwkA,d:'PRIVATE_NOT_ALLOWED'}),
   jwks({...jwkA,k:'SYMMETRIC_NOT_ALLOWED'}),
   jwks(jwkA,jwkA),
+  jwks(weak),
   jwks({kty:'oct',kid:'HMAC-KID',k:'x'}),
   {keys:[]},
   {keys:[jwkA],extra:'untrusted'}
@@ -136,7 +137,7 @@ test('reject private JWK material, weak, symmetric, duplicate and malformed key 
   await assert.rejects(m.stage({jwks:set,expectedRevision:0,validUntilMs:initial+600_000}),
    fails('OIDC_JWKS_PUBLIC_KEYSET_REQUIRED'));
  assert.equal(m.status().staged,false);
- assert.equal(weak.kty,'RSA');
+ assert.equal(weak.kty,'RSA'); // 1024-bit key must remain rejected
 }));
 test('invalid expiry, wrong persisted issuer, missing operator and closed handle fail closed',fixture(async({open,filename})=>{
  const a=open();
