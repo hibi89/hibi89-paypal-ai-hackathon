@@ -1,3 +1,10 @@
+# 2026-10-31 Owner decision — video last, engineering first
+
+Official Devpost video MUST be **less than three minutes**, publicly viewable on YouTube only after owner approves publication. Target final edit length **02:45** (165 sec) rather than exactly 03:00: Part 1 Freelancer Platform 00:00–01:15 (75s), Part 2 AI Innovation Lab 01:15–02:35 (80s), final recap 02:35–02:45 (10s). These are provisional editing targets, not proof the film exists.
+
+**Critical execution priority:** Finish and verify the actual backend, A2A two-agent protocol and eventual externally approved AI / PayPal integration, then complete both dashboards. Do NOT divert engineering time into repeated voiceovers, recording, fictional PayPal evidence or polishing video until both functional parts are ready. Reserve final submission stage for video production and English Devpost text. A final video may only truthfully show functionality that is run and verified; clearly label simulated/fixture content.
+
+---
 # 2026-10-31 OWNER CONFIRMED: TWO-PART PRODUCT SCOPE
 
 PART 1: Existing Proofline Freelancer Platform (AI Work and Global Services) remains intact. Complete the original real-world product: real users, matching, quotes, human approval, seller/reviewer contract and milestone, verified PayPal Sandbox integrations, frontend and deployment. No regression or removal of original records.
