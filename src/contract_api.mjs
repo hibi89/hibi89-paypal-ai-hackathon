@@ -15,6 +15,8 @@ function parsePath(path) {
   if(segments.length===4) return {kind:'contract',contractId:segments[3],method:'GET'};
   if(segments.length===5 && segments[4]==='events')
     return {kind:'events',contractId:segments[3],method:'GET'};
+  if(segments.length===5 && segments[4]==='candidate')
+    return {kind:'candidate',contractId:segments[3],method:'GET'};
   if(segments.length===7 && segments[4]==='milestones' &&
       safeId(segments[5]) && ['submit','accept','reject'].includes(segments[6]))
     return {kind:segments[6],contractId:segments[3],milestoneId:segments[5],
@@ -67,6 +69,11 @@ export function createContractApi({repository,resolveSession}={}){
       if(r.kind==='events') {
         const events=await repository.listContractEvents({...ctx,contractId:r.contractId});
         return reply({events});
+      }
+      if(r.kind==='candidate'){
+        fail(typeof repository.getContractCandidate!=='function','CANDIDATE_AUDIT_NOT_CONFIGURED',503);
+        const evidence=await repository.getContractCandidate({...ctx,contractId:r.contractId});
+        return reply({evidence}); // null for historical contracts without a candidate
       }
       const body=await parseSmallJson(request);
       if(r.kind==='create') {

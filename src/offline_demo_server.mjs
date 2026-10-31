@@ -16,7 +16,7 @@ import { createDemoRateLimiter } from './demo_rate_limit.mjs';
 import { createPaypalBuyerReturnBoundary } from './paypal_buyer_return_boundary.mjs';
 import { createMarketplaceDemoApi } from './marketplace_match.mjs';
 import { createMarketplaceRecommendationStore } from './marketplace_recommendation_store.mjs';
-import { createMarketplaceSelectionStore, createMarketplaceSelectionApi } from './marketplace_selection_store.mjs';
+import { createLedgerMarketplaceSelectionStore, createMarketplaceSelectionApi } from './marketplace_selection_store.mjs';
 import { createNegotiationDemoApi } from './agent_negotiation_demo_api.mjs';
 import { createAgentBudgetStore } from './agent_budget_store.mjs';
 import { createAgentBudgetDemoApi } from './agent_budget_demo_api.mjs';
@@ -36,7 +36,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
   const ledger = createSqliteLedger({ filename:demoLedgerPath });
   const budgetStore=createAgentBudgetStore(join(folder,'agent_budget.sqlite'));
   const marketplaceStore=createMarketplaceRecommendationStore(join(folder,'recommendation_history.sqlite'));
-  const selectionStore=createMarketplaceSelectionStore(join(folder,'candidate_selections.sqlite'),{recommendations:marketplaceStore,quotes:ledger});
+  const selectionStore=createLedgerMarketplaceSelectionStore({recommendations:marketplaceStore,quotes:ledger});
   const subscriptionStore=createSubscriptionScenarioStore({
     filename:join(folder,'subscription_scenarios.sqlite')
   });

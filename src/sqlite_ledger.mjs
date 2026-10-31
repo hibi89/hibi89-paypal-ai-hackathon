@@ -1,6 +1,7 @@
 // PPL-002 Day2: local Node/SQLite durable offline ledger. PayPal outbound calls DISABLED.
 // Node >=22 with --experimental-sqlite. Not a Cloudflare D1 adapter, not an auth provider.
 import { DatabaseSync } from 'node:sqlite';
+import {createHash} from 'node:crypto';
 import { createContractMilestoneStore } from './contract_milestones.mjs';
 import { approvedAmount, requestKey, reconcileCapture } from './payment_contract.mjs';
 import { QuoteApiError } from './quote_api.mjs';
@@ -121,6 +122,60 @@ export function createSqliteLedger({ filename } = {}) {
     return {quote,cents};
   }
   const contractStore = createContractMilestoneStore({db,transaction,lockedApprovedQuote,reject});
+  // P0: Store candidate binding in the SAME file and BEGIN IMMEDIATE domain
+  // as the quote/approval/contract. Historical unselected quotes remain valid.
+  db.exec(`CREATE TABLE IF NOT EXISTS quote_candidate_bindings (
+    quote_id TEXT PRIMARY KEY REFERENCES quotes(id) ON DELETE RESTRICT,
+    owner_id TEXT NOT NULL, merchant_id TEXT NOT NULL,
+    quote_version INTEGER NOT NULL CHECK(quote_version>=1),
+    recommendation_id TEXT NOT NULL, set_round INTEGER NOT NULL CHECK(set_round BETWEEN 1 AND 3),
+    profile_id TEXT NOT NULL, skills_json TEXT NOT NULL,
+    scope_digest TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`);
+  db.exec(`CREATE TABLE IF NOT EXISTS contract_candidate_evidence (
+    contract_id TEXT PRIMARY KEY REFERENCES contracts(id) ON DELETE RESTRICT,
+    quote_id TEXT NOT NULL REFERENCES quotes(id) ON DELETE RESTRICT,
+    quote_version INTEGER NOT NULL, owner_id TEXT NOT NULL, merchant_id TEXT NOT NULL,
+    recommendation_id TEXT NOT NULL, set_round INTEGER NOT NULL,
+    profile_id TEXT NOT NULL, skills_json TEXT NOT NULL,
+    scope_digest TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`);
+  // Runs inside the existing contract INSERT transaction; rollback of any
+  // contract insert also rolls back this candidate evidence snapshot.
+  db.exec(`CREATE TRIGGER IF NOT EXISTS trg_contract_candidate_snapshot
+    AFTER INSERT ON contracts BEGIN
+      INSERT INTO contract_candidate_evidence
+        (contract_id,quote_id,quote_version,owner_id,merchant_id,recommendation_id,
+         set_round,profile_id,skills_json,scope_digest)
+      SELECT NEW.id,b.quote_id,b.quote_version,b.owner_id,b.merchant_id,
+             b.recommendation_id,b.set_round,b.profile_id,b.skills_json,b.scope_digest
+      FROM quote_candidate_bindings b
+      WHERE b.quote_id=NEW.quote_id AND b.quote_version=NEW.quote_version
+        AND b.owner_id=NEW.owner_id AND b.merchant_id=NEW.merchant_id;
+    END`);
+  for(const event of ['UPDATE','DELETE'])db.exec(
+    `CREATE TRIGGER IF NOT EXISTS trg_candidate_evidence_no_${event.toLowerCase()}
+     BEFORE ${event} ON contract_candidate_evidence
+     BEGIN SELECT RAISE(ABORT,'IMMUTABLE_CANDIDATE_EVIDENCE'); END`);
+  const candidateRow = id => stmt('SELECT * FROM quote_candidate_bindings WHERE quote_id=?').get(id);
+  const digest = scope => createHash('sha256').update(scope).digest('hex');
+  function lockedCandidateGuard(quote){
+    const row=candidateRow(quote.id);
+    if(!row)return; // Keep established non-marketplace quote API intact.
+    reject(row.owner_id!==quote.ownerId||row.merchant_id!==quote.merchantId||
+      row.quote_version!==quote.version,'QUOTE_SELECTION_STALE',409);
+    reject(typeof quote.scope!=='string'||row.scope_digest!==digest(quote.scope),
+      'QUOTE_SCOPE_CANDIDATE_MISMATCH',409);
+  }
+  const candidatePublic=(row,quote)=>row?{
+    quoteId:row.quote_id,quoteVersion:row.quote_version,
+    sessionId:row.recommendation_id,round:row.set_round,
+    profileId:row.profile_id,requiredSkills:JSON.parse(row.skills_json),
+    status:quote.version===row.quote_version &&
+      typeof quote.scope==='string'&&digest(quote.scope)===row.scope_digest
+      ?'BOUND':'STALE_QUOTE_VERSION',
+    approvalAuthorized:false,paymentAuthorized:false
+  }:null;
 
   // Defense in depth: the private PayPal transport verifies its GET results,
   // but the persistent ledger must reject incomplete/foreign proof independently.
@@ -141,6 +196,74 @@ export function createSqliteLedger({ filename } = {}) {
   const api = {
     ...contractStore,
     async get(id) { return convertQuote(getRow(id)); },
+    async getMarketplaceCandidate({quoteId,ownerId,merchantId}={}){
+      if(!idOk(quoteId)||!dbSafeText(ownerId)||!dbSafeText(merchantId))return null;
+      const quote=convertQuote(getRow(quoteId));
+      if(!quote||quote.ownerId!==ownerId||quote.merchantId!==merchantId)return null;
+      return candidatePublic(candidateRow(quoteId),quote);
+    },
+    async bindMarketplaceCandidate({quoteId,ownerId,merchantId,expectedQuoteVersion,
+      sessionId,round,profileId,requiredSkills,scopeDigest}={}){
+      reject(!idOk(quoteId)||!dbSafeText(ownerId)||!dbSafeText(merchantId)||
+        typeof sessionId!=='string'||!/^[a-f0-9]{32}$/.test(sessionId)||
+        !idOk(profileId)||!/^synthetic-[a-z]+$/.test(profileId)||
+        !Number.isSafeInteger(expectedQuoteVersion)||expectedQuoteVersion<1||
+        !Number.isInteger(round)||round<1||round>3||
+        !Array.isArray(requiredSkills)||requiredSkills.length>6||
+        !requiredSkills.every(s=>typeof s==='string'&&/^[a-z]{2,32}$/.test(s))||
+        typeof scopeDigest!=='string'||!/^[a-f0-9]{64}$/.test(scopeDigest),
+        'INVALID_CANDIDATE_BINDING');
+      transaction(()=>{
+        const quote=authorized(quoteId,ownerId,merchantId);
+        reject(quote.status!=='PROPOSED'||quote.version!==expectedQuoteVersion,
+          'STALE_OR_APPROVED_QUOTE',409);
+        reject(typeof quote.scope!=='string'||digest(quote.scope)!==scopeDigest,
+          'QUOTE_SCOPE_CANDIDATE_MISMATCH',409);
+        reject(!!stmt('SELECT 1 FROM contracts WHERE quote_id=?').get(quoteId),
+          'CONTRACT_EXISTS',409);
+        reject(!!stmt('SELECT 1 FROM payment_attempts WHERE quote_id=?').get(quoteId),
+          'PAYMENT_ATTEMPT_EXISTS',409);
+        const prior=candidateRow(quoteId),skills=JSON.stringify(requiredSkills);
+        if(prior){
+          reject(prior.owner_id!==ownerId||prior.merchant_id!==merchantId,
+            'QUOTE_SELECTION_CONFLICT',409);
+          if(prior.quote_version===expectedQuoteVersion){
+            reject(prior.recommendation_id!==sessionId||prior.set_round!==round||
+              prior.profile_id!==profileId||prior.skills_json!==skills||
+              prior.scope_digest!==scopeDigest,'QUOTE_SELECTION_ALREADY_BOUND',409);
+          }else{
+            reject(prior.quote_version>expectedQuoteVersion,'QUOTE_SELECTION_ALREADY_BOUND',409);
+            stmt(`UPDATE quote_candidate_bindings SET quote_version=?,recommendation_id=?,
+               set_round=?,profile_id=?,skills_json=?,scope_digest=?,created_at=CURRENT_TIMESTAMP
+               WHERE quote_id=? AND owner_id=? AND merchant_id=?`)
+              .run(expectedQuoteVersion,sessionId,round,profileId,skills,scopeDigest,
+                quoteId,ownerId,merchantId);
+          }
+        }else{
+          stmt(`INSERT INTO quote_candidate_bindings
+             (quote_id,owner_id,merchant_id,quote_version,recommendation_id,set_round,
+              profile_id,skills_json,scope_digest) VALUES(?,?,?,?,?,?,?,?,?)`)
+            .run(quoteId,ownerId,merchantId,expectedQuoteVersion,sessionId,
+              round,profileId,skills,scopeDigest);
+        }
+      });
+      return api.getMarketplaceCandidate({quoteId,ownerId,merchantId});
+    },
+    async assertMarketplaceCandidate({quoteId,ownerId,merchantId,expectedQuoteVersion}={}){
+      const quote=authorized(quoteId,ownerId,merchantId);
+      reject(quote.version!==expectedQuoteVersion,'STALE_QUOTE_VERSION',409);
+      lockedCandidateGuard(quote);
+    },
+    async getContractCandidate({contractId,actorId,merchantId}={}){
+      await contractStore.getContract({contractId,actorId,merchantId});
+      const row=stmt('SELECT * FROM contract_candidate_evidence WHERE contract_id=?').get(contractId);
+      return row?{
+        contractId,quoteId:row.quote_id,quoteVersion:row.quote_version,
+        profileId:row.profile_id,sessionId:row.recommendation_id,round:row.set_round,
+        requiredSkills:JSON.parse(row.skills_json),source:'LOCAL_SYNTHETIC_SNAPSHOT',
+        approvalAuthorized:false,paymentAuthorized:false
+      }:null;
+    },
     async insertQuote({id,ownerId,merchantId,version=1,currency='USD',
       aiSuggestedMinor=null,status='PROPOSED'}={}) {
       reject(!idOk(id) || !dbSafeText(ownerId) || !dbSafeText(merchantId) ||
@@ -168,6 +291,7 @@ export function createSqliteLedger({ filename } = {}) {
         reject(!row || row.owner_id !== actorId,'QUOTE_NOT_FOUND',404);
         reject(row.version !== expectedVersion,'STALE_QUOTE_VERSION',409);
         reject(row.status !== 'PROPOSED','QUOTE_ALREADY_APPROVED',409);
+        lockedCandidateGuard(convertQuote(row));
         reject(row.rejection_reason!=null,'QUOTE_REJECTED',409);
         reject(!!stmt('SELECT 1 FROM ai_draft_attempts WHERE quote_id=? AND quote_version=? AND state=\'RESERVED\'').get(id,expectedVersion),
           'AI_DRAFT_IN_FLIGHT',409);
