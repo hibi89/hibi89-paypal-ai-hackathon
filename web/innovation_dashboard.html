@@ -49,8 +49,12 @@ pre{white-space:pre-wrap;word-break:break-word;background:#132643;color:#d9edff;
 <p id="a2a-progress" role="status" aria-live="polite">No negotiation started. Synthetic agents only.</p>
 <ol id="a2a-transcript" aria-label="Buyer Seller agent negotiation transcript"></ol>
 <pre id="a2a-output">Issue a service mandate first.</pre></section>
-<section class="card"><span class="badge">03 · Gift Finder</span><h2>Catalog search & scoped selection</h2>
-<p>Compare a fictional catalog to select the lowest eligible gift, without calling checkout.</p>
+<section class="card"><span class="badge">03 · Gift Finder</span><h2>Gift preference matching</h2>
+<p>Choose a fictional category, preferred style and price ceiling. Compare a fixed local catalog and require an unused gift mandate; no inventory lookup or PayPal checkout.</p>
+<label for="gift-category">Gift category</label><select id="gift-category"><option value="lighting">Desk lighting</option><option value="mug">Mugs</option><option value="stationery">Stationery</option></select>
+<label for="gift-style">Preferred style</label><select id="gift-style"><option value="PRACTICAL">Practical</option><option value="PREMIUM">Premium</option></select>
+<label for="gift-priority">Ranking policy</label><select id="gift-priority"><option value="LOWEST_PRICE">Lowest eligible price</option><option value="MATCH_STYLE">Match preferred style first</option></select>
+<label for="gift-max-price">Maximum gift price (USD, at most mandate)</label><input id="gift-max-price" type="number" min="1" max="10000" step="0.01" value="39.00">
 <button type="button" id="gift">Run Gift Agent</button><pre id="gift-output">Issue a gift mandate first.</pre></section>
 <section class="card"><span class="badge">04 · Churn Saver</span><h2>Subscription retention policy</h2>
 <p>Use fictional monthly pricing, self-reported churn risk and a merchant policy cap. Offers are review-only: no real subscription or payment changes.</p>

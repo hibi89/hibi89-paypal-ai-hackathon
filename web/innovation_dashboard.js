@@ -167,8 +167,18 @@ el('a2a').addEventListener('click',()=>run('A2A',async()=>{
   '. Accepted offline only; PayPal checkout disabled.');
 }));
 el('gift').addEventListener('click',()=>run('Gift',async()=>{
- if(!model.consents.gifts)throw Object.assign(new Error('CONFIGURE_GIFTS_MANDATE_FIRST'),{code:'CONFIGURE_GIFTS_MANDATE_FIRST'});
- show('gift-output',await api('gift',{consentId:model.consents.gifts,idempotencyKey:key()}));
+ if(!model.consents.gifts)
+  throw Object.assign(new Error('CONFIGURE_GIFTS_MANDATE_FIRST'),{code:'CONFIGURE_GIFTS_MANDATE_FIRST'});
+ const raw=el('gift-max-price').value.trim();
+ if(!/^\d{1,5}(\.\d{1,2})?$/.test(raw))
+  throw Object.assign(new Error('INVALID_SYNTHETIC_GIFT_PREFERENCES'),{code:'INVALID_SYNTHETIC_GIFT_PREFERENCES'});
+ const parts=raw.split('.');
+ const maxPriceMinor=Number(parts[0])*100+Number((parts[1]||'').padEnd(2,'0'));
+ show('gift-output',await api('gift',{
+  consentId:model.consents.gifts,idempotencyKey:key(),
+  category:el('gift-category').value,style:el('gift-style').value,
+  priority:el('gift-priority').value,maxPriceMinor
+ }));
 }));
 el('churn').addEventListener('click',()=>run('churn',async()=>{
  const raw=el('churn-monthly').value.trim();

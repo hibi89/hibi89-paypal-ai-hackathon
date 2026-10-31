@@ -6,6 +6,7 @@ import {authorizePersistedLocalAction} from './marketplace_identity_policy.mjs';
 import {runBoundedA2A,createOfflineRoleAgents} from './agentic_a2a_protocol.mjs';
 import {buildSyntheticMerchantDossier} from './merchant_dossier.mjs';
 import {buildSyntheticChurnProposal} from './churn_retention_policy.mjs';
+import {selectSyntheticGift} from './gift_policy.mjs';
 const validId=x=>typeof x==='string'&&/^[A-Za-z0-9_-]{1,64}$/.test(x);
 const err=(code,status=400)=>{throw new QuoteApiError(code,status)};
 const hash=o=>createHash('sha256').update(JSON.stringify(o)).digest('hex');
@@ -97,9 +98,12 @@ export function createInnovationLab({filename,now=Date.now,agentsFactory=createO
      expiryMinutes:expiresInMinutes,realPaymentDelegated:false});
    }});
  }
- function trade({actor,merchant,key,consentId,kind}={}){
+ function trade({actor,merchant,key,consentId,kind,giftPreferences}={}){
   if(!['a2a','gift'].includes(kind)||!validId(consentId))err('INVALID_TRADE');
-  return action({actor,merchant,key,kind,input:{consentId},execute:()=>{
+  if(giftPreferences!==undefined&&kind!=='gift')err('INVALID_TRADE');
+  return action({actor,merchant,key,kind,
+   input:giftPreferences===undefined?{consentId}:{consentId,giftPreferences},
+   execute:()=>{
    const grant=query('SELECT * FROM innovation_delegations WHERE id=? AND actor=? AND merchant=?')
     .get(consentId,actor,merchant);
    if(!grant)err('DELEGATION_NOT_FOUND',404);
@@ -108,10 +112,18 @@ export function createInnovationLab({filename,now=Date.now,agentsFactory=createO
    if(grant.revoked)err('DELEGATION_REVOKED',403);
    if(query('SELECT 1 FROM innovation_a2a_attempts WHERE consent_id=?').get(consentId))err('DELEGATION_ALREADY_CLAIMED',409);
    if(grant.used>0)err('DELEGATION_ALREADY_SPENT',409);
-   const result=kind==='a2a'?negotiateA2A(grant.cap):findGift(grant.cap);
+   let result;
+   if(kind==='a2a')result=negotiateA2A(grant.cap);
+   else if(giftPreferences!==undefined){
+    try{result=selectSyntheticGift(giftPreferences);}
+    catch(e){if(e?.code==='INVALID_SYNTHETIC_GIFT_PREFERENCES')err(e.code);throw e;}
+    if(result.maxPriceMinor>grant.cap)err('DELEGATION_CAP_DENIED',403);
+   }else result=findGift(grant.cap);
    const amount=kind==='a2a'?result.agreedMinor:result.selected?.priceMinor;
    if(result.accepted){
-    if(!Number.isSafeInteger(amount)||amount>grant.cap)err('DELEGATION_CAP_DENIED',403);
+    if(!Number.isSafeInteger(amount)||amount>grant.cap||
+       (giftPreferences!==undefined&&amount>giftPreferences.maxPriceMinor))
+     err('DELEGATION_CAP_DENIED',403);
     const claim=query('UPDATE innovation_delegations SET used=? WHERE id=? AND used=0 AND expires>?')
       .run(amount,consentId,now());
     if(claim.changes!==1)err('DELEGATION_ALREADY_SPENT',409);
@@ -263,8 +275,19 @@ export function createInnovationApi({store,resolveSession,identityPolicy}={}){
     return reply(store.revoke({actor,merchant,key,consentId:body.consentId}));
    }
    if(route==='a2a'||route==='gift'){
-    if(!exact(body,['idempotencyKey','consentId']))err('INVALID_BODY');
-    return reply(route==='a2a'?await store.a2a({actor,merchant,key,consentId:body.consentId}):store.trade({actor,merchant,key,kind:route,consentId:body.consentId}));
+    const typedGift=route==='gift'&&exact(body,[
+     'idempotencyKey','consentId','category','style','priority','maxPriceMinor'
+    ]);
+    if(!exact(body,['idempotencyKey','consentId'])&&!typedGift)
+     err('INVALID_BODY');
+    const giftPreferences=typedGift?{
+     category:body.category,style:body.style,priority:body.priority,
+     maxPriceMinor:body.maxPriceMinor
+    }:undefined;
+    return reply(route==='a2a'
+     ?await store.a2a({actor,merchant,key,consentId:body.consentId})
+     :store.trade({actor,merchant,key,kind:route,consentId:body.consentId,
+       giftPreferences}));
    }
    if(route==='churn'&&exact(body,[
     'idempotencyKey','subscriptionRef','currentMinor','remainingMonths',
