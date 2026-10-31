@@ -68,6 +68,9 @@ function fixture(){
       authorizations.push(action);
       if(action.action==='GEMINI_SKILL_CLASSIFICATION_ONCE')return state.canGemini;
       if(action.action==='APPROVE_SYNTHETIC_USD_1_50')return state.canQuote;
+      if(action.action==='REAUTHORIZE_EXISTING_SANDBOX_GET_ONLY')return state.canResume!==false;
+      if(action.action==='GET_EXISTING_SANDBOX_ORDER_ONLY'||
+         action.action==='GET_EXISTING_SANDBOX_CAPTURE_ONLY')return state.canGet!==false;
       if(action.operation==='CREATE_SANDBOX_ORDER')return state.canCreate;
       if(action.operation==='CAPTURE_SANDBOX_ORDER')return state.canCapture;
       return state.allow;
@@ -248,3 +251,69 @@ test('PayPal buyer return landing never authorizes capture; provider GET and hum
     assert.equal(posts(f.calls,'/v2/checkout/orders/MVPORDER1/capture'),1);
   }finally{await landing.close()}
 }));
+
+test('restart rebinds persisted captured order for GET only, without a second CREATE/CAPTURE or Gemini POST',
+ withFixture(async f=>{
+  const first=f.create();await first.classify();await first.approveQuote();
+  await first.createOrder();f.state.buyerApproved=true;
+  assert.equal((await first.capture()).status,'PAID');
+  const before={
+   create:posts(f.calls,'/v2/checkout/orders'),
+   capture:posts(f.calls,'/v2/checkout/orders/MVPORDER1/capture'),
+   ai:f.calls.filter(c=>c.url.startsWith('https://generativelanguage')).length
+  };
+  const recovered=f.create();
+  await assert.rejects(recovered.refresh(),{code:'MVP_ORDER_NOT_OPENED'});
+  const prepared=await recovered.resumeExistingOrderGetOnly();
+  assert.equal(prepared.status,'EXISTING_SANDBOX_GET_ONLY_READY');
+  assert.equal(prepared.remoteGetPerformed,false);
+  assert.equal(prepared.createOrCaptureEnabled,false);
+  assert.equal(prepared.paypalCapturePerformed,false);
+  assert.equal(prepared.localSessionIssued,true);
+  await assert.rejects(recovered.capture(),{code:'MVP_RECOVERY_CAPTURE_PERMANENTLY_DISABLED'});
+  await assert.rejects(recovered.createOrder(),{code:'MVP_HUMAN_APPROVAL_REQUIRED'});
+  await assert.rejects(recovered.resumeExistingOrderGetOnly(),{code:'MVP_RESUME_ALREADY_BOUND'});
+  assert.equal((await recovered.refresh()).status,'PAID');
+  assert.equal((await recovered.reconcile()).status,'PAID');
+  assert.equal(posts(f.calls,'/v2/checkout/orders'),before.create);
+  assert.equal(posts(f.calls,'/v2/checkout/orders/MVPORDER1/capture'),before.capture);
+  assert.equal(f.calls.filter(c=>c.url.startsWith('https://generativelanguage')).length,before.ai);
+  assert.equal(f.authorizations.filter(x=>x.action==='REAUTHORIZE_EXISTING_SANDBOX_GET_ONLY').length,1);
+  assert.equal(f.authorizations.filter(x=>x.action==='GET_EXISTING_SANDBOX_ORDER_ONLY').length,1);
+  assert.equal(f.authorizations.filter(x=>x.action==='GET_EXISTING_SANDBOX_CAPTURE_ONLY').length,1);
+ }));
+test('restart owner denial or subsequent GET denial does not send provider requests',
+ withFixture(async f=>{
+  const first=f.create();await first.classify();await first.approveQuote();
+  await first.createOrder();
+  const previous=f.calls.length;
+  const recovered=f.create();
+  f.state.canResume=false;
+  await assert.rejects(recovered.resumeExistingOrderGetOnly(),
+   {code:'MVP_RECOVERY_OWNER_APPROVAL_REQUIRED'});
+  assert.equal(f.calls.length,previous);
+  f.state.canResume=true;
+  await recovered.resumeExistingOrderGetOnly();
+  assert.equal(f.calls.length,previous);
+  f.state.canGet=false;
+  await assert.rejects(recovered.refresh(),{code:'MVP_RECOVERY_GET_APPROVAL_REQUIRED'});
+  await assert.rejects(recovered.reconcile(),{code:'MVP_RECOVERY_GET_APPROVAL_REQUIRED'});
+  assert.equal(f.calls.length,previous);
+  await assert.rejects(recovered.capture(),{code:'MVP_RECOVERY_CAPTURE_PERMANENTLY_DISABLED'});
+  f.state.canGet=true;
+  assert.equal((await recovered.refresh()).status,'BUYER_APPROVAL_PENDING');
+  assert.equal(posts(f.calls,'/v2/checkout/orders'),1);
+  assert.equal(posts(f.calls,'/v2/checkout/orders/MVPORDER1/capture'),0);
+ }));
+test('recovery refuses unknown original CREATE without durable remote order ID',
+ withFixture(async f=>{
+  const first=f.create();await first.classify();await first.approveQuote();
+  f.state.createLost=true;
+  assert.equal((await first.createOrder()).status,'UNKNOWN');
+  const before=f.calls.length;
+  await assert.rejects(f.create().resumeExistingOrderGetOnly(),
+   {code:'MVP_RECOVERY_ORDER_ID_REQUIRED'});
+  assert.equal(f.calls.length,before);
+  assert.equal(posts(f.calls,'/v2/checkout/orders'),1);
+  assert.equal(posts(f.calls,'/v2/checkout/orders/MVPORDER1/capture'),0);
+ }));
