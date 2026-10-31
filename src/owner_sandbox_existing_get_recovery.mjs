@@ -6,6 +6,7 @@ import {lstatSync} from 'node:fs';
 import {join,isAbsolute} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {approvedAmount} from './payment_contract.mjs';
+import {verifyLocalAudit} from './ledger_audit.mjs';
 
 const QUOTE_ID='operator_mvp_01';
 const ACTOR_ID='local_operator';
@@ -35,6 +36,15 @@ function readSnapshot({directory,merchantId}){
  try{
   db=new DatabaseSync(pathToFileURL(filename).href+'?immutable=1',{readOnly:true});
   db.exec('PRAGMA query_only=ON');
+  // An unsigned local audit is not independent provider attestation, but a
+  // broken hash chain must still block successful receipt reconciliation.
+  const audit=verifyLocalAudit(db,{actorId:ACTOR_ID,merchantId});
+  if(audit.integrity!=='PASS'||audit.verifiedEvents<4)
+   deny('EXISTING_ORDER_AUDIT_REVIEW_REQUIRED');
+  const tail=db.prepare('SELECT seq,event_hash FROM local_audit_events ORDER BY seq DESC LIMIT 1').get();
+  if(!tail||!Number.isSafeInteger(tail.seq)||
+     !/^[a-f0-9]{64}$/.test(tail.event_hash))
+   deny('EXISTING_ORDER_AUDIT_REVIEW_REQUIRED');
   const count=db.prepare('SELECT COUNT(*) n FROM quotes').get().n;
   const row=db.prepare('SELECT id,owner_id,merchant_id,version,status,currency,'+
    'approval_actor,approval_version,approval_amount_minor FROM quotes WHERE id=?')
@@ -68,11 +78,13 @@ function readSnapshot({directory,merchantId}){
   const create=byOp.get('create'),capture=byOp.get('capture');
   if(!create||!['APPROVED','UNKNOWN'].includes(create.state)||
      !REMOTE_ID.test(create.remote_id??'')||
+     (capture?.state==='PAID'&&!REMOTE_ID.test(capture?.remote_id??''))||
      (capture&&!['IN_FLIGHT','UNKNOWN','PAID'].includes(capture.state))||
      (capture?.remote_id&&!REMOTE_ID.test(capture.remote_id)))
    deny('EXISTING_ORDER_GET_FIRST_MANUAL_REVIEW');
   return {quote,orderId:create.remote_id,createState:create.state,
-   captureState:capture?.state??null,captureId:capture?.remote_id??null};
+   captureState:capture?.state??null,captureId:capture?.remote_id??null,
+   auditSeq:tail.seq,auditHash:tail.event_hash};
  }catch(e){
   if(typeof e?.code==='string'&&e.code.startsWith('EXISTING_ORDER_'))throw e;
   deny('EXISTING_ORDER_PRIVATE_DB_REVIEW_REQUIRED');
@@ -80,7 +92,8 @@ function readSnapshot({directory,merchantId}){
 }
 const fingerprint=s=>JSON.stringify([s.quote.id,s.quote.version,
  s.quote.ownerId,s.quote.merchantId,s.quote.approval.amountMinor,
- s.orderId,s.createState,s.captureState,s.captureId]);
+ s.orderId,s.createState,s.captureState,s.captureId,
+ s.auditSeq,s.auditHash]);
 export function createOwnerExistingSandboxGetRecovery({
  directory,merchantId,transport,authorizeRead
 }={}){
@@ -111,14 +124,26 @@ export function createOwnerExistingSandboxGetRecovery({
    if(fingerprint(before)!==fingerprint(current))
     deny('EXISTING_ORDER_LOCAL_EVIDENCE_CHANGED');
    try{
+    // Before returning any provider observation, verify the same approved
+    // private ledger still exists, including its unsigned local audit tail.
+    const finish=(status,extra={})=>{
+      let after;
+      try{after=read()}catch{return Object.freeze({...common,
+       status:'EXISTING_ORDER_LOCAL_CHANGED_DURING_GET',
+       freshSandboxOrderGet:false,paymentVerifiedByFreshGet:false});}
+      if(fingerprint(after)!==fingerprint(current))return Object.freeze({...common,
+       status:'EXISTING_ORDER_LOCAL_CHANGED_DURING_GET',
+       freshSandboxOrderGet:false,paymentVerifiedByFreshGet:false});
+      return Object.freeze({...common,status,...extra});
+    };
     // This existing transport validates the PayPal payee, reference, amount
     // and order ID against the *locally approved* USD 1.50 quote.
     const order=await transport.getOrder(current.quote,current.orderId);
     if(order.id!==current.orderId)deny('EXISTING_ORDER_REMOTE_ID_MISMATCH');
     const pending=['CREATED','PAYER_ACTION_REQUIRED','APPROVED'];
     if(pending.includes(order.status))
-     return Object.freeze({...common,status:order.status==='APPROVED'
-      ?'SANDBOX_ORDER_APPROVED_NOT_CAPTURED':'SANDBOX_BUYER_ACTION_PENDING',
+     return finish(order.status==='APPROVED'
+      ?'SANDBOX_ORDER_APPROVED_NOT_CAPTURED':'SANDBOX_BUYER_ACTION_PENDING',{
       freshSandboxOrderGet:true,recordedCaptureUnchanged:true,
       paymentVerifiedByFreshGet:false});
     if(order.status!=='COMPLETED')
@@ -128,18 +153,18 @@ export function createOwnerExistingSandboxGetRecovery({
     const proof=await transport.getCaptureProof(current.quote,current.orderId);
     const remote=proof?.capture;
     if(!remote||proof.order?.id!==current.orderId)
-     return Object.freeze({...common,status:'SANDBOX_CAPTURE_PROOF_MISSING',
+     return finish('SANDBOX_CAPTURE_PROOF_MISSING',{
       freshSandboxOrderGet:true,paymentVerifiedByFreshGet:false});
     if(!current.captureState)
-     return Object.freeze({...common,status:'REMOTE_CAPTURE_WITHOUT_LOCAL_CLAIM',
+     return finish('REMOTE_CAPTURE_WITHOUT_LOCAL_CLAIM',{
       freshSandboxOrderGet:true,paymentVerifiedByFreshGet:false});
     if(current.captureId&&current.captureId!==remote.id)
-     return Object.freeze({...common,status:'REMOTE_CAPTURE_ID_CONFLICT',
+     return finish('REMOTE_CAPTURE_ID_CONFLICT',{
       freshSandboxOrderGet:true,paymentVerifiedByFreshGet:false});
     if(current.captureState!=='PAID')
-     return Object.freeze({...common,status:'REMOTE_CAPTURE_FOUND_LOCAL_RECONCILIATION_REQUIRED',
+     return finish('REMOTE_CAPTURE_FOUND_LOCAL_RECONCILIATION_REQUIRED',{
       freshSandboxOrderGet:true,paymentVerifiedByFreshGet:false});
-    return Object.freeze({...common,status:'SANDBOX_CAPTURE_GET_MATCHES_LOCAL_PAID',
+    return finish('SANDBOX_CAPTURE_GET_MATCHES_LOCAL_PAID',{
      freshSandboxOrderGet:true,paymentVerifiedByFreshGet:true,
      signedExternalReceiptAvailable:false,independentAttestation:false});
    }catch(e){
