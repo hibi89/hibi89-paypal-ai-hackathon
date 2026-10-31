@@ -74,6 +74,19 @@ export function createMarketplaceRecommendationStore(filename) {
     const row=db.prepare('SELECT * FROM recommendation_sessions WHERE id=? AND owner=?').get(id,owner);
     return rowToPublic(row);
   }
+  // Verify the exact quote-project identity against its saved brief fingerprint.
+  function scopeMatches(owner,id,profileId,scope){
+    if(!validOwner(owner)||!validId(id)||typeof profileId!=='string'||
+       !/^synthetic-[a-z]+$/.test(profileId)||typeof scope!=='string')return false;
+    const row=db.prepare('SELECT brief_hash FROM recommendation_sessions WHERE id=? AND owner=?').get(id,owner);
+    if(!row)return false;
+    const suffix=' [Synthetic candidate: '+profileId+']';
+    if(!scope.endsWith(suffix))return false;
+    const brief=scope.slice(0,-suffix.length);
+    if(brief.length<8||brief.length>500)return false;
+    return createHash('sha256').update(brief.trim().replace(/\s+/g,' ').toLowerCase())
+      .digest('hex')===row.brief_hash;
+  }
   function next(owner,id,expectedRound){
     if(!validOwner(owner)||!validId(id)||!Number.isInteger(expectedRound)||
        expectedRound<1||expectedRound>3)throw failure('INVALID_RECOMMENDATION_ADVANCE');
@@ -86,5 +99,5 @@ export function createMarketplaceRecommendationStore(filename) {
       return get(owner,id);
     });
   }
-  return {start,get,next,close:()=>db.close()};
+  return {start,get,next,scopeMatches,close:()=>db.close()};
 }

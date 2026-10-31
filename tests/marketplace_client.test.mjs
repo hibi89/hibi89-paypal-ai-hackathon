@@ -24,12 +24,23 @@ function mount({reviewer=false,matchNone=false}={}){
   elements.get('marketplace-vertical').value='ai_work';
   elements.get('scope').value='Previous untouched scope';
   const requests=[];
+  const quote={id:'q1',version:1,status:'PROPOSED',scope:null};
+  let bound=null;
   const fetch=async(path,opts={})=>{
     requests.push({path,method:opts.method||'GET',body:opts.body});
-    const result=value=>({ok:true,async json(){return value}});
+    const result=(value,status=200)=>({ok:status>=200&&status<300,status,
+      async json(){return value}});
     if(path==='/demo/session')return result({
-      mode:'OFFLINE_MOCK',role:reviewer?'reviewer':'owner',csrfToken:'test'
+      mode:'OFFLINE_MOCK',role:reviewer?'reviewer':'owner',csrfToken:'test',quoteId:'q1'
     });
+    if(path==='/api/quotes/q1' && !opts.method)return result({quote:{...quote}});
+    if(path==='/api/demo/marketplace/selection'&&opts.method==='POST'){
+      const body=JSON.parse(opts.body);
+      if(quote.scope==null)return result({error:'QUOTE_SCOPE_CANDIDATE_MISMATCH'},409);
+      bound={profileId:body.profileId,quoteVersion:body.expectedQuoteVersion,status:'BOUND'};
+      return result({...bound,paymentAuthorized:false,approvalAuthorized:false},201);
+    }
+    if(path==='/api/demo/marketplace/selection?quoteId=q1')return result({...bound});
     // The actual API includes an opaque session and previous-set history.
     const state=body=>({...body,sessionId:'fixture-session',round:1,
       maxRounds:3,remainingRefreshes:2,
@@ -69,7 +80,16 @@ function mount({reviewer=false,matchNone=false}={}){
     };
     return find(elements.get('marketplace-results'));
   };
-  return {elements,requests,choose,fire:()=>elements.get('marketplace-form').fire('submit')};
+  const confirm=()=>{
+    const find=el=>{
+      if(el.id==='marketplace-confirm-synthetic-web')return el;
+      for(const child of el.children){const x=find(child);if(x)return x;}
+      return null;
+    };
+    return find(elements.get('marketplace-selection-status'));
+  };
+  return {elements,requests,choose,confirm,quote,bound:()=>bound,
+    fire:()=>elements.get('marketplace-form').fire('submit')};
 }
 
 test('explicit match and separate candidate choice only prepare local quote scope',async()=>{
@@ -143,4 +163,20 @@ test('switching service category invalidates previously rendered candidate selec
  stale.fire('click');
  assert.equal(dom.elements.get('scope').value,'Previous untouched scope');
  assert.match(dom.elements.get('marketplace-selection-status').textContent,/Match again/);
+});
+
+test('explicit candidate confirmation requires drafted quote and persists verified server selection',async()=>{
+  const dom=mount();await dom.fire();
+  dom.choose().fire('click');
+  const confirm=dom.confirm();assert.ok(confirm);
+  await confirm.fire('click');
+  assert.match(dom.elements.get('marketplace-selection-status').textContent,/GENERATE_MATCHING_DRAFT_FIRST/);
+  assert.equal(dom.requests.filter(r=>r.method==='POST').length,1);
+  dom.quote.version=2;dom.quote.scope=dom.elements.get('scope').value;
+  await confirm.fire('click');
+  assert.equal(dom.bound().profileId,'synthetic-web');
+  assert.equal(dom.bound().quoteVersion,2);
+  assert.match(dom.elements.get('marketplace-selection-status').textContent,/Saved on server/);
+  assert.equal(dom.requests.filter(r=>r.method==='POST').length,2);
+  assert.equal(dom.requests.filter(r=>r.path.includes('/selection?')).every(r=>r.method==='GET'),true);
 });

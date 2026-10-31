@@ -10,7 +10,8 @@ const token=x=>typeof x==='string'&&/^[a-f0-9]{32}$/.test(x);
 
 export function createMarketplaceSelectionStore(filename,{recommendations,quotes}={}) {
   if(typeof filename!=='string'||!filename||filename===':memory:'||
-     typeof recommendations?.get!=='function'||typeof quotes?.get!=='function')
+     typeof recommendations?.get!=='function'||typeof recommendations?.scopeMatches!=='function'||
+     typeof quotes?.get!=='function')
     throw new TypeError('PERSISTED_SELECTION_DEPENDENCIES_REQUIRED');
   const db=new DatabaseSync(filename);
   db.exec('PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000; PRAGMA foreign_keys=ON');
@@ -56,6 +57,8 @@ export function createMarketplaceSelectionStore(filename,{recommendations,quotes
       reject('QUOTE_NOT_FOUND',404);
     if(quote.status!=='PROPOSED'||quote.version!==expectedQuoteVersion)
       reject('STALE_OR_APPROVED_QUOTE',409);
+    if(!recommendations.scopeMatches(ownerId,sessionId,profileId,quote.scope))
+      reject('QUOTE_SCOPE_CANDIDATE_MISMATCH',409);
     // A serialized selection transaction disallows switching candidates on the
     // same quote version. A revised quote requires a fresh explicit selection.
     db.exec('BEGIN IMMEDIATE');
@@ -95,6 +98,9 @@ export function createMarketplaceSelectionStore(filename,{recommendations,quotes
       reject('QUOTE_SELECTION_STALE',409);
     const proof=await get({ownerId,merchantId,quoteId});
     if(!proof||proof.status!=='BOUND')reject('QUOTE_SELECTION_STALE',409);
+    const quote=await quotes.get(quoteId);
+    if(!recommendations.scopeMatches(ownerId,prior.recommendation_id,prior.profile_id,quote?.scope))
+      reject('QUOTE_SCOPE_CANDIDATE_MISMATCH',409);
   }
   return {select,get,assertCurrent,close:()=>db.close()};
 }

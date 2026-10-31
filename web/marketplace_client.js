@@ -87,9 +87,66 @@ function createProfileCard(profile,requestedSkills,matchedBrief,matchedVertical)
         return;
       }
       quoteScopeInput.value=prepared;
+      // Choosing prepares only local text; a second deliberate click persists a
+      // candidate AFTER the user has generated the exact offline quote draft.
+      const epoch=matchEpoch;
+      const sessionId=activeRecommendation?.body?.sessionId;
+      const setRound=activeRecommendation?.viewRound;
       marketplaceSelection.textContent='Scope prepared locally for '+profile.displayName+
-        '. No quote submitted, candidate binding, human approval or payment. '+
-        'Click Generate OFFLINE MOCK draft below, then approve its exact version separately.';
+        '. No quote submitted. Click Generate OFFLINE MOCK draft below, then '+
+        'Confirm candidate here; human approval and payment remain separate.';
+      const confirm=make('button','profile-action','Confirm candidate for drafted quote');
+      confirm.type='button';
+      confirm.id='marketplace-confirm-'+profile.id;
+      confirm.addEventListener('click',async()=>{
+        if(marketplaceBusy||epoch!==matchEpoch||
+           marketplaceBrief.value!==matchedBrief||selectedCategory()!==matchedVertical||
+           quoteScopeInput.value!==prepared||activeRecommendation?.body?.sessionId!==sessionId){
+          marketplaceSelection.textContent='Selection changed. Re-match and prepare a new draft.';
+          return;
+        }
+        marketplaceBusy=true;confirm.disabled=true;
+        try{
+          const sessionResponse=await fetch('/demo/session',{credentials:'same-origin',cache:'no-store'});
+          if(!sessionResponse.ok)throw new Error('SESSION_NOT_READY');
+          const session=await sessionResponse.json();
+          if(session.mode!=='OFFLINE_MOCK'||session.role!=='owner'||
+             !/^[A-Za-z0-9_-]{1,64}$/.test(session.quoteId))
+            throw new Error('OWNER_SESSION_REQUIRED');
+          const quoteResponse=await fetch('/api/quotes/'+session.quoteId,
+            {credentials:'same-origin',cache:'no-store'});
+          const quoteData=await quoteResponse.json();
+          if(!quoteResponse.ok)throw new Error(quoteData.error||'QUOTE_READ_FAILED');
+          const quote=quoteData.quote;
+          if(quote?.scope!==prepared||quote?.status!=='PROPOSED'||quote.version<2)
+            throw new Error('GENERATE_MATCHING_DRAFT_FIRST');
+          if(epoch!==matchEpoch||quoteScopeInput.value!==prepared)
+            throw new Error('SELECTION_CHANGED');
+          const response=await fetch('/api/demo/marketplace/selection',{
+            method:'POST',credentials:'same-origin',cache:'no-store',
+            headers:{'content-type':'application/json','x-csrf-token':session.csrfToken},
+            body:JSON.stringify({quoteId:session.quoteId,expectedQuoteVersion:quote.version,
+              sessionId,round:setRound,profileId:profile.id})
+          });
+          const body=await response.json();
+          if(!response.ok)throw new Error(body.error||'CANDIDATE_BINDING_FAILED');
+          const proofResponse=await fetch('/api/demo/marketplace/selection?quoteId='+
+            encodeURIComponent(session.quoteId),{credentials:'same-origin',cache:'no-store'});
+          const proof=await proofResponse.json();
+          if(!proofResponse.ok||proof.status!=='BOUND'||proof.profileId!==profile.id||
+             proof.quoteVersion!==quote.version)
+            throw new Error('CANDIDATE_BINDING_PROOF_MISMATCH');
+          marketplaceSelection.textContent='Saved on server: '+profile.displayName+
+            ' / quote version '+quote.version+'. Approval and payment NOT authorized. '+
+            'Approve terms and create the contract separately.';
+          document.getElementById('refresh')?.click?.(); // existing read-only GET
+        }catch(e){
+          marketplaceSelection.textContent='Candidate NOT confirmed: '+(e?.message||'REQUEST_FAILED')+
+            '. No approval or payment executed.';
+          marketplaceSelection.append(confirm); // allow safe retry after draft
+        }finally{marketplaceBusy=false;confirm.disabled=false;}
+      });
+      marketplaceSelection.append(confirm);
       document.getElementById('draft-panel')?.scrollIntoView?.({behavior:'smooth',block:'start'});
       quoteScopeInput.focus?.({preventScroll:true});
     });
@@ -104,7 +161,7 @@ function createProfileCard(profile,requestedSkills,matchedBrief,matchedVertical)
 function renderRecommendationSet(body,brief,vertical,viewRound=body.round){
   const set=body.history?.find(entry=>entry.round===viewRound);
   if(!set)return;
-  activeRecommendation={body,brief,vertical};
+  activeRecommendation={body,brief,vertical,viewRound};
   marketplaceOutput.replaceChildren();
   const summary=make('p','match-summary',
     'OFFLINE SYNTHETIC · '+(vertical==='ai_work'?'AI Work':'Global Services')+
