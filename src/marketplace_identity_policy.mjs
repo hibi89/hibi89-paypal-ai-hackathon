@@ -2,7 +2,7 @@
 // Deliberately NOT wired to the 127.0.0.1 synthetic legacy routes.
 // No registration endpoints, passwords, cookies, billing or outbound calls.
 // Memberships are preprovisioned by the trusted server, NEVER by browser input.
-import {QuoteApiError} from './quote_api.mjs';
+import {QuoteApiError,reply} from './quote_api.mjs';
 
 const ID=/^[A-Za-z0-9_-]{1,64}$/;
 const ACTIONS=Object.freeze({
@@ -110,4 +110,28 @@ export function createMarketplaceIdentityPolicy({resolveTrustedSession,members}=
     mode:'LOCAL_PREPROVISIONED_ROLE_CONTRACT_ONLY',
     publicAuthenticationEnabled:false,registrationEnabled:false,
     providerNetworkEnabled:false});
+}
+
+
+// Safe read-only fixture projection. This is NOT registration/login or role change.
+export function createMarketplaceIdentityReadOnlyApi({policy}={}){
+  if(!policy||typeof policy.issueProof!=='function'||
+     typeof policy.inspect!=='function')throw new TypeError('ROLE_POLICY_REQUIRED');
+  return async function handleIdentityRequest(request){
+    try{
+      if(!(request instanceof Request))fail('REQUEST_REQUIRED',400);
+      const url=new URL(request.url);
+      if(url.pathname!=='/api/demo/identity')fail('NOT_FOUND',404);
+      if(request.method!=='GET')
+        return reply({error:'METHOD_NOT_ALLOWED'},405,{allow:'GET'});
+      const proof=await policy.issueProof(request);
+      const profile=await policy.inspect(proof);
+      return reply({identity:profile,mode:'LOCAL_SYNTHETIC_ONLY',
+        registrationAvailable:false,realSellerVerified:false,
+        realPayPalMerchantVerified:false,externalCalls:0});
+    }catch(error){
+      return reply({error:error instanceof QuoteApiError?error.code:'INTERNAL_ERROR'},
+        error instanceof QuoteApiError?error.status:500);
+    }
+  };
 }
