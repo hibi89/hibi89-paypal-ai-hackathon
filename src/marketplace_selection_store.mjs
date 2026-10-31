@@ -106,8 +106,15 @@ export function createMarketplaceSelectionStore(filename,{recommendations,quotes
   return {select,get,assertCurrent,close:()=>db.close()};
 }
 
-export function createMarketplaceSelectionApi({resolveSession,store}={}){
+export function createMarketplaceSelectionApi({resolveSession,store,identityPolicy}={}){
   if(typeof resolveSession!=='function'||!store)throw new TypeError('SELECTION_API_DEPENDENCIES_REQUIRED');
+  // The older separate-file store cannot atomically recheck a grant revision.
+  if(identityPolicy!==undefined&&(
+    typeof identityPolicy.issueProof!=='function'||
+    typeof identityPolicy.authorize!=='function'||
+    typeof store.getAuthorityResource!=='function'||
+    store.atomicMembershipRevisionBinding!==true))
+    throw new TypeError('ATOMIC_PERSISTED_SELECTION_POLICY_REQUIRED');
   return async request=>{
     try{
       if(!(request instanceof Request))reject('REQUEST_REQUIRED');
@@ -134,8 +141,22 @@ export function createMarketplaceSelectionApi({resolveSession,store}={}){
       const body=await parseSmallJson(request);
       const allowed=['quoteId','expectedQuoteVersion','sessionId','round','profileId'];
       if(Object.keys(body).some(k=>!allowed.includes(k)))reject('UNEXPECTED_FIELDS');
+      let expectedMembershipRevision;
+      if(identityPolicy){
+        const scope=await store.getAuthorityResource(body.quoteId);
+        if(!scope)reject('QUOTE_NOT_FOUND',404);
+        const proof=await identityPolicy.issueProof(request);
+        const grant=await identityPolicy.authorize(proof,{
+          action:'marketplace.select',resource:scope});
+        if(grant.actorId!==session.actorId||grant.merchantId!==session.merchantId)
+          reject('TRUSTED_IDENTITY_MISMATCH',403);
+        if(!Number.isSafeInteger(grant.membershipRevision)||
+           grant.membershipRevision<1)
+          reject('TRUSTED_MEMBERSHIP_REVISION_REQUIRED',403);
+        expectedMembershipRevision=grant.membershipRevision;
+      }
       return reply(await store.select({...body,ownerId:session.actorId,
-        merchantId:session.merchantId}),201);
+        merchantId:session.merchantId,expectedMembershipRevision}),201);
     }catch(e){
       return reply({error:e instanceof QuoteApiError?e.code:'INTERNAL_ERROR'},
         e instanceof QuoteApiError?e.status:500);
@@ -156,7 +177,7 @@ export function createLedgerMarketplaceSelectionStore({recommendations,quotes}={
     typeof quotes.assertMarketplaceCandidate!=='function')
     throw new TypeError('ATOMIC_LEDGER_SELECTION_DEPENDENCIES_REQUIRED');
   async function select({ownerId,merchantId,quoteId,expectedQuoteVersion,
-    sessionId,round,profileId}={}){
+    sessionId,round,profileId,expectedMembershipRevision}={}){
     if(!identifier(ownerId)||!identifier(merchantId)||!identifier(quoteId)||
        !token(sessionId)||!identifier(profileId)||
        !Number.isSafeInteger(expectedQuoteVersion)||expectedQuoteVersion<1||
@@ -185,11 +206,13 @@ export function createLedgerMarketplaceSelectionStore({recommendations,quotes}={
     const scopeDigest=createHash('sha256').update(quote.scope).digest('hex');
     return quotes.bindMarketplaceCandidate({
       quoteId,ownerId,merchantId,expectedQuoteVersion,sessionId,round,profileId,
-      requiredSkills:match.requestedSkills,scopeDigest
+      requiredSkills:match.requestedSkills,scopeDigest,expectedMembershipRevision
     });
   }
   return {
     select,
+    atomicMembershipRevisionBinding:true,
+    getAuthorityResource:quoteId=>quotes.getQuoteAuthorityResource(quoteId),
     get:({ownerId,merchantId,quoteId}={})=>
       quotes.getMarketplaceCandidate({quoteId,ownerId,merchantId}),
     assertCurrent:({ownerId,merchantId,quoteId,expectedQuoteVersion}={})=>

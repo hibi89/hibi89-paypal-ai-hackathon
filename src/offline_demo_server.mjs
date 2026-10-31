@@ -143,7 +143,8 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
   const checkRate = createDemoRateLimiter();
   const buyerReturn=createPaypalBuyerReturnBoundary();
   const marketplaceApi=createMarketplaceDemoApi({resolveSession,store:marketplaceStore});
-  const selectionApi=createMarketplaceSelectionApi({resolveSession,store:selectionStore});
+  const selectionApi=createMarketplaceSelectionApi({resolveSession,store:selectionStore,
+    identityPolicy});
   const negotiationRegistry=createNegotiationRegistry();
   const negotiationApi=createNegotiationDemoApi({resolveSession,repository:ledger,registry:negotiationRegistry});
   const budgetApi=createAgentBudgetDemoApi({resolveSession,quotes:ledger,budgets:budgetStore,registry:negotiationRegistry});
