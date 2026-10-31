@@ -3,7 +3,7 @@
 'use strict';
 const el=id=>document.getElementById(id);
 const model={csrf:null,consents:{services:null,gifts:null},selected:null,
-  server:null,busy:false,revoking:false};
+  server:null,quoteId:null,busy:false,revoking:false,crosspartBusy:false};
 const show=(id,value)=>{el(id).textContent=typeof value==='string'?value:JSON.stringify(value,null,2);};
 const key=()=>crypto.randomUUID();
 const money=n=>Number.isSafeInteger(n)?'$'+(n/100).toFixed(2):'UNKNOWN';
@@ -125,6 +125,66 @@ function openSavedA2AHistory(){
   ' restored from existing local ledger evidence. No network POST was sent.');
 }
 el('show-a2a-history').addEventListener('click',openSavedA2AHistory);
+
+function selectedA2AEvent(){
+ const consentId=el('a2a-history').value;
+ return model.server?.events?.find(e=>e.kind==='a2a'&&
+  e.result?.consentId===consentId&&Array.isArray(e.result.messages))||null;
+}
+async function compareCrossPartReadOnly(){
+ if(model.crosspartBusy)return;
+ model.crosspartBusy=true;
+ const button=el('crosspart-compare');
+ button.disabled=true;
+ show('crosspart-result','Reading the stored quote and A2A evidence. GET only.');
+ try{
+  if(!/^[A-Za-z0-9_-]{1,64}$/.test(model.quoteId||''))
+   throw new Error('OWNER_QUOTE_SESSION_REQUIRED');
+  const quoteResponse=await fetch('/api/quotes/'+encodeURIComponent(model.quoteId),{
+   method:'GET',credentials:'same-origin',cache:'no-store'
+  });
+  if(!quoteResponse.ok)throw new Error('PART1_QUOTE_READ_UNAVAILABLE');
+  const raw=await quoteResponse.json();
+  const quote=raw?.quote;
+  if(!quote||quote.id!==model.quoteId||quote.currency!=='USD')
+   throw new Error('PART1_QUOTE_EVIDENCE_INVALID');
+  const event=selectedA2AEvent();
+  const accepted=event?.result;
+  const approved=quote.status==='APPROVED'&&
+   quote.approval?.actorId===quote.ownerId&&
+   quote.approval?.quoteVersion===quote.version&&
+   Number.isSafeInteger(quote.approval.amountMinor);
+  const agreement=accepted?.status==='SYNTHETIC_AGREEMENT'&&
+   accepted.accepted===true&&accepted.paymentAuthorized===false&&
+   accepted.paypalCapturePerformed===false&&
+   Number.isSafeInteger(accepted.agreedMinor)&&
+   accepted.agreedMinor>=100;
+  const consent=model.server?.consents?.find(x=>x.id===accepted?.consentId);
+  const verifiedOfflineAgreement=agreement&&
+   consent?.category==='services'&&consent?.revoked===0&&
+   consent?.usedMinor===accepted.agreedMinor;
+  const matches=approved&&verifiedOfflineAgreement&&
+   quote.approval.amountMinor===accepted.agreedMinor;
+  const status=!approved?'NEEDS_HUMAN_QUOTE_APPROVAL':
+   !verifiedOfflineAgreement?'NEEDS_VALID_SAVED_A2A_AGREEMENT':
+   matches?'AMOUNTS_MATCH_FOR_OFFLINE_REVIEW_ONLY':'AMOUNT_MISMATCH_NO_SETTLEMENT';
+  show('crosspart-part1','PART 1 · '+(approved
+   ?'Approved '+money(quote.approval.amountMinor)+' USD · quote v'+quote.version
+   :'Not approved · quote v'+quote.version));
+  show('crosspart-part2','PART 2 · '+(verifiedOfflineAgreement
+   ?'Offline agreement '+money(accepted.agreedMinor)+' USD · consent '+accepted.consentId.slice(0,8)
+   :'No valid spent offline service agreement selected'));
+  show('crosspart-match','Comparison · '+status);
+  show('crosspart-payment','Payment · NOT_AUTHORIZED / NOT_CAPTURED · merchant verification NOT_PERFORMED');
+  show('crosspart-result',status+' · This is a separate-ledger price comparison, not a binding contract, account authorization, checkout or capture.');
+ }catch(e){
+  show('crosspart-result','COMPARISON_UNAVAILABLE · '+(e.message||'READ_FAILED')+
+   ' · No quote, agreement or payment was changed.');
+  show('crosspart-match','Comparison · UNAVAILABLE');
+ }finally{model.crosspartBusy=false;button.disabled=false;}
+}
+el('crosspart-compare').addEventListener('click',compareCrossPartReadOnly);
+
 async function refresh(){
  const data=await api('state');
  model.server=data;
@@ -268,6 +328,9 @@ el('refresh').addEventListener('click',async()=>{
   const session=await r.json();
   if(session.role!=='owner')throw new Error('BUYER_ONLY');
   model.csrf=session.csrfToken;
+  if(!/^[A-Za-z0-9_-]{1,64}$/.test(session.quoteId||''))
+   throw new Error('INVALID_OWNER_QUOTE_SESSION');
+  model.quoteId=session.quoteId;
   await refresh();
  }catch(e){show('message','Cannot access lab: '+(e.message||'UNAVAILABLE'));}
 })();
