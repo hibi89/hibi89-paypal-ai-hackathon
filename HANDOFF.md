@@ -1,3 +1,17 @@
+## 2026-11-01 KST — ORIGINAL-REPO PRIVATE REVIEW API TEST COMMITTED / CI PENDING
+
+1. Scope: keep Part1 freelance marketplace + Part2 synthetic AI innovation separate, and check private cross-part read API without introducing public HTTP/payments.
+2. Change: added one case to existing `tests/cross_part_review_bridge.test.mjs`, imports `createCrossPartReviewReadApi`; actual persisted repo fixture links approved quote and A2A consent, validates read-only GET with trusted buyer request, forged Request 404, POST 405, role query 400, revoked buyer 404. No production source changed.
+3. Test proof: independent reconstructed 3-SQLite harness re-run locally via `node --experimental-sqlite --test tests/*.test.mjs` on Node v22.16.0: 10 PASS, 0 FAIL, 0 SKIP, exit 0. *Repository's new test not run in original working tree.* Combined GitHub commit statuses and PR-scoped runs were empty; push Actions status remains UNKNOWN. Earlier 700/700 green belongs to SHA 147d6257, not current.
+4. State: original-repo integration test committed; unverified CI; no production browser end-to-end or provider calls.
+5. Failure/blocker: private repo git clone cannot resolve github.com in container; isolated harness uses partial test doubles, so cannot replace native full-suite verification. Do not repeat blind clone / imply Actions pass.
+6. Repo/branch/source commit: `hibi89/hibi89-paypal-ai-hackathon` / `lead/paypal` / test `883793e56a6d3173e328e1c77f268868e704cd96` (before this handoff doc commit). Revert with ordinary commit if needed; no force push.
+7. Deployment: NOT_APPLIED; Node >=22.5; `npm test` and browser tests required in authenticated full checkout.
+8. Source/data: Original Part1/Part2 data/code unchanged, synthetic temporary SQLite only; no keys, secret, customer data, Gemini, or PayPal request.
+9. Next: get actual CI run ID for push or authenticated checkout of this SHA, execute npm test + browser integration; investigate any failing new assertions and fix only evidenced defects. External provider and public deployment separately owner-approved.
+10. Current KST date 2026-11-01; estimated completion 80%, remaining 20%, projected 15–25 hours not empirically measured; documentation itself is not test proof.
+
+---
 ## 2026-11-01 KST — ISOLATED READ API TEST EVIDENCE
 
 - Repo/branch: hibi89/hibi89-paypal-ai-hackathon / lead/paypal. Functional SHA unchanged 384c0e383c510503c8ac7e14b26e5c2da76a35ae.
