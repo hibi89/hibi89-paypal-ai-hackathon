@@ -43,7 +43,26 @@ export function createTrustedMarketplaceGateway({
  // object-based {verified:true} identities. Only a trusted host resolver can
  // associate an opaque server-issued session with this exact Request.
  const scoped=new WeakMap();
- const resolveSession=async request=>scoped.get(request)??null;
+ const resolveSession=async internal=>{
+  const ctx=scoped.get(internal);
+  if(!ctx)return null;
+  // A trusted host session can be revoked, expire, or switch principals while
+  // a backend action is in flight. Reverify the ORIGINAL request each time
+  // a policy or workflow gate asks for identity; no cached bearer authority.
+  let latest;
+  try{latest=await resolveVerifiedHostSession(ctx.original)}
+  catch{return null}
+  if(latest?.verified!==true||latest.actorId!==ctx.actorId||
+     latest.merchantId!==ctx.merchantId||
+     (ctx.role!==null&&latest.role!==ctx.role)||
+     (ctx.method==='POST'&&
+      (latest.csrfToken!==ctx.csrfToken||
+       ctx.original.headers.get('x-csrf-token')!==latest.csrfToken)))
+   return null;
+  return {verified:true,actorId:ctx.actorId,merchantId:ctx.merchantId,
+   ...(ctx.role!==null?{role:ctx.role}:{}),
+   ...(ctx.method==='POST'?{csrfToken:ctx.csrfToken}:{})};
+ };
  const policy=createMarketplaceIdentityPolicy({
   resolveTrustedSession:resolveSession,
   resolveMembership:actorId=>ledger.getLocalMember(actorId)
@@ -100,10 +119,11 @@ export function createTrustedMarketplaceGateway({
   let internal;
   try{internal=new Request(origin.origin+path,init)}
   catch{return response(400,'INVALID_REQUEST')}
-  scoped.set(internal,Object.freeze({verified:true,
+  scoped.set(internal,Object.freeze({original:request,
    actorId:session.actorId,merchantId:session.merchantId,
-   ...(typeof session.role==='string'?{role:session.role}:{}),
-   ...(match.method==='POST'?{csrfToken:session.csrfToken}:{})
+   role:typeof session.role==='string'?session.role:null,
+   method:match.method,
+   csrfToken:match.method==='POST'?session.csrfToken:null
   }));
   const api=match.kind==='workflow'?workflowApi:readApi;
   let result;
