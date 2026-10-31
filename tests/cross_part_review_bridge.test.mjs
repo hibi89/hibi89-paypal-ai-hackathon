@@ -81,6 +81,29 @@ test('real local Part1 approved quote and Part2 A2A consent link through trusted
   assert.equal(f.count(),2);
  });
 });
+test('buyer can withdraw persisted review without deleting or reusing the consent',async()=>{
+ await using(async f=>{
+  await f.bridge.link(args(f));
+  f.logins.set(f.otherHandle,{verified:true,actorId:'reviewer_1',merchantId:merchant});
+  await assert.rejects(f.bridge.revoke({hostHandle:f.otherHandle,quoteId}),
+   rejectCode('ROLE_ACTION_FORBIDDEN'));
+  const withdrawn=await f.bridge.revoke({hostHandle:f.hostHandle,quoteId});
+  assert.equal(withdrawn.status,'SYNTHETIC_REVIEW_REVOKED');
+  assert.equal(withdrawn.paymentAuthorized,false);
+  await assert.rejects(f.bridge.inspect({hostHandle:f.hostHandle,quoteId}),
+   rejectCode('CROSS_PART_LINK_UNAVAILABLE'));
+  await assert.rejects(f.bridge.revoke({hostHandle:f.hostHandle,quoteId}),
+   rejectCode('CROSS_PART_LINK_UNAVAILABLE'));
+  await assert.rejects(f.bridge.link(args(f)),
+   rejectCode('CROSS_PART_LINK_REVOKED'));
+  f.reopen();
+  await assert.rejects(f.bridge.inspect({hostHandle:f.hostHandle,quoteId}),
+   rejectCode('CROSS_PART_LINK_UNAVAILABLE'));
+  await assert.rejects(f.bridge.link(args(f)),
+   rejectCode('CROSS_PART_LINK_REVOKED'));
+ });
+});
+
 test('forged login, reviewer role or cross-tenant identity never yields review link',async()=>{
  await using(async f=>{
   const forged={verified:true,actorId:actor,merchantId:merchant};
