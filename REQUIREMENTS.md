@@ -1,3 +1,15 @@
+# 2026-10-31 OWNER CONFIRMED: TWO-PART PRODUCT SCOPE
+
+PART 1: Existing Proofline Freelancer Platform (AI Work and Global Services) remains intact. Complete the original real-world product: real users, matching, quotes, human approval, seller/reviewer contract and milestone, verified PayPal Sandbox integrations, frontend and deployment. No regression or removal of original records.
+
+PART 2: Proofline Agentic Innovation Technology Lab comprises FIVE separate demo skills in one linked dashboard: A2A Buyer/Seller offer-counter-accept, scoped Delegate & Consent, Gift-finder, Subscription Churn Saver, and Invoice / Dispute Copilot. Their common policy/event ledger is isolated from Part 1. These are all required in the two-part final product.
+
+Safety and status: The 2026-10-31 initial Part 2 implementation is deterministic FICTIONAL fixtures with temporary SQLite, not actual model-to-model AI, actual catalog, PayPal checkout, subscription modification, invoice issuance, or dispute submission. A synthetic agent ACCEPT is never a PayPal payment authorization. Real consented PayPal autonomous payment requires explicit verified provider support, authentication and merchant authority. Actual API use, paid services, public deployment, live data and submission remain separately owner-authorized.
+
+Acceptance criteria: Each module has a clear API/UI proof, role scope, expiry/limit where applicable, idempotency, no implied payment, and evidence. Part 1 and Part 2 remain independently functional; real-world provider integrations must be validated separately and cannot be claimed by offline CI. The existing official deadline and release rules below remain applicable.
+
+---
+
 # PayPal AI Hackathon — 확정 요구 (2026-10-24 최신)
 
 - **제품:** AI 프리랜서 계약·견적·PayPal 결제 Agent 출품작 하나. ① AI 구조화 견적→사람 승인→Sandbox OAuth/Orders v2 create/approve/capture/GET ② 계약·마일스톤·납품/검수(결제와 상태 분리) ③ 구독/실패·취소/Webhook 서명·중복 이벤트.

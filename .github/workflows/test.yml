@@ -40,6 +40,8 @@ jobs:
         run: .browser-venv/bin/python tests/browser_general_services_e2e.py
       - name: Chromium real local budget form and quote approval journey
         run: .browser-venv/bin/python tests/browser_budget_e2e.py
+      - name: Part 2 real Chromium agentic innovation scenario
+        run: .browser-venv/bin/python tests/browser_innovation_e2e.py
       - name: Check recorder Python syntax and proof provenance regression
         run: |
           python3 -m py_compile scripts/record_judge_demo.py scripts/video_owner_evidence.py
