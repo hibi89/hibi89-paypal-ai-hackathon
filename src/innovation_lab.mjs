@@ -51,8 +51,16 @@ export function prepareInvoiceDispute(input){
   dispute:{submitted:false,evidence:['Synthetic contract terms','Synthetic delivery checklist',
     'Synthetic reviewer decision']},paypalInvoiceCreated:false,source:'SYNTHETIC_SCENARIO'};
 }
-export function createInnovationLab({filename,now=Date.now,agentsFactory=createOfflineRoleAgents}={}){
+export function createInnovationLab({filename,now=Date.now,agentsFactory=createOfflineRoleAgents,
+ agentTransport='OFFLINE_POLICY',a2aMaxTurns=8,a2aTurnTimeoutMs=1000}={}){
  if(typeof agentsFactory!=='function'||typeof now!=='function')throw new TypeError('AGENTS_FACTORY_REQUIRED');
+ if(!['OFFLINE_POLICY','PRIVATE_INJECTED_UNVERIFIED'].includes(agentTransport)||
+    !Number.isSafeInteger(a2aMaxTurns)||a2aMaxTurns<2||a2aMaxTurns>8||
+    !Number.isSafeInteger(a2aTurnTimeoutMs)||
+    a2aTurnTimeoutMs<50||a2aTurnTimeoutMs>10000||
+    (agentTransport==='PRIVATE_INJECTED_UNVERIFIED'&&
+      (agentsFactory===createOfflineRoleAgents||a2aMaxTurns>4||a2aTurnTimeoutMs<1200)))
+  throw new TypeError('INVALID_PRIVATE_A2A_EXECUTION_CONFIGURATION');
  if(typeof filename!=='string'||!filename||filename===':memory:')throw new TypeError('LAB_FILE_REQUIRED');
  const db=new DatabaseSync(filename);
  db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000');
@@ -182,6 +190,12 @@ export function createInnovationLab({filename,now=Date.now,agentsFactory=createO
     accepted:!!success,reservedMinor:success?result.agreedMinor:0,
     agentMode:'SEPARATE_OFFLINE_ROLE_AGENTS',paymentState:'NOT_PAID',
     paypalCapturePerformed:false,contractOnly:true,checkout:'DISABLED'});
+   if(agentTransport==='PRIVATE_INJECTED_UNVERIFIED'){
+    // Injected roles might call Gemini. Never label them zero-provider fixtures.
+    Object.assign(record,{mode:'PRIVATE_INJECTED_AGENT_NOT_ATTESTED',
+     agentMode:'PRIVATE_INJECTED_ROLES',providerCalls:'NOT_ATTESTED',
+     realGemini:false,providerEvidence:'EXTERNAL_TRANSPORT_NOT_ATTESTED'});
+   }
    query('INSERT INTO innovation_events(actor,merchant,kind,request_key,fingerprint,result,created) VALUES(?,?,?,?,?,?,?)')
     .run(actor,merchant,'a2a',key,attempt.fingerprint,JSON.stringify(record),now());
    query('UPDATE innovation_a2a_attempts SET state=?,result=? WHERE actor=? AND merchant=? AND request_key=?')
@@ -196,7 +210,8 @@ export function createInnovationLab({filename,now=Date.now,agentsFactory=createO
   try{
    const {buyerAgent,sellerAgent}=agentsFactory();
    result=await runBoundedA2A({buyerAgent,sellerAgent,buyerMaxMinor:claimed.cap,
-    sellerMinMinor:27000,maxTurns:8,turnTimeoutMs:1000});
+    sellerMinMinor:27000,maxTurns:a2aMaxTurns,
+    turnTimeoutMs:a2aTurnTimeoutMs});
   }catch{
    result={status:'BLOCKED',reason:'TRUSTED_AGENT_ADAPTER_FAILED',
     messages:[],agreedMinor:null,transcriptSha256:null,
@@ -239,9 +254,13 @@ export function createInnovationLab({filename,now=Date.now,agentsFactory=createO
   const pendingAttempts=query("SELECT consent_id AS consentId,request_key AS requestKey,created AS createdAt FROM innovation_a2a_attempts WHERE actor=? AND merchant=? AND state='PENDING' ORDER BY created DESC LIMIT 10").all(actor,merchant);
   const events=query('SELECT kind,result,created FROM innovation_events WHERE actor=? AND merchant=? ORDER BY id DESC LIMIT 30').all(actor,merchant)
    .map(x=>({kind:x.kind,result:JSON.parse(x.result),createdAt:x.created}));
-  return safe({part:'PART_2',skills:['a2a','delegation','gift','churn','invoice_dispute'],
+  const snapshot=safe({part:'PART_2',skills:['a2a','delegation','gift','churn','invoice_dispute'],
    consents:consents.map(c=>({...c,active:!c.revoked&&c.expiresAt>now()&&c.usedMinor===0})),pendingAttempts,
    events,paymentState:'NOT_PAID',realGemini:false,realPayPal:false});
+  if(agentTransport==='PRIVATE_INJECTED_UNVERIFIED')
+   Object.assign(snapshot,{mode:'PRIVATE_INJECTED_AGENT_NOT_ATTESTED',
+    providerCalls:'NOT_ATTESTED',providerEvidence:'EXTERNAL_TRANSPORT_NOT_ATTESTED'});
+  return snapshot;
  }
  return Object.freeze({delegate,trade,a2a,revoke,skill,state,close:()=>db.close()});
 }
