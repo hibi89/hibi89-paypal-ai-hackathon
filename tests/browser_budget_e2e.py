@@ -68,7 +68,14 @@ try:
    expect(page.locator("#agent-budget-history")).to_contain_text("sample-project · v2")
    assert sum(method=="POST" and url.endswith("/api/demo/budget/reserve")
     for method,url in requests)==1
-   page.locator("#agent-budget-reserve").click()
+   # A stale status line is not proof of a second HTTP request. Wait for
+   # its actual network response and assert durable idempotency evidence.
+   with page.expect_response(lambda r:
+      r.url.endswith("/api/demo/budget/reserve") and r.request.method=="POST") as repeated:
+    page.locator("#agent-budget-reserve").click()
+   replay=repeated.value
+   assert replay.status==200
+   assert replay.json()["reason"]=="ALREADY_RESERVED"
    expect(page.locator("#agent-budget-result")).to_contain_text("SQLite budget reserved.")
    assert sum(method=="POST" and url.endswith("/api/demo/budget/reserve")
     for method,url in requests)==2
