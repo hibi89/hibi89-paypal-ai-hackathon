@@ -24,7 +24,8 @@
     "video:record:offline": "node scripts/run_record_demo.mjs",
     "video:record:owner": "node scripts/prepare_and_record_video.mjs",
     "submission:candidate:local": "node scripts/prepare_submission_candidate.mjs",
-    "test:journey": "node --experimental-sqlite --test tests/complete_marketplace_journey.test.mjs"
+    "test:journey": "node --experimental-sqlite --test tests/complete_marketplace_journey.test.mjs",
+    "pilot:gemini:a2a": "node --experimental-sqlite scripts/run_owner_gemini_a2a_pilot.mjs"
   },
   "engines": {
     "node": ">=22.5.0"
