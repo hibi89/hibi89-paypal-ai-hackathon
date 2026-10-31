@@ -43,14 +43,18 @@ const change=async(ledger,actorId,oldRevision=1)=>{
  await ledger.setLocalMemberActive({actorId,expectedRevision:oldRevision,active:false});
  return ledger.setLocalMemberActive({actorId,expectedRevision:oldRevision+1,active:true});
 };
-test('trusted grant carries persisted membership revision but inspection never exposes it',()=>withLedger(async({ledger,policy,resolveSession})=>{
- const req=new Request(origin+'/api/quotes/q1');
- // The trusted session map belongs to the fixture and is intentionally private;
- // the public API issues the proof in the tests below.
- const grant=await ledger.getLocalMember('buyer');
- assert.equal(grant.revision,1);
- assert.equal(typeof policy.issueProof,'function');
- assert.equal(typeof policy.authorize,'function');
+test('trusted grant carries persisted membership revision but inspection never exposes it',()=>withLedger(async({ledger})=>{
+ const trusted=createMarketplaceIdentityPolicy({
+   resolveTrustedSession:async()=>({verified:true,actorId:'buyer',merchantId:'tenantA'}),
+   resolveMembership:actorId=>ledger.getLocalMember(actorId)
+ });
+ const proof=await trusted.issueProof('local-server-handle');
+ const grant=await trusted.authorize(proof,{action:'quote.approve',
+   resource:await ledger.getQuoteAuthorityResource('q1')});
+ assert.equal(grant.membershipRevision,1);
+ const publicProjection=await trusted.inspect(proof);
+ assert.equal(Object.hasOwn(publicProjection,'membershipRevision'),false);
+ assert.equal(publicProjection.paymentAuthorized,false);
 }));
 test('quote approval rejects stale authorized grant across revoke/reactivate before DB write',()=>withLedger(async({ledger,policy,resolveSession,call})=>{
  let touched=0;
@@ -161,6 +165,6 @@ test('separate SQLite connection revoke and reactivate invalidates older reserva
   assert.equal((await ledger.listAttempts('q1')).length,0);
   const allowed=await ledger.claimOperation({quoteId:'q1',actorId:'buyer',
     merchantId:'tenantA',operation:'create',expectedMembershipRevision:old+2});
-  assert.equal(allowed.action,'EXECUTE_POST_ONCE');
+  assert.equal(allowed.action,'FIRST_CLAIM_ONLY_NO_PROVIDER_CALL');
  }finally{second.close();}
 }));
