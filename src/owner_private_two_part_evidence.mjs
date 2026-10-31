@@ -56,7 +56,17 @@ export function inspectPrivatePart2A2A({filename,budgetFilename,scope}={}){
     .get(event?.consentId,scope.actor,scope.merchant);
    return {kind:'RESULT',event,attempt,grant};
   });
-  if(part.absent||part.data?.kind==='NONE')return EMPTY;
+  if(part.absent||part.data?.kind==='NONE'){
+   // A crash after the model's durable claim but before Part2 completion is
+   // NOT a clean no-attempt result. Never invite a repeat provider POST.
+   const quotaWithoutEvent=safeDb(budgetFilename,db=>db.prepare(
+    'SELECT state FROM a2a_api_claims WHERE actor=? AND merchant=? AND job=?'
+   ).all(scope.actor,scope.merchant,scope.job));
+   if(!quotaWithoutEvent.absent&&quotaWithoutEvent.data.length>0)
+    return summary('PART2_ATTEMPT_WITHOUT_RESULT_NO_RETRY',{
+     quotaClaims:quotaWithoutEvent.data.length});
+   return EMPTY;
+  }
   if(part.data?.kind!=='RESULT')return summary('PART2_EVIDENCE_REVIEW_REQUIRED');
   const quota=safeDb(budgetFilename,db=>db.prepare(
    'SELECT turn,role,state,used_tokens,output_hash FROM a2a_api_claims WHERE actor=? AND merchant=? AND job=? ORDER BY turn'
