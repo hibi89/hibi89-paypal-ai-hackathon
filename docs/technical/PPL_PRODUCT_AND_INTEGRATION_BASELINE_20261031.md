@@ -13,3 +13,9 @@
 ## Next accepted backend slice
 
 Integrate buyer quote draft (which increments quote version) → POST saved candidate choice with **updated exact version** → GET proof and explicit approve → contract evidence. Keep text-only prepare button labeled accurately until HTTP binding is wired and tested. Preserve prior owner-private evidence and `main` unchanged.
+
+## 2026-10-31 verified backend/browser integration addendum
+
+- Exact source SHA: `5908745c284023341cb4d7596b020b144c29c22a`, [full CI 581/581 + actual two-market Chromium/Windows](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41185971825) SUCCESS; [offline smoke](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41185971813) SUCCESS.
+- User path now: match fictional saved candidate → Prepare local quote text → explicit mock draft POST → explicit candidate binding POST + proof GET → explicit human approval → contract/milestone. Browser reload only GETs. Server checks saved brief SHA-256, candidate ID/scope suffix, owner/merchant, skill eligibility, exact quote version and CSRF.
+- Browser regression verifies stale selection blocks quote version changes and requires a new matching draft before binding again. Only synthetic local demo and fake providers; real production identity, distributed atomicity, actual Gemini/PayPal HTTP, public release and Devpost remain unverified.
