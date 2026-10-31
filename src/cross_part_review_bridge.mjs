@@ -161,6 +161,9 @@ export function createCrossPartReviewBridge({
      grant.actorId,grant.merchantId,quoteId);
   if(!row||row.expires_at<=clock())fail('CROSS_PART_LINK_UNAVAILABLE');
   const current=await evidence(hostHandle,quoteId,row.consent_id);
+  // Evidence reads can await across DBs; expiration must be checked again
+  // after those reads, not only before them.
+  if(row.expires_at<=clock())fail('CROSS_PART_LINK_UNAVAILABLE');
   if(row.review_fingerprint!==current.fingerprint||
     row.quote_version!==current.payload.quoteVersion||
     row.amount_minor!==current.payload.amountMinor)
