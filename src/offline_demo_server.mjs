@@ -19,6 +19,7 @@ import { createMarketplaceRecommendationStore } from './marketplace_recommendati
 import { createLedgerMarketplaceSelectionStore, createMarketplaceSelectionApi } from './marketplace_selection_store.mjs';
 import {createMarketplaceIdentityPolicy,createMarketplaceIdentityReadOnlyApi} from './marketplace_identity_policy.mjs';
 import {createMarketplaceProtectedReadApi} from './marketplace_protected_read_api.mjs';
+import {createLocalAccountAuth} from './local_account_auth.mjs';
 import {createMarketplaceContractWorkflowApi} from './marketplace_contract_workflow_api.mjs';
 import {QuoteApiError,reply} from './quote_api.mjs';
 import { createNegotiationDemoApi } from './agent_negotiation_demo_api.mjs';
@@ -33,9 +34,19 @@ const onlyLoopback = address => address === '127.0.0.1' ||
   address === '::ffff:127.0.0.1';
 export async function startOfflineDemo({ port = 0, testReviewSessions = false,
   enableSyntheticReviewer = false, enableSyntheticSeller = false,
-  testSellerSessions = false } = {}) {
+  testSellerSessions = false, localLoginPasswords = null } = {}) {
   if (!Number.isInteger(port) || port < 0 || port > 65535)
     throw new TypeError('INVALID_LOCAL_PORT');
+  if(localLoginPasswords!==null){
+    const keys=enableSyntheticSeller?['buyer','reviewer','seller']:['buyer','reviewer'];
+    if(!localLoginPasswords||typeof localLoginPasswords!=='object'||
+       Array.isArray(localLoginPasswords)||
+       Object.keys(localLoginPasswords).sort().join(',')!==keys.sort().join(',')||
+       keys.some(k=>typeof localLoginPasswords[k]!=='string'||
+         localLoginPasswords[k].length<12||localLoginPasswords[k].length>256)||
+       new Set(keys.map(k=>localLoginPasswords[k])).size!==keys.length)
+      throw new TypeError('INVALID_LOCAL_LOGIN_PASSWORDS');
+  }
   const folder = mkdtempSync(join(tmpdir(), 'paypal-local-demo-'));
   const demoLedgerPath=join(folder,'demo.sqlite');
   const ledger = createSqliteLedger({ filename:demoLedgerPath,
@@ -64,7 +75,9 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
   // A reviewer browser must carry an unguessable server-issued loopback cookie.
   // Any malformed / forged reviewer cookie fails closed. Never accept role headers,
   // query parameters or request JSON as an identity signal.
+  let localAuth=null;
   const resolveSession = async (request) => {
+    if(localAuth)return localAuth.resolveRequest(request);
     const cookies=(request.headers.get('cookie')||'').split(';').map(x=>x.trim());
     const sellerMatches=cookies.filter(x=>x.startsWith('paypal_test_seller='));
     const matches=cookies.filter(x=>x.startsWith('paypal_test_review='));
@@ -89,6 +102,15 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
     role:'reviewer'});
   if(sellerToken)await ledger.provisionLocalMember({actorId:sellerId,
     merchantId:'synthetic-merchant',role:'seller',sellerProfileId});
+  if(localLoginPasswords) {
+    const accounts=[
+      {actorId,merchantId:'synthetic-merchant',password:localLoginPasswords.buyer},
+      {actorId:reviewerId,merchantId:'synthetic-merchant',password:localLoginPasswords.reviewer},
+      ...(enableSyntheticSeller?[{actorId:sellerId,merchantId:'synthetic-merchant',
+        password:localLoginPasswords.seller}]:[])
+    ];
+    localAuth=createLocalAccountAuth({filename:join(folder,'auth.sqlite'),accounts});
+  }
   // FIXED synthetic identity fixture, never from HTTP body or role headers.
   // No seller session or merchant ownership is established by this demo.
   const identityPolicy=createMarketplaceIdentityPolicy({
@@ -180,7 +202,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
         req.resume();
         const requestOrigin='http://127.0.0.1:'+listenPort;
         const bodyLength=req.headers['content-length'];
-        if (!(enableSyntheticReviewer || enableSyntheticSeller) || !reviewerToken) {
+        if (localAuth || !(enableSyntheticReviewer || enableSyntheticSeller) || !reviewerToken) {
           res.writeHead(404,{'cache-control':'no-store'});res.end('NOT_FOUND');return;
         }
         if (req.headers.origin!==requestOrigin ||
@@ -268,7 +290,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
         res.writeHead(200, { 'content-type': 'application/json',
           'cache-control': 'no-store' });
         const role=reqSession.actorId===reviewerId?'reviewer':reqSession.actorId===sellerId?'seller':'owner';
-        res.end(JSON.stringify({ csrfToken, quoteId, mode: 'OFFLINE_MOCK',
+        res.end(JSON.stringify({ csrfToken:reqSession.csrfToken, quoteId, mode: 'OFFLINE_MOCK',
           role,contractId:'demo-contract',milestoneId:'demo-milestone',reviewerId,
           subscriptionId,syntheticReviewerEnabled:enableSyntheticReviewer||enableSyntheticSeller,
           syntheticSellerEnabled:enableSyntheticSeller }));
@@ -360,7 +382,9 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
       const options={method:req.method,headers:new Headers(req.headers)};
       if (req.method !== 'GET' && req.method !== 'HEAD')
         options.body=Buffer.concat(chunks);
-      const handler=path==='/api/demo/workflow/assign-seller' ? assignSellerApi :
+      const handler=path.startsWith('/api/demo/auth/') ?
+        (localAuth?localAuth.handleApi:()=>reply({error:'NOT_FOUND'},404)) :
+        path==='/api/demo/workflow/assign-seller' ? assignSellerApi :
         path.startsWith('/api/demo/workflow/contracts/') ? workflowApi :
         path.startsWith('/api/demo/protected/') ? protectedReadApi :
         path==='/api/demo/identity' ? identityApi :
@@ -388,6 +412,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
       server.listen(port,'127.0.0.1',resolve);
     });
   } catch(e) {
+    localAuth?.close();
     subscriptionStore.close();
     budgetStore.close();
     selectionStore.close();
@@ -399,10 +424,11 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
   return {
     url: 'http://127.0.0.1:' + server.address().port,
     // Accessible only to a local test harness opting into testReviewSessions.
-    ...(testReviewSessions ? {testReviewerCookie:reviewerCookie}:{}),
-    ...(testSellerSessions ? {testSellerCookie:sellerCookie}:{}),
+    ...(testReviewSessions && !localAuth ? {testReviewerCookie:reviewerCookie}:{}),
+    ...(testSellerSessions && !localAuth ? {testSellerCookie:sellerCookie}:{}),
     async close() {
       await new Promise((resolve,reject)=>server.close(e=>e?reject(e):resolve()));
+      localAuth?.close();
       subscriptionStore.close();
       budgetStore.close();
       selectionStore.close();
