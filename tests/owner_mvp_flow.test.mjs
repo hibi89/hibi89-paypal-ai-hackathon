@@ -317,3 +317,24 @@ test('recovery refuses unknown original CREATE without durable remote order ID',
   assert.equal(posts(f.calls,'/v2/checkout/orders'),1);
   assert.equal(posts(f.calls,'/v2/checkout/orders/MVPORDER1/capture'),0);
  }));
+
+test('existing-order GET-only CLI fails closed without TTY or exact explicit owner flags',async()=>{
+ const {spawnSync}=await import('node:child_process');
+ const script=fileURLToPath(new URL('../scripts/reconcile_existing_sandbox_get_only.mjs',import.meta.url));
+ const execute=args=>spawnSync(process.execPath,['--experimental-sqlite',script,...args],{
+  encoding:'utf8',timeout:10000,
+  env:{...process.env,PAYPAL_SANDBOX_CLIENT_SECRET:'PRIVATE_FAKE_SENTINEL'}
+ });
+ const ordinary=execute([]);
+ assert.equal(ordinary.status,2,ordinary.stderr);
+ assert.equal(JSON.parse(ordinary.stdout).status,'DRY_RUN_EXPLICIT_FLAGS_REQUIRED');
+ assert.equal(JSON.parse(ordinary.stdout).networkRequests,0);
+ const flags=execute(['--execute','--owner-authorized','--sandbox-only','--get-existing-only']);
+ assert.equal(flags.status,2,flags.stderr);
+ assert.equal(JSON.parse(flags.stdout).status,'PRIVATE_INTERACTIVE_TTY_REQUIRED');
+ assert.equal(JSON.parse(flags.stdout).networkRequests,0);
+ for(const sample of [ordinary,flags]){
+  assert.doesNotMatch(sample.stdout,/PRIVATE_FAKE_SENTINEL/);
+  assert.doesNotMatch(sample.stderr,/PRIVATE_FAKE_SENTINEL/);
+ }
+});
