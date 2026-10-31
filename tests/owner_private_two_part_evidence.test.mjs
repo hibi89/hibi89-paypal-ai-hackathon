@@ -159,7 +159,7 @@ test('owner read-only CLI refuses missing private evidence without network or se
    encoding:'utf8',timeout:10000,
    env:{...process.env,HOME:dir,USERPROFILE:dir,
     GEMINI_API_KEY:'SENTINEL_TEST_API_SECRET',
-    PAYPAL_SANDBOX_CLIENT_SECRET:'SENTINEL_TEST_PAYMENT_SECRET'}
+    PAYPAL_SANDBOX_CLIENT_SECRET:'FAKE_TEST_SECRET_1'}
   });
   assert.equal(run.status,2,run.stderr);
   const response=JSON.parse(run.stdout);
@@ -168,7 +168,7 @@ test('owner read-only CLI refuses missing private evidence without network or se
   assert.equal(response.fileWritesPerformed,false);
   assert.equal(response.paymentAuthorized,false);
   assert.equal(run.stdout.includes('SENTINEL_TEST_API_SECRET'),false);
-  assert.equal(run.stdout.includes('SENTINEL_TEST_PAYMENT_SECRET'),false);
+  assert.equal(run.stdout.includes('FAKE_TEST_SECRET_1'),false);
   assert.deepEqual(readdirSync(dir).sort(),old);
  }finally{rmSync(dir,{recursive:true,force:true})}
 });
