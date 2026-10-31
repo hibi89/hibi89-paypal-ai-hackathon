@@ -171,7 +171,18 @@ el('gift').addEventListener('click',()=>run('Gift',async()=>{
  show('gift-output',await api('gift',{consentId:model.consents.gifts,idempotencyKey:key()}));
 }));
 el('churn').addEventListener('click',()=>run('churn',async()=>{
- show('churn-output',await api('churn',{idempotencyKey:key()}));
+ const raw=el('churn-monthly').value.trim();
+ if(!/^\d{1,5}(\.\d{1,2})?$/.test(raw))
+  throw Object.assign(new Error('INVALID_SYNTHETIC_CHURN'),{code:'INVALID_SYNTHETIC_CHURN'});
+ const parts=raw.split('.');
+ const currentMinor=Number(parts[0])*100+Number((parts[1]||'').padEnd(2,'0'));
+ const result=await api('churn',{
+  idempotencyKey:key(),subscriptionRef:el('churn-reference').value,
+  currentMinor,remainingMonths:Number(el('churn-months').value),
+  churnRisk:el('churn-risk').value,maxDiscountBps:Number(el('churn-cap').value),
+  pauseAllowed:el('churn-pause').checked
+ });
+ show('churn-output',result);
 }));
 el('invoice').addEventListener('click',()=>run('invoice',async()=>{
  // Parse decimal USD to minor units without floating-point rounding.

@@ -11,6 +11,7 @@ p{color:#566987}.warning{background:#fff5df;border:1px solid #e4c992;border-radi
 h2{font-size:1.25rem;margin:10px 0}label{display:block;font-weight:700;margin-top:10px}
 input,select{padding:11px;width:100%;border:1px solid #c2d0e4;border-radius:9px;font:inherit}
 fieldset{border:1px solid #c2d0e4;border-radius:9px;padding:12px;margin-top:14px}fieldset legend{font-weight:700}fieldset label{font-weight:400}fieldset input[type=checkbox]{width:auto;margin-right:9px}
+#churn-pause{width:auto;margin-right:8px}
 button{cursor:pointer;padding:11px 16px;margin:13px 5px 0 0;border:0;border-radius:10px;background:#2857b1;color:white;font:inherit;font-weight:700}
 button:disabled{opacity:.5;cursor:not-allowed}
 #mandate-state{font-size:.85rem;color:#415a7f;overflow-wrap:anywhere}
@@ -51,9 +52,21 @@ pre{white-space:pre-wrap;word-break:break-word;background:#132643;color:#d9edff;
 <section class="card"><span class="badge">03 · Gift Finder</span><h2>Catalog search & scoped selection</h2>
 <p>Compare a fictional catalog to select the lowest eligible gift, without calling checkout.</p>
 <button type="button" id="gift">Run Gift Agent</button><pre id="gift-output">Issue a gift mandate first.</pre></section>
-<section class="card"><span class="badge">04 · Churn Saver</span><h2>Subscription retention negotiation</h2>
-<p>Prepare a 20% discount or pause proposal. Real customer approval and PayPal revision remain required.</p>
-<button type="button" id="churn">Generate retention proposal</button><pre id="churn-output">Ready for an offline scenario.</pre></section>
+<section class="card"><span class="badge">04 · Churn Saver</span><h2>Subscription retention policy</h2>
+<p>Use fictional monthly pricing, self-reported churn risk and a merchant policy cap. Offers are review-only: no real subscription or payment changes.</p>
+<label for="churn-reference">Fictional subscription reference</label>
+<input id="churn-reference" type="text" value="demo-sub-maintenance-001" maxlength="39" pattern="demo-sub-[a-z0-9-]{3,30}">
+<label for="churn-monthly">Current monthly USD</label>
+<input id="churn-monthly" type="number" min="1" max="10000" step="0.01" value="25.00">
+<label for="churn-months">Remaining months (1–24)</label>
+<input id="churn-months" type="number" min="1" max="24" step="1" value="6">
+<label for="churn-risk">Self-reported churn risk (not an AI score)</label>
+<select id="churn-risk"><option value="HIGH">High</option><option value="MEDIUM">Medium</option><option value="LOW">Low</option></select>
+<label for="churn-cap">Maximum fictional policy discount</label>
+<select id="churn-cap"><option value="2000">20%</option><option value="1000">10%</option><option value="500">5%</option><option value="0">0% (pause only)</option><option value="3000">30% ceiling</option></select>
+<label><input type="checkbox" id="churn-pause" checked> Consider a pause for human review</label>
+<button type="button" id="churn">Generate retention proposal</button>
+<pre id="churn-output">Ready for a synthetic retention policy calculation.</pre></section>
 <section class="card"><span class="badge">05 · Merchant Copilot</span><h2>Invoice / Dispute dossier</h2>
 <p>Enter a fictional milestone and self-reported evidence. A local checklist checks completeness and contradictions; nothing is verified or filed with PayPal.</p>
 <label for="invoice-contract">Fictional contract reference</label>
