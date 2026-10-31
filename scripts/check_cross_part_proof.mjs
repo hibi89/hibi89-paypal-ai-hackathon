@@ -4,7 +4,8 @@ import assert from 'node:assert/strict';
 import {randomBytes} from 'node:crypto';
 import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
-import {join} from 'node:path';
+import {join,resolve} from 'node:path';
+import {pathToFileURL} from 'node:url';
 import {createSqliteLedger} from '../src/sqlite_ledger.mjs';
 import {createInnovationLab} from '../src/innovation_lab.mjs';
 import {createMarketplaceIdentityPolicy} from '../src/marketplace_identity_policy.mjs';
@@ -94,7 +95,7 @@ export async function runPrivateSyntheticCrossPartProof(){
  }
 }
 
-if(process.argv[1] && import.meta.url===new URL('file://'+process.argv[1]).href){
+if(process.argv[1] && import.meta.url===pathToFileURL(resolve(process.argv[1])).href){
  if(process.argv.length!==2){
   process.stderr.write('OFFLINE_SYNTHETIC_ONLY_NO_ARGUMENTS\n');
   process.exitCode=2;
