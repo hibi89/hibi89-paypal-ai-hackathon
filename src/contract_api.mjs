@@ -76,7 +76,7 @@ export function createContractApi({repository,resolveSession,identityPolicy,
         fail(grant.actorId!==session.actorId||grant.merchantId!==session.merchantId,
           'TRUSTED_IDENTITY_MISMATCH',403);
       };
-      if(identityPolicy&&r.kind!=='create'){
+      if(identityPolicy&&r.method==='GET'){
         const scope=await repository.getContractAuthorityResource(r.contractId);
         fail(!scope,'CONTRACT_NOT_FOUND',404);
         const action=['contract','events','candidate'].includes(r.kind)
@@ -128,6 +128,14 @@ export function createContractApi({repository,resolveSession,identityPolicy,
       const fields=r.kind==='submit'?['expectedVersion','eventId','expectedState','detail']:
         ['expectedVersion','eventId','detail'];
       exactFields(body,fields);
+      if(identityPolicy){
+        const scope=await repository.getContractAuthorityResource(r.contractId);
+        fail(!scope,'CONTRACT_NOT_FOUND',404);
+        const action=r.kind==='submit'
+          ?(allowLegacyOwnerDelivery&&session.actorId===scope.ownerId
+            ?'contract.read':'delivery.submit'):'delivery.review';
+        await grantCheck(action,scope);
+      }
       validEvent(body);
       if(r.kind==='submit')
         fail(!['PENDING','REJECTED'].includes(body.expectedState),
