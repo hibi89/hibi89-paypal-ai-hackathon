@@ -3,7 +3,8 @@
 'use strict';
 const el=id=>document.getElementById(id);
 const model={csrf:null,consents:{services:null,gifts:null},selected:null,
-  server:null,quoteId:null,busy:false,revoking:false,crosspartBusy:false};
+  server:null,quoteId:null,busy:false,revoking:false,crosspartBusy:false,
+  reviewCandidate:null,reviewBusy:false};
 const show=(id,value)=>{el(id).textContent=typeof value==='string'?value:JSON.stringify(value,null,2);};
 const key=()=>crypto.randomUUID();
 const money=n=>Number.isSafeInteger(n)?'$'+(n/100).toFixed(2):'UNKNOWN';
@@ -176,14 +177,71 @@ async function compareCrossPartReadOnly(){
    :'No valid spent offline service agreement selected'));
   show('crosspart-match','Comparison · '+status);
   show('crosspart-payment','Payment · NOT_AUTHORIZED / NOT_CAPTURED · merchant verification NOT_PERFORMED');
+  model.reviewCandidate=matches?accepted.consentId:null;
+  el('crosspart-associate').disabled=!model.reviewCandidate;
   show('crosspart-result',status+' · This is a separate-ledger price comparison, not a binding contract, account authorization, checkout or capture.');
  }catch(e){
+  model.reviewCandidate=null;
+  el('crosspart-associate').disabled=true;
   show('crosspart-result','COMPARISON_UNAVAILABLE · '+(e.message||'READ_FAILED')+
    ' · No quote, agreement or payment was changed.');
   show('crosspart-match','Comparison · UNAVAILABLE');
  }finally{model.crosspartBusy=false;button.disabled=false;}
 }
 el('crosspart-compare').addEventListener('click',compareCrossPartReadOnly);
+
+async function crossPartReview(method,consentId){
+ const options={method,credentials:'same-origin',cache:'no-store'};
+ if(method==='POST'){
+  options.headers={'content-type':'application/json','x-csrf-token':model.csrf};
+  options.body=JSON.stringify({consentId});
+ }
+ const response=await fetch('/api/demo/cross-part/review',options);
+ const result=await response.json();
+ if(!response.ok)throw new Error(result.error||'REVIEW_REQUEST_FAILED');
+ if(result?.paymentAuthorized!==false||result?.paypalCapturePerformed!==false||
+    result?.providerCalls!==0||result?.realProviderEvidence!==false)
+  throw new Error('UNVERIFIED_CROSS_PART_RESPONSE');
+ return result;
+}
+el('crosspart-associate').addEventListener('click',async()=>{
+ if(model.reviewBusy||model.crosspartBusy)return;
+ const candidate=model.reviewCandidate;
+ if(!candidate||selectedA2AEvent()?.result?.consentId!==candidate){
+  show('crosspart-association','Selection changed. Compare the current quote again before explicitly saving a link.');
+  model.reviewCandidate=null;el('crosspart-associate').disabled=true;
+  return;
+ }
+ model.reviewBusy=true;el('crosspart-associate').disabled=true;
+ try{
+  const saved=await crossPartReview('POST',candidate);
+  if(saved.review?.status!=='SYNTHETIC_CROSS_PART_REVIEW_ONLY'||
+     saved.review?.consentId!==candidate)
+   throw new Error('INVALID_SAVED_ASSOCIATION');
+  show('crosspart-association','SAVED SYNTHETIC REVIEW · '+money(saved.review.amountMinor)+
+   ' · quote v'+saved.review.quoteVersion+' · SHA-256 '+
+   saved.review.reviewFingerprint.slice(0,16)+
+   '… · max 15-minute local review window. NOT a payment authorization.');
+ }catch(e){
+  show('crosspart-association','REVIEW NOT SAVED · '+(e?.message||'UNKNOWN')+
+   '. No PayPal charge or provider request attempted.');
+ }finally{model.reviewBusy=false;}
+});
+el('crosspart-inspect').addEventListener('click',async()=>{
+ if(model.reviewBusy)return;
+ model.reviewBusy=true;
+ try{
+  const saved=await crossPartReview('GET');
+  show('crosspart-association','VERIFIED SAVED REVIEW · '+money(saved.review.amountMinor)+
+   ' · quote v'+saved.review.quoteVersion+' · SHA-256 '+
+   saved.review.reviewFingerprint.slice(0,16)+
+   '… · read-only SQLite evidence, not a checkout.');
+ }catch(e){
+  show('crosspart-association','NO VALID SAVED REVIEW · '+(e?.message||'UNKNOWN')+
+   '. Recompare and confirm if eligible; GET did not modify records.');
+ }finally{model.reviewBusy=false;}
+});
+
 
 async function refresh(){
  const data=await api('state');

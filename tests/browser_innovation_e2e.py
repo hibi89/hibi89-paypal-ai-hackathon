@@ -178,6 +178,7 @@ try:
    expect(page.locator("#crosspart-part1")).to_contain_text("Approved $295.00")
    expect(page.locator("#crosspart-part2")).to_contain_text("Offline agreement $299.00")
    expect(page.locator("#crosspart-match")).to_contain_text("AMOUNT_MISMATCH_NO_SETTLEMENT")
+   expect(page.locator("#crosspart-associate")).to_be_disabled()
    assert sum(method=="POST" for method,_ in requests)==before_compare
    # Make a NEW explicit human-approved quote of the agreed USD299 amount.
    page.locator('nav a[href="/demo"]').click()
@@ -200,15 +201,29 @@ try:
    expect(page.locator("#crosspart-part1")).to_contain_text("Approved $299.00")
    expect(page.locator("#crosspart-payment")).to_contain_text("NOT_AUTHORIZED / NOT_CAPTURED")
    assert sum(method=="POST" for method,_ in requests)==before_compare
+   # Separate explicit action to persist the server-authorized 15-minute
+   # synthetic quote/A2A association; price match by itself never writes.
+   expect(page.locator("#crosspart-associate")).to_be_enabled()
+   page.locator("#crosspart-associate").click()
+   expect(page.locator("#crosspart-association")).to_contain_text("SAVED SYNTHETIC REVIEW")
+   assert sum(method=="POST" and url.endswith("/api/demo/cross-part/review")
+              for method,url in requests)==1
+   prior=sum(method=="POST" for method,_ in requests)
+   page.locator("#crosspart-inspect").click()
+   expect(page.locator("#crosspart-association")).to_contain_text("VERIFIED SAVED REVIEW")
+   assert sum(method=="POST" for method,_ in requests)==prior
    page.reload()
    expect(page.locator("#a2a-history option")).to_have_count(1)
    before_compare=sum(method=="POST" for method,_ in requests)
    page.locator("#crosspart-compare").click()
    expect(page.locator("#crosspart-match")).to_contain_text("AMOUNTS_MATCH_FOR_OFFLINE_REVIEW_ONLY")
    assert sum(method=="POST" for method,_ in requests)==before_compare
+   page.locator("#crosspart-inspect").click()
+   expect(page.locator("#crosspart-association")).to_contain_text("VERIFIED SAVED REVIEW")
+   assert sum(method=="POST" for method,_ in requests)==before_compare
    assert not errors,errors
    assert not any("paypal.com" in url or "generativelanguage.googleapis.com" in url for _,url in requests)
-   print("CHROMIUM_INNOVATION_PART2_E2E_PASS: five skills plus Part1 price mismatch and reviewed match via GET only")
+   print("CHROMIUM_INNOVATION_PART2_E2E_PASS: five skills, human approved price, explicit 15m persisted review and GET-only reload")
   finally:browser.close()
 finally:
  process.terminate()

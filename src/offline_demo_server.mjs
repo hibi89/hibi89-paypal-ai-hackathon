@@ -21,6 +21,8 @@ import {createMarketplaceIdentityPolicy,createMarketplaceIdentityReadOnlyApi} fr
 import {createMarketplaceProtectedReadApi} from './marketplace_protected_read_api.mjs';
 import {createLocalAccountAuth} from './local_account_auth.mjs';
 import {createInnovationLab,createInnovationApi} from './innovation_lab.mjs';
+import {createCrossPartReviewBridge} from './cross_part_review_bridge.mjs';
+import {createLocalCrossPartReviewApi} from './local_cross_part_review_api.mjs';
 import {createMarketplaceContractWorkflowApi} from './marketplace_contract_workflow_api.mjs';
 import {QuoteApiError,reply} from './quote_api.mjs';
 import { createNegotiationDemoApi } from './agent_negotiation_demo_api.mjs';
@@ -178,6 +180,21 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
     identityPolicy});
   const githubDeliveryApi=createGithubDeliveryDemoApi({resolveSession});
   const innovationApi=createInnovationApi({store:innovationLab,resolveSession,identityPolicy});
+  // Loopback-only synthetic evidence: user confirms by a separate
+  // authenticated same-origin POST; this does NOT verify a real buyer.
+  const crossPartBridge=createCrossPartReviewBridge({
+    filename:join(folder,'crosspart_review.sqlite'),
+    ledger,innovationStore:innovationLab,identityPolicy,
+    authorizeLink:async scope=>
+      scope.action==='LINK_SYNTHETIC_A2A_TO_APPROVED_QUOTE'&&
+      scope.actorId===actorId&&scope.merchantId==='synthetic-merchant'&&
+      scope.quoteId===quoteId&&scope.paymentAuthorized===false&&
+      scope.providerCalls===0
+  });
+  const crossPartReviewApi=createLocalCrossPartReviewApi({
+    bridge:crossPartBridge,resolveSession,quoteId,buyerActorId:actorId,
+    merchantId:'synthetic-merchant'
+  });
   let server;
   server = createServer(async (req, res) => {
     try {
@@ -400,6 +417,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
         options.body=Buffer.concat(chunks);
       const handler=path.startsWith('/api/demo/auth/') ?
         (localAuth?localAuth.handleApi:()=>reply({error:'NOT_FOUND'},404)) :
+        path==='/api/demo/cross-part/review' ? crossPartReviewApi :
         path.startsWith('/api/demo/innovation/') ? innovationApi :
         path==='/api/demo/workflow/assign-seller' ? assignSellerApi :
         path.startsWith('/api/demo/workflow/contracts/') ? workflowApi :
@@ -430,6 +448,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
     });
   } catch(e) {
     localAuth?.close();
+    crossPartBridge.close();
     innovationLab.close();
     subscriptionStore.close();
     budgetStore.close();
@@ -447,6 +466,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
     async close() {
       await new Promise((resolve,reject)=>server.close(e=>e?reject(e):resolve()));
       localAuth?.close();
+      crossPartBridge.close();
       innovationLab.close();
       subscriptionStore.close();
       budgetStore.close();
