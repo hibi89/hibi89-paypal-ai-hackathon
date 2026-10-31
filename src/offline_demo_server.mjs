@@ -142,12 +142,15 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
   });
   const checkRate = createDemoRateLimiter();
   const buyerReturn=createPaypalBuyerReturnBoundary();
-  const marketplaceApi=createMarketplaceDemoApi({resolveSession,store:marketplaceStore});
+  const marketplaceApi=createMarketplaceDemoApi({resolveSession,store:marketplaceStore,
+    identityPolicy});
   const selectionApi=createMarketplaceSelectionApi({resolveSession,store:selectionStore,
     identityPolicy});
   const negotiationRegistry=createNegotiationRegistry();
-  const negotiationApi=createNegotiationDemoApi({resolveSession,repository:ledger,registry:negotiationRegistry});
-  const budgetApi=createAgentBudgetDemoApi({resolveSession,quotes:ledger,budgets:budgetStore,registry:negotiationRegistry});
+  const negotiationApi=createNegotiationDemoApi({resolveSession,repository:ledger,registry:negotiationRegistry,
+    identityPolicy});
+  const budgetApi=createAgentBudgetDemoApi({resolveSession,quotes:ledger,budgets:budgetStore,registry:negotiationRegistry,
+    identityPolicy});
   const githubDeliveryApi=createGithubDeliveryDemoApi({resolveSession});
   let server;
   server = createServer(async (req, res) => {

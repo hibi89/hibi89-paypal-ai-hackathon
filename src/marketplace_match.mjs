@@ -1,6 +1,7 @@
 // Bounded contest vertical slice: deterministic matchmaking among fictional profiles.
 // No Gemini call, real seller registration, marketplace data, price ML or payment authority.
 import { parseSmallJson, reply, QuoteApiError } from './quote_api.mjs';
+import {authorizePersistedLocalAction} from './marketplace_identity_policy.mjs';
 
 const SKILLS = Object.freeze([
   ['web', /\b(web|website|frontend|front-end|e-commerce|ecommerce|storefront|landing page)\b/i],
@@ -161,7 +162,10 @@ export function matchSyntheticGeneralServiceSkills(requestedSkills,{round=0,prof
 
 // History is read-only; starting/reusing a set and requesting the next set
 // are deliberately separate CSRF-bound mutations. No actual seller identities.
-export function createMarketplaceDemoApi({resolveSession,store}={}) {
+export function createMarketplaceDemoApi({resolveSession,store,identityPolicy}={}) {
+  if(identityPolicy!==undefined&&(
+    typeof identityPolicy.issueProof!=='function'||typeof identityPolicy.authorize!=='function'))
+    throw new TypeError('ROLE_POLICY_REQUIRED');
   if(typeof resolveSession!=='function'||!store)throw new TypeError('VERIFIED_SESSION_AND_STORE_REQUIRED');
   const render=(row)=>{
     const matchFor=i=>row.vertical==='ai_work'
@@ -190,6 +194,9 @@ export function createMarketplaceDemoApi({resolveSession,store}={}) {
           session.merchantId!=='synthetic-merchant')throw error('OWNER_SESSION_REQUIRED',403);
       const origin=request.headers.get('origin');
       if(origin!==null&&origin!==url.origin)throw error('ORIGIN_MISMATCH',403);
+      if(identityPolicy)await authorizePersistedLocalAction({
+        policy:identityPolicy,request,session,action:'marketplace.match'
+      });
       if(history){
         if(url.searchParams.size!==1)throw error('INVALID_HISTORY_QUERY');
         const id=url.searchParams.get('sessionId');

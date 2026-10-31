@@ -7,7 +7,8 @@ import {QuoteApiError,reply} from './quote_api.mjs';
 const ID=/^[A-Za-z0-9_-]{1,64}$/;
 const ACTIONS=Object.freeze({
   buyer:Object.freeze(['quote.read','quote.draft','quote.approve','quote.reject',
-    'marketplace.match','marketplace.select','contract.create','contract.read']),
+    'marketplace.match','marketplace.select','contract.create','contract.read',
+    'negotiation.propose','budget.read','budget.configure','budget.reserve']),
   seller:Object.freeze(['seller.profile.read','contract.read','delivery.submit']),
   reviewer:Object.freeze(['contract.read','delivery.review']),
   merchant_operator:Object.freeze(['merchant.read'])
@@ -16,7 +17,8 @@ const ROLES=new Set(Object.keys(ACTIONS));
 const RESOURCE_ACTIONS=new Set([
   'quote.read','quote.draft','quote.approve','quote.reject','marketplace.select',
   'contract.create','contract.read','delivery.submit','delivery.review',
-  'seller.profile.read','merchant.read'
+  'seller.profile.read','merchant.read','negotiation.propose',
+  'budget.read','budget.configure','budget.reserve'
 ]);
 const fail=(code,status=403)=>{throw new QuoteApiError(code,status)};
 const id=x=>typeof x==='string'&&ID.test(x);
@@ -40,6 +42,10 @@ function canAccess(member,action,resource){
   if(action==='marketplace.match')return true; // tenant is checked at session resolve
   if(!shape(resource)||resource.merchantId!==member.merchantId)return false;
   if(action==='merchant.read')return true;
+  if(action==='budget.read'||action==='budget.configure')
+    return resource.ownerId===member.actorId;
+  if(action==='budget.reserve'||action==='negotiation.propose')
+    return resource.ownerId===member.actorId&&id(resource.quoteId);
   if(action==='seller.profile.read')return resource.sellerProfileId===member.sellerProfileId;
   if(action==='delivery.submit')return resource.sellerProfileId===member.sellerProfileId
     && id(resource.contractId)&&resource.contractState==='ACTIVE';
@@ -127,6 +133,18 @@ export function createMarketplaceIdentityPolicy({resolveTrustedSession,members,r
 }
 
 
+// Server-only role proof: never take a role or revision from browser JSON.
+export async function authorizePersistedLocalAction({policy,request,session,action,resource}={}){
+  if(!policy||typeof policy.issueProof!=='function'||
+     typeof policy.authorize!=='function')throw new TypeError('ROLE_POLICY_REQUIRED');
+  const proof=await policy.issueProof(request);
+  const grant=await policy.authorize(proof,{action,resource});
+  if(grant.actorId!==session?.actorId||grant.merchantId!==session?.merchantId)
+    fail('TRUSTED_IDENTITY_MISMATCH',403);
+  if(!Number.isSafeInteger(grant.membershipRevision)||grant.membershipRevision<1)
+    fail('TRUSTED_MEMBERSHIP_REVISION_REQUIRED',403);
+  return {proof,grant};
+}
 // Safe read-only fixture projection. This is NOT registration/login or role change.
 export function createMarketplaceIdentityReadOnlyApi({policy}={}){
   if(!policy||typeof policy.issueProof!=='function'||

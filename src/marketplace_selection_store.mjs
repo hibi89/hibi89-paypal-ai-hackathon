@@ -4,6 +4,7 @@ import {DatabaseSync} from 'node:sqlite';
 import {createHash} from 'node:crypto';
 import {QuoteApiError,parseSmallJson,reply} from './quote_api.mjs';
 import {matchSyntheticMarketplaceSkills,matchSyntheticGeneralServiceSkills} from './marketplace_match.mjs';
+import {authorizePersistedLocalAction} from './marketplace_identity_policy.mjs';
 
 const reject=(code,status=400)=>{throw new QuoteApiError(code,status)};
 const identifier=x=>typeof x==='string'&&/^[a-zA-Z0-9_-]{1,64}$/.test(x);
@@ -131,8 +132,15 @@ export function createMarketplaceSelectionApi({resolveSession,store,identityPoli
       if(origin!==null&&origin!==url.origin)reject('ORIGIN_MISMATCH',403);
       if(isRead){
         if(url.searchParams.size!==1)reject('INVALID_SELECTION_QUERY');
+        const quoteId=url.searchParams.get('quoteId');
+        if(identityPolicy){
+          const scope=await store.getAuthorityResource(quoteId);
+          if(!scope)reject('CANDIDATE_SELECTION_NOT_FOUND',404);
+          await authorizePersistedLocalAction({policy:identityPolicy,request,session,
+            action:'quote.read',resource:scope});
+        }
         const result=await store.get({ownerId:session.actorId,merchantId:session.merchantId,
-          quoteId:url.searchParams.get('quoteId')});
+          quoteId});
         if(!result)reject('CANDIDATE_SELECTION_NOT_FOUND',404);
         return reply(result);
       }
