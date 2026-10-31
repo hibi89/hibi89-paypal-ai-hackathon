@@ -181,6 +181,24 @@ export function createHostVerifiedSessionStore({
    ...(csrfToken?{csrfToken}:{})
   });
  }
+ // Same-origin POST can rotate a hashed CSRF capability after page reload.
+ // The HttpOnly session cookie authenticates the principal; Origin prevents
+ // cross-site token minting, and prior tokens become invalid atomically.
+ async function rotateCsrf(request){
+  available();
+  const token=cookie(request,origin);
+  if(!token||request.method!=='POST'||request.headers.get('origin')!==origin)
+   reject('HOST_CSRF_ROTATION_AUTH_REQUIRED');
+  const current=await getCurrent(token);
+  if(!current)reject('HOST_CSRF_ROTATION_AUTH_REQUIRED');
+  const fresh=randomBytes(32).toString('base64url');
+  const changed=db.prepare(`UPDATE host_verified_sessions
+    SET csrf_sha256=? WHERE token_sha256=? AND csrf_sha256=?
+    AND revoked=0 AND expires_at_ms>?`)
+   .run(sha(fresh),sha(token),current.row.csrf_sha256,clock(now)).changes;
+  if(changed!==1)reject('HOST_CSRF_ROTATION_RACE_REJECTED');
+  return Object.freeze({csrfToken:fresh,paymentAuthorized:false});
+ }
  async function revokeRequest(request){
   available();
   const token=cookie(request,origin);
@@ -204,7 +222,7 @@ export function createHostVerifiedSessionStore({
  }
  function close(){if(!closed){closed=true;db.close()}}
  return Object.freeze({
-  establish,resolveRequest,resolveForGateway,revokeRequest,close,
+  establish,resolveRequest,resolveForGateway,rotateCsrf,revokeRequest,close,
   mode:'HOST_BACKED_SESSION_NO_EXTERNAL_IDP_INCLUDED',
   publicAuthenticationEnabled:false,
   externalIdpVerificationInjected:true,
