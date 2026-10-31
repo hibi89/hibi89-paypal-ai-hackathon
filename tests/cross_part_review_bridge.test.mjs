@@ -168,3 +168,19 @@ test('fabricated model/provenance claims in state cannot be linked as provider e
   }finally{replacement.close();}
  });
 });
+
+test('inspect refuses a review link that expires during asynchronous evidence retrieval',async()=>{
+ await using(async f=>{
+  await f.bridge.link(args(f));
+  const delayedLedger={
+   get:async id=>{const q=await f.ledger.get(id);f.advance(16*60*1000);return q;}
+  };
+  const delayed=createCrossPartReviewBridge({
+   ...f.options,ledger:delayedLedger,filename:f.filename
+  });
+  try{
+   await assert.rejects(delayed.inspect({hostHandle:f.hostHandle,quoteId}),
+    rejectCode('CROSS_PART_LINK_UNAVAILABLE'));
+  }finally{delayed.close();}
+ });
+});
