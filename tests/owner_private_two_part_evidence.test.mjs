@@ -147,3 +147,28 @@ test('read-only part2 inspection does not mutate original SQLite bytes',async()=
   assert.deepEqual(readFileSync(p.budgetFilename),right);
  }finally{rmSync(directory,{recursive:true,force:true})}
 });
+
+test('owner read-only CLI refuses missing private evidence without network or secret echoes',async()=>{
+ const dir=path();
+ try{
+  const {spawnSync}=await import('node:child_process');
+  const {fileURLToPath}=await import('node:url');
+  const entry=fileURLToPath(new URL('../scripts/check_owner_two_part_evidence.mjs',import.meta.url));
+  const old=readdirSync(dir).sort();
+  const run=spawnSync(process.execPath,['--experimental-sqlite',entry],{
+   encoding:'utf8',timeout:10000,
+   env:{...process.env,HOME:dir,USERPROFILE:dir,
+    GEMINI_API_KEY:'SENTINEL_TEST_API_SECRET',
+    PAYPAL_SANDBOX_CLIENT_SECRET:'SENTINEL_TEST_PAYMENT_SECRET'}
+  });
+  assert.equal(run.status,2,run.stderr);
+  const response=JSON.parse(run.stdout);
+  assert.equal(response.status,'BOTH_PARTS_NEED_REVIEW');
+  assert.equal(response.networkRequests,0);
+  assert.equal(response.fileWritesPerformed,false);
+  assert.equal(response.paymentAuthorized,false);
+  assert.equal(run.stdout.includes('SENTINEL_TEST_API_SECRET'),false);
+  assert.equal(run.stdout.includes('SENTINEL_TEST_PAYMENT_SECRET'),false);
+  assert.deepEqual(readdirSync(dir).sort(),old);
+ }finally{rmSync(dir,{recursive:true,force:true})}
+});
