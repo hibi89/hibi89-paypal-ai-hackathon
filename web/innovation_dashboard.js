@@ -81,6 +81,50 @@ function renderTranscript(messages){
   list.append(li);
  }
 }
+// Read existing SQLite-backed event evidence only. No API call or replay.
+function renderSavedA2AHistory(){
+ const select=el('a2a-history'),saved=model.server?.events?.filter(e=>
+  e.kind==='a2a'&&typeof e.result?.consentId==='string'&&
+  Array.isArray(e.result.messages))||[];
+ const previous=select.value;
+ select.replaceChildren();
+ if(!saved.length){
+  const option=document.createElement('option');
+  option.value='';option.textContent='No completed negotiation yet';
+  select.append(option);
+ }else for(const item of saved){
+  const option=document.createElement('option');
+  option.value=item.result.consentId;
+  option.textContent=(item.result.status||'UNKNOWN')+' | '+
+   (Number.isSafeInteger(item.result.agreedMinor)?money(item.result.agreedMinor):'NO AGREEMENT')+
+   ' | '+item.result.consentId.slice(0,8);
+  select.append(option);
+ }
+ if(saved.some(e=>e.result.consentId===previous))select.value=previous;
+ el('show-a2a-history').disabled=!saved.length;
+ show('a2a-history-status',saved.length
+  ?saved.length+' stored negotiation(s) available. Select one and view its original messages without agent or payment calls.'
+  :'No completed negotiations stored yet. Reads never call AI or PayPal.');
+}
+function openSavedA2AHistory(){
+ const consentId=el('a2a-history').value;
+ const entry=model.server?.events?.find(e=>e.kind==='a2a'&&
+  e.result?.consentId===consentId&&Array.isArray(e.result.messages));
+ if(!entry){
+  show('a2a-history-status','Saved negotiation not available. Refresh the audit; no operation was repeated.');
+  return;
+ }
+ renderTranscript(entry.result.messages);
+ show('a2a-output',entry.result);
+ show('a2a-progress','SAVED SQLITE HISTORY / READ ONLY · '+
+  (entry.result.status||'UNKNOWN')+' · '+
+  entry.result.messages.length+' recorded agent messages · paymentState '+
+  (entry.result.paymentState||'NOT_PAID')+
+  ' · no model execution or PayPal request.');
+ show('a2a-history-status','Saved negotiation '+entry.result.consentId.slice(0,8)+
+  ' restored from existing local ledger evidence. No network POST was sent.');
+}
+el('show-a2a-history').addEventListener('click',openSavedA2AHistory);
 async function refresh(){
  const data=await api('state');
  model.server=data;
@@ -96,6 +140,7 @@ async function refresh(){
  for(const c of data.consents)
   if(c.active&&!model.consents[c.category])model.consents[c.category]=c.id;
  renderMandates();
+ renderSavedA2AHistory();
  if(data.pendingAttempts.length)
   show('pending-status',data.pendingAttempts.length+
    ' PENDING_OR_INTERRUPTED attempt(s). Their live status is unverified. Do not resubmit; revoke an unused mandate to block late acceptance.');
