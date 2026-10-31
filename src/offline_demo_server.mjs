@@ -19,6 +19,8 @@ import { createMarketplaceRecommendationStore } from './marketplace_recommendati
 import { createLedgerMarketplaceSelectionStore, createMarketplaceSelectionApi } from './marketplace_selection_store.mjs';
 import {createMarketplaceIdentityPolicy,createMarketplaceIdentityReadOnlyApi} from './marketplace_identity_policy.mjs';
 import {createMarketplaceProtectedReadApi} from './marketplace_protected_read_api.mjs';
+import {createMarketplaceContractWorkflowApi} from './marketplace_contract_workflow_api.mjs';
+import {QuoteApiError,reply} from './quote_api.mjs';
 import { createNegotiationDemoApi } from './agent_negotiation_demo_api.mjs';
 import { createAgentBudgetStore } from './agent_budget_store.mjs';
 import { createAgentBudgetDemoApi } from './agent_budget_demo_api.mjs';
@@ -30,7 +32,8 @@ const html = readFileSync(new URL('../web/offline_demo.html', import.meta.url), 
 const onlyLoopback = address => address === '127.0.0.1' ||
   address === '::ffff:127.0.0.1';
 export async function startOfflineDemo({ port = 0, testReviewSessions = false,
-  enableSyntheticReviewer = false } = {}) {
+  enableSyntheticReviewer = false, enableSyntheticSeller = false,
+  testSellerSessions = false } = {}) {
   if (!Number.isInteger(port) || port < 0 || port > 65535)
     throw new TypeError('INVALID_LOCAL_PORT');
   const folder = mkdtempSync(join(tmpdir(), 'paypal-local-demo-'));
@@ -46,9 +49,12 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
   const quoteId = 'sample-project';
   const actorId = 'synthetic-owner';
   const reviewerId = 'synthetic-reviewer';
-  const reviewerToken = testReviewSessions || enableSyntheticReviewer
+  const sellerId='synthetic-seller',sellerProfileId='synthetic-seller-profile';
+  const reviewerToken = testReviewSessions || enableSyntheticReviewer || enableSyntheticSeller
     ? randomBytes(32).toString('hex') : null;
   const reviewerCookie = reviewerToken ? 'paypal_test_review=' + reviewerToken : null;
+  const sellerToken=enableSyntheticSeller||testSellerSessions?randomBytes(32).toString('hex'):null;
+  const sellerCookie=sellerToken?'paypal_test_seller='+sellerToken:null;
   const csrfToken = randomBytes(24).toString('base64url');
   await ledger.insertQuote({
     id: quoteId, ownerId: actorId, merchantId: 'synthetic-merchant',
@@ -59,7 +65,15 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
   // query parameters or request JSON as an identity signal.
   const resolveSession = async (request) => {
     const cookies=(request.headers.get('cookie')||'').split(';').map(x=>x.trim());
+    const sellerMatches=cookies.filter(x=>x.startsWith('paypal_test_seller='));
     const matches=cookies.filter(x=>x.startsWith('paypal_test_review='));
+    if(sellerMatches.length){
+      if(sellerMatches.length!==1||matches.length||!sellerToken)return null;
+      const supplied=sellerMatches[0].slice('paypal_test_seller='.length);
+      if(!/^[a-f0-9]{64}$/.test(supplied))return null;
+      if(!timingSafeEqual(Buffer.from(supplied),Buffer.from(sellerToken)))return null;
+      return {verified:true,actorId:sellerId,merchantId:'synthetic-merchant',csrfToken};
+    }
     if(matches.length>0){
       if(matches.length!==1 || !reviewerToken) return null;
       const supplied=matches[0].slice('paypal_test_review='.length);
@@ -72,6 +86,8 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
   await ledger.provisionLocalMember({actorId,merchantId:'synthetic-merchant',role:'buyer'});
   await ledger.provisionLocalMember({actorId:reviewerId,merchantId:'synthetic-merchant',
     role:'reviewer'});
+  if(sellerToken)await ledger.provisionLocalMember({actorId:sellerId,
+    merchantId:'synthetic-merchant',role:'seller',sellerProfileId});
   // FIXED synthetic identity fixture, never from HTTP body or role headers.
   // No seller session or merchant ownership is established by this demo.
   const identityPolicy=createMarketplaceIdentityPolicy({
@@ -80,6 +96,33 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
   });
   const identityApi=createMarketplaceIdentityReadOnlyApi({policy:identityPolicy});
   const protectedReadApi=createMarketplaceProtectedReadApi({policy:identityPolicy,ledger});
+  const workflowApi=createMarketplaceContractWorkflowApi({
+    ledger,policy:identityPolicy,resolveSession
+  });
+  const assignSellerApi=async request=>{
+    try{
+      if(request.method!=='POST')return reply({error:'METHOD_NOT_ALLOWED'},405,{allow:'POST'});
+      if(!sellerToken)throw new QuoteApiError('SYNTHETIC_SELLER_DISABLED',404);
+      const session=await resolveSession(request);
+      if(!session||session.actorId!==actorId)throw new QuoteApiError('OWNER_ONLY',403);
+      const url=new URL(request.url);
+      if(request.headers.get('origin')!==url.origin||
+        request.headers.get('x-csrf-token')!==session.csrfToken)
+        throw new QuoteApiError('CSRF_OR_ORIGIN_REQUIRED',403);
+      const proof=await identityPolicy.issueProof(request);
+      const scope=await ledger.getContractAuthorityResource('demo-contract');
+      if(!scope||scope.ownerId!==actorId)throw new QuoteApiError('CONTRACT_NOT_FOUND',404);
+      const grant=await identityPolicy.authorize(proof,{action:'contract.read',resource:scope});
+      if(grant.actorId!==session.actorId)throw new QuoteApiError('IDENTITY_MISMATCH',403);
+      const assigned=await ledger.assignLocalContractSeller({
+        contractId:'demo-contract',merchantId:'synthetic-merchant',sellerProfileId
+      });
+      return reply({assignment:assigned,paymentAuthorized:false});
+    }catch(e){
+      return reply({error:e instanceof QuoteApiError?e.code:'INTERNAL_ERROR'},
+        e instanceof QuoteApiError?e.status:500);
+    }
+  };
   const api = createQuoteApi({
     repository: ledger,
     draftProvider: createOfflineMockDraftProvider(),
@@ -144,9 +187,24 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
           method:'GET',headers:req.headers
         }));
         if(!session || session.verified!==true ||
-            ![actorId,reviewerId].includes(session.actorId) ||
+            ![actorId,reviewerId,...(enableSyntheticSeller?[sellerId]:[])].includes(session.actorId) ||
             session.merchantId!=='synthetic-merchant') {
           res.writeHead(401,{'cache-control':'no-store'});res.end('UNAUTHORIZED');return;
+        }
+        if(enableSyntheticSeller){
+          const toSeller=session.actorId===actorId;
+          const toReviewer=session.actorId===sellerId;
+          const setCookie=[
+            toSeller?sellerCookie+'; HttpOnly; Path=/; SameSite=Strict':
+              'paypal_test_seller=; HttpOnly; Path=/; SameSite=Strict; Max-Age=0',
+            toReviewer?reviewerCookie+'; HttpOnly; Path=/; SameSite=Strict':
+              'paypal_test_review=; HttpOnly; Path=/; SameSite=Strict; Max-Age=0'
+          ];
+          res.writeHead(200,{'cache-control':'no-store',
+            'content-type':'application/json; charset=utf-8',
+            'set-cookie':setCookie,'x-content-type-options':'nosniff'});
+          res.end(JSON.stringify({role:toSeller?'seller':toReviewer?'reviewer':'owner'}));
+          return;
         }
         const toReviewer=session.actorId===actorId;
         const setCookie=toReviewer
@@ -202,10 +260,11 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
         if(!reqSession){res.writeHead(401,{'cache-control':'no-store'});res.end('UNAUTHORIZED');return;}
         res.writeHead(200, { 'content-type': 'application/json',
           'cache-control': 'no-store' });
-        const role=reqSession.actorId===reviewerId?'reviewer':'owner';
+        const role=reqSession.actorId===reviewerId?'reviewer':reqSession.actorId===sellerId?'seller':'owner';
         res.end(JSON.stringify({ csrfToken, quoteId, mode: 'OFFLINE_MOCK',
           role,contractId:'demo-contract',milestoneId:'demo-milestone',reviewerId,
-          subscriptionId,syntheticReviewerEnabled:enableSyntheticReviewer }));
+          subscriptionId,syntheticReviewerEnabled:enableSyntheticReviewer||enableSyntheticSeller,
+          syntheticSellerEnabled:enableSyntheticSeller }));
         return;
       }
       // Owner-scoped read-only evidence; no PayPal API, mutation or provider authority.
@@ -294,7 +353,9 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
       const options={method:req.method,headers:new Headers(req.headers)};
       if (req.method !== 'GET' && req.method !== 'HEAD')
         options.body=Buffer.concat(chunks);
-      const handler=path.startsWith('/api/demo/protected/') ? protectedReadApi :
+      const handler=path==='/api/demo/workflow/assign-seller' ? assignSellerApi :
+        path.startsWith('/api/demo/workflow/contracts/') ? workflowApi :
+        path.startsWith('/api/demo/protected/') ? protectedReadApi :
         path==='/api/demo/identity' ? identityApi :
         path==='/api/demo/github-delivery' ? githubDeliveryApi :
         path.startsWith('/api/demo/budget/') ? budgetApi :
@@ -332,6 +393,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
     url: 'http://127.0.0.1:' + server.address().port,
     // Accessible only to a local test harness opting into testReviewSessions.
     ...(testReviewSessions ? {testReviewerCookie:reviewerCookie}:{}),
+    ...(testSellerSessions ? {testSellerCookie:sellerCookie}:{}),
     async close() {
       await new Promise((resolve,reject)=>server.close(e=>e?reject(e):resolve()));
       subscriptionStore.close();

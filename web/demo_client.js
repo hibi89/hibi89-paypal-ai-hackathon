@@ -18,12 +18,12 @@ const paymentButton=document.getElementById('payment-status');
 const roleToggle=document.getElementById('demo-role-toggle');
 const sessionRole=document.getElementById('demo-session-role');
 const controls=[draftButton,approveButton,rejectButton,refreshButton,paymentButton];
-let csrfToken=null,quoteId=null,current=null,initialized=false,busy=false,reviewerMode=false;
+let csrfToken=null,quoteId=null,current=null,initialized=false,busy=false,reviewerMode=false,sellerMode=false;
 function updateControls(){
-  for(const element of controls) element.disabled=!initialized||busy||reviewerMode;
+  for(const element of controls) element.disabled=!initialized||busy||reviewerMode||sellerMode;
   // An already-approved amount cannot be approved again; draft revision is allowed.
-  approveButton.disabled=!initialized||busy||reviewerMode||current?.status!=='PROPOSED'||!!current?.rejection;
-  rejectButton.disabled=!initialized||busy||reviewerMode||current?.status!=='PROPOSED'||!!current?.rejection;
+  approveButton.disabled=!initialized||busy||reviewerMode||sellerMode||current?.status!=='PROPOSED'||!!current?.rejection;
+  rejectButton.disabled=!initialized||busy||reviewerMode||sellerMode||current?.status!=='PROPOSED'||!!current?.rejection;
   roleToggle.disabled=!initialized||busy||roleToggle.hidden;
   root.setAttribute('aria-busy',String(busy));
 }
@@ -83,10 +83,14 @@ async function init(){
     csrfToken=session.csrfToken;
     quoteId=session.quoteId;
     reviewerMode=session.role==='reviewer';
+    sellerMode=session.role==='seller';
     roleToggle.hidden=session.syntheticReviewerEnabled!==true;
-    roleToggle.textContent=reviewerMode?'Return to synthetic owner view':'Switch to synthetic reviewer view';
-    sessionRole.textContent='Current local demo session: '+(reviewerMode?'synthetic reviewer':'synthetic owner');
-    if(reviewerMode){
+    roleToggle.textContent=session.syntheticSellerEnabled?
+      sellerMode?'Switch to synthetic reviewer view':
+      reviewerMode?'Return to synthetic owner view':'Switch to synthetic seller view':
+      reviewerMode?'Return to synthetic owner view':'Switch to synthetic reviewer view';
+    sessionRole.textContent='Current local demo session: synthetic '+session.role;
+    if(reviewerMode||sellerMode){
       for(const id of ['marketplace-panel','quote-panel','draft-panel','approval-panel','payment-panel'])
         document.getElementById(id).hidden=true;
     }else await refresh();

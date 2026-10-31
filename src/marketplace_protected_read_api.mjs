@@ -12,11 +12,12 @@ export function createMarketplaceProtectedReadApi({policy,ledger}={}){
  return async function handle(request){
   try{
    if(!(request instanceof Request))throw new QuoteApiError('REQUEST_REQUIRED');
-   const url=new URL(request.url),match=/^\/api\/demo\/protected\/(quotes|contracts)\/([A-Za-z0-9_-]{1,64})$/.exec(url.pathname);
+   const url=new URL(request.url),match=/^\/api\/demo\/protected\/(quotes|contracts)\/([A-Za-z0-9_-]{1,64})(\/events)?$/.exec(url.pathname);
    if(!match||url.search!=='')throw new QuoteApiError('NOT_FOUND',404);
    if(request.method!=='GET')return reply({error:'METHOD_NOT_ALLOWED'},405,{allow:'GET'});
    const proof=await policy.issueProof(request);
-   const [_,kind,id]=match;
+   const [_,kind,id,events]=match;
+   if(events&&kind!=='contracts')throw new QuoteApiError('NOT_FOUND',404);
    const scope=kind==='quotes'
      ?await ledger.getQuoteAuthorityResource(id)
      :await ledger.getContractAuthorityResource(id);
@@ -30,6 +31,12 @@ export function createMarketplaceProtectedReadApi({policy,ledger}={}){
    // Existing ledger getContract is owner/reviewer-scoped. The *trusted*
    // resource check above already validated the seller assignment; read
    // via owner identity internally without impersonation on the HTTP layer.
+   if(events){
+    const eventsData=await ledger.listContractEvents({contractId:id,
+      actorId:scope.ownerId,merchantId:scope.merchantId});
+    return reply({events:eventsData,source:'SYNTHETIC_PERSISTED_LEDGER',
+      paymentAuthorized:false});
+   }
    const contract=await ledger.getContract({contractId:id,
      actorId:scope.ownerId,merchantId:scope.merchantId});
    return reply({contract,source:'SYNTHETIC_PERSISTED_LEDGER',paymentAuthorized:false});

@@ -9,12 +9,13 @@
     deliveryNote=el('delivery-note'),reviewActions=el('review-actions'),
     reviewNote=el('review-note'),submitBtn=el('delivery-submit'),
     acceptBtn=el('review-accept'),rejectBtn=el('review-reject'),
-    auditEvents=el('contract-events');
-  const controls=[createBtn,refreshBtn,submitBtn,acceptBtn,rejectBtn];
+    auditEvents=el('contract-events'),assignBtn=el('contract-assign-seller');
+  const controls=[createBtn,refreshBtn,submitBtn,acceptBtn,rejectBtn,assignBtn];
   let ready=false,busy=false,session=null,contract=null;
   const show=text=>{info.textContent=text;};
   function render(){
     const reviewer=session?.role==='reviewer';
+    const seller=session?.role==='seller',sellerMode=session?.syntheticSellerEnabled===true;
     roleText.textContent='Server-issued local synthetic role: '+(session?.role||'loading');
     payment.textContent=contract?.paymentState||'NOT_CAPTURED';
     const milestone=contract?.milestones?.[0];
@@ -25,12 +26,13 @@
       ' · Milestone '+(milestone?.state||'NONE')+
       (milestone?.deliveryNote?' · Evidence: '+milestone.deliveryNote:'') :
       'No contract yet. Approval and explicit contract creation are separate actions.';
-    createBtn.hidden=reviewer || Boolean(contract);
-    deliveryForm.hidden=reviewer || !milestone ||
+    createBtn.hidden=reviewer||seller||Boolean(contract);
+    assignBtn.hidden=!sellerMode||reviewer||seller||!contract;
+    deliveryForm.hidden=reviewer||(sellerMode&&!seller)||!milestone||
       !['PENDING','REJECTED'].includes(milestone.state);
     reviewActions.hidden=!reviewer || milestone?.state!=='SUBMITTED';
     for(const control of controls)control.disabled=!ready||busy;
-    createBtn.disabled=!ready||busy||Boolean(contract)||reviewer;
+    createBtn.disabled=!ready||busy||Boolean(contract)||reviewer||seller;
     el('contract-panel').setAttribute('aria-busy',String(busy));
   }
   async function api(path,method='GET',body){
@@ -64,11 +66,12 @@
     }
   }
   async function refresh(){
-    const response=await fetch(route(session),{cache:'no-store',credentials:'same-origin'});
+    const contractPath=session?.role==='seller'?'/api/demo/protected/contracts/'+session.contractId:route(session);
+    const response=await fetch(contractPath,{cache:'no-store',credentials:'same-origin'});
     if(response.status===404){contract=null;renderAudit([]);render();return;}
     const data=await response.json();
     if(!response.ok)throw new Error(data.error||'CONTRACT_READ_FAILED');
-    const history=await api(route(session)+'/events'); // read-only GET
+    const history=await api(contractPath+'/events'); // read-only GET
     if(!Array.isArray(history.events))throw new Error('AUDIT_EVENTS_UNAVAILABLE');
     contract=data.contract;
     renderAudit(history.events);
@@ -97,12 +100,18 @@
     });
     await refresh();show('Contract created from approved quote. Payment NOT_CAPTURED.');
   }));
+  assignBtn.addEventListener('click',()=>act(async()=>{
+    await api('/api/demo/workflow/assign-seller','POST',{});
+    show('Fictional seller assigned. Switch to synthetic seller role.');
+  }));
   deliveryForm.addEventListener('submit',e=>{
     e.preventDefault();return act(async()=>{
       const milestone=contract?.milestones?.[0];
       if(!milestone || !['PENDING','REJECTED'].includes(milestone.state))
         throw new Error('INVALID_DELIVERY_STATE');
-      await api(route(session)+'/milestones/'+milestone.id+'/submit','POST',{
+      const base=session.syntheticSellerEnabled?
+        '/api/demo/workflow/contracts/'+session.contractId:route(session);
+      await api(base+'/milestones/'+milestone.id+'/submit','POST',{
         expectedVersion:contract.version,expectedState:milestone.state,
         eventId:eventId(),detail:deliveryNote.value
       });
@@ -115,7 +124,9 @@
       throw new Error('REVIEW_NOT_READY');
     const body={expectedVersion:contract.version,eventId:eventId()};
     if(decision==='reject')body.detail=reviewNote.value;
-    await api(route(session)+'/milestones/'+milestone.id+'/'+decision,'POST',body);
+    const base=session.syntheticSellerEnabled?
+      '/api/demo/workflow/contracts/'+session.contractId:route(session);
+    await api(base+'/milestones/'+milestone.id+'/'+decision,'POST',body);
     await refresh();show('Reviewer '+(decision==='accept'?'accepted':'rejected')+
       ' synthetic delivery. Payment NOT_CAPTURED.');
   });
@@ -126,7 +137,7 @@
       const response=await fetch('/demo/session',{cache:'no-store',credentials:'same-origin'});
       if(!response.ok)throw new Error('DEMO_SESSION_NOT_AVAILABLE');
       session=await response.json();
-      if(session.mode!=='OFFLINE_MOCK'||!['owner','reviewer'].includes(session.role)||
+      if(session.mode!=='OFFLINE_MOCK'||!['owner','reviewer','seller'].includes(session.role)||
         !/^[A-Za-z0-9_-]{1,64}$/.test(session.contractId)||
         !/^[A-Za-z0-9_-]{1,64}$/.test(session.milestoneId))
         throw new Error('INVALID_DEMO_SESSION');
