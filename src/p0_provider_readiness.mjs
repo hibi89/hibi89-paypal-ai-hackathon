@@ -21,7 +21,18 @@ export function inspectP0ProviderReadiness(env={}){
   paypal:Object.freeze({
    sandboxLocalConfiguration:paypalLocal?'LOCALLY_PRESENT_NOT_VERIFIED':'MISSING',
    businessAccount:'NOT_VERIFIED',personalAccount:'NOT_VERIFIED',
-   OAuth:'NOT_TESTED',ordersGet:'NOT_TESTED',capture:'NOT_TESTED'
+   OAuth:'NOT_TESTED',ordersGet:'NOT_TESTED',capture:'NOT_TESTED',
+   // PayPal API documentation distinguishes direct-merchant first-party requests
+   // from marketplace/platform requests on behalf of other merchants.
+   // A Sandbox app + OAuth token is NOT a third-party seller authorization.
+   merchantAuthority:Object.freeze({
+    directFirstParty:'NOT_VERIFIED',
+    platformThirdParty:'NOT_VERIFIED',
+    appMerchantOwnership:'NOT_VERIFIED',
+    sellerAccountOwnership:'NOT_VERIFIED',
+    requiresDistinctPlatformPermission:true,
+    localVariablesEstablishAuthorization:false
+   })
   }),
   ai:Object.freeze({
    candidate:'GEMINI_API_FREE_TIER_IF_ACCOUNT_ELIGIBLE',
@@ -34,6 +45,8 @@ export function inspectP0ProviderReadiness(env={}){
   blockers:Object.freeze([
    'OWNER_APPROVAL_FOR_REAL_PROVIDER_ACCOUNTS_AND_CALLS_REQUIRED',
    'PAYPAL_BUSINESS_AND_PERSONAL_SANDBOX_ACCOUNT_PROOF_REQUIRED',
+   'PAYPAL_APP_MERCHANT_OWNERSHIP_PROOF_REQUIRED',
+   'PAYPAL_PLATFORM_THIRD_PARTY_MERCHANT_AUTHORIZATION_NOT_VERIFIED',
    'PAYPAL_OAUTH_AND_ORDER_GET_PROOF_REQUIRED',
    'AI_FREE_TIER_ELIGIBILITY_AND_ONE_REAL_GENERATION_REQUIRED',
    'NO_REMOTE_ENDPOINT_OR_SECRET_ACCEPTED_IN_THIS_COMMAND'
