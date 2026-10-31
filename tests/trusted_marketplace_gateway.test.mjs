@@ -167,3 +167,32 @@ test('CSRF, origin, method and path boundaries fail closed before any SQLite mut
    actorId:'buyerA',merchantId:'tenantA'})).version,1);
   assert.equal((await db.listAttempts('projectA')).length,0);
  }));
+
+test('trusted host session revoked or switched after first check blocks contract writes',fixture(async({db})=>{
+ const p='/api/marketplace/contracts/contractA/milestones/stepA/submit';
+ const body={eventId:'revoked-mid-request',expectedVersion:1,
+  expectedState:'PENDING',detail:task};
+ for(const scenario of ['revoke','switch','csrf-rotate']){
+  let calls=0;
+  const adapter=createTrustedMarketplaceGateway({
+   ledger:db,expectedOrigin:origin,
+   resolveVerifiedHostSession:()=>{
+    calls++;
+    const base={verified:true,actorId:'sellerA',merchantId:'tenantA',csrfToken:csrf};
+    if(calls===1)return base;
+    if(scenario==='revoke')return null;
+    if(scenario==='switch')return {...base,actorId:'buyerA'};
+    return {...base,csrfToken:'CHANGED_HOST_CSRF_TOKEN_VALUE_2'};
+   }
+  });
+  const request=new Request(origin+p,{method:'POST',
+   headers:{origin,'content-type':'application/json','x-csrf-token':csrf},
+   body:JSON.stringify(body)});
+  const reply=await adapter.handle(request);
+  assert.equal(reply.status,401,scenario+': '+await reply.clone().text());
+  assert.ok(calls>=2,scenario);
+  assert.equal((await db.getContract({contractId:'contractA',
+   actorId:'buyerA',merchantId:'tenantA'})).version,1);
+  assert.equal((await db.listAttempts('projectA')).length,0);
+ }
+}));
