@@ -126,7 +126,7 @@ test('opt-in local legacy owner-delivery remains gated and revocation-aware',fix
    expectedState:'PENDING',nextState:'SUBMITTED',eventId:'allowed-submit',
    detail:'Synthetic submitted source files'});
  assert.equal(result.version,2);
-}),{ownerDelivery:true});
+},{ownerDelivery:true}));
 test('separate SQLite connection revocation is observed on next locked write',fixture(async({ledger,filename})=>{
  const second=createSqliteLedger({filename,enforceLocalMemberWrites:true});
  try{
