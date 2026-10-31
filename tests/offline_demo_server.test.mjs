@@ -49,7 +49,18 @@ test('actual loopback HTTP draft → approved version, read-only refresh, fail-c
     assert.equal(order.status,503);
     assert.equal(order.body.error,'PAYMENT_GATE_NOT_READY');
     const payment=await fetch(route+'/payment');
-    assert.equal(payment.status,503);
+    assert.equal(payment.status,200);
+    assert.equal(payment.headers.get('cache-control'),'private, no-store');
+    const snapshot=(await payment.json()).payment;
+    assert.equal(snapshot.source,'LOCAL_SQLITE_ONLY_NO_PROVIDER_REQUEST');
+    assert.equal(snapshot.paymentState,'NO_PAYMENT_ATTEMPT');
+    assert.equal(snapshot.humanApprovedAmountMinor,5000);
+    assert.equal(snapshot.providerCalls,0);
+    assert.equal(snapshot.livePaymentVerifiedThisRead,false);
+    assert.equal(snapshot.paymentAuthorizedByRead,false);
+    assert.equal(snapshot.createOrCaptureEnabled,false);
+    assert.equal((await (await fetch(route+'/payment')).json()).payment.paymentState,
+      'NO_PAYMENT_ATTEMPT');
   } finally {await app.close();}
 });
 test('loopback demo rejects forged Host header and invalid origin',async()=>{
