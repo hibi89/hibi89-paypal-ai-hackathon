@@ -85,6 +85,10 @@ try:
             expect(page.locator("#quote-view")).to_contain_text("Version 2")
             expect(page.locator("#quote-view")).to_contain_text("synthetic-creative")
             expect(page.locator("#quote-view")).to_contain_text("Not approved")
+            page.locator("#marketplace-confirm-synthetic-creative").click()
+            expect(page.locator("#marketplace-selection-status")).to_contain_text("Saved on server")
+            assert sum(method == "POST" and url.endswith("/api/demo/marketplace/selection")
+                for method,url in requests) == 1
             page.locator("#dollars").fill("29.00")
             page.locator("#confirm").check()
             page.locator("#approve-submit").click()
@@ -108,6 +112,14 @@ try:
             expect(page.locator("#contract-fulfillment")).to_have_text("PENDING")
             expect(page.locator("#contract-payment")).to_have_text("NOT_CAPTURED")
             expect(page.locator("#quote-view")).to_contain_text("synthetic-creative")
+            persisted=page.evaluate("""async () => {
+                const r=await fetch('/api/demo/marketplace/selection?quoteId=sample-project',
+                    {credentials:'same-origin',cache:'no-store'});
+                return {status:r.status,data:await r.json()};
+            }""")
+            assert persisted["status"]==200
+            assert persisted["data"]["profileId"]=="synthetic-creative"
+            assert persisted["data"]["quoteVersion"]==2
             assert not any(
                 method == "POST" and ("/orders" in url or "/capture" in url)
                 for method, url in requests
