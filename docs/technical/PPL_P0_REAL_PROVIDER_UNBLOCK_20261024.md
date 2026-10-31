@@ -60,6 +60,21 @@ Use these **non-secret yes/no facts**:
 
 Once (1) and (2) are established privately, the developer can prepare a one-shot restricted validation command. Record test result and sanitized receipts in GitHub. If access is missing, mark blockers and do not substitute mocks. No pressure to create accounts or enable paid billing.
 
+## 2026-11-01 update — first-party pilot is NOT third-party marketplace authority
+
+Verified against PayPal's published REST documentation (no owner account inspection, calls or permission change):
+- https://developer.paypal.com/api/make-api-requests distinguishes **first-party/direct merchant** calls for your own business and **third-party/platform** calls on behalf of another merchant. An app Client ID + Secret, a synthetic merchant ID, or successful first-party OAuth/GET does NOT by itself prove that a platform may receive or direct payments for unrelated sellers.
+- https://developer.paypal.com/api/rest/authentication documents client credentials OAuth at Sandbox, not seller identity or a multi-merchant mandate.
+- https://developer.paypal.com/api/rest/integration/orders-api describes separate Create/GET/Capture operations. They are not interchangeable with buyer approval and merchant/platform authorization.
+
+**Current offline guard:** `npm run preflight:p0` now reports `paypal.merchantAuthority.directFirstParty`, `.platformThirdParty`, `.appMerchantOwnership`, and `.sellerAccountOwnership` as **NOT_VERIFIED** even when all local credential *variable names* are present. All activation flags remain false, and untrusted environment hints (`PAYPAL_PLATFORM_APPROVED`, `PAYPAL_MERCHANT_ID`, `OWNER_AUTHORIZED`) are ignored. Tests assert this fail-closed behavior. This is a reporting contract, NOT PayPal OAuth/account attestation or an executable access policy.
+
+**Two implementation tracks, subject to owner approval before provider calls:**
+1. **First-party owner-only Sandbox pilot:** Existing verified owner session proof + one immutable approved USD test quote + intended **same sandbox app Business merchant**; check dashboard binding and merchant identity first, then narrowly approved one-order flow. It cannot prove that arbitrary freelancers' merchant accounts are allowed.
+2. **Multi-merchant marketplace:** Separately verify platform integration requirements, seller onboarding/merchant consent and PayPal's permissions for third-party calls. Do not silently reuse a first-party OAuth token to collect on behalf of independent sellers. If missing, show "NOT_VERIFIED" and keep Part1 marketplace matching, contracts and Part2 synthetic innovation operating without real settlement.
+
+The added preflight fields are static audit flags only: no account credentials or data are read beyond existing local presence checks, no browser auth configuration or actual provider endpoint is changed. No Sandbox POST, Live operation, user data or paid product is authorized.
+
 ## E. Verification gates and safe stop conditions
 | Gate | Current | Required proof | Failure response |
 |---|---|---|---|
