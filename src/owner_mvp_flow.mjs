@@ -5,7 +5,6 @@ import {createOwnerMarketplaceAiService} from './owner_marketplace_ai_service.mj
 import {createOwnerCheckoutHostSession} from './owner_checkout_host_session.mjs';
 import {createOwnerPilotCheckoutCoordinator} from './owner_pilot_checkout_coordinator.mjs';
 import {validateMarketplaceBrief} from './gemini_marketplace_provider.mjs';
-import {approvedAmount,requestKey} from './payment_contract.mjs';
 
 export const MVP_BRIEF='Build a fictional ecommerce website with PayPal checkout and QA testing.';
 export const MVP_AMOUNT_MINOR=150;
@@ -54,7 +53,7 @@ export function createOwnerMvpFlow({
     ledger,transport:paypalTransport,
     authorizeAction:async action=>approve(action)
   });
-  let matches=null,approved=false,checkout=null,opened=false,resumedGetOnly=false;
+  let matches=null,approved=false,checkout=null,opened=false;
   const input=async()=>{
     if(!checkout)reject('MVP_CHECKOUT_NOT_ISSUED');
     const session=await host.resolveTrustedCheckout(checkout);
@@ -110,73 +109,11 @@ export function createOwnerMvpFlow({
       opened=true;
     return result;
   }
-  // Recovery is intentionally separate from the fresh checkout path. A process
-  // restart loses the private in-memory session capability, NOT the SQLite
-  // order claim. Rebind a NEW approved session for provider GET only.
-  async function resumeExistingOrderGetOnly(){
-    if(checkout||opened||approved||matches)reject('MVP_RESUME_ALREADY_BOUND');
-    if(typeof ledger.getAttempt!=='function')reject('MVP_RECOVERY_DURABLE_LEDGER_REQUIRED');
-    const quote=await ledger.get(quoteId);
-    if(!quote||quote.id!==quoteId||quote.ownerId!==actorId||
-       quote.merchantId!==merchantId||quote.status!=='APPROVED'||
-       quote.version!==1||quote.currency!=='USD'||
-       quote.approval?.actorId!==actorId||
-       quote.approval?.quoteVersion!==quote.version||
-       approvedAmount(quote)!==MVP_AMOUNT_MINOR)
-      reject('MVP_RECOVERY_APPROVED_QUOTE_REQUIRED');
-    const claim=await ledger.getAttempt(requestKey(quote,'create'));
-    if(!claim||claim.quoteId!==quote.id||claim.quoteVersion!==quote.version||
-       claim.merchantId!==merchantId||claim.currency!=='USD'||
-       claim.amountMinor!==MVP_AMOUNT_MINOR||
-       !['UNKNOWN','APPROVED'].includes(claim.state)||
-       typeof claim.remoteId!=='string'||
-       !/^[A-Za-z0-9_-]{1,64}$/.test(claim.remoteId))
-      reject('MVP_RECOVERY_ORDER_ID_REQUIRED');
-    const accepted=await approve({action:'REAUTHORIZE_EXISTING_SANDBOX_GET_ONLY',
-      quoteId,quoteVersion:quote.version,actorId,merchantId,
-      currency:'USD',amountMinor:MVP_AMOUNT_MINOR,
-      createOrCapturePermitted:false});
-    if(!accepted)reject('MVP_RECOVERY_OWNER_APPROVAL_REQUIRED');
-    // A slow owner decision may race with a quote or claim mutation.
-    const current=await ledger.get(quoteId);
-    const latest=current&&await ledger.getAttempt(requestKey(current,'create'));
-    if(!current||current.status!=='APPROVED'||current.version!==quote.version||
-       current.merchantId!==quote.merchantId||current.ownerId!==quote.ownerId||
-       current.currency!==quote.currency||
-       current.approval?.amountMinor!==quote.approval.amountMinor||
-       !latest||latest.requestId!==claim.requestId||
-       latest.remoteId!==claim.remoteId||latest.state!==claim.state)
-      reject('MVP_RECOVERY_STATE_CHANGED');
-    // This creates one LOCAL checkout session, never a PayPal order or capture.
-    // The trusted host independently asks consent to issue this new proof.
-    const issued=await host.issue({hostLoginHandle:handle,quoteId});
-    checkout=issued.handle;
-    opened=true;
-    resumedGetOnly=true;
-    return Object.freeze({status:'EXISTING_SANDBOX_GET_ONLY_READY',
-      quoteVersion:quote.version,localSessionIssued:true,
-      remoteGetPerformed:false,paypalOrderCreated:false,
-      paypalCapturePerformed:false,createOrCaptureEnabled:false,
-      paymentState:'NOT_RECHECKED',retryPost:false});
-  }
-  async function authorizeRecoveredGet(operation){
-    if(!resumedGetOnly)return;
-    const bound=await input();
-    const accepted=await approve({action:operation,
-      quoteId:bound.quoteId,actorId:bound.actorId,merchantId:bound.merchantId,
-      currency:'USD',amountMinor:MVP_AMOUNT_MINOR,
-      createOrCapturePermitted:false});
-    if(!accepted)reject('MVP_RECOVERY_GET_APPROVAL_REQUIRED');
-    // Revalidate trusted session after the potentially asynchronous consent.
-    await input();
-  }
   async function refresh(){
     if(!opened)reject('MVP_ORDER_NOT_OPENED');
-    await authorizeRecoveredGet('GET_EXISTING_SANDBOX_ORDER_ONLY');
     return coordinator.refreshOwnerOrder(await input());
   }
   async function capture(){
-    if(resumedGetOnly)reject('MVP_RECOVERY_CAPTURE_PERMANENTLY_DISABLED');
     if(!opened)reject('MVP_ORDER_NOT_OPENED');
     const status=await refresh();
     if(status.status!=='ORDER_APPROVED')
@@ -188,11 +125,10 @@ export function createOwnerMvpFlow({
   }
   async function reconcile(){
     if(!opened)reject('MVP_ORDER_NOT_OPENED');
-    await authorizeRecoveredGet('GET_EXISTING_SANDBOX_CAPTURE_ONLY');
     return coordinator.reconcileOwnerCapture(await input());
   }
   return Object.freeze({classify,approveQuote,createOrder,refresh,capture,
-    reconcile,resumeExistingOrderGetOnly,mode:'PRIVATE_OPERATOR_SINGLE_PROCESS_MVP',
+    reconcile,mode:'PRIVATE_OPERATOR_SINGLE_PROCESS_MVP',
     publicHttpEnabled:false,productionAuthImplemented:false,
     livePaymentEnabled:false,automaticCapture:false});
 }
