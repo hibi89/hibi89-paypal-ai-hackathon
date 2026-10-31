@@ -54,6 +54,8 @@ export async function runOwnerGeminiA2APilot({
  }catch{return report('BUDGET_STORE_UNAVAILABLE',{networkRequests:0});}
  try{
   const scope={actor:'owner_cli',merchant:'fictional_seller',job:'owner_a2a_one_shot'};
+  if(ledger.status(scope).requestsClaimed!==0)
+   return report('A2A_PREVIOUS_CLAIM_NO_AUTO_RETRY',{networkRequests:0});
   // Absolute maximum four Gemini messages; a fresh process cannot repeat a
   // claimed turn. Model availability and actual Free Tier must be checked by owner.
   const agents=createDurableGeminiA2ARoles({
@@ -66,6 +68,12 @@ export async function runOwnerGeminiA2APilot({
    maxTurns:4,turnTimeoutMs:8000
   });
   const evidence=ledger.status(scope);
+  if(evidence.records.some(x=>x.state!=='DONE'))
+   return report('PROVIDER_OR_RESULT_UNKNOWN_NO_RETRY',{
+    networkRequests:'NOT_ATTESTED',claimedRequests:evidence.requestsClaimed,
+    auditState:evidence.records.map(x=>({role:x.role,turn:x.turn,state:x.state})),
+    provenance:'NO_PROVIDER_PROOF'
+   });
   const outcome=negotiation.status;
   return report(outcome==='AGREED_OFFLINE_CONTRACT'
    ?'PRIVATE_A2A_OFFLINE_CONTRACT_ONLY'
