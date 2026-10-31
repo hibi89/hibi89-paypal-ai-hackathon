@@ -185,3 +185,23 @@ test('inspect refuses a review link that expires during asynchronous evidence re
   }finally{delayed.close();}
  });
 });
+
+test('link refuses a review association expiring during final async evidence read',async()=>{
+ await using(async f=>{
+  let reads=0;
+  const delayedLedger={
+   get:async id=>{
+    const q=await f.ledger.get(id);
+    if(++reads===3)f.advance(16*60*1000);
+    return q;
+   }
+  };
+  const delayed=createCrossPartReviewBridge({
+   ...f.options,ledger:delayedLedger,filename:join(f.dir,'delayed-final.sqlite')
+  });
+  try{
+   await assert.rejects(delayed.link(args(f)),
+    rejectCode('CROSS_PART_LINK_EXPIRED'));
+  }finally{delayed.close();}
+ });
+});
