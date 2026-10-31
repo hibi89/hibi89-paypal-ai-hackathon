@@ -70,7 +70,11 @@ const convertAttempt = row => row && ({
   createdAt:row.created_at, observedAt:row.observed_at,
 });
 
-export function createSqliteLedger({ filename } = {}) {
+export function createSqliteLedger({filename,
+  enforceLocalMemberWrites=false, allowLocalOwnerDelivery=false} = {}) {
+  if(typeof enforceLocalMemberWrites!=='boolean'||
+     typeof allowLocalOwnerDelivery!=='boolean')
+    throw new TypeError('INVALID_LOCAL_WRITE_POLICY');
   // Must explicitly select a disk file; ephemeral DB is not valid safety evidence.
   reject(!filename || typeof filename !== 'string' || filename === ':memory:' ||
     filename.startsWith('file::memory:') || filename.includes('?mode=memory'),
@@ -121,7 +125,18 @@ export function createSqliteLedger({ filename } = {}) {
     catch { throw new QuoteApiError('HUMAN_APPROVAL_REQUIRED',409); }
     return {quote,cents};
   }
-  const contractStore = createContractMilestoneStore({db,transaction,lockedApprovedQuote,reject});
+  // Re-read the trusted *persisted* membership only while the database write
+  // lock is held. The API precheck alone cannot guarantee this across awaits.
+  // Disabled by default to preserve legacy standalone ledger and owner-pilot flows.
+  function assertLocalWriteLocked(actorId,merchantId,role){
+    if(!enforceLocalMemberWrites)return;
+    const row=stmt(`SELECT merchant_id,role,active FROM marketplace_actor_memberships
+      WHERE actor_id=?`).get(actorId);
+    reject(!row||row.active!==1||row.merchant_id!==merchantId||row.role!==role,
+      'LOCAL_WRITE_ROLE_REVOKED',403);
+  }
+  const contractStore = createContractMilestoneStore({db,transaction,
+    lockedApprovedQuote,reject,assertLocalWriteLocked,allowLocalOwnerDelivery});
   // P0: Store candidate binding in the SAME file and BEGIN IMMEDIATE domain
   // as the quote/approval/contract. Historical unselected quotes remain valid.
   db.exec(`CREATE TABLE IF NOT EXISTS quote_candidate_bindings (
@@ -381,6 +396,7 @@ export function createSqliteLedger({ filename } = {}) {
         'INVALID_CANDIDATE_BINDING');
       transaction(()=>{
         const quote=authorized(quoteId,ownerId,merchantId);
+        assertLocalWriteLocked(ownerId,quote.merchantId,'buyer');
         reject(quote.status!=='PROPOSED'||quote.version!==expectedQuoteVersion,
           'STALE_OR_APPROVED_QUOTE',409);
         reject(typeof quote.scope!=='string'||digest(quote.scope)!==scopeDigest,
@@ -455,6 +471,7 @@ export function createSqliteLedger({ filename } = {}) {
       return transaction(() => {
         const row = getRow(id);
         reject(!row || row.owner_id !== actorId,'QUOTE_NOT_FOUND',404);
+        assertLocalWriteLocked(actorId,row.merchant_id,'buyer');
         reject(row.version !== expectedVersion,'STALE_QUOTE_VERSION',409);
         reject(row.status !== 'PROPOSED','QUOTE_ALREADY_APPROVED',409);
         lockedCandidateGuard(convertQuote(row));
@@ -476,6 +493,7 @@ export function createSqliteLedger({ filename } = {}) {
       return transaction(()=>{
         const row=getRow(id);
         reject(!row||row.owner_id!==actorId,'QUOTE_NOT_FOUND',404);
+        assertLocalWriteLocked(actorId,row.merchant_id,'buyer');
         reject(row.version!==expectedVersion,'STALE_QUOTE_VERSION',409);
         reject(row.status!=='PROPOSED'||row.rejection_reason!=null,'QUOTE_NOT_REJECTABLE',409);
         reject(!!stmt('SELECT 1 FROM ai_draft_attempts WHERE quote_id=? AND quote_version=? AND state=\'RESERVED\'').get(id,expectedVersion),
@@ -502,6 +520,7 @@ export function createSqliteLedger({ filename } = {}) {
       return transaction(() => {
         const row = getRow(id);
         reject(!row || row.owner_id !== actorId, 'QUOTE_NOT_FOUND', 404);
+        assertLocalWriteLocked(actorId,row.merchant_id,'buyer');
         reject(row.version !== expectedVersion, 'STALE_QUOTE_VERSION', 409);
         reject(row.version >= Number.MAX_SAFE_INTEGER, 'QUOTE_VERSION_EXHAUSTED', 409);
         reject(!!stmt('SELECT 1 FROM contracts WHERE quote_id=? LIMIT 1').get(id),
@@ -537,6 +556,7 @@ export function createSqliteLedger({ filename } = {}) {
       return transaction(()=>{
         const row=getRow(id);
         reject(!row || row.owner_id!==actorId,'QUOTE_NOT_FOUND',404);
+        assertLocalWriteLocked(actorId,row.merchant_id,'buyer');
         reject(row.version!==expectedVersion,'STALE_QUOTE_VERSION',409);
         reject(row.status!=='PROPOSED','AI_DRAFT_REQUIRES_PROPOSAL',409);
         reject(!!stmt('SELECT 1 FROM contracts WHERE quote_id=? LIMIT 1').get(id),
@@ -580,6 +600,7 @@ export function createSqliteLedger({ filename } = {}) {
       reject(!['create','capture'].includes(operation),'INVALID_ACTION');
       return transaction(() => {
         const {quote,cents} = lockedApprovedQuote(quoteId,actorId,merchantId);
+        assertLocalWriteLocked(actorId,quote.merchantId,'buyer');
         const rid=requestKey(quote,operation);
         const prior=attemptRow(rid);
         if (prior) {

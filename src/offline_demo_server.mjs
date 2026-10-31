@@ -38,7 +38,8 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
     throw new TypeError('INVALID_LOCAL_PORT');
   const folder = mkdtempSync(join(tmpdir(), 'paypal-local-demo-'));
   const demoLedgerPath=join(folder,'demo.sqlite');
-  const ledger = createSqliteLedger({ filename:demoLedgerPath });
+  const ledger = createSqliteLedger({ filename:demoLedgerPath,
+    enforceLocalMemberWrites:true,allowLocalOwnerDelivery:!enableSyntheticSeller });
   const budgetStore=createAgentBudgetStore(join(folder,'agent_budget.sqlite'));
   const marketplaceStore=createMarketplaceRecommendationStore(join(folder,'recommendation_history.sqlite'));
   const selectionStore=createLedgerMarketplaceSelectionStore({recommendations:marketplaceStore,quotes:ledger});

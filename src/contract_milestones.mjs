@@ -49,7 +49,8 @@ const transitionPolicy = {
 };
 
 // Reuses the parent ledger's BEGIN IMMEDIATE transaction to keep quotes/payment/contract atomic.
-export function createContractMilestoneStore({db,transaction,lockedApprovedQuote,reject}) {
+export function createContractMilestoneStore({db,transaction,lockedApprovedQuote,reject,
+  assertLocalWriteLocked=()=>{},allowLocalOwnerDelivery=false}) {
   for (const sql of statements) db.exec(sql);
   const q = sql => db.prepare(sql);
   const contractRow = id => q('SELECT * FROM contracts WHERE id=?').get(id);
@@ -97,6 +98,8 @@ export function createContractMilestoneStore({db,transaction,lockedApprovedQuote
       });
       return transaction(()=>{
         const {quote,cents}=lockedApprovedQuote(quoteId,actorId,merchantId);
+        assertLocalWriteLocked(actorId,merchantId,'buyer');
+        assertLocalWriteLocked(reviewerId,merchantId,'reviewer');
         reject(quote.version!==expectedVersion,'STALE_QUOTE_VERSION',409);
         reject(sum!==cents,'CONTRACT_AMOUNT_MISMATCH',409);
         reject(!!q('SELECT 1 FROM contracts WHERE quote_id=? OR id=?').get(quoteId,id),
@@ -134,6 +137,10 @@ export function createContractMilestoneStore({db,transaction,lockedApprovedQuote
         'REJECTION_REASON_REQUIRED');
       return transaction(()=>{
         const c=authorized(contractId,actorId,merchantId);
+        if(role==='reviewer')assertLocalWriteLocked(actorId,merchantId,'reviewer');
+        else if(allowLocalOwnerDelivery)
+          assertLocalWriteLocked(actorId,merchantId,'buyer');
+        else assertLocalWriteLocked(actorId,merchantId,'buyer');
         reject(c.version!==expectedVersion,'STALE_CONTRACT_VERSION',409);
         reject((role==='owner'&&actorId!==c.owner_id)||
           (role==='reviewer'&&actorId!==c.reviewer_id),
