@@ -197,8 +197,13 @@ try:
             page.locator("#marketplace-submit").click()
             expect(page.locator("#marketplace-choose-synthetic-web")).to_be_visible()
             page.locator("#marketplace-choose-synthetic-web").click()
+            # After reload, the editable quote scope is intentionally NOT
+            # restored from the old selection. Explicitly draft a fresh v5.
+            page.locator("#draft-submit").click()
+            expect(page.locator("#quote-view")).to_contain_text("Version 5")
             page.locator("#marketplace-confirm-synthetic-web").click()
-            expect(page.locator("#marketplace-selection-status")).to_contain_text("quote version 4")
+            expect(page.locator("#marketplace-selection-status")).to_contain_text("quote version 5")
+            page.locator("#dollars").fill("15.00")
             page.locator("#confirm").check()
             page.locator("#approve-submit").click()
             expect(page.locator("#quote-view")).to_contain_text("APPROVED")
