@@ -233,3 +233,15 @@ test('private read API uses real Part1/Part2 SQLite and rejects forged host Requ
   assert.equal((await api(trustedRequest)).status,404);
  });
 });
+
+test('a review link expires at exact 15 minute boundary even with valid 30 minute consent',async()=>{
+ await using(async f=>{
+  await f.bridge.link(args(f));
+  f.advance(15*60*1000-1);
+  assert.equal((await f.bridge.inspect({hostHandle:f.hostHandle,quoteId})).paymentAuthorized,false);
+  f.advance(1);
+  await assert.rejects(f.bridge.inspect({hostHandle:f.hostHandle,quoteId}),
+   rejectCode('CROSS_PART_LINK_UNAVAILABLE'));
+  await assert.rejects(f.bridge.link(args(f)),rejectCode('CROSS_PART_LINK_EXPIRED'));
+ });
+});
