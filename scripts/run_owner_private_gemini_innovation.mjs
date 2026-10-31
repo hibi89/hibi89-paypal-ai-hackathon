@@ -52,7 +52,7 @@ if(!exact){
    const outcome=await app.negotiate({key:'one_negotiation',consentId:mandate.consentId});
    const budget=app.quotaStatus();
    info('PRIVATE_PART2_ATTEMPT_PERSISTED',{
-    agreementState:outcome.status,accepted:outcome.accepted===true,
+    networkRequests:'NOT_ATTESTED',agreementState:outcome.status,accepted:outcome.accepted===true,
     agreedMinor:outcome.agreedMinor??null,
     a2aReplay:outcome.replayed===true,
     quotaClaims:budget.requestsClaimed,
@@ -64,7 +64,7 @@ if(!exact){
    });
   }catch(e){
    // Never output paths, secrets or provider response bodies.
-   info('PRIVATE_PART2_FAILED_NO_AUTO_RETRY',{errorClass:String(e?.code||'UNKNOWN')});
+   info('PRIVATE_PART2_FAILED_NO_AUTO_RETRY',{networkRequests:'NOT_ATTESTED',errorClass:String(e?.code||'UNKNOWN')});
    process.exitCode=2;
   }finally{try{app?.close()}catch{}}
  }
