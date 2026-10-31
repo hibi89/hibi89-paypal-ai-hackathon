@@ -16,6 +16,10 @@ button{cursor:pointer;padding:11px 16px;margin:13px 5px 0 0;border:0;border-radi
 button:disabled{opacity:.5;cursor:not-allowed}
 #mandate-state{font-size:.85rem;color:#415a7f;overflow-wrap:anywhere}
 #mandate-tools{margin-top:17px;padding-top:16px;border-top:1px solid #dce4ef}
+.crosspart-evidence{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
+.crosspart-evidence p{background:#f6f9fe;border:1px solid #dce6f2;border-radius:10px;padding:12px;font-size:.86rem;overflow-wrap:anywhere;margin:0}
+#crosspart-result{font-weight:700}
+@media(max-width:680px){.crosspart-evidence{grid-template-columns:1fr}}
 #revoke-mandate{background:#8a3d46}
 #revoke-mandate:hover:not(:disabled){background:#712b36}
 #a2a-progress,#pending-status{font-size:.85rem;color:#405a7d;overflow-wrap:anywhere}
@@ -55,6 +59,20 @@ pre{white-space:pre-wrap;word-break:break-word;background:#132643;color:#d9edff;
 <select id="a2a-history" aria-describedby="a2a-history-status"><option value="">No completed negotiation yet</option></select>
 <button type="button" id="show-a2a-history" disabled>View saved negotiation</button>
 <p id="a2a-history-status" role="status" aria-live="polite">Stored results are read-only. Viewing them never runs agents or creates PayPal orders.</p></div></section>
+<section class="card wide" id="crosspart-panel" aria-labelledby="crosspart-heading">
+<span class="badge">Part 1 + Part 2 · Offline review</span>
+<h2 id="crosspart-heading">Compare AI agreement with human-approved quote</h2>
+<p>A real persisted Part 1 quote is read separately from a Part 2 saved agent negotiation. This is a <strong>read-only price and scope comparison</strong>, not a signed association, PayPal approval, merchant verification or authorization to charge.</p>
+<button type="button" id="crosspart-compare">Compare with approved Part 1 quote (GET only)</button>
+<p id="crosspart-result" role="status" aria-live="polite">Select or complete a Part 2 A2A negotiation, then compare with the human-approved quote in Part 1.</p>
+<div id="crosspart-evidence" class="crosspart-evidence" aria-live="polite">
+<p id="crosspart-part1">Part 1 quote · not checked</p>
+<p id="crosspart-part2">Part 2 negotiation · not checked</p>
+<p id="crosspart-match">Comparison · NOT_CHECKED</p>
+<p id="crosspart-payment">Payment · NOT_AUTHORIZED / NOT_CAPTURED</p>
+</div>
+<p><a href="/demo">Open Part 1 to draft and approve the human quote</a></p>
+</section>
 <section class="card"><span class="badge">03 · Gift Finder</span><h2>Gift preference matching</h2>
 <p>Choose a fictional category, preferred style and price ceiling. Compare a fixed local catalog and require an unused gift mandate; no inventory lookup or PayPal checkout.</p>
 <label for="gift-category">Gift category</label><select id="gift-category"><option value="lighting">Desk lighting</option><option value="mug">Mugs</option><option value="stationery">Stationery</option></select>
