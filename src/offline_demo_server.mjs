@@ -22,7 +22,7 @@ import {createMarketplaceProtectedReadApi} from './marketplace_protected_read_ap
 import {createMarketplaceContractWorkflowApi} from './marketplace_contract_workflow_api.mjs';
 import {QuoteApiError,reply} from './quote_api.mjs';
 import { createNegotiationDemoApi } from './agent_negotiation_demo_api.mjs';
-import { createAgentBudgetStore } from './agent_budget_store.mjs';
+import { createLedgerAgentBudgetStore } from './agent_budget_store.mjs';
 import { createAgentBudgetDemoApi } from './agent_budget_demo_api.mjs';
 import { createGithubDeliveryDemoApi } from './github_delivery_demo_api.mjs';
 import { createNegotiationRegistry } from './negotiation_registry.mjs';
@@ -40,7 +40,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
   const demoLedgerPath=join(folder,'demo.sqlite');
   const ledger = createSqliteLedger({ filename:demoLedgerPath,
     enforceLocalMemberWrites:true,allowLocalOwnerDelivery:!enableSyntheticSeller });
-  const budgetStore=createAgentBudgetStore(join(folder,'agent_budget.sqlite'));
+  const budgetStore=createLedgerAgentBudgetStore(ledger);
   const marketplaceStore=createMarketplaceRecommendationStore(join(folder,'recommendation_history.sqlite'));
   const selectionStore=createLedgerMarketplaceSelectionStore({recommendations:marketplaceStore,quotes:ledger});
   const subscriptionStore=createSubscriptionScenarioStore({

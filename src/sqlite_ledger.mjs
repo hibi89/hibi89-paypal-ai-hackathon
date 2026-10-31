@@ -141,6 +141,30 @@ export function createSqliteLedger({filename,
         expectedMembershipRevision<1||row.revision!==expectedMembershipRevision,
         'LOCAL_WRITE_ROLE_VERSION_CHANGED',403);
   }
+  // Synthetic unified budget tables; never overwrite the older separate DB.
+  db.exec(`CREATE TABLE IF NOT EXISTS local_agent_limits(
+    owner TEXT NOT NULL,merchant TEXT NOT NULL,
+    cap INTEGER NOT NULL CHECK(cap BETWEEN 100 AND 100000000),
+    PRIMARY KEY(owner,merchant))`);
+  db.exec(`CREATE TABLE IF NOT EXISTS local_agent_reservations(
+    owner TEXT NOT NULL,merchant TEXT NOT NULL,
+    quote TEXT NOT NULL REFERENCES quotes(id) ON DELETE RESTRICT,
+    version INTEGER NOT NULL CHECK(version>=1),
+    amount INTEGER NOT NULL CHECK(amount BETWEEN 100 AND 100000000),
+    PRIMARY KEY(owner,merchant,quote,version),
+    FOREIGN KEY(owner,merchant) REFERENCES local_agent_limits(owner,merchant))`);
+  const positiveBudget=x=>Number.isSafeInteger(x)&&x>=100&&x<=100000000;
+  function budgetStatus(owner,merchant){
+    reject(!idOk(owner)||!idOk(merchant),'INVALID_OWNER');
+    const cap=stmt('SELECT cap FROM local_agent_limits WHERE owner=? AND merchant=?').get(owner,merchant)?.cap??null;
+    const used=stmt('SELECT COALESCE(SUM(amount),0) AS n FROM local_agent_reservations WHERE owner=? AND merchant=?').get(owner,merchant).n;
+    return {configured:cap!==null,limitMinor:cap,reservedMinor:used};
+  }
+  function budgetRole(owner,merchant,revision){
+    reject(!enforceLocalMemberWrites,'ATOMIC_LOCAL_BUDGET_MODE_REQUIRED',403);
+    reject(!Number.isSafeInteger(revision)||revision<1,'TRUSTED_MEMBERSHIP_REVISION_REQUIRED',403);
+    assertLocalWriteLocked(owner,merchant,'buyer',revision);
+  }
   const contractStore = createContractMilestoneStore({db,transaction,
     lockedApprovedQuote,reject,assertLocalWriteLocked,
     enforceLocalMemberWrites,allowLocalOwnerDelivery});
@@ -234,6 +258,55 @@ export function createSqliteLedger({filename,
   }
 
   const api = {
+    // No PayPal/Gemini provider calls; locked authorization + budget data.
+    configureLocalBudget({owner,merchant,cap,expectedMembershipRevision}={}){
+      reject(!idOk(owner)||!idOk(merchant)||!positiveBudget(cap),'INVALID_LIMIT');
+      return transaction(()=>{
+        budgetRole(owner,merchant,expectedMembershipRevision);
+        if(budgetStatus(owner,merchant).reservedMinor>cap)return {ok:false,reason:'BELOW_RESERVED'};
+        stmt(`INSERT INTO local_agent_limits(owner,merchant,cap) VALUES(?,?,?)
+          ON CONFLICT(owner,merchant) DO UPDATE SET cap=excluded.cap`).run(owner,merchant,cap);
+        return {ok:true};
+      });
+    },
+    reserveLocalBudget({owner,merchant,quote,version,amount,expectedMembershipRevision}={}){
+      reject(!idOk(owner)||!idOk(merchant)||!idOk(quote)||
+        !Number.isSafeInteger(version)||version<1||!positiveBudget(amount),
+        'INVALID_RESERVATION');
+      return transaction(()=>{
+        budgetRole(owner,merchant,expectedMembershipRevision);
+        const row=getRow(quote);
+        reject(!row||row.owner_id!==owner||row.merchant_id!==merchant,'QUOTE_NOT_FOUND',404);
+        reject(row.version!==version||row.status!=='APPROVED'||row.currency!=='USD'||
+          row.approval_actor!==owner||row.approval_version!==version||
+          row.approval_amount_minor!==amount||row.rejection_reason!==null,
+          'BUDGET_QUOTE_CHANGED',409);
+        const old=stmt(`SELECT amount FROM local_agent_reservations
+          WHERE owner=? AND merchant=? AND quote=? AND version=?`)
+          .get(owner,merchant,quote,version);
+        if(old)return {ok:old.amount===amount,reason:'ALREADY_RESERVED'};
+        const s=budgetStatus(owner,merchant);
+        if(!s.configured)return {ok:false,reason:'NO_LIMIT'};
+        if(amount>s.limitMinor-s.reservedMinor)return {ok:false,reason:'BUDGET_EXCEEDED'};
+        stmt(`INSERT INTO local_agent_reservations(owner,merchant,quote,version,amount)
+          VALUES(?,?,?,?,?)`).run(owner,merchant,quote,version,amount);
+        return {ok:true,remainingMinor:s.limitMinor-s.reservedMinor-amount};
+      });
+    },
+    getLocalBudgetStatus(owner,merchant){return budgetStatus(owner,merchant)},
+    getLocalBudgetReservation(owner,merchant,quote,version){
+      reject(!idOk(owner)||!idOk(merchant)||!idOk(quote)||
+        !Number.isSafeInteger(version)||version<1,'INVALID_RESERVATION');
+      return stmt(`SELECT amount FROM local_agent_reservations
+        WHERE owner=? AND merchant=? AND quote=? AND version=?`)
+        .get(owner,merchant,quote,version)?.amount??null;
+    },
+    listLocalBudgetHistory(owner,merchant){
+      reject(!idOk(owner)||!idOk(merchant),'INVALID_OWNER');
+      return stmt(`SELECT quote,version,amount FROM local_agent_reservations
+        WHERE owner=? AND merchant=? ORDER BY rowid DESC LIMIT 100`)
+        .all(owner,merchant).map(x=>({quoteId:x.quote,quoteVersion:x.version,amountMinor:x.amount}));
+    },
     ...contractStore,
     async get(id) { return convertQuote(getRow(id)); },
     // Trusted-host-only operations. NEVER expose provisioning or membership

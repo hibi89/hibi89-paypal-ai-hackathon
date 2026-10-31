@@ -2,7 +2,7 @@
 import {evaluatePaymentGuardrail} from './agent_budget_guardrail.mjs';
 export function createAgentBudgetFlow({quotes,budgets}={}){
  if(typeof quotes?.get!=='function'||typeof budgets?.status!=='function'||typeof budgets?.reserve!=='function')throw new TypeError('STORES_REQUIRED');
- return async function prepare({quoteId,ownerId,merchantId,expectedVersion,negotiation,explicitApproval,beforeReserve}={}){
+ return async function prepare({quoteId,ownerId,merchantId,expectedVersion,negotiation,explicitApproval,beforeReserve,expectedMembershipRevision}={}){
   if(typeof quoteId!=='string'||typeof ownerId!=='string'||typeof merchantId!=='string'||!Number.isSafeInteger(expectedVersion)||expectedVersion<1)return {ok:false,reason:'INVALID_REQUEST'};
   if(negotiation?.quoteId !== undefined && negotiation.quoteId !== quoteId) return {ok:false,reason:'NEGOTIATION_QUOTE_MISMATCH'};
   if(negotiation?.quoteVersion !== undefined && negotiation.quoteVersion !== expectedVersion) return {ok:false,reason:'NEGOTIATION_VERSION_MISMATCH'};
@@ -23,7 +23,7 @@ export function createAgentBudgetFlow({quotes,budgets}={}){
   if(!fresh||fresh.rejection||fresh.currency!==quote.currency||fresh.id!==quoteId||fresh.ownerId!==ownerId||fresh.merchantId!==merchantId||fresh.version!==expectedVersion||fresh.status!=='APPROVED'||fresh.approval?.actorId!==ownerId||fresh.approval?.quoteVersion!==expectedVersion||fresh.approval?.amountMinor!==negotiation.agreedMinor)return {ok:false,reason:'QUOTE_CHANGED'};
   // Separate SQLite file: last-moment auth check, not cross-file atomicity.
   if(beforeReserve)await beforeReserve();
-  const reserved=budgets.reserve({owner:ownerId,merchant:merchantId,quote:quoteId,version:expectedVersion,amount:negotiation.agreedMinor});
+  const reserved=budgets.reserve({owner:ownerId,merchant:merchantId,quote:quoteId,version:expectedVersion,amount:negotiation.agreedMinor,expectedMembershipRevision});
   const after=reserved.ok ? budgets.status(ownerId,merchantId) : null;
   const remainingMinor=after ? after.limitMinor-after.reservedMinor : null;
   return {ok:reserved.ok,reason:reserved.reason??'RESERVED',remainingMinor,paymentAuthorized:false,providerCallMade:false};
