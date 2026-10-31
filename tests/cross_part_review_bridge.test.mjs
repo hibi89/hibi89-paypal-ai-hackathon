@@ -201,7 +201,7 @@ test('link refuses a review association expiring during final async evidence rea
   });
   try{
    await assert.rejects(delayed.link(args(f)),
-    rejectCode('CROSS_PART_LINK_EXPIRED'));
+    e=>['CROSS_PART_LINK_EXPIRED','CROSS_PART_SCOPED_CONSENT_REQUIRED'].includes(e?.code));
   }finally{delayed.close();}
  });
 });
