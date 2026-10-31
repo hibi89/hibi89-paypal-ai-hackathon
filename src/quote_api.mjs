@@ -133,11 +133,14 @@ function route(path) {
 // resolveSession is a TRUSTED server-side session verifier; never read actorId
 // or csrfToken from arbitrary browser headers/body. No insecure fallback.
 export function createQuoteApi({ repository, resolveSession, draftProvider,
-  authorizeExternalAi, allowAiPricingExperiment=false } = {}) {
+  authorizeExternalAi, allowAiPricingExperiment=false,
+  assertSelectionBeforeApprove } = {}) {
   if (!repository || typeof repository.get !== 'function' ||
       typeof repository.approve !== 'function' ||
       typeof resolveSession !== 'function')
     throw new TypeError('TRUSTED_SESSION_AND_REPOSITORY_REQUIRED');
+  if(assertSelectionBeforeApprove!==undefined && typeof assertSelectionBeforeApprove!=='function')
+    throw new TypeError('INVALID_SELECTION_APPROVAL_GUARD');
   if (draftProvider !== undefined &&
       (typeof draftProvider !== 'function' || typeof repository.revise !== 'function'))
     throw new TypeError('DRAFT_PROVIDER_AND_REVISION_REPOSITORY_REQUIRED');
@@ -276,6 +279,10 @@ export function createQuoteApi({ repository, resolveSession, draftProvider,
       fail(!Number.isSafeInteger(data.amountMinor) ||
         data.amountMinor < 100 || data.amountMinor > 1000000,
       'INVALID_APPROVED_AMOUNT');
+      if(assertSelectionBeforeApprove)await assertSelectionBeforeApprove({
+        id:r.id,actorId:session.actorId,merchantId:session.merchantId,
+        expectedVersion:data.expectedVersion
+      });
       const approved = await repository.approve({
         id: r.id, expectedVersion: data.expectedVersion, actorId: session.actorId,
         amountMinor: data.amountMinor,

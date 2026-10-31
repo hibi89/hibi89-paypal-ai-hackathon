@@ -16,6 +16,7 @@ import { createDemoRateLimiter } from './demo_rate_limit.mjs';
 import { createPaypalBuyerReturnBoundary } from './paypal_buyer_return_boundary.mjs';
 import { createMarketplaceDemoApi } from './marketplace_match.mjs';
 import { createMarketplaceRecommendationStore } from './marketplace_recommendation_store.mjs';
+import { createMarketplaceSelectionStore, createMarketplaceSelectionApi } from './marketplace_selection_store.mjs';
 import { createNegotiationDemoApi } from './agent_negotiation_demo_api.mjs';
 import { createAgentBudgetStore } from './agent_budget_store.mjs';
 import { createAgentBudgetDemoApi } from './agent_budget_demo_api.mjs';
@@ -35,6 +36,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
   const ledger = createSqliteLedger({ filename:demoLedgerPath });
   const budgetStore=createAgentBudgetStore(join(folder,'agent_budget.sqlite'));
   const marketplaceStore=createMarketplaceRecommendationStore(join(folder,'recommendation_history.sqlite'));
+  const selectionStore=createMarketplaceSelectionStore(join(folder,'candidate_selections.sqlite'),{recommendations:marketplaceStore,quotes:ledger});
   const subscriptionStore=createSubscriptionScenarioStore({
     filename:join(folder,'subscription_scenarios.sqlite')
   });
@@ -71,6 +73,8 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
     // This is intentionally a fixed synthetic demo session bound to 127.0.0.1.
     // Real deployment MUST replace with a verified identity/CSRF cookie provider.
     resolveSession,
+    assertSelectionBeforeApprove: async ({id,actorId,merchantId,expectedVersion}) =>
+      selectionStore.assertCurrent({quoteId:id,ownerId:actorId,merchantId,expectedQuoteVersion:expectedVersion}),
   });
   const contractApi = createContractApi({repository:ledger,resolveSession});
   subscriptionStore.seed({subscriptionId,ownerId:actorId,merchantId:'synthetic-merchant'});
@@ -80,6 +84,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
   const checkRate = createDemoRateLimiter();
   const buyerReturn=createPaypalBuyerReturnBoundary();
   const marketplaceApi=createMarketplaceDemoApi({resolveSession,store:marketplaceStore});
+  const selectionApi=createMarketplaceSelectionApi({resolveSession,store:selectionStore});
   const negotiationRegistry=createNegotiationRegistry();
   const negotiationApi=createNegotiationDemoApi({resolveSession,repository:ledger,registry:negotiationRegistry});
   const budgetApi=createAgentBudgetDemoApi({resolveSession,quotes:ledger,budgets:budgetStore,registry:negotiationRegistry});
@@ -279,6 +284,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
       const handler=path==='/api/demo/github-delivery' ? githubDeliveryApi :
         path.startsWith('/api/demo/budget/') ? budgetApi :
         path==='/api/demo/negotiate' ? negotiationApi :
+        path==='/api/demo/marketplace/selection' ? selectionApi :
         path==='/api/demo/marketplace'||path==='/api/demo/marketplace/next'||
          path==='/api/demo/marketplace/history' ? marketplaceApi :
         path==='/api/contracts'||path.startsWith('/api/contracts/')
@@ -301,6 +307,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
   } catch(e) {
     subscriptionStore.close();
     budgetStore.close();
+    selectionStore.close();
     marketplaceStore.close();
     ledger.close();
     rmSync(folder,{recursive:true,force:true});
@@ -314,6 +321,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
       await new Promise((resolve,reject)=>server.close(e=>e?reject(e):resolve()));
       subscriptionStore.close();
       budgetStore.close();
+      selectionStore.close();
       marketplaceStore.close();
       ledger.close();
       rmSync(folder,{recursive:true,force:true});
