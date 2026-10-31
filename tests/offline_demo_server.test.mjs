@@ -164,7 +164,7 @@ test('D14 real HTTP writes are throttled before JSON handling; GET remains avail
     assert.deepEqual(await limited.json(), {error:'LOCAL_RATE_LIMITED'});
     assert.ok(Number(limited.headers.get('retry-after')) >= 1);
     assert.equal((await fetch(app.url + '/demo/session')).status, 200);
-    assert.equal((await fetch(app.url + '/api/quotes/sample-project/payment')).status, 503);
+    assert.equal((await fetch(app.url + '/api/quotes/sample-project/payment')).status, 200);
   } finally { await app.close(); }
 });
 
@@ -199,7 +199,11 @@ test('actual loopback PayPal return/cancel URLs never mark paid, mutate quote or
   }
   assert.deepEqual(await (await fetch(quote)).json(),before);
   const payment=await fetch(quote+'/payment');
-  assert.equal(payment.status,503);
+  assert.equal(payment.status,200);
+  const read=(await payment.json()).payment;
+  assert.equal(read.paymentState,'QUOTE_NOT_APPROVED');
+  assert.equal(read.providerCalls,0);
+  assert.equal(read.livePaymentVerifiedThisRead,false);
   assert.equal((await (await fetch(app.url+'/api/demo/integration')).json()).paymentState!=='PAID',true);
   const invalidMethod=await fetch(app.url+'/checkout/paypal/return',{method:'POST'});
   assert.equal(invalidMethod.status,405);
