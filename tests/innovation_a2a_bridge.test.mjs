@@ -97,7 +97,7 @@ test('malicious role output never grants payment or consumes delegation',async()
   assert.equal(r.reservedMinor,0);
   assert.equal(r.paymentAuthorized,false);
   assert.equal(x.store.state({actor,merchant}).consents[0].usedMinor,0);
-  await assert.rejects(()=>x.store.trade({actor,merchant,key:'legacy',kind:'a2a',consentId:id}),
+  assert.throws(()=>x.store.trade({actor,merchant,key:'legacy',kind:'a2a',consentId:id}),
    e=>e.code==='DELEGATION_ALREADY_CLAIMED');
  }finally{x.store.close();rmSync(x.folder,{recursive:true,force:true});}
 });
