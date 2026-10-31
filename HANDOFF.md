@@ -1,3 +1,17 @@
+## 2026-11-01 KST — EXACT TTL REGRESSION / GITHUB CI STILL UNVERIFIED
+
+1. Goal/scope: protect approved Part1 USD quote ↔ Part2 consent synthetic private review from expired reuse without authorizing PayPal payments; preserve current code/data.
+2. Change: `tests/cross_part_review_bridge.test.mjs` adds exact 15min expiration: inspect succeeds 1ms before, fails at deadline, relink fails despite remaining 30min consent window. Backend sources unchanged.
+3. Tests: isolated temporary reconstruction with actual 3 SQLite files and test-substitute ledger/identity/Part2 projections, Node v22.16.0 `node --experimental-sqlite --test /mnt/data/paypal-ttl-check/tests/bridge_sqlite.integration.test.mjs`, 10 PASS / 0 FAIL / 0 SKIP. Not full original dependencies or GitHub Actions CI. Workflow `.github/workflows/test.yml` triggers on `push lead/paypal`, includes `npm test` plus browser Chromium tests. Push-run status inaccessible via current tool; DO NOT claim pass.
+4. State: source-level GitHub test commit complete; native full-repo tests, browser and production verification pending.
+5. No confirmed runtime failure. Root blocker of validation is no authenticated full clone in container (DNS), GitHub connector does not expose push Actions list/check-runs. Do not repeatedly retry DNS with identical method or mistake empty commit statuses for failure.
+6. Repo/branch/function SHA: hibi89/hibi89-paypal-ai-hackathon / lead/paypal / 9653d0606f78860ce237783a148b4ee0212ecb8f. GitHub author+committer both hibi89; source can be reverted via normal history.
+7. Deployment NOT_APPLIED; no Vercel production URL; Node >=22.5 and `npm test`, existing five Chromium scripts.
+8. Original Part1/Part2 SQLite data untouched; no provider API, payment, keys, credential, external export, publication or security permission changes. Local synthetic fixture under /mnt/data/paypal-ttl-check (ephemeral).
+9. Next: obtain full authenticated checkout or official run ID to validate current SHA CI; run original test suite + Chromium; then safely integrate trusted-host local review (no public route without user approval). Real PayPal/Gemini requests require separate consent.
+10. KST 2026-11-01. Exact verification covered isolated SQLite harness only. Overall 80% complete / 20% remaining and 15–25h are unverified planning estimates, unchanged.
+
+---
 ## 2026-11-01 KST — ORIGINAL-REPO PRIVATE REVIEW API TEST COMMITTED / CI PENDING
 
 1. Scope: keep Part1 freelance marketplace + Part2 synthetic AI innovation separate, and check private cross-part read API without introducing public HTTP/payments.
