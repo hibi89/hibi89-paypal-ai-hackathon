@@ -142,6 +142,8 @@ export function createCrossPartReviewBridge({
   const last=await evidence(hostHandle,quoteId,consentId);
   if(last.fingerprint!==after.fingerprint)
    fail('CROSS_PART_EVIDENCE_CHANGED');
+  // The final cross-DB recheck may itself await past the persisted TTL.
+  if(clock()>=row.expires_at)fail('CROSS_PART_LINK_EXPIRED');
   return resultView({...after.payload,reviewFingerprint:after.fingerprint});
  }
  async function inspect({hostHandle,quoteId}={}){
