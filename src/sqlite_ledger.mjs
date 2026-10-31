@@ -300,14 +300,14 @@ export function createSqliteLedger({ filename } = {}) {
         (typeof detail!=='string'||detail.trim().length<8),
         submit?'DELIVERY_NOTE_REQUIRED':'REJECTION_REASON_REQUIRED');
       return transaction(()=>{
-        const context=stmt(\`SELECT c.id,c.merchant_id,c.reviewer_id,c.owner_id,c.version,
+        const context=stmt(`SELECT c.id,c.merchant_id,c.reviewer_id,c.owner_id,c.version,
           c.state,c.quote_id,m.role,m.merchant_id AS actor_tenant,
           m.seller_profile_id,m.active,
           s.seller_profile_id AS assigned_profile
           FROM contracts c
           LEFT JOIN marketplace_actor_memberships m ON m.actor_id=?
           LEFT JOIN marketplace_contract_sellers s ON s.contract_id=c.id
-          WHERE c.id=?\`).get(actorId,contractId);
+          WHERE c.id=?`).get(actorId,contractId);
         reject(!context||context.merchant_id!==merchantId||
           context.actor_tenant!==merchantId||context.active!==1,
           'MARKETPLACE_CONTRACT_NOT_FOUND',404);
@@ -319,24 +319,24 @@ export function createSqliteLedger({ filename } = {}) {
           context.reviewer_id===actorId;
         reject(!assignedSeller&&!assignedReviewer,'MARKETPLACE_WORKFLOW_ROLE_FORBIDDEN',403);
         reject(context.version!==expectedVersion,'STALE_CONTRACT_VERSION',409);
-        const milestone=stmt(\`SELECT state FROM contract_milestones
-          WHERE id=? AND contract_id=?\`).get(milestoneId,contractId);
+        const milestone=stmt(`SELECT state FROM contract_milestones
+          WHERE id=? AND contract_id=?`).get(milestoneId,contractId);
         reject(!milestone,'MILESTONE_NOT_FOUND',404);
         reject(milestone.state!==expectedState,'STALE_MILESTONE_STATE',409);
         reject(!!stmt('SELECT 1 FROM contract_events WHERE event_id=?').get(eventId),
           'DUPLICATE_EVENT_ID',409);
-        const changed=stmt(\`UPDATE contracts SET version=version+1
-          WHERE id=? AND version=?\`).run(contractId,expectedVersion);
+        const changed=stmt(`UPDATE contracts SET version=version+1
+          WHERE id=? AND version=?`).run(contractId,expectedVersion);
         reject(changed.changes!==1,'CONTRACT_CAS_CONFLICT',409);
-        const updated=stmt(\`UPDATE contract_milestones
+        const updated=stmt(`UPDATE contract_milestones
           SET state=?,delivery_note=CASE WHEN ?='SUBMITTED' THEN ? ELSE delivery_note END,
           updated_at=CURRENT_TIMESTAMP
-          WHERE id=? AND contract_id=? AND state=?\`)
+          WHERE id=? AND contract_id=? AND state=?`)
           .run(nextState,nextState,detail,milestoneId,contractId,expectedState);
         reject(updated.changes!==1,'MILESTONE_CAS_CONFLICT',409);
-        stmt(\`INSERT INTO contract_events
+        stmt(`INSERT INTO contract_events
           (event_id,contract_id,milestone_id,actor_id,event_type,from_state,to_state,
-          contract_version,detail) VALUES(?,?,?,?,?,?,?,?,?)\`)
+          contract_version,detail) VALUES(?,?,?,?,?,?,?,?,?)`)
           .run(eventId,contractId,milestoneId,actorId,nextState,expectedState,
             nextState,expectedVersion+1,detail);
         return Object.freeze({contractId,milestoneId,version:expectedVersion+1,
