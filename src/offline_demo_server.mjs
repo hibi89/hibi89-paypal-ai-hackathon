@@ -20,6 +20,7 @@ import { createLedgerMarketplaceSelectionStore, createMarketplaceSelectionApi } 
 import {createMarketplaceIdentityPolicy,createMarketplaceIdentityReadOnlyApi} from './marketplace_identity_policy.mjs';
 import {createMarketplaceProtectedReadApi} from './marketplace_protected_read_api.mjs';
 import {createLocalAccountAuth} from './local_account_auth.mjs';
+import {createInnovationLab,createInnovationApi} from './innovation_lab.mjs';
 import {createMarketplaceContractWorkflowApi} from './marketplace_contract_workflow_api.mjs';
 import {QuoteApiError,reply} from './quote_api.mjs';
 import { createNegotiationDemoApi } from './agent_negotiation_demo_api.mjs';
@@ -30,6 +31,7 @@ import { createNegotiationRegistry } from './negotiation_registry.mjs';
 import { inspectLocalEvidence } from './local_evidence_inspector.mjs';
 
 const html = readFileSync(new URL('../web/offline_demo.html', import.meta.url), 'utf8');
+const innovationHtml=readFileSync(new URL('../web/innovation_dashboard.html',import.meta.url),'utf8');
 const onlyLoopback = address => address === '127.0.0.1' ||
   address === '::ffff:127.0.0.1';
 export async function startOfflineDemo({ port = 0, testReviewSessions = false,
@@ -52,6 +54,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
   const ledger = createSqliteLedger({ filename:demoLedgerPath,
     enforceLocalMemberWrites:true,allowLocalOwnerDelivery:!enableSyntheticSeller });
   const budgetStore=createLedgerAgentBudgetStore(ledger);
+  const innovationLab=createInnovationLab({filename:join(folder,'innovation.sqlite')});
   const marketplaceStore=createMarketplaceRecommendationStore(join(folder,'recommendation_history.sqlite'));
   const selectionStore=createLedgerMarketplaceSelectionStore({recommendations:marketplaceStore,quotes:ledger});
   const subscriptionStore=createSubscriptionScenarioStore({
@@ -174,6 +177,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
   const budgetApi=createAgentBudgetDemoApi({resolveSession,quotes:ledger,budgets:budgetStore,registry:negotiationRegistry,
     identityPolicy});
   const githubDeliveryApi=createGithubDeliveryDemoApi({resolveSession});
+  const innovationApi=createInnovationApi({store:innovationLab,resolveSession,identityPolicy});
   let server;
   server = createServer(async (req, res) => {
     try {
@@ -257,6 +261,18 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
         res.writeHead(response.status,Object.fromEntries(response.headers));
         res.end(await response.text());
         return;
+      }
+      if (req.method === 'GET' && path === '/demo/innovation') {
+        res.writeHead(200,{
+          'content-type':'text/html; charset=utf-8','cache-control':'no-store',
+          'x-content-type-options':'nosniff',
+          'content-security-policy':"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'",
+        });res.end(innovationHtml);return;
+      }
+      if (req.method==='GET'&&path==='/demo/innovation.js'){
+        res.writeHead(200,{'content-type':'text/javascript; charset=utf-8',
+          'cache-control':'no-store','x-content-type-options':'nosniff'});
+        res.end(readFileSync(new URL('../web/innovation_dashboard.js',import.meta.url)));return;
       }
       if (req.method === 'GET' && (path === '/' || path === '/demo')) {
         res.writeHead(200, {
@@ -384,6 +400,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
         options.body=Buffer.concat(chunks);
       const handler=path.startsWith('/api/demo/auth/') ?
         (localAuth?localAuth.handleApi:()=>reply({error:'NOT_FOUND'},404)) :
+        path.startsWith('/api/demo/innovation/') ? innovationApi :
         path==='/api/demo/workflow/assign-seller' ? assignSellerApi :
         path.startsWith('/api/demo/workflow/contracts/') ? workflowApi :
         path.startsWith('/api/demo/protected/') ? protectedReadApi :
@@ -413,6 +430,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
     });
   } catch(e) {
     localAuth?.close();
+    innovationLab.close();
     subscriptionStore.close();
     budgetStore.close();
     selectionStore.close();
@@ -429,6 +447,7 @@ export async function startOfflineDemo({ port = 0, testReviewSessions = false,
     async close() {
       await new Promise((resolve,reject)=>server.close(e=>e?reject(e):resolve()));
       localAuth?.close();
+      innovationLab.close();
       subscriptionStore.close();
       budgetStore.close();
       selectionStore.close();
