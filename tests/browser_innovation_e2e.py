@@ -40,6 +40,16 @@ try:
    expect(page.locator("#a2a-progress")).to_contain_text("paymentState NOT_PAID")
    expect(page.locator("#a2a-progress")).to_contain_text("hash ")
    expect(page.locator("#a2a-output")).to_contain_text("NOT_PAID")
+   # Real user-facing feature: browse recorded A2A evidence from SQLite,
+   # with no fresh negotiation POST or PayPal provider request.
+   expect(page.locator("#a2a-history option")).to_have_count(1)
+   assert page.locator("#show-a2a-history").is_enabled()
+   count_before_history=sum(method=="POST" for method,_ in requests)
+   page.locator("#show-a2a-history").click()
+   expect(page.locator("#a2a-history-status")).to_contain_text("No network POST was sent")
+   expect(page.locator("#a2a-progress")).to_contain_text("SAVED SQLITE HISTORY / READ ONLY")
+   expect(page.locator("#a2a-transcript li")).to_have_count(4)
+   assert sum(method=="POST" for method,_ in requests)==count_before_history
    page.locator("#a2a").click()
    expect(page.locator("#message")).to_contain_text("DELEGATION_ALREADY_SPENT")
    page.locator("#category").select_option("gifts")
@@ -127,6 +137,12 @@ try:
    posts=sum(method=="POST" for method,_ in requests)
    page.reload()
    expect(page.locator("#activity")).to_contain_text("invoice")
+   # After a full browser reload, stored A2A transcripts still reopen via GET.
+   expect(page.locator("#a2a-history option")).to_have_count(1)
+   page.locator("#show-a2a-history").click()
+   expect(page.locator("#a2a-transcript li")).to_have_count(4)
+   expect(page.locator("#a2a-output")).to_contain_text("SYNTHETIC_AGREEMENT")
+   expect(page.locator("#a2a-history-status")).to_contain_text("No network POST was sent")
    assert sum(method=="POST" for method,_ in requests)==posts
    page.locator("#refresh").click()
    expect(page.locator("#message")).to_contain_text("Read-only audit completed locally")
