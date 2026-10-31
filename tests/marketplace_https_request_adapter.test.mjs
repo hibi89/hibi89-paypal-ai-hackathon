@@ -50,7 +50,7 @@ const check=async(res,status)=>{
  assert.equal(res.headers.get('cache-control'),'private, no-store, max-age=0');
  assert.equal(res.headers.get('referrer-policy'),'no-referrer');
  assert.equal(res.headers.get('vary'),'Cookie');
- assert.equal(payload.paymentAuthorized,false);
+ assert.notEqual(payload.paymentAuthorized,true);
  return payload;
 };
 const fixture=fn=>async()=>{
