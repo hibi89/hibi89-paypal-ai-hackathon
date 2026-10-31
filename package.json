@@ -26,7 +26,8 @@
     "submission:candidate:local": "node scripts/prepare_submission_candidate.mjs",
     "test:journey": "node --experimental-sqlite --test tests/complete_marketplace_journey.test.mjs",
     "pilot:gemini:a2a": "node --experimental-sqlite scripts/run_owner_gemini_a2a_pilot.mjs",
-    "proof:crosspart": "node --experimental-sqlite scripts/check_cross_part_proof.mjs"
+    "proof:crosspart": "node --experimental-sqlite scripts/check_cross_part_proof.mjs",
+    "proof:injected-a2a": "node --experimental-sqlite scripts/check_injected_a2a_cross_part.mjs"
   },
   "engines": {
     "node": ">=22.5.0"
