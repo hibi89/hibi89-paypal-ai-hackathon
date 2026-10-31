@@ -1,3 +1,17 @@
+## 2026-10-31 KST — REVIEW EXPIRY FINAL RECHECK, VALIDATION PENDING
+
+1. Objective: prevent stale synthetic review association being returned when async cross-ledger validation passes persisted expiry.
+2. Change: final TTL check after awaited evidence in src/cross_part_review_bridge.mjs, regression in tests/cross_part_review_bridge.test.mjs. Private GET adapter retained but not mounted.
+3. Tests: not executed for latest SHA; previous 700/700 CI belongs to 147d6257 only. PR workflow lookup for b4e2187e returned empty and does not check push runs.
+4. State: committed, verification pending; no live AI/PayPal, public deployment or video.
+5. Risk: cross-DB read non-atomic, so review evidence never grants payment authority.
+6. Repo/branch/SHA: hibi89/hibi89-paypal-ai-hackathon / lead/paypal / functional 384c0e383c510503c8ac7e14b26e5c2da76a35ae.
+7. Production: NOT_APPLIED. Node >=22.5, npm test and browser E2E required.
+8. Data: existing Part1/Part2 untouched, only safety guard and test changed; rollback via Git history.
+9. Next: run full tests, verify CI, then trusted host integration. No external calls without owner approval.
+10. KST 2026-10-31; overall estimated completion 80%, remaining 20%, planning 15–25 hours, not measured.
+
+---
 ## 2026-10-31 KST — PRIVATE CROSS-PART READ-ONLY ADAPTER (VERIFICATION PENDING)
 
 1. Goal: opt-in host-only evidence projection for Part1 approved quote ↔ Part2 synthetic A2A; preserve both apps and no payment authority.
