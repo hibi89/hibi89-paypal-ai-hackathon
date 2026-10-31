@@ -20,7 +20,7 @@ function https(raw,{originOnly=false}={}){
     u.hostname.endsWith('.test'))return deny();
  if(originOnly){
   if(u.origin!==raw||u.pathname!=='/'||u.href!==raw+'/')return deny();
- }else if(u.href!==raw)return deny();
+ }else if(u.href!==raw && !(u.origin===raw && u.pathname==='/'))return deny();
  return u;
 }
 const has=(obj,key)=>obj!==null&&typeof obj==='object'&&typeof obj[key]==='function';
