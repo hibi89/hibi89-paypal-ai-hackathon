@@ -136,7 +136,8 @@ export function createSqliteLedger({filename,
       'LOCAL_WRITE_ROLE_REVOKED',403);
   }
   const contractStore = createContractMilestoneStore({db,transaction,
-    lockedApprovedQuote,reject,assertLocalWriteLocked,allowLocalOwnerDelivery});
+    lockedApprovedQuote,reject,assertLocalWriteLocked,
+    enforceLocalMemberWrites,allowLocalOwnerDelivery});
   // P0: Store candidate binding in the SAME file and BEGIN IMMEDIATE domain
   // as the quote/approval/contract. Historical unselected quotes remain valid.
   db.exec(`CREATE TABLE IF NOT EXISTS quote_candidate_bindings (

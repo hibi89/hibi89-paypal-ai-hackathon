@@ -50,7 +50,8 @@ const transitionPolicy = {
 
 // Reuses the parent ledger's BEGIN IMMEDIATE transaction to keep quotes/payment/contract atomic.
 export function createContractMilestoneStore({db,transaction,lockedApprovedQuote,reject,
-  assertLocalWriteLocked=()=>{},allowLocalOwnerDelivery=false}) {
+  assertLocalWriteLocked=()=>{},enforceLocalMemberWrites=false,
+  allowLocalOwnerDelivery=false}) {
   for (const sql of statements) db.exec(sql);
   const q = sql => db.prepare(sql);
   const contractRow = id => q('SELECT * FROM contracts WHERE id=?').get(id);
@@ -138,9 +139,11 @@ export function createContractMilestoneStore({db,transaction,lockedApprovedQuote
       return transaction(()=>{
         const c=authorized(contractId,actorId,merchantId);
         if(role==='reviewer')assertLocalWriteLocked(actorId,merchantId,'reviewer');
-        else if(allowLocalOwnerDelivery)
+        else{
+          reject(enforceLocalMemberWrites&&!allowLocalOwnerDelivery,
+            'LOCAL_OWNER_DELIVERY_DISABLED',403);
           assertLocalWriteLocked(actorId,merchantId,'buyer');
-        else assertLocalWriteLocked(actorId,merchantId,'buyer');
+        }
         reject(c.version!==expectedVersion,'STALE_CONTRACT_VERSION',409);
         reject((role==='owner'&&actorId!==c.owner_id)||
           (role==='reviewer'&&actorId!==c.reviewer_id),
