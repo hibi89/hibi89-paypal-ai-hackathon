@@ -2,6 +2,7 @@
 // Legacy Gemini PRICE experiments are opt-in only; contest AI matches skills instead.
 import {createHash} from 'node:crypto';
 import { approvedAmount, ContractError } from './payment_contract.mjs';
+import {projectLocalPaymentStatus} from './local_payment_status.mjs';
 
 export class QuoteApiError extends Error {
   constructor(code, status = 400) {
@@ -201,8 +202,17 @@ export function createQuoteApi({ repository, resolveSession, draftProvider,
         expectedMembershipRevision=grant.membershipRevision;
       }
       if (r.resource === 'quote') return reply({ quote });
-      if (r.resource === 'payment')
-        return reply({ error: 'PERSISTENT_PAYMENT_LEDGER_NOT_READY' }, 503);
+      if (r.resource === 'payment') {
+        // No external GET, OAuth or provider call is permitted on browser refresh.
+        // Memory-only legacy endpoints remain blocked. Only persisted ledgers
+        // with a trusted merchant session expose sanitized local attempt states.
+        if(typeof repository.listAttempts!=='function')
+          return reply({error:'PERSISTENT_PAYMENT_LEDGER_NOT_READY'},503);
+        fail(!session.merchantId||session.merchantId!==quote.merchantId,
+          'QUOTE_NOT_FOUND',404);
+        const attempts=await repository.listAttempts(quote.id);
+        return reply({payment:projectLocalPaymentStatus({quote,attempts})});
+      }
       if (r.resource === 'orders') {
         fail(quote.status !== 'APPROVED', 'HUMAN_APPROVAL_REQUIRED', 409);
         try { approvedAmount(quote); }
