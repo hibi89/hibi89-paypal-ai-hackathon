@@ -258,8 +258,8 @@ el('crosspart-revoke').addEventListener('click',async()=>{
    throw new Error('INVALID_REVOCATION_RESULT');
   model.reviewCandidate=null;
   el('crosspart-associate').disabled=true;
-  show('crosspart-association','WITHDRAWN · permanent SQLite review tombstone. '+
-   'Old review cannot be re-opened or silently re-linked. No PayPal call.');
+  show('crosspart-association','WITHDRAWN · SQLite review tombstone recorded for this local demo. '+
+   'The revoked review cannot be reopened or re-linked in this demo. No PayPal call.');
  }catch(e){
   show('crosspart-association','WITHDRAWAL NOT CONFIRMED · '+(e?.message||'UNKNOWN')+
    '. Inspect again to verify current status.');
