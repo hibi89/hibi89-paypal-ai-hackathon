@@ -63,7 +63,9 @@ test('real local HTTP: owner can view budget, fictional recommendation history a
     {cookie:app.testReviewerCookie})).status,403);
   assert.equal((await call('/api/demo/marketplace/selection?quoteId='+sess.quoteId,
     {cookie:app.testSellerCookie})).status,403);
-  assert.equal((await call('/api/quotes/'+sess.quoteId+'/orders',{method:'POST'})).status,503);
+  const noOrder=await call('/api/quotes/'+sess.quoteId+'/orders',{method:'POST'});
+  assert.equal(noOrder.status,409);
+  assert.equal(noOrder.data.error,'HUMAN_APPROVAL_REQUIRED');
  }finally{await app.close();}
 });
 
