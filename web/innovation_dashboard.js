@@ -195,6 +195,8 @@ async function crossPartReview(method,consentId){
  if(method==='POST'){
   options.headers={'content-type':'application/json','x-csrf-token':model.csrf};
   options.body=JSON.stringify({consentId});
+ }else if(method==='DELETE'){
+  options.headers={'x-csrf-token':model.csrf};
  }
  const response=await fetch('/api/demo/cross-part/review',options);
  const result=await response.json();
@@ -222,6 +224,7 @@ el('crosspart-associate').addEventListener('click',async()=>{
    ' · quote v'+saved.review.quoteVersion+' · SHA-256 '+
    saved.review.reviewFingerprint.slice(0,16)+
    '… · max 15-minute local review window. NOT a payment authorization.');
+  el('crosspart-revoke').disabled=false;
  }catch(e){
   show('crosspart-association','REVIEW NOT SAVED · '+(e?.message||'UNKNOWN')+
    '. No PayPal charge or provider request attempted.');
@@ -236,12 +239,32 @@ el('crosspart-inspect').addEventListener('click',async()=>{
    ' · quote v'+saved.review.quoteVersion+' · SHA-256 '+
    saved.review.reviewFingerprint.slice(0,16)+
    '… · read-only SQLite evidence, not a checkout.');
+  el('crosspart-revoke').disabled=false;
  }catch(e){
+  el('crosspart-revoke').disabled=true;
   show('crosspart-association','NO VALID SAVED REVIEW · '+(e?.message||'UNKNOWN')+
    '. Recompare and confirm if eligible; GET did not modify records.');
  }finally{model.reviewBusy=false;}
 });
 
+el('crosspart-revoke').addEventListener('click',async()=>{
+ if(model.reviewBusy||model.crosspartBusy)return;
+ model.reviewBusy=true;
+ el('crosspart-revoke').disabled=true;
+ try{
+  const result=await crossPartReview('DELETE');
+  if(result.status!=='SYNTHETIC_REVIEW_REVOKED'||
+     result.withdrawal?.status!=='SYNTHETIC_REVIEW_REVOKED')
+   throw new Error('INVALID_REVOCATION_RESULT');
+  model.reviewCandidate=null;
+  el('crosspart-associate').disabled=true;
+  show('crosspart-association','WITHDRAWN · permanent SQLite review tombstone. '+
+   'Old review cannot be re-opened or silently re-linked. No PayPal call.');
+ }catch(e){
+  show('crosspart-association','WITHDRAWAL NOT CONFIRMED · '+(e?.message||'UNKNOWN')+
+   '. Inspect again to verify current status.');
+ }finally{model.reviewBusy=false;}
+});
 
 async function refresh(){
  const data=await api('state');
