@@ -53,17 +53,17 @@ export function createPreprovisionedOidcAccountBindings({
  let closed=false;
  try{
   db.exec('PRAGMA busy_timeout=5000;PRAGMA journal_mode=WAL');
-  db.exec(\`CREATE TABLE IF NOT EXISTS oidc_binding_metadata(
+  db.exec(`CREATE TABLE IF NOT EXISTS oidc_binding_metadata(
    item TEXT PRIMARY KEY, digest TEXT NOT NULL
-  )\`);
-  db.exec(\`CREATE TABLE IF NOT EXISTS oidc_account_bindings(
+  )`);
+  db.exec(`CREATE TABLE IF NOT EXISTS oidc_account_bindings(
    subject_hmac TEXT PRIMARY KEY,
    actor_id TEXT NOT NULL UNIQUE,
    merchant_id TEXT NOT NULL,
    issuer TEXT NOT NULL,
    created_at_ms INTEGER NOT NULL,
    revoked_at_ms INTEGER
-  )\`);
+  )`);
   // Detect accidental loss/change of the HMAC pepper instead of silently
   // creating a different identity namespace after a process restart.
   const expected=hmac(key,VERIFIER_MESSAGE);
@@ -109,9 +109,9 @@ export function createPreprovisionedOidcAccountBindings({
   if(!await bindingMember(actorId,merchantId))
    fail('OIDC_BINDING_MEMBER_UNVERIFIED');
   try{
-   db.prepare(\`INSERT INTO oidc_account_bindings
+   db.prepare(`INSERT INTO oidc_account_bindings
     (subject_hmac,actor_id,merchant_id,issuer,created_at_ms)
-    VALUES(?,?,?,?,?)\`).run(hashed,actorId,merchantId,trustedIssuer,timestamp());
+    VALUES(?,?,?,?,?)`).run(hashed,actorId,merchantId,trustedIssuer,timestamp());
   }catch(e){
    if(String(e?.message).includes('UNIQUE'))
     fail('OIDC_BINDING_ALREADY_REGISTERED');
@@ -124,8 +124,8 @@ export function createPreprovisionedOidcAccountBindings({
   if(source!==trustedIssuer)return null;
   let hashed;
   try{hashed=digest(subject)}catch{return null}
-  const row=db.prepare(\`SELECT actor_id,merchant_id FROM oidc_account_bindings
-   WHERE subject_hmac=? AND issuer=? AND revoked_at_ms IS NULL\`)
+  const row=db.prepare(`SELECT actor_id,merchant_id FROM oidc_account_bindings
+   WHERE subject_hmac=? AND issuer=? AND revoked_at_ms IS NULL`)
    .get(hashed,trustedIssuer);
   if(!row||!await bindingMember(row.actor_id,row.merchant_id))return null;
   return Object.freeze({actorId:row.actor_id,merchantId:row.merchant_id});
@@ -134,8 +134,8 @@ export function createPreprovisionedOidcAccountBindings({
   await authorized();
   active();
   const hashed=digest(subject);
-  const changed=db.prepare(\`UPDATE oidc_account_bindings SET revoked_at_ms=?
-   WHERE subject_hmac=? AND issuer=? AND revoked_at_ms IS NULL\`)
+  const changed=db.prepare(`UPDATE oidc_account_bindings SET revoked_at_ms=?
+   WHERE subject_hmac=? AND issuer=? AND revoked_at_ms IS NULL`)
    .run(timestamp(),hashed,trustedIssuer).changes;
   if(changed!==1)fail('OIDC_BINDING_NOT_ACTIVE');
   return Object.freeze({revoked:true,paymentAuthorized:false});
