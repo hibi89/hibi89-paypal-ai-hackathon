@@ -1,53 +1,190 @@
-// No dangerous HTML insertion or provider transport.
+// Offline Proofline Part 2: checked server state, no payment/LLM transport.
+// Build DOM with textContent only; no untrusted HTML, storage or automatic POST.
 'use strict';
-const el=id=>document.getElementById(id),state={csrf:null,consents:{services:null,gifts:null},busy:false};
-const show=(id,data)=>{el(id).textContent=typeof data==='string'?data:JSON.stringify(data,null,2)};
-const nonce=()=>crypto.randomUUID();
-async function api(path,body){
- const r=await fetch('/api/demo/innovation/'+path,{
+const el=id=>document.getElementById(id);
+const model={csrf:null,consents:{services:null,gifts:null},selected:null,
+  server:null,busy:false,revoking:false};
+const show=(id,value)=>{el(id).textContent=typeof value==='string'?value:JSON.stringify(value,null,2);};
+const key=()=>crypto.randomUUID();
+const money=n=>Number.isSafeInteger(n)?'$'+(n/100).toFixed(2):'UNKNOWN';
+const explanation=code=>({
+  DELEGATION_ALREADY_SPENT:'One-use mandate consumed. Issue a fresh mandate; no PayPal payment occurred.',
+  DELEGATION_ALREADY_CLAIMED:'This mandate already has an A2A attempt. Never rerun it automatically.',
+  DELEGATION_REVOKED:'This mandate was revoked. Issue a fresh mandate.',
+  DELEGATION_EXPIRED:'This mandate expired. Issue a fresh mandate.',
+  A2A_PENDING_OR_UNKNOWN:'Attempt is pending or interrupted. Inspect the audit and revoke if still eligible; NEVER auto-retry.',
+  REPLAY_CONFLICT:'A request key was reused for different parameters. The operation was blocked.'
+})[code]||'No state or payment change was assumed.';
+async function api(route,body){
+ const r=await fetch('/api/demo/innovation/'+route,{
   method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',
-  headers:body?{'content-type':'application/json','x-csrf-token':state.csrf}:{},
-  ...(body?{body:JSON.stringify(body)}:{})});
+  headers:body?{'content-type':'application/json','x-csrf-token':model.csrf}:{},
+  ...(body?{body:JSON.stringify(body)}:{})
+ });
  const data=await r.json();
- if(!r.ok)throw new Error(data.error||'REQUEST_FAILED');
+ if(!r.ok){
+  const e=new Error(data.error||'REQUEST_FAILED');
+  e.code=data.error;
+  throw e;
+ }
  return data;
+}
+function mandateStatus(c){
+ if(c.revoked)return 'REVOKED';
+ if(c.usedMinor>0)return 'ACCEPTED_OFFLINE / USED '+money(c.usedMinor);
+ if(c.expiresAt<=Date.now())return 'EXPIRED';
+ const pending=model.server?.pendingAttempts?.some(p=>p.consentId===c.id);
+ return pending?'PENDING_OR_INTERRUPTED (NO AUTO-RETRY)':'ACTIVE / UNUSED';
+}
+function renderMandates(){
+ const data=model.server;
+ if(!data)return;
+ const select=el('mandate-selector');
+ const current=model.selected||select.value;
+ const rows=data.consents;
+ // Keep a deliberately selected revoked/spent row inspectable.
+ const selected=rows.find(c=>c.id===current)||
+  rows.find(c=>c.active)||rows[0]||null;
+ model.selected=selected?.id||null;
+ select.replaceChildren();
+ if(!rows.length){
+  const option=document.createElement('option');
+  option.value='';option.textContent='No mandates';select.append(option);
+ }else for(const c of rows){
+  const option=document.createElement('option');
+  option.value=c.id;
+  option.textContent=c.category.toUpperCase()+' | '+money(c.maxMinor)+
+   ' | '+mandateStatus(c)+' | '+c.id.slice(0,8);
+  select.append(option);
+ }
+ select.value=model.selected||'';
+ const revoked=el('revoke-mandate');
+ revoked.disabled=!selected?.active||model.revoking||!model.csrf;
+ if(selected){
+  const pending=data.pendingAttempts.some(p=>p.consentId===selected.id);
+  show('mandate-state',selected.category.toUpperCase()+' · '+money(selected.maxMinor)+
+   ' · '+mandateStatus(selected)+'. '+
+   (pending?'The attempt may be running or interrupted; revoke blocks late acceptance. ':
+    'This mandate cannot authorize any PayPal charge. ')+
+   (selected.active?'You can revoke this mandate before offline acceptance.':
+    'For another transaction, configure a new mandate.'));
+ }else show('mandate-state','No mandate exists. Configure a scoped mandate first.');
+}
+function renderTranscript(messages){
+ const list=el('a2a-transcript');
+ list.replaceChildren();
+ for(const m of messages||[]){
+  const li=document.createElement('li');
+  li.textContent=(m.role==='buyer'?'BUYER AGENT':m.role==='seller'?'SELLER AGENT':'UNVERIFIED ACTOR')+
+   ' · '+m.action+(Number.isSafeInteger(m.amountMinor)?' · '+money(m.amountMinor):'')+
+   (m.reason?' · '+m.reason:'');
+  list.append(li);
+ }
 }
 async function refresh(){
  const data=await api('state');
- show('activity',{skills:data.skills,providerCalls:data.providerCalls,
-  paymentState:data.paymentState,mandates:data.consents,
-  events:data.events.slice(0,10).map(x=>({kind:x.kind,status:x.result.status,createdAt:x.createdAt}))});
- for(const x of data.consents)if(x.active&&!state.consents[x.category])state.consents[x.category]=x.id;
+ model.server=data;
+ show('activity',{
+  mode:data.mode,paymentState:data.paymentState,providerCalls:data.providerCalls,
+  delegations:data.consents.map(c=>({category:c.category,cap:money(c.maxMinor),
+   state:mandateStatus(c),revision:c.revision,expiresAt:c.expiresAt,id:c.id})),
+  pendingOrInterrupted:data.pendingAttempts,
+  recentEvents:data.events.slice(0,10).map(e=>({
+   kind:e.kind,status:e.result.status,reason:e.result.reason||null,
+   transcriptSha256:e.result.transcriptSha256||null,createdAt:e.createdAt}))
+ });
+ for(const c of data.consents)
+  if(c.active&&!model.consents[c.category])model.consents[c.category]=c.id;
+ renderMandates();
+ if(data.pendingAttempts.length)
+  show('pending-status',data.pendingAttempts.length+
+   ' PENDING_OR_INTERRUPTED attempt(s). Their live status is unverified. Do not resubmit; revoke an unused mandate to block late acceptance.');
+ else show('pending-status','No pending A2A attempts in the local ledger. All reads are GET-only.');
 }
 async function run(name,fn){
- if(state.busy)return;state.busy=true;
- for(const b of document.querySelectorAll('button'))b.disabled=true;
- try{await fn();await refresh();show('message',name+' completed locally. No real payments or AI requests.');}
- catch(e){show('message',name+' blocked: '+(e?.message||'ERROR'));}
- finally{state.busy=false;for(const b of document.querySelectorAll('button'))b.disabled=false;}
+ if(model.busy)return;
+ model.busy=true;
+ // Revoke and read-only audit stay available while A2A is in flight.
+ for(const b of document.querySelectorAll('button:not(#revoke-mandate):not(#refresh)'))
+  b.disabled=true;
+ try{
+  await fn();
+  await refresh();
+  show('message',name+' completed locally. No real payment or AI provider called.');
+ }catch(e){
+  show('message',name+' blocked: '+(e.code||e.message||'ERROR')+'. '+explanation(e.code));
+  if(name==='A2A')show('a2a-progress','A2A request BLOCKED: '+(e.code||'ERROR')+'. No payment executed.');
+  try{await refresh();}catch{}
+ }finally{
+  model.busy=false;
+  for(const b of document.querySelectorAll('button:not(#revoke-mandate):not(#refresh)'))
+   b.disabled=false;
+  renderMandates();
+ }
 }
-el('delegate').onclick=()=>run('Consent',async()=>{
+el('mandate-selector').addEventListener('change',()=>{
+ model.selected=el('mandate-selector').value;
+ renderMandates();
+});
+el('delegate').addEventListener('click',()=>run('Consent',async()=>{
  const category=el('category').value,maxMinor=Number(el('limit').value)*100,
   expiresInMinutes=Number(el('minutes').value);
- const result=await api('delegate',{category,maxMinor,expiresInMinutes,idempotencyKey:nonce()});
- state.consents[category]=result.consentId;
- show('delegation-status',result);
+ const data=await api('delegate',{category,maxMinor,expiresInMinutes,idempotencyKey:key()});
+ model.consents[category]=data.consentId;
+ model.selected=data.consentId;
+ show('delegation-status',data);
+}));
+el('revoke-mandate').addEventListener('click',async()=>{
+ if(model.revoking)return;
+ const selected=model.server?.consents.find(c=>c.id===model.selected);
+ if(!selected?.active||!model.csrf)return;
+ model.revoking=true;
+ el('revoke-mandate').disabled=true;
+ show('mandate-state','Revocation submitted for this synthetic mandate…');
+ try{
+  const result=await api('revoke',{consentId:selected.id,idempotencyKey:key()});
+  if(model.consents[selected.category]===selected.id)model.consents[selected.category]=null;
+  await refresh();
+  show('mandate-state',selected.category.toUpperCase()+' · '+result.status+
+   ' · No PayPal payment was reversed or attempted. Issue a new mandate to continue.');
+  show('message','Mandate revoked locally. Late A2A acceptance is blocked.');
+ }catch(e){
+  show('message','Revocation blocked: '+(e.code||e.message||'ERROR')+'. '+explanation(e.code));
+  try{await refresh();}catch{}
+ }finally{model.revoking=false;renderMandates();}
 });
-for(const kind of ['a2a','gift'])el(kind).onclick=()=>run(kind,async()=>{
- const category=kind==='a2a'?'services':'gifts';
- if(!state.consents[category])throw new Error('CONFIGURE_'+category.toUpperCase()+'_MANDATE_FIRST');
- show(kind+'-output',await api(kind,{consentId:state.consents[category],idempotencyKey:nonce()}));
+el('a2a').addEventListener('click',()=>run('A2A',async()=>{
+ const consentId=model.consents.services;
+ if(!consentId)throw Object.assign(new Error('CONFIGURE_SERVICES_MANDATE_FIRST'),{code:'CONFIGURE_SERVICES_MANDATE_FIRST'});
+ show('a2a-progress','A2A preclaim requested. Negotiation may be pending; never submit the same mandate again.');
+ renderTranscript([]);
+ const result=await api('a2a',{consentId,idempotencyKey:key()});
+ renderTranscript(result.messages);
+ show('a2a-output',result);
+ show('a2a-progress',result.status+' · '+result.messages.length+
+  ' policy-driven agent messages · paymentState '+result.paymentState+
+  ' · hash '+(result.transcriptSha256||'NONE')+
+  '. Accepted offline only; PayPal checkout disabled.');
+}));
+el('gift').addEventListener('click',()=>run('Gift',async()=>{
+ if(!model.consents.gifts)throw Object.assign(new Error('CONFIGURE_GIFTS_MANDATE_FIRST'),{code:'CONFIGURE_GIFTS_MANDATE_FIRST'});
+ show('gift-output',await api('gift',{consentId:model.consents.gifts,idempotencyKey:key()}));
+}));
+for(const kind of ['churn','invoice'])
+ el(kind).addEventListener('click',()=>run(kind,async()=>{
+  show(kind+'-output',await api(kind,{idempotencyKey:key()}));
+ }));
+el('refresh').addEventListener('click',async()=>{
+ try{await refresh();show('message','Read-only audit completed locally. No duplicate A2A or payment POST.');}
+ catch(e){show('message','Audit unavailable: '+(e.code||e.message||'ERROR'));}
 });
-for(const kind of ['churn','invoice'])el(kind).onclick=()=>run(kind,async()=>{
- show(kind+'-output',await api(kind,{idempotencyKey:nonce()}));
-});
-el('refresh').onclick=()=>run('Read-only audit',async()=>{});
 (async()=>{
  try{
   const r=await fetch('/demo/session',{credentials:'same-origin',cache:'no-store'});
   if(!r.ok)throw new Error('LOCAL_BUYER_LOGIN_REQUIRED');
   const session=await r.json();
   if(session.role!=='owner')throw new Error('BUYER_ONLY');
-  state.csrf=session.csrfToken;await refresh();
- }catch(e){show('message','Cannot access lab: '+(e?.message||'UNAVAILABLE'));}
+  model.csrf=session.csrfToken;
+  await refresh();
+ }catch(e){show('message','Cannot access lab: '+(e.message||'UNAVAILABLE'));}
 })();

@@ -11,7 +11,15 @@ p{color:#566987}.warning{background:#fff5df;border:1px solid #e4c992;border-radi
 h2{font-size:1.25rem;margin:10px 0}label{display:block;font-weight:700;margin-top:10px}
 input,select{padding:11px;width:100%;border:1px solid #c2d0e4;border-radius:9px;font:inherit}
 button{cursor:pointer;padding:11px 16px;margin:13px 5px 0 0;border:0;border-radius:10px;background:#2857b1;color:white;font:inherit;font-weight:700}
-button:disabled{opacity:.5;cursor:not-allowed}pre{white-space:pre-wrap;word-break:break-word;background:#132643;color:#d9edff;border-radius:11px;padding:14px;max-height:230px;overflow:auto}
+button:disabled{opacity:.5;cursor:not-allowed}
+#mandate-state{font-size:.85rem;color:#415a7f;overflow-wrap:anywhere}
+#mandate-tools{margin-top:17px;padding-top:16px;border-top:1px solid #dce4ef}
+#revoke-mandate{background:#8a3d46}
+#revoke-mandate:hover:not(:disabled){background:#712b36}
+#a2a-progress,#pending-status{font-size:.85rem;color:#405a7d;overflow-wrap:anywhere}
+#a2a-transcript{list-style:none;padding:0;display:grid;gap:8px}
+#a2a-transcript li{border:1px solid #d9e3ef;border-radius:9px;padding:10px 12px;background:#f6f9fe;font-size:.85rem;overflow-wrap:anywhere}
+pre{white-space:pre-wrap;word-break:break-word;background:#132643;color:#d9edff;border-radius:11px;padding:14px;max-height:230px;overflow:auto}
 @media(max-width:680px){body{padding:15px}.grid{grid-template-columns:1fr}.wide{grid-column:auto}}
 </style></head><body>
 <header><strong>p. proofline</strong><nav aria-label="Product parts"><a href="/demo">Part 1 · Freelancer platform</a><a href="/demo/innovation" aria-current="page">Part 2 · AI Innovation Lab</a></nav></header>
@@ -25,10 +33,20 @@ button:disabled{opacity:.5;cursor:not-allowed}pre{white-space:pre-wrap;word-brea
 <label for="category">Category</label><select id="category"><option value="services">Freelance services</option><option value="gifts">Gift shopping</option></select>
 <label for="limit">Maximum USD</label><input type="number" id="limit" min="1" max="10000" value="300">
 <label for="minutes">Expires after (minutes)</label><input type="number" id="minutes" min="1" max="1440" value="30">
-<button type="button" id="delegate">Configure delegation</button><p id="delegation-status" role="status">No mandate configured.</p></section>
+<button type="button" id="delegate">Configure delegation</button>
+<p id="delegation-status" role="status" aria-live="polite">No mandate configured.</p>
+<div id="mandate-tools">
+<label for="mandate-selector">Issued mandates · current / spent / revoked</label>
+<select id="mandate-selector" aria-describedby="mandate-state"><option value="">No mandates</option></select>
+<button type="button" id="revoke-mandate" disabled>Revoke selected active mandate</button>
+<p id="mandate-state" role="status" aria-live="polite">Select a mandate to inspect its status. Revoking never reverses a real PayPal payment.</p>
+</div></section>
 <section class="card"><span class="badge">02 · Agent-to-Agent</span><h2>Buyer ↔ Seller negotiation</h2>
 <p>OFFER → COUNTER → COUNTER → ACCEPT. Two deterministic agents respect the service spending ceiling.</p>
-<button type="button" id="a2a">Run A2A transaction</button><pre id="a2a-output">Issue a service mandate first.</pre></section>
+<button type="button" id="a2a">Run A2A transaction</button>
+<p id="a2a-progress" role="status" aria-live="polite">No negotiation started. Synthetic agents only.</p>
+<ol id="a2a-transcript" aria-label="Buyer Seller agent negotiation transcript"></ol>
+<pre id="a2a-output">Issue a service mandate first.</pre></section>
 <section class="card"><span class="badge">03 · Gift Finder</span><h2>Catalog search & scoped selection</h2>
 <p>Compare a fictional catalog to select the lowest eligible gift, without calling checkout.</p>
 <button type="button" id="gift">Run Gift Agent</button><pre id="gift-output">Issue a gift mandate first.</pre></section>
@@ -39,6 +57,8 @@ button:disabled{opacity:.5;cursor:not-allowed}pre{white-space:pre-wrap;word-brea
 <p>Generate synthetic invoice details and a dispute evidence checklist. Never files a real response.</p>
 <button type="button" id="invoice">Generate merchant dossier</button><pre id="invoice-output">Ready for an offline scenario.</pre></section>
 <section class="card wide"><span class="badge">Read-only history</span><h2>Auditable synthetic results</h2>
-<button type="button" id="refresh">Refresh (GET only)</button><pre id="activity">Loading...</pre>
+<button type="button" id="refresh">Refresh (GET only)</button>
+<p id="pending-status" role="status" aria-live="polite">Checking for pending or interrupted attempts…</p>
+<pre id="activity">Loading...</pre>
 <p id="message" role="status" aria-live="polite"></p></section></main>
 <script src="/demo/innovation.js" defer></script></body></html>
