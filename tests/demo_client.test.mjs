@@ -5,7 +5,7 @@ import {runInNewContext} from 'node:vm';
 
 const client=readFileSync(new URL('../web/demo_client.js',import.meta.url),'utf8');
 
-function mount({deferredApproval=false}={}){
+function mount({deferredApproval=false,paymentReadFails=false}={}){
   const ids=['quote-view','message','demo-main','demo-role-toggle','demo-session-role','draft-form','approve-form','reject-form','reject-reason','scope',
     'dollars','confirm','draft-submit','approve-submit','reject-submit','refresh','payment-status'];
   const elements=new Map(ids.map(id=>[id,{
@@ -30,7 +30,11 @@ function mount({deferredApproval=false}={}){
       syntheticReviewerEnabled:false});
     if(path==='/api/quotes/q1'&&method==='GET')return answer(200,{quote:{...q}});
     if(path==='/api/quotes/q1/payment'&&method==='GET')
-      return answer(503,{error:'PERSISTENT_PAYMENT_LEDGER_NOT_READY'});
+      return paymentReadFails
+        ?answer(503,{error:'PERSISTENT_PAYMENT_LEDGER_NOT_READY'})
+        :answer(200,{payment:{source:'LOCAL_SQLITE_ONLY_NO_PROVIDER_REQUEST',
+          paymentState:'NO_PAYMENT_ATTEMPT',providerCalls:0,
+          livePaymentVerifiedThisRead:false,paymentAuthorizedByRead:false}});
     if(path==='/api/quotes/q1/draft'&&method==='POST'){
       const body=JSON.parse(options.body);
       if(body.expectedVersion!==q.version)return answer(409,{error:'STALE_QUOTE_VERSION'});
@@ -127,8 +131,15 @@ test('invalid price never causes a POST',async()=>{
   assert.equal(dom.requests.filter(x=>x.method==='POST').length,0);
   assert.match(dom.el('message').textContent,/INVALID_AMOUNT/);
 });
-test('payment status button sends only GET even on provider failure',async()=>{
+test('payment status button reads a local-only snapshot without invoking provider',async()=>{
   const dom=mount();await dom.ready();
+  await dom.el('payment-status').fire('click');
+  assert.equal(dom.requests.filter(x=>x.method==='POST').length,0);
+  assert.match(dom.el('message').textContent,/Local SQLite payment state: NO_PAYMENT_ATTEMPT/);
+  assert.match(dom.el('message').textContent,/not a live PayPal check/);
+});
+test('payment status button sends only GET even on unavailable ledger',async()=>{
+  const dom=mount({paymentReadFails:true});await dom.ready();
   await dom.el('payment-status').fire('click');
   assert.equal(dom.requests.filter(x=>x.method==='POST').length,0);
   assert.match(dom.el('message').textContent,/No payment action executed/);
