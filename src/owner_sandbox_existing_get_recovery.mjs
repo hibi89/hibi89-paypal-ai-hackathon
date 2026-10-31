@@ -36,15 +36,6 @@ function readSnapshot({directory,merchantId}){
  try{
   db=new DatabaseSync(pathToFileURL(filename).href+'?immutable=1',{readOnly:true});
   db.exec('PRAGMA query_only=ON');
-  // An unsigned local audit is not independent provider attestation, but a
-  // broken hash chain must still block successful receipt reconciliation.
-  const audit=verifyLocalAudit(db,{actorId:ACTOR_ID,merchantId});
-  if(audit.integrity!=='PASS'||audit.verifiedEvents<4)
-   deny('EXISTING_ORDER_AUDIT_REVIEW_REQUIRED');
-  const tail=db.prepare('SELECT seq,event_hash FROM local_audit_events ORDER BY seq DESC LIMIT 1').get();
-  if(!tail||!Number.isSafeInteger(tail.seq)||
-     !/^[a-f0-9]{64}$/.test(tail.event_hash))
-   deny('EXISTING_ORDER_AUDIT_REVIEW_REQUIRED');
   const count=db.prepare('SELECT COUNT(*) n FROM quotes').get().n;
   const row=db.prepare('SELECT id,owner_id,merchant_id,version,status,currency,'+
    'approval_actor,approval_version,approval_amount_minor FROM quotes WHERE id=?')
@@ -55,6 +46,15 @@ function readSnapshot({directory,merchantId}){
      row.approval_actor!==ACTOR_ID||row.approval_version!==row.version||
      row.approval_amount_minor!==AMOUNT)
    deny('EXISTING_ORDER_BOUND_APPROVAL_REQUIRED');
+  // An unsigned local audit is not independent provider attestation, but a
+  // broken hash chain must still block successful receipt reconciliation.
+  const audit=verifyLocalAudit(db,{actorId:ACTOR_ID,merchantId});
+  if(audit.integrity!=='PASS'||audit.verifiedEvents<4)
+   deny('EXISTING_ORDER_AUDIT_REVIEW_REQUIRED');
+  const tail=db.prepare('SELECT seq,event_hash FROM local_audit_events ORDER BY seq DESC LIMIT 1').get();
+  if(!tail||!Number.isSafeInteger(tail.seq)||
+     !/^[a-f0-9]{64}$/.test(tail.event_hash))
+   deny('EXISTING_ORDER_AUDIT_REVIEW_REQUIRED');
   const quote={
    id:row.id,ownerId:row.owner_id,merchantId:row.merchant_id,
    version:row.version,status:row.status,currency:row.currency,
