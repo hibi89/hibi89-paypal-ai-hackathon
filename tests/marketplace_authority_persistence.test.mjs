@@ -85,6 +85,8 @@ test('member registry persists across reboot, forbids role changes and does not 
  assert.equal((await db.getLocalMember('sellerA')).active,false);
  db=reopen();
  assert.equal((await db.getLocalMember('sellerA')).active,false);
+ const enabled=await db.setLocalMemberActive({actorId:'sellerA',expectedRevision:2,active:true});
+ assert.equal(enabled.revision,3);
 }));
 test('protected quote/contract read uses ledger metadata, denies cross-tenant spoof and unknown actors',fixture(async({db})=>{
  await seed(db);
@@ -122,6 +124,12 @@ test('persistent revocation and stale policy proof are denied without provider o
  await db.setLocalMemberActive({actorId:'alice',expectedRevision:1,active:false});
  await assert.rejects(policy.authorize(proof,{action:'quote.read',resource:q}),
    {code:'TRUSTED_MEMBERSHIP_REQUIRED'});
+ await db.setLocalMemberActive({actorId:'alice',expectedRevision:2,active:true});
+ // New grant is not permission to replay a pre-revocation proof.
+ await assert.rejects(policy.authorize(proof,{action:'quote.read',resource:q}),
+   {code:'ROLE_SESSION_CHANGED'});
+ const renewed=await policy.issueProof('trusted');
+ assert.equal((await policy.authorize(renewed,{action:'quote.read',resource:q})).paymentAuthorized,false);
  sessions.set('trusted',{verified:true,actorId:'alice',merchantId:'tenantB'});
  await assert.rejects(policy.inspect(proof),{code:'TRUSTED_MEMBERSHIP_REQUIRED'});
  const read=await db.get('qa');

@@ -24,9 +24,11 @@ const own=(obj,k)=>Object.hasOwn(obj,k);
 const shape=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 function memberOf(raw){
   if(!shape(raw)||Object.keys(raw).some(k=>![
-      'actorId','merchantId','role','sellerProfileId','active'].includes(k))||
+      'actorId','merchantId','role','sellerProfileId','active','revision'].includes(k))||
      !id(raw.actorId)||!id(raw.merchantId)||!ROLES.has(raw.role)||
-     typeof raw.active!=='boolean')throw new TypeError('INVALID_TRUSTED_IDENTITY_FIXTURE');
+     typeof raw.active!=='boolean'||
+     (raw.revision!==undefined&&(!Number.isSafeInteger(raw.revision)||raw.revision<1)))
+    throw new TypeError('INVALID_TRUSTED_IDENTITY_FIXTURE');
   const seller=raw.role==='seller';
   if(seller!==own(raw,'sellerProfileId')||
      (seller&&!id(raw.sellerProfileId)))
@@ -74,7 +76,7 @@ export function createMarketplaceIdentityPolicy({resolveTrustedSession,members,r
     const membership=resolveMembership?(raw?memberOf({
       actorId:raw.actorId,merchantId:raw.merchantId,role:raw.role,
       ...(raw.role==='seller'?{sellerProfileId:raw.sellerProfileId}:{}),
-      active:raw.active
+      active:raw.active,...(raw.revision===undefined?{}:{revision:raw.revision})
     }):null):byActor.get(session.actorId);
     if(!membership||!membership.active||membership.merchantId!==session.merchantId||
        (own(session,'role')&&session.role!==membership.role))
@@ -85,7 +87,8 @@ export function createMarketplaceIdentityPolicy({resolveTrustedSession,members,r
     const membership=await verified(handle);
     const proof=Object.freeze({kind:'OFFLINE_IDENTITY_POLICY_PROOF'});
     proofs.set(proof,Object.freeze({handle,actorId:membership.actorId,
-      merchantId:membership.merchantId,role:membership.role}));
+      merchantId:membership.merchantId,role:membership.role,
+      revision:membership.revision}));
     return proof;
   }
   async function authorize(proof,{action,resource}={}){
@@ -93,7 +96,8 @@ export function createMarketplaceIdentityPolicy({resolveTrustedSession,members,r
     if(!claim)fail('AUTHENTICATED_ROLE_PROOF_REQUIRED',401);
     const membership=await verified(claim.handle); // catches revocation/switch after issue
     if(membership.actorId!==claim.actorId||membership.merchantId!==claim.merchantId||
-       membership.role!==claim.role)fail('ROLE_SESSION_CHANGED',403);
+       membership.role!==claim.role||
+       membership.revision!==claim.revision)fail('ROLE_SESSION_CHANGED',403);
     if(typeof action!=='string'||!ACTIONS[membership.role].includes(action)||
        !canAccess(membership,action,resource))
       fail('ROLE_ACTION_FORBIDDEN',403);
@@ -107,7 +111,8 @@ export function createMarketplaceIdentityPolicy({resolveTrustedSession,members,r
     if(!claim)fail('AUTHENTICATED_ROLE_PROOF_REQUIRED',401);
     const membership=await verified(claim.handle);
     if(membership.actorId!==claim.actorId||membership.merchantId!==claim.merchantId||
-       membership.role!==claim.role)fail('ROLE_SESSION_CHANGED',403);
+       membership.role!==claim.role||
+       membership.revision!==claim.revision)fail('ROLE_SESSION_CHANGED',403);
     return Object.freeze({actorId:membership.actorId,merchantId:membership.merchantId,
       role:membership.role,allowedActionTypes:Object.freeze([...ACTIONS[membership.role]]),
       sellerIdentityVerified:false,merchantOwnershipVerified:false,

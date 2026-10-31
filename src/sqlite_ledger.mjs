@@ -168,6 +168,8 @@ export function createSqliteLedger({ filename } = {}) {
     CHECK((role='seller' AND seller_profile_id IS NOT NULL) OR
           (role<>'seller' AND seller_profile_id IS NULL))
   )`);
+  db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_local_seller_profile_tenant
+     ON marketplace_actor_memberships(merchant_id,seller_profile_id)`);
   db.exec(`CREATE TABLE IF NOT EXISTS marketplace_contract_sellers (
     contract_id TEXT PRIMARY KEY REFERENCES contracts(id) ON DELETE RESTRICT,
     merchant_id TEXT NOT NULL, seller_profile_id TEXT NOT NULL
