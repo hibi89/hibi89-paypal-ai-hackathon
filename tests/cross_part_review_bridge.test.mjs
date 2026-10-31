@@ -7,6 +7,7 @@ import {createSqliteLedger} from '../src/sqlite_ledger.mjs';
 import {createInnovationLab} from '../src/innovation_lab.mjs';
 import {createMarketplaceIdentityPolicy} from '../src/marketplace_identity_policy.mjs';
 import {createCrossPartReviewBridge} from '../src/cross_part_review_bridge.mjs';
+import {createCrossPartReviewReadApi} from '../src/cross_part_review_read_api.mjs';
 
 const actor='buyer_1',merchant='tenant_1',quoteId='quote_1';
 const selectedMinor=29900;
@@ -203,5 +204,32 @@ test('link refuses a review association expiring during final async evidence rea
    await assert.rejects(delayed.link(args(f)),
     e=>['CROSS_PART_LINK_EXPIRED','CROSS_PART_SCOPED_CONSENT_REQUIRED'].includes(e?.code));
   }finally{delayed.close();}
+ });
+});
+
+test('private read API uses real Part1/Part2 SQLite and rejects forged host Requests',async()=>{
+ await using(async f=>{
+  await f.bridge.link(args(f));
+  const url='http://127.0.0.1:8765/api/private/cross-part/review?quoteId='+quoteId;
+  const trustedRequest=new Request(url);
+  f.logins.set(trustedRequest,{verified:true,actorId:actor,merchantId:merchant});
+  const api=createCrossPartReviewReadApi({bridge:f.bridge});
+  const good=await api(trustedRequest);
+  assert.equal(good.status,200);
+  const result=await good.json();
+  assert.equal(result.readOnly,true);
+  assert.equal(result.providerCalls,0);
+  assert.equal(result.review.status,'SYNTHETIC_CROSS_PART_REVIEW_ONLY');
+  assert.equal(result.review.amountMinor,selectedMinor);
+  assert.equal(result.review.paymentAuthorized,false);
+  assert.equal(result.review.paypalOrderCreated,false);
+  assert.equal(result.review.paypalCapturePerformed,false);
+  assert.equal((await api(new Request(url))).status,404);
+  assert.equal((await api(new Request(url,{method:'POST'}))).status,405);
+  assert.equal((await api(new Request(url+'&actorId='+actor))).status,400);
+  const membership=await f.ledger.getLocalMember(actor);
+  await f.ledger.setLocalMemberActive({actorId:actor,
+   expectedRevision:membership.revision,active:false});
+  assert.equal((await api(trustedRequest)).status,404);
  });
 });
