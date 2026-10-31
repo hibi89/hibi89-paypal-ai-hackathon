@@ -7,7 +7,7 @@ const validId=x=>typeof x==='string'&&/^[A-Za-z0-9_-]{1,64}$/.test(x);
 export function createDurableGeminiA2ARoles({budgetStore,budgetScope,...provider}={}){
  if(!isBudgetStore(budgetStore)||!budgetScope||
     !['actor','merchant','job'].every(k=>validId(budgetScope[k])))
-  error('A2A_DURABLE_SCOPE_REQUIRED');
+  error('A2A_PRIVATE_DURABLE_QUOTA_REQUIRED');
  const inner=createGeminiA2ARoleAgents(provider);
  let blocked=false;
  const agent=role=>async view=>{
@@ -35,8 +35,9 @@ export function createDurableGeminiA2ARoles({budgetStore,budgetScope,...provider
  return Object.freeze({
   sellerAgent:agent('seller'),buyerAgent:agent('buyer'),
   status:()=>Object.freeze({
-   durable:budgetStore.status(budgetScope),runtime:inner.status(),
-   circuitOpen:blocked,source:'INJECTED_TRANSPORT_UNVERIFIED',
+   durableBudget:budgetStore.status(budgetScope),runtime:inner.status(),
+   circuitOpen:blocked,providerVerified:false,
+   source:'PRIVATE_INJECTED_TRANSPORT_UNVERIFIED',
    paymentAuthorized:false
   })
  });
