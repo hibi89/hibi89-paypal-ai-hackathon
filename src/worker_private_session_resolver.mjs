@@ -20,14 +20,21 @@ function getToken(request){
   return token;
 }
 
+// Reused only by trusted internal session lifecycle operations; no public
+// route can retrieve the raw bearer token through this interface.
+export async function hashPrivateSessionCookie(request){
+  if(!(request instanceof Request))throw denied();
+  const token=getToken(request);
+  const hashBytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(token));
+  return Array.from(new Uint8Array(hashBytes),b=>b.toString(16).padStart(2,'0')).join('');
+}
+
 export function createWorkerPrivateSessionResolver({db,now=Date.now}={}){
   if(!db||typeof db.withSession!=='function'||typeof now!=='function')
     throw new PrivateSessionError('SESSION_BINDING_REQUIRED');
   return async function resolveVerifiedPrincipal(request){
     if(!(request instanceof Request))throw denied();
-    const token=getToken(request);
-    const hashBytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(token));
-    const hash=Array.from(new Uint8Array(hashBytes),b=>b.toString(16).padStart(2,'0')).join('');
+    const hash=await hashPrivateSessionCookie(request);
     let row;
     try{
       const primary=db.withSession('first-primary');
