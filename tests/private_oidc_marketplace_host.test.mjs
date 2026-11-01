@@ -112,6 +112,7 @@ const fixture=fn=>async()=>{
     callbackRequest:()=>http('/api/auth/oidc/callback'+query,{cookie})};
   }
   await fn({host,activate,bind,login,ledger,calls:()=>calls,
+   registerCode:(code,subject)=>codes.set(code,subject),
    denyOperator:()=>{operatorApproved=false},options});
  }finally{host?.close();ledger.close();rmSync(dir,{recursive:true,force:true})}
 };
@@ -127,7 +128,7 @@ test('factory is private, no trust means no login redirect, code exchange or reg
   assert.equal(calls(),0);
  }));
 test('operator activates actual SQLite trust and pre-provisions local binding before login',fixture(
- async({host,activate,bind,login,calls})=>{
+ async({host,activate,bind,login,calls,registerCode})=>{
   await activate();
   const partial=host.inspectReadiness();
   assert.equal(partial.configurationConsistent,false);
@@ -138,6 +139,7 @@ test('operator activates actual SQLite trust and pre-provisions local binding be
   const u=new URL(unbound.headers.get('location'));
   const cookie=unbound.headers.getSetCookie()[0].split(';')[0];
   const code='NOT_BOUND_IDP_SUBJECT_12345678';
+  registerCode(code,'ext-unbound');
   // One-shot token exchange succeeds but subject is not an enrolled member.
   const denied=await host.handle(http('/api/auth/oidc/callback?state='+
    u.searchParams.get('state')+'&code='+code,{cookie}));
