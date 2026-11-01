@@ -43,6 +43,13 @@ try:
    page.on("pageerror",lambda err:errors.append(str(err)))
    page.on("request",lambda request:outbound.append(
     (request.method,request.url)))
+   start_headers=[]
+   def capture_start(request):
+    if request.method=="POST" and request.url==APP+"/api/auth/oidc/start":
+     headers=request.all_headers()
+     start_headers.append({key:headers.get(key,"MISSING") for key in
+      ["origin","referer","sec-fetch-site","sec-fetch-mode","sec-fetch-dest","content-type"]})
+   page.on("request",capture_start)
    page.on("response",lambda resp:sessions.append(
     (resp.status,resp.url)))
    response=page.goto(APP+"/private/marketplace",wait_until="load",
@@ -64,7 +71,7 @@ try:
     location=urlsplit(page.url)
     print("OFFLINE_OIDC_BROWSER_NAV_DIAGNOSTIC",json.dumps({
       "currentOrigin":location.netloc,"currentPath":location.path,
-      "navigation":nav,
+      "navigation":nav,"startHeaders":start_headers,
       "bodyExcerpt":page.locator("body").inner_text(timeout=2000)[:240]
     }),flush=True)
     raise
