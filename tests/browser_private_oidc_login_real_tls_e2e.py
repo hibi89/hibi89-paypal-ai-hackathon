@@ -22,6 +22,8 @@ try:
  except queue.Empty: raise AssertionError("LOCAL_FAKE_IDP_NOT_READY")
  assert fixture["mode"]=="OFFLINE_CHROMIUM_REAL_OIDC_BROWSER_LOGIN",fixture
  assert fixture["fakeProviderAuthorizeRequests"]==0
+ assert len(fixture["tlsPins"])==2
+ assert all(isinstance(p,str) and len(p)==44 for p in fixture["tlsPins"])
  assert fixture["paypalCaptureEnabled"] is False
  proxy_port=fixture["proxyPort"]
  assert isinstance(proxy_port,int) and 1024<=proxy_port<=65535
@@ -30,21 +32,13 @@ try:
  assert executable,"CHROMIUM_NOT_INSTALLED"
  with sync_playwright() as p:
   browser=p.chromium.launch(executable_path=executable,
-   headless=True,args=["--no-sandbox","--disable-dev-shm-usage"])
+   headless=True,args=["--no-sandbox","--disable-dev-shm-usage",
+    "--ignore-certificate-errors-spki-list="+",".join(fixture["tlsPins"])])
   try:
    ctx=browser.new_context(
     proxy={"server":f"http://127.0.0.1:{proxy_port}"},
-    ignore_https_errors=True,  # Only two ephemeral local certs in this test.
+    ignore_https_errors=False,  # Trust only exact ephemeral SPKI pins above.
     service_workers="block")
-   normalized_origins=[]
-   def test_only_origin_fix(route):
-    original=route.request.all_headers().get("origin")
-    # Self-signed test-only TLS exception forces Chromium navigation form
-    # Origin=null. Never adjust the product's strict server Origin policy.
-    assert original in (None,"null"),original
-    normalized_origins.append(original)
-    route.continue_(headers={**route.request.all_headers(),"origin":APP})
-   ctx.route(APP+"/api/auth/oidc/start",test_only_origin_fix)
    page=ctx.new_page()
    errors=[]
    outbound=[]
@@ -130,7 +124,7 @@ try:
     for _,url in outbound)
    assert sum(method=="POST" and url==APP+"/api/auth/oidc/start"
     for method,url in outbound)==1
-   assert normalized_origins==["null"],normalized_origins
+   assert len(start_headers)==1 and start_headers[0]["origin"]==APP,start_headers
    assert sum(method=="POST" and url==APP+"/api/auth/oidc/logout"
     for method,url in outbound)==1
    print(json.dumps({
@@ -140,8 +134,9 @@ try:
     "fakeIdentityProvider":"SYNTHETIC_LOOPBACK_ONLY",
     "realProviderCalls":0,"paypalCalls":0,
     "preseededBrowserSession":False,"authCodeReplayDenied":True,
-    "testOnlyOriginHeaderNormalized":True,
-    "publicCAWithoutHeaderNormalizationTested":False,
+    "testOnlyOriginHeaderNormalized":False,
+    "testOnlyCertificateSpkiPinned":True,
+    "publicCAWithoutCertificatePinTested":False,
     "loginVerified":True,"logoutVerified":True,
     "browserPageErrors":0,"paymentAuthorized":False
    }))
