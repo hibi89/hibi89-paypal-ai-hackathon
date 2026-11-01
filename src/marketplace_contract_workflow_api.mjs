@@ -54,7 +54,7 @@ export function createMarketplaceContractWorkflowApi({ledger,policy,resolveSessi
      expectedState:expected,nextState:state,eventId:body.eventId,
      detail:body.detail??null
    });
-   return reply({transition:result,providerCalls:0},200);
+   return reply({transition:result,providerCalls:0,paymentAuthorized:false},200);
   }catch(e){
    return reply({error:e instanceof QuoteApiError?e.code:'INTERNAL_ERROR'},
      e instanceof QuoteApiError?e.status:500);
