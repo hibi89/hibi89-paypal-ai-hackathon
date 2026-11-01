@@ -78,6 +78,7 @@ test('assigned seller submits; assigned reviewer accepts, separate payment remai
  assert.equal(d.data.transition.state,'SUBMITTED');
  assert.equal(d.data.transition.version,2);
  assert.equal(d.data.transition.paymentAuthorized,false);
+ assert.equal(d.data.paymentAuthorized,false);
  assert.equal(d.data.providerCalls,0);
  const c=await h.get();
  assert.equal(c.milestones[0].state,'SUBMITTED');
@@ -86,6 +87,7 @@ test('assigned seller submits; assigned reviewer accepts, separate payment remai
  const done=await h.request('reviewer','accept',{eventId:'review-ok-1',expectedVersion:2});
  assert.equal(done.status,200,JSON.stringify(done.data));
  assert.equal(done.data.transition.state,'ACCEPTED');
+ assert.equal(done.data.paymentAuthorized,false);
  assert.equal((await h.get()).version,3);
  const events=await h.events();
  assert.deepEqual(events.map(x=>x.eventType),['CREATED','SUBMITTED','ACCEPTED']);
