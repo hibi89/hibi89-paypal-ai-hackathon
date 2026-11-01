@@ -119,7 +119,7 @@ export function createDirectTlsNodeRequestBridge({
    // Never materialize an untrusted backend response before checking its
    // maximum size. A malicious/buggy stream may be huge or never terminate.
    const declared=response.headers.get('content-length');
-   if(declared!==null&&(!/^(0|[1-9]\\d{0,8})$/.test(declared)||
+   if(declared!==null&&(!/^(0|[1-9]\d{0,8})$/.test(declared)||
       Number(declared)>maxReplyBytes))
     return failReply(res,502,'RESPONSE_TOO_LARGE');
    const chunks=[];
