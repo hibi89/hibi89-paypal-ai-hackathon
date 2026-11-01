@@ -3,8 +3,8 @@ A strict test-only CONNECT proxy maps one hostname to a local ephemeral TLS
 server. An ephemeral self-signed cert is accepted in this isolated browser
 context only; this does NOT validate a public trusted certificate or IdP.
 """
-import json,queue,shutil,subprocess,threading
-from playwright.sync_api import sync_playwright,expect
+import json,queue,shutil,subprocess,threading,socket
+from playwright.sync_api import sync_playwright,expect,Error as PlaywrightError
 
 ORIGIN="https://proofline.example.com"
 process=subprocess.Popen(
@@ -23,6 +23,16 @@ try:
  assert fixture["origin"]==ORIGIN
  port=fixture["proxyPort"]
  assert isinstance(port,int) and 1024<=port<=65535
+ def verify_local_connect_proxy():
+  # Preflight real local CONNECT without any HTTP request to an outside host.
+  # Fails with a precise proxy/bootstrap diagnostic, not a payment/API claim.
+  with socket.create_connection(("127.0.0.1",port),timeout=4) as probe:
+   probe.settimeout(4)
+   probe.sendall(b"CONNECT proofline.example.com:443 HTTP/1.1\r\n"
+                 b"Host: proofline.example.com:443\r\n\r\n")
+   received=probe.recv(128)
+   assert received.startswith(b"HTTP/1.1 200 Connection Established"),received
+ verify_local_connect_proxy()
  browser_binary=(shutil.which("google-chrome") or
     shutil.which("google-chrome-stable") or shutil.which("chromium"))
  assert browser_binary,"CHROMIUM_NOT_INSTALLED"
@@ -44,11 +54,25 @@ try:
       "domain":"proofline.example.com","path":"/","secure":True,
       "httpOnly":True,"sameSite":"Strict"
      }])
-    page=ctx.new_page()
-    page.on("pageerror",lambda e:errors.append(str(e)))
-    page.on("request",lambda request:requests.append((request.method,request.url)))
-    response=page.goto(ORIGIN+"/private/marketplace",
-      wait_until="load",timeout=15000)
+    def instrument_page():
+     candidate=ctx.new_page()
+     candidate.on("pageerror",lambda e:errors.append(str(e)))
+     candidate.on("request",lambda request:requests.append((request.method,request.url)))
+     return candidate
+    page=instrument_page()
+    try:
+     response=page.goto(ORIGIN+"/private/marketplace",
+       wait_until="load",timeout=15000)
+    except PlaywrightError as exc:
+     # The *first* browser operation is an idempotent GET with no credentials
+     # or server mutation. Retry only one transient local CONNECT failure;
+     # never retry callback, logout, quote, provider or payment POST.
+     if "net::ERR_PROXY_CONNECTION_FAILED" not in str(exc): raise
+     verify_local_connect_proxy()
+     page.close()
+     page=instrument_page()
+     response=page.goto(ORIGIN+"/private/marketplace",
+       wait_until="load",timeout=15000)
     assert response and response.status==200
     # This comes from Chromium's actual network stack; no fulfill/route.
     tls=response.security_details()
