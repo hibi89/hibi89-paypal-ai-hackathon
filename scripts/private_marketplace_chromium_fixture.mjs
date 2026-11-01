@@ -11,7 +11,7 @@ import {connect as connectTcp} from 'node:net';
 import {createLoopbackTlsMarketplaceService} from '../src/private_loopback_tls_marketplace_service.mjs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {randomBytes,generateKeyPairSync,sign,createHash,X509Certificate} from 'node:crypto';
+import {randomBytes,generateKeyPairSync,sign} from 'node:crypto';
 import {createSqliteLedger} from '../src/sqlite_ledger.mjs';
 import {createPrivateOidcMarketplaceHost} from '../src/private_oidc_marketplace_host.mjs';
 import {createPrivateMarketplaceBrowserSurface} from '../src/private_marketplace_browser_surface.mjs';
@@ -22,10 +22,8 @@ const CLIENT='proofline-offline-browser-fixture';
 const CLOCK=1761987600000;
 const temp=mkdtempSync(join(tmpdir(),'proofline-private-chromium-'));
 const ledger=createSqliteLedger({filename:join(temp,'ledger.sqlite'),enforceLocalMemberWrites:true});
-let host,server,tlsServer,idpTlsServer,proxyServer,closed=false;
-const browserLoginMode=process.argv.includes('--browser-login');
-const tlsMode=process.argv.includes('--real-tls-proxy')||browserLoginMode;
-let fakeProviderAuthorizeRequests=0;
+let host,server,tlsServer,proxyServer,closed=false;
+const tlsMode=process.argv.includes('--real-tls-proxy');
 const codes=new Map();
 const keys=generateKeyPairSync('rsa',{modulusLength:2048});
 const jwk={...keys.publicKey.export({format:'jwk'}),kid:'OFFLINE_CHROMIUM_FIXTURE_KEY',use:'sig',alg:'RS256'};
@@ -45,7 +43,6 @@ function close(){
  try{proxyServer?.closeAllConnections()}catch{}
  try{proxyServer?.close()}catch{}
  try{void tlsServer?.stop()}catch{}
- try{void idpTlsServer?.stop()}catch{}
  try{host?.close()}catch{}
  try{ledger.close()}catch{}
  rmSync(temp,{recursive:true,force:true});
@@ -81,12 +78,8 @@ async function start(){
   ledger,now:()=>CLOCK,
   authorizeTrustUpdate:()=>true,authorizeOperatorProvisioning:()=>true,
   codeTransport:{exchange:async ticket=>{
-   const entry=codes.get(ticket.code);
-   const subject=typeof entry==='string'?entry:entry?.subject;
+   const subject=codes.get(ticket.code);
    if(!subject)throw Error('UNREGISTERED_TEST_CODE');
-   if(entry?.challenge && createHash('sha256')
-    .update(ticket.codeVerifier).digest('base64url')!==entry.challenge)
-    throw Error('PKCE_CHALLENGE_MISMATCH');
    codes.delete(ticket.code);
    return {idToken:fakeToken(ticket.expectedNonce,subject),
     expectedNonce:ticket.expectedNonce};
@@ -169,11 +162,6 @@ async function start(){
  });
  const port=server.address().port;
  let proxyPort=null;
- const tlsPins=[];
- const pinFor=file=>createHash('sha256').update(
-   new X509Certificate(readFileSync(file)).publicKey.export({
-    format:'der',type:'spki'
-   })).digest('base64');
  if(tlsMode){
   const keyFile=join(temp,'temporary-browser-tls.key');
   const certFile=join(temp,'temporary-browser-tls.crt');
@@ -188,70 +176,20 @@ async function start(){
    tlsPrivateKey:readFileSync(keyFile)
   });
   const tlsEndpoint=await tlsServer.start();
-  tlsPins.push(pinFor(certFile));
-  const targets=new Map([['proofline.example.com:443',tlsEndpoint.port]]);
-  if(browserLoginMode){
-   const idpKey=join(temp,'temporary-idp.key');
-   const idpCert=join(temp,'temporary-idp.crt');
-   execFileSync('openssl',['req','-x509','-newkey','rsa:2048','-nodes',
-    '-keyout',idpKey,'-out',idpCert,'-sha256','-days','1',
-    '-subj','/CN=accounts.example.org',
-    '-addext','subjectAltName=DNS:accounts.example.org'],
-    {timeout:20_000,stdio:'pipe'});
-   const fakeProvider=Object.freeze({handle:async request=>{
-    const u=new URL(request.url);
-    const keys=[...u.searchParams.keys()].sort();
-    const expected=['client_id','code_challenge','code_challenge_method',
-     'nonce','redirect_uri','response_type','scope','state'].sort();
-    const nonce=u.searchParams.get('nonce');
-    const state=u.searchParams.get('state');
-    const challenge=u.searchParams.get('code_challenge');
-    if(request.method!=='GET'||u.origin!==ISSUER||
-       u.pathname!=='/oauth2/authorize'||
-       JSON.stringify(keys)!==JSON.stringify(expected)||
-       u.searchParams.get('client_id')!==CLIENT||
-       u.searchParams.get('redirect_uri')!==ORIGIN+'/api/auth/oidc/callback'||
-       u.searchParams.get('response_type')!=='code'||
-       u.searchParams.get('scope')!=='openid'||
-       u.searchParams.get('code_challenge_method')!=='S256'||
-       !/^[A-Za-z0-9_-]{43}$/.test(nonce??'')||
-       !/^[A-Za-z0-9_-]{43}$/.test(state??'')||
-       !/^[A-Za-z0-9_-]{43}$/.test(challenge??''))
-     return Response.json({error:'OFFLINE_FAKE_IDP_REQUEST_REJECTED'},
-      {status:400});
-    fakeProviderAuthorizeRequests++;
-    // Fake issuer only: independent of accounts/passwords or provider
-    // consent. Binds generated code to PKCE challenge. Production unusable.
-    const code='LOCAL_FAKE_IDP_'+randomBytes(18).toString('hex');
-    codes.set(code,{subject:'fixture-buyer',challenge});
-    return new Response(null,{status:303,headers:{
-     location:ORIGIN+'/api/auth/oidc/callback?state='+
-      encodeURIComponent(state)+'&code='+encodeURIComponent(code)+
-      '&iss='+encodeURIComponent(ISSUER),
-     'cache-control':'no-store'
-    }});
-   }});
-   idpTlsServer=createLoopbackTlsMarketplaceService({
-    publicOrigin:ISSUER,routeHandler:fakeProvider,
-    tlsCertificate:readFileSync(idpCert),tlsPrivateKey:readFileSync(idpKey)
-   });
-   const endpoint=await idpTlsServer.start();
-   tlsPins.push(pinFor(idpCert));
-   targets.set('accounts.example.org:443',endpoint.port);
-  }
-  // HTTPS proxy is an exact-host-only CONNECT tunnel. It neither It neither
+  // HTTPS proxy is an exact-host single-target CONNECT tunnel. It neither
   // terminates TLS nor performs DNS, connects to public hosts or handles HTTP.
   proxyServer=createServer((req,res)=>{
    res.writeHead(403,{'connection':'close'});
    res.end();
   });
   proxyServer.on('connect',(req,browser,head)=>{
-   if(!targets.has(req.url)||browser.remoteAddress!=='127.0.0.1'){
+   if(req.url!=='proofline.example.com:443'||
+      browser.remoteAddress!=='127.0.0.1'){
     browser.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
     return;
    }
    const backend=connectTcp({
-    host:'127.0.0.1',port:targets.get(req.url)
+    host:'127.0.0.1',port:tlsEndpoint.port
    });
    backend.setTimeout(12_000,()=>backend.destroy());
    browser.setTimeout(12_000,()=>browser.destroy());
@@ -274,10 +212,7 @@ async function start(){
  // Pipe-only fixture handoff, no credentials/accounts outside this process.
  process.stdout.write(JSON.stringify({
   port,sessions,origin:ORIGIN,
-  mode:browserLoginMode?'OFFLINE_CHROMIUM_REAL_OIDC_BROWSER_LOGIN':
-   tlsMode?'OFFLINE_CHROMIUM_REAL_TLS_TUNNEL':'OFFLINE_SIGNED_OIDC_BROWSER_FIXTURE',
-  fakeProviderAuthorizeRequests,
-  tlsPins:browserLoginMode?tlsPins:[],
+  mode:tlsMode?'OFFLINE_CHROMIUM_REAL_TLS_TUNNEL':'OFFLINE_SIGNED_OIDC_BROWSER_FIXTURE',
   proxyPort,certificateTrust:'SELF_SIGNED_TEST_CERT_ACCEPTED_BY_TEST_ONLY',
   providerCalls:0,paypalCaptureEnabled:false
  })+'\n');
