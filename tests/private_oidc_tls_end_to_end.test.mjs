@@ -232,3 +232,25 @@ test('TLS auth callback cannot replay; revocation and forged-origin requests nev
   assert.equal(service.state().listening,true);
  });
 });
+
+
+test('real HTTPS existing OIDC cookie is immediately invalid after subject-binding operator revoke',async()=>{
+ await withService(async({send,activate,provision,login,host,ledger,exchanges})=>{
+  await activate();await provision();
+  const buyer=await login('ext-buyer');
+  const reviewer=await login('ext-reviewer');
+  assert.equal((await send({cookie:buyer.cookie})).status,200);
+  assert.equal((await host.operator.revokeIdentity({subject:'ext-buyer'})).revoked,true);
+  assert.equal((await ledger.getLocalMember('buyerA')).active,true);
+  const denied=await send({cookie:buyer.cookie});
+  assert.equal(denied.status,401);
+  assert.equal(denied.body.paymentAuthorized,false);
+  assert.equal((await send({path:'/api/marketplace/quotes/projectA',
+   cookie:buyer.cookie})).status,401);
+  assert.equal((await send({path:'/api/auth/oidc/csrf',
+   method:'POST',cookie:buyer.cookie})).status,403);
+  assert.equal((await send({cookie:reviewer.cookie})).status,200);
+  assert.equal(exchanges(),2);
+  assert.equal((await ledger.listAttempts('projectA')).length,0);
+ });
+});
