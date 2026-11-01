@@ -5,7 +5,10 @@
 // This is not a real browser TLS or external IdP test; no public listener,
 // provider calls, real accounts or payment endpoints exist.
 import {createServer} from 'node:http';
-import {mkdtempSync,rmSync} from 'node:fs';
+import {mkdtempSync,rmSync,readFileSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
+import {connect as connectTcp} from 'node:net';
+import {createLoopbackTlsMarketplaceService} from '../src/private_loopback_tls_marketplace_service.mjs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {randomBytes,generateKeyPairSync,sign} from 'node:crypto';
@@ -19,7 +22,8 @@ const CLIENT='proofline-offline-browser-fixture';
 const CLOCK=1761987600000;
 const temp=mkdtempSync(join(tmpdir(),'proofline-private-chromium-'));
 const ledger=createSqliteLedger({filename:join(temp,'ledger.sqlite'),enforceLocalMemberWrites:true});
-let host,server,closed=false;
+let host,server,tlsServer,proxyServer,closed=false;
+const tlsMode=process.argv.includes('--real-tls-proxy');
 const codes=new Map();
 const keys=generateKeyPairSync('rsa',{modulusLength:2048});
 const jwk={...keys.publicKey.export({format:'jwk'}),kid:'OFFLINE_CHROMIUM_FIXTURE_KEY',use:'sig',alg:'RS256'};
@@ -36,6 +40,9 @@ function close(){
  closed=true;
  try{server?.closeAllConnections()}catch{}
  try{server?.close()}catch{}
+ try{proxyServer?.closeAllConnections()}catch{}
+ try{proxyServer?.close()}catch{}
+ try{void tlsServer?.stop()}catch{}
  try{host?.close()}catch{}
  try{ledger.close()}catch{}
  rmSync(temp,{recursive:true,force:true});
@@ -154,9 +161,59 @@ async function start(){
   server.listen(0,'127.0.0.1',ok);
  });
  const port=server.address().port;
+ let proxyPort=null;
+ if(tlsMode){
+  const keyFile=join(temp,'temporary-browser-tls.key');
+  const certFile=join(temp,'temporary-browser-tls.crt');
+  execFileSync('openssl',['req','-x509','-newkey','rsa:2048','-nodes',
+   '-keyout',keyFile,'-out',certFile,'-sha256','-days','1',
+   '-subj','/CN=proofline.example.com',
+   '-addext','subjectAltName=DNS:proofline.example.com'],
+   {timeout:20_000,stdio:'pipe'});
+  tlsServer=createLoopbackTlsMarketplaceService({
+   publicOrigin:ORIGIN,routeHandler:surface,
+   tlsCertificate:readFileSync(certFile),
+   tlsPrivateKey:readFileSync(keyFile)
+  });
+  const tlsEndpoint=await tlsServer.start();
+  // HTTPS proxy is an exact-host single-target CONNECT tunnel. It neither
+  // terminates TLS nor performs DNS, connects to public hosts or handles HTTP.
+  proxyServer=createServer((req,res)=>{
+   res.writeHead(403,{'connection':'close'});
+   res.end();
+  });
+  proxyServer.on('connect',(req,browser,head)=>{
+   if(req.url!=='proofline.example.com:443'||
+      browser.remoteAddress!=='127.0.0.1'){
+    browser.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
+    return;
+   }
+   const backend=connectTcp({
+    host:'127.0.0.1',port:tlsEndpoint.port
+   });
+   backend.setTimeout(12_000,()=>backend.destroy());
+   browser.setTimeout(12_000,()=>browser.destroy());
+   backend.on('connect',()=>{
+    browser.write('HTTP/1.1 200 Connection Established\r\n\r\n');
+    if(head.length)backend.write(head);
+    browser.pipe(backend);
+    backend.pipe(browser);
+   });
+   backend.on('error',()=>browser.destroy());
+   browser.on('error',()=>backend.destroy());
+   browser.on('close',()=>backend.destroy());
+  });
+  await new Promise((ok,bad)=>{
+   proxyServer.once('error',bad);
+   proxyServer.listen(0,'127.0.0.1',ok);
+  });
+  proxyPort=proxyServer.address().port;
+ }
  // Pipe-only fixture handoff, no credentials/accounts outside this process.
  process.stdout.write(JSON.stringify({
-  port,sessions,origin:ORIGIN,mode:'OFFLINE_SIGNED_OIDC_BROWSER_FIXTURE',
+  port,sessions,origin:ORIGIN,
+  mode:tlsMode?'OFFLINE_CHROMIUM_REAL_TLS_TUNNEL':'OFFLINE_SIGNED_OIDC_BROWSER_FIXTURE',
+  proxyPort,certificateTrust:'SELF_SIGNED_TEST_CERT_ACCEPTED_BY_TEST_ONLY',
   providerCalls:0,paypalCaptureEnabled:false
  })+'\n');
 }
