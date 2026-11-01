@@ -92,9 +92,18 @@ try:
    authpage.locator("#sign-in button").click()
    expect(authpage.locator("#fictional-complete")).to_be_visible()
    assert len(fake_idp_visits)==1
+   # Preserve the one-time browser-bound cookie for an explicit replay probe.
+   # Reinstating this *already-spent* cookie must never redeem a callback twice.
+   challenge_cookies=[cookie for cookie in authctx.cookies([ORIGIN])
+       if cookie["name"]=="__Host-proofline_oidc"]
+   assert len(challenge_cookies)==1
+   assert challenge_cookies[0]["secure"] and challenge_cookies[0]["httpOnly"]
+   assert challenge_cookies[0]["sameSite"]=="Lax"
+   spent_challenge_cookie=challenge_cookies[0].copy()
    authpage.locator("#fictional-complete").click()
    expect(authpage.locator("h1")).to_have_text("Identity verification complete.")
    assert "/api/auth/oidc/callback?" in authpage.url
+   completed_callback_url=authpage.url
    auth_cookies=authctx.cookies([ORIGIN])
    sessions=[cookie for cookie in auth_cookies
        if cookie["name"]=="__Host-proofline_session"]
@@ -113,6 +122,32 @@ try:
        for method,url in auth_requests)==1,auth_requests
    assert not any("/api/paypal/" in url or "/milestones/" in url
        for method,url in auth_requests),auth_requests
+   # Logout is a real browser POST under TLS, and must revoke the server
+   # session as well as clear the browser cookie. Back/reload cannot restore it.
+   previously_signed_session=sessions[0].copy()
+   authpage.locator("#sign-out").click()
+   expect(authpage.locator("#session-status")).to_contain_text("SIGNED OUT")
+   authpage.reload(wait_until="load")
+   expect(authpage.locator("#session-status")).to_contain_text("NOT SIGNED IN")
+   assert authpage.locator("#read-contract").is_disabled()
+   assert authpage.locator("#submit").is_disabled()
+   # A captured old cookie must remain invalid even if put back into the jar.
+   authctx.add_cookies([previously_signed_session])
+   authpage.reload(wait_until="load")
+   expect(authpage.locator("#session-status")).to_contain_text("NOT SIGNED IN")
+   assert authpage.locator("#read-contract").is_disabled()
+   # Replay original callback with the valid but spent PKCE browser cookie.
+   authctx.add_cookies([spent_challenge_cookie])
+   replay=authctx.new_page()
+   repeated=replay.goto(completed_callback_url,wait_until="load",timeout=15000)
+   assert repeated and repeated.status==401,repeated.status if repeated else None
+   assert "Identity verification complete." not in replay.content()
+   assert not any(cookie["name"]=="__Host-proofline_session"
+       and cookie["value"]!=previously_signed_session["value"]
+       for cookie in authctx.cookies([ORIGIN]))
+   replay.close()
+   assert not any("/api/paypal/" in url or "/milestones/" in url
+       for method,url in requests[before_auth:]),requests[before_auth:]
    del requests[before_auth:]
    authctx.close()
    buyerctx,buyer,tls=new_page("buyer")
@@ -152,7 +187,7 @@ try:
     "tlsProtocol":tls["protocol"],"certificateSubject":tls["subjectName"],
     "socketEncrypted":True,"certificateSelfSignedTrustException":True,
     "browserOriginIntercepted":False,"proxyTarget":"LOOPBACK_ONLY",
-    "scenarios":["anonymous","real-browser-json-pkce-fake-idp-callback","buyer","seller","reviewer","accepted-no-payment"],
+    "scenarios":["anonymous","real-browser-json-pkce-fake-idp-callback","real-tls-logout-revocation","spent-pkce-callback-replay-denied","buyer","seller","reviewer","accepted-no-payment"],
     "browserPageErrors":len(errors),"realIdpCalls":0,"paypalCalls":0,
     "paymentAuthorized":False
    }))
