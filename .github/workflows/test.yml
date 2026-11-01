@@ -74,6 +74,8 @@ jobs:
           python-version: "3.11"
       - name: Windows public-source secret scan regression
         run: node --experimental-sqlite --test tests/public_secret_scan.test.mjs
+      - name: Offline Worker D1 first-primary and claim regressions
+        run: node --experimental-sqlite --test tests/worker_d1_payment_boundary.test.mjs
       - name: Historical owner evidence safety regressions
         run: python tests/video_owner_evidence_test.py
       - name: Full owner workflow from clean machine (no accounts or providers)
