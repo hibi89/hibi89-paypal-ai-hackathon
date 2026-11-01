@@ -122,6 +122,7 @@ export function createPrivateOidcMarketplaceHost({
    try{u=new URL(request.url)}catch{}
    if(u?.origin===publicOrigin &&
       (u.pathname==='/api/auth/oidc/start'||
+       u.pathname==='/api/auth/oidc/start-url'||
        u.pathname==='/api/auth/oidc/callback')){
     let trusted=false;
     try{trusted=trust.status().active===true}catch{}
