@@ -11,7 +11,7 @@ import {connect as connectTcp} from 'node:net';
 import {createLoopbackTlsMarketplaceService} from '../src/private_loopback_tls_marketplace_service.mjs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {randomBytes,generateKeyPairSync,sign,createHash} from 'node:crypto';
+import {randomBytes,generateKeyPairSync,sign,createHash,X509Certificate} from 'node:crypto';
 import {createSqliteLedger} from '../src/sqlite_ledger.mjs';
 import {createPrivateOidcMarketplaceHost} from '../src/private_oidc_marketplace_host.mjs';
 import {createPrivateMarketplaceBrowserSurface} from '../src/private_marketplace_browser_surface.mjs';
@@ -169,6 +169,11 @@ async function start(){
  });
  const port=server.address().port;
  let proxyPort=null;
+ const tlsPins=[];
+ const pinFor=file=>createHash('sha256').update(
+   new X509Certificate(readFileSync(file)).publicKey.export({
+    format:'der',type:'spki'
+   })).digest('base64');
  if(tlsMode){
   const keyFile=join(temp,'temporary-browser-tls.key');
   const certFile=join(temp,'temporary-browser-tls.crt');
@@ -183,6 +188,7 @@ async function start(){
    tlsPrivateKey:readFileSync(keyFile)
   });
   const tlsEndpoint=await tlsServer.start();
+  tlsPins.push(pinFor(certFile));
   const targets=new Map([['proofline.example.com:443',tlsEndpoint.port]]);
   if(browserLoginMode){
    const idpKey=join(temp,'temporary-idp.key');
@@ -230,6 +236,7 @@ async function start(){
     tlsCertificate:readFileSync(idpCert),tlsPrivateKey:readFileSync(idpKey)
    });
    const endpoint=await idpTlsServer.start();
+   tlsPins.push(pinFor(idpCert));
    targets.set('accounts.example.org:443',endpoint.port);
   }
   // HTTPS proxy is an exact-host-only CONNECT tunnel. It neither It neither
@@ -270,6 +277,7 @@ async function start(){
   mode:browserLoginMode?'OFFLINE_CHROMIUM_REAL_OIDC_BROWSER_LOGIN':
    tlsMode?'OFFLINE_CHROMIUM_REAL_TLS_TUNNEL':'OFFLINE_SIGNED_OIDC_BROWSER_FIXTURE',
   fakeProviderAuthorizeRequests,
+  tlsPins:browserLoginMode?tlsPins:[],
   proxyPort,certificateTrust:'SELF_SIGNED_TEST_CERT_ACCEPTED_BY_TEST_ONLY',
   providerCalls:0,paypalCaptureEnabled:false
  })+'\n');
