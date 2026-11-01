@@ -229,3 +229,33 @@ test('close tears down host-owned connections, while caller ledger is not closed
   assert.throws(()=>host.inspectReadiness(),e=>e.code==='PRIVATE_OIDC_HOST_CLOSED');
   assert.equal((await ledger.getLocalMember('buyerA')).active,true);
  }));
+
+
+test('operator subject-binding revocation invalidates already-issued session and CSRF, not other principals',fixture(
+ async({host,activate,bind,login,calls,ledger})=>{
+  await activate();await bind();
+  const buyer=await login('ext-buyer');
+  const seller=await login('ext-seller');
+  assert.equal((await host.handle(http('/api/auth/oidc/session',
+   {cookie:buyer.cookie}))).status,200);
+  assert.equal((await host.handle(http('/api/auth/oidc/session',
+   {cookie:seller.cookie}))).status,200);
+  assert.equal((await host.handle(http('/api/marketplace/quotes/projectA',
+   {cookie:buyer.cookie}))).status,200);
+  assert.equal((await host.operator.revokeIdentity({subject:'ext-buyer'})).revoked,true);
+  // Member is still active: identity revocation must be a separate gate.
+  assert.equal((await ledger.getLocalMember('buyerA')).active,true);
+  const rejected=await host.handle(http('/api/auth/oidc/session',{cookie:buyer.cookie}));
+  assert.equal(rejected.status,401);
+  assert.equal((await host.handle(http('/api/marketplace/quotes/projectA',
+   {cookie:buyer.cookie}))).status,401);
+  assert.equal((await host.handle(http('/api/auth/oidc/csrf',
+   {method:'POST',cookie:buyer.cookie}))).status,403);
+  assert.equal((await host.handle(http('/api/auth/oidc/logout',
+   {method:'POST',cookie:buyer.cookie,csrf:buyer.csrf}))).status,401);
+  assert.equal((await host.handle(http('/api/auth/oidc/session',
+   {cookie:seller.cookie}))).status,200);
+  assert.equal(calls(),2); // Not even a synthetic token re-exchange.
+  assert.equal(host.publicListenerEnabled,false);
+  assert.equal(host.paymentAuthorized,false);
+ }));
