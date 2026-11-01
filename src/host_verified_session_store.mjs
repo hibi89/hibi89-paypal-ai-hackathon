@@ -53,6 +53,7 @@ function safeMember(member,binding){
 export function createHostVerifiedSessionStore({
  filename,expectedOrigin,trustedIssuer,trustedAudience,
  verifyExternalIdentity,lookupExternalAccount,getMembership,
+ isAccountBindingActive,
  now=Date.now,ttlMs=15*60*1000
 }={}){
  if(typeof filename!=='string'||!filename.trim()||filename===':memory:'||
@@ -60,6 +61,8 @@ export function createHostVerifiedSessionStore({
     typeof verifyExternalIdentity!=='function'||
     typeof lookupExternalAccount!=='function'||
     typeof getMembership!=='function'||typeof now!=='function'||
+    (isAccountBindingActive!==undefined&&
+     typeof isAccountBindingActive!=='function')||
     !Number.isSafeInteger(ttlMs)||ttlMs<60_000||ttlMs>30*60*1000)
   reject('HOST_SESSION_PRIVATE_DEPENDENCIES_REQUIRED');
  const origin=configuredOrigin(expectedOrigin);
@@ -91,6 +94,17 @@ export function createHostVerifiedSessionStore({
   try{member=await getMembership(row.actor_id)}catch{return null}
   if(!safeMember(member,{actorId:row.actor_id,merchantId:row.merchant_id})||
      member.role!==row.role||member.revision!==row.revision)return null;
+  // Trust must be checked after login too. Membership alone does not imply
+  // the external subject-to-account link still exists. Fail closed on
+  // revoked bindings, DB faults, or inaccessible binding store.
+  if(isAccountBindingActive){
+   try{
+    const valid=await isAccountBindingActive(Object.freeze({
+     actorId:row.actor_id,merchantId:row.merchant_id
+    }));
+    if(valid!==true)return null;
+   }catch{return null}
+  }
   return {row,member};
  };
  async function establish(externalAssertion){
@@ -226,6 +240,7 @@ export function createHostVerifiedSessionStore({
   mode:'HOST_BACKED_SESSION_NO_EXTERNAL_IDP_INCLUDED',
   publicAuthenticationEnabled:false,
   externalIdpVerificationInjected:true,
+  bindingRevocationChecked:isAccountBindingActive!==undefined,
   registrationEnabled:false,merchantOwnershipVerified:false,
   sellerIdentityVerified:false,paymentAuthorized:false,
   noProviderOrPaymentCalls:true
