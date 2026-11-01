@@ -152,7 +152,7 @@ try:
     "tlsProtocol":tls["protocol"],"certificateSubject":tls["subjectName"],
     "socketEncrypted":True,"certificateSelfSignedTrustException":True,
     "browserOriginIntercepted":False,"proxyTarget":"LOOPBACK_ONLY",
-    "scenarios":["anonymous","buyer","seller","reviewer","accepted-no-payment"],
+    "scenarios":["anonymous","real-browser-json-pkce-fake-idp-callback","buyer","seller","reviewer","accepted-no-payment"],
     "browserPageErrors":len(errors),"realIdpCalls":0,"paypalCalls":0,
     "paymentAuthorized":False
    }))
