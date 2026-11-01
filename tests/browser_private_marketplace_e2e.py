@@ -100,10 +100,10 @@ try:
    # PKCE, signed cookie and strict Origin are separately tested by Node.
    # This scenario neither contacts nor attests any external identity provider.
    loginctx,loginpage=new_actor()
-   start_url="https://accounts.example.org/oauth2/authorize?"+
+   start_url=("https://accounts.example.org/oauth2/authorize?"+
      "response_type=code&state="+("A"*43)+
      "&nonce="+("B"*43)+"&code_challenge="+("C"*43)+
-     "&code_challenge_method=S256"
+     "&code_challenge_method=S256")
    loginctx.route(ORIGIN+"/api/auth/oidc/start-url",lambda route:route.fulfill(
     status=200,headers={"content-type":"application/json","cache-control":"no-store"},
     body=json.dumps({"authorizationUrl":start_url,"loginCompleted":False,
