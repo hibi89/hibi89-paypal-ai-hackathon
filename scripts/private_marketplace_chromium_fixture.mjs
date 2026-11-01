@@ -25,6 +25,9 @@ const ledger=createSqliteLedger({filename:join(temp,'ledger.sqlite'),enforceLoca
 let host,server,tlsServer,proxyServer,closed=false;
 const tlsMode=process.argv.includes('--real-tls-proxy');
 const codes=new Map();
+// One fictional buyer code for the separate real-browser PKCE callback test.
+// It is accepted only by this ephemeral offline fixture, never a real IdP.
+codes.set('CHROMIUM_VISIBLE_FAKE_BUYER_CODE_2026','fixture-buyer');
 const keys=generateKeyPairSync('rsa',{modulusLength:2048});
 const jwk={...keys.publicKey.export({format:'jwk'}),kid:'OFFLINE_CHROMIUM_FIXTURE_KEY',use:'sig',alg:'RS256'};
 function fakeToken(nonce,subject){
