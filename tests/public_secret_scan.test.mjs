@@ -82,7 +82,10 @@ test('ZIP source enumerator fails closed on symbolic links',()=>{
  const root=mkdtempSync(join(tmpdir(),'paypal-public-archive-symlink-'));
  try{
   writeFileSync(join(root,'README.md'),'readme');
-  symlinkSync(join(root,'README.md'),join(root,'source-alias'));
+  mkdirSync(join(root,'linked-target'));
+  writeFileSync(join(root,'linked-target','note.txt'),'note');
+  symlinkSync(join(root,'linked-target'),join(root,'source-alias'),
+   process.platform==='win32'?'junction':'dir');
   assert.throws(()=>enumeratePublicSource(root),/UNEXPECTED_SOURCE_SYMLINK/);
  }finally{rmSync(root,{recursive:true,force:true});}
 });
