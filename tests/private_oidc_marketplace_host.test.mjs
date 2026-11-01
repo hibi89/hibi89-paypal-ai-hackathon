@@ -200,6 +200,11 @@ test('trust revocation blocks new OIDC starts and callbacks even with valid sign
   await host.operator.revokePublicKeys({expectedRevision:1});
   assert.equal(host.inspectReadiness().issues.includes('OIDC_PINNED_JWKS_NOT_ACTIVE'),true);
   await read(await host.handle(http('/api/auth/oidc/start',{method:'POST'})),503);
+  const jsonDenied=await host.handle(new Request(origin+'/api/auth/oidc/start-url',{
+   method:'POST',headers:{origin,accept:'application/json'}
+  }));
+  await read(jsonDenied,503);
+  assert.equal(jsonDenied.headers.get('set-cookie'),null);
   assert.equal(calls(),1);
   await read(await host.handle(http('/api/auth/oidc/session',
    {cookie:buyer.cookie})),200);
