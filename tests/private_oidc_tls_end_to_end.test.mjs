@@ -9,6 +9,7 @@ import {request as httpsRequest} from 'node:https';
 import {createSqliteLedger} from '../src/sqlite_ledger.mjs';
 import {createPrivateOidcMarketplaceHost} from '../src/private_oidc_marketplace_host.mjs';
 import {createLoopbackTlsMarketplaceService} from '../src/private_loopback_tls_marketplace_service.mjs';
+import {createPrivateMarketplaceBrowserSurface} from '../src/private_marketplace_browser_surface.mjs';
 
 const origin='https://proofline.example.com';
 const issuer='https://accounts.example.org';
@@ -83,8 +84,11 @@ async function withService(run){
      expectedNonce:ticket.expectedNonce};
    }}
   });
+  const browserSurface=createPrivateMarketplaceBrowserSurface({
+   publicOrigin:origin,privateHost:host
+  });
   service=createLoopbackTlsMarketplaceService({
-   publicOrigin:origin,routeHandler:host,
+   publicOrigin:origin,routeHandler:browserSurface,
    tlsCertificate:readFileSync(tlsCert),tlsPrivateKey:readFileSync(tlsKey)
   });
   const bind=await service.start();
@@ -155,6 +159,7 @@ async function withService(run){
     callbackCookie:browserCookie};
   }
   await run({service,host,bind,send,activate,provision,login,ledger,
+   registerCode:(code,subject)=>codes.set(code,subject),
    exchanges:()=>exchanges});
  }finally{
   if(service)await service.stop();
@@ -252,5 +257,74 @@ test('real HTTPS existing OIDC cookie is immediately invalid after subject-bindi
   assert.equal((await send({cookie:reviewer.cookie})).status,200);
   assert.equal(exchanges(),2);
   assert.equal((await ledger.listAttempts('projectA')).length,0);
+ });
+});
+
+
+test('real HTTPS private dashboard loads after signed login, server role gate and CSRF enforce writes',async()=>{
+ await withService(async({send,activate,provision,login,ledger,exchanges})=>{
+  await activate();await provision();
+  const seller=await login('ext-seller');
+  const buyer=await login('ext-buyer');
+  const dashboard=await send({path:'/private/marketplace',cookie:seller.cookie});
+  assert.equal(dashboard.status,200);
+  assert.match(dashboard.headers['content-type'],/text\/html/);
+  assert.ok(dashboard.text.includes('Verified marketplace workspace'));
+  assert.ok(dashboard.text.includes('id="submit"'));
+  assert.ok(dashboard.headers['content-security-policy'].includes("script-src 'self'"));
+  const script=await send({path:'/private/marketplace/app.js',cookie:seller.cookie});
+  assert.equal(script.status,200);
+  assert.ok(script.text.includes("principal.role!=='seller'"));
+  const css=await send({path:'/private/marketplace/app.css',cookie:seller.cookie});
+  assert.equal(css.status,200);
+  assert.ok(css.text.includes('.columns'));
+  const action='/api/marketplace/contracts/contractA/milestones/stepA/submit';
+  const body={eventId:'real_ui_submit_1',expectedVersion:1,
+   expectedState:'PENDING',detail:'Signed seller delivery via HTTPS browser surface'};
+  const noCsrf=await send({path:action,method:'POST',cookie:seller.cookie,body});
+  assert.ok([401,403].includes(noCsrf.status));
+  const wrongRole=await send({path:action,method:'POST',cookie:buyer.cookie,
+   csrf:buyer.csrf,body});
+  assert.equal(wrongRole.status,403);
+  const refreshed=await send({path:'/api/auth/oidc/csrf',
+   method:'POST',cookie:seller.cookie});
+  assert.equal(refreshed.status,200);
+  assert.equal(refreshed.body.rotated,true);
+  const submitted=await send({path:action,method:'POST',
+   cookie:seller.cookie,csrf:refreshed.body.csrfToken,body});
+  assert.equal(submitted.status,200,submitted.text);
+  assert.equal(submitted.body.transition.state,'SUBMITTED');
+  assert.equal(exchanges(),2);
+  assert.equal((await ledger.getContract({contractId:'contractA',
+   actorId:'buyerA',merchantId:'tenantA'})).paymentState,'NOT_CAPTURED');
+  assert.equal((await ledger.listAttempts('projectA')).length,0);
+ });
+});
+
+test('real HTTPS browser navigation callback renders no private CSRF token, keeps two secure cookies',async()=>{
+ await withService(async({send,activate,provision,registerCode,exchanges})=>{
+  await activate();await provision();
+  const start=await send({path:'/api/auth/oidc/start',method:'POST'});
+  assert.equal(start.status,303);
+  const auth=new URL(start.headers.location);
+  const code='BROWSER_SUCCESS_FAKE_CODE_938574';
+  registerCode(code,'ext-buyer');
+  const initialCookie=start.headers['set-cookie'][0].split(';')[0];
+  const callback=await send({path:'/api/auth/oidc/callback?code='+
+   encodeURIComponent(code)+'&state='+encodeURIComponent(auth.searchParams.get('state')),
+   cookie:initialCookie,
+   extraHeaders:{accept:'text/html,application/xhtml+xml;q=0.9'}});
+  assert.equal(callback.status,200,callback.text);
+  assert.ok(callback.text.includes('href="/private/marketplace"'));
+  assert.equal(callback.text.includes('csrfToken'),false);
+  assert.equal(callback.headers['set-cookie'].length,2);
+  assert.ok(callback.headers['set-cookie'].every(x=>x.includes('Secure')&&x.includes('HttpOnly')));
+  const signedCookie=callback.headers['set-cookie'][0].split(';')[0];
+  const me=await send({path:'/api/auth/oidc/session',cookie:signedCookie});
+  assert.equal(me.status,200);
+  assert.equal(me.body.identity.actorId,'buyerA');
+  assert.equal(me.body.merchantOwnershipVerified,false);
+  assert.equal((await send({path:'/private/marketplace',cookie:signedCookie})).status,200);
+  assert.equal(exchanges(),1);
  });
 });
