@@ -72,6 +72,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Windows public-source secret scan regression
+        run: node --experimental-sqlite --test tests/public_secret_scan.test.mjs
       - name: Historical owner evidence safety regressions
         run: python tests/video_owner_evidence_test.py
       - name: Full owner workflow from clean machine (no accounts or providers)
