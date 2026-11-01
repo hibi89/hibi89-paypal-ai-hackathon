@@ -296,3 +296,68 @@ test('membership revoke+reactivate makes old host cookie unusable despite later 
   await check(await host.handle(http('/api/marketplace/contracts/contractA',{
    cookie:fresh.cookie})),200);
  }));
+
+
+test('same-origin JSON PKCE initiation uses durable start challenge and signs real buyer session without external provider',fixture(async({host,challengeByCode,calls})=>{
+ const response=await host.handle(http('/api/auth/oidc/start-url',{
+  method:'POST',headers:{accept:'application/json'}
+ }));
+ const payload=await check(response,200);
+ assert.equal(payload.loginCompleted,false);
+ assert.equal(payload.merchantOwnershipVerified,false);
+ assert.equal(payload.paymentAuthorized,false);
+ assert.equal(response.headers.get('location'),null);
+ assert.equal(response.headers.getSetCookie().length,1);
+ assert.match(response.headers.getSetCookie()[0],
+  /^__Host-proofline_oidc=[A-Za-z0-9_-]{43}; Secure; HttpOnly; SameSite=Lax; Path=\/; Max-Age=\d+$/);
+ const url=new URL(payload.authorizationUrl);
+ assert.equal(url.origin,issuer);
+ assert.equal(url.pathname,'/oauth2/authorize');
+ assert.equal(url.searchParams.get('response_type'),'code');
+ assert.equal(url.searchParams.get('code_challenge_method'),'S256');
+ assert.match(url.searchParams.get('code_challenge'),/^[A-Za-z0-9_-]{43}$/);
+ assert.match(url.searchParams.get('state'),/^[A-Za-z0-9_-]{43}$/);
+ assert.match(url.searchParams.get('nonce'),/^[A-Za-z0-9_-]{43}$/);
+ const code='JSON_PKCE_FLOW_OFFLINE_BUYER_1234567';
+ challengeByCode.set(code,{nonce:url.searchParams.get('nonce'),subject:'buyer'});
+ const cookie=response.headers.getSetCookie()[0].split(';')[0];
+ const callback=await host.handle(http(callbackPath+'?state='+
+  encodeURIComponent(url.searchParams.get('state'))+'&code='+code,{cookie}));
+ const done=await check(callback,200);
+ assert.equal(done.authenticated,true);
+ assert.equal(callback.headers.getSetCookie().length,2);
+ const storedCookie=callback.headers.getSetCookie()[0].split(';')[0];
+ const identity=await check(await host.handle(http('/api/auth/oidc/session',{
+  cookie:storedCookie})),200);
+ assert.equal(identity.identity.actorId,'buyerA');
+ assert.equal(identity.identity.merchantId,'tenantA');
+ assert.equal(identity.identity.role,'buyer');
+ const replay=await host.handle(http(callbackPath+'?state='+
+  encodeURIComponent(url.searchParams.get('state'))+'&code='+code,{cookie}));
+ await check(replay,401);
+ assert.equal(replay.headers.getSetCookie().length,0);
+ assert.equal(calls(),1);
+}));
+test('JSON login never accepts null or foreign origin, body, query, method or browser HTML Accept',fixture(async({host,calls})=>{
+ const endpoint='/api/auth/oidc/start-url';
+ for(const headers of [
+  {origin:'null',accept:'application/json'},
+  {origin:'https://attacker.example.net',accept:'application/json'},
+  {origin:'',accept:'application/json'}
+ ]){
+  const r=await host.handle(http(endpoint,{method:'POST',headers}));
+  const data=await check(r,403);
+  assert.equal(data.error,'ORIGIN_OR_CSRF_REQUIRED');
+  assert.equal(r.headers.get('set-cookie'),null);
+ }
+ await check(await host.handle(http(endpoint,{method:'POST',body:{},
+  headers:{accept:'application/json'}})),400);
+ await check(await host.handle(http(endpoint,{method:'POST',
+  headers:{accept:'text/html'}})),406);
+ await check(await host.handle(http(endpoint,{method:'GET'})),405);
+ await check(await host.handle(http(endpoint+'?client_id=evil',{
+  method:'POST',headers:{accept:'application/json'}})),404);
+ await check(await host.handle(new Request('https://attacker.example.net'+endpoint,{
+  method:'POST',headers:{origin,accept:'application/json'}})),404);
+ assert.equal(calls(),0);
+}));
