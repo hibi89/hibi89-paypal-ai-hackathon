@@ -96,6 +96,28 @@ try:
    assert page.locator("#sign-in").is_visible()
    ctx.close()
    scenarios.append("anonymous-fail-closed")
+   # UI navigation only: an explicit fake JSON response + fake IdP page. Backend
+   # PKCE, signed cookie and strict Origin are separately tested by Node.
+   # This scenario neither contacts nor attests any external identity provider.
+   loginctx,loginpage=new_actor()
+   start_url="https://accounts.example.org/oauth2/authorize?"+
+     "response_type=code&state="+("A"*43)+
+     "&nonce="+("B"*43)+"&code_challenge="+("C"*43)+
+     "&code_challenge_method=S256"
+   loginctx.route(ORIGIN+"/api/auth/oidc/start-url",lambda route:route.fulfill(
+    status=200,headers={"content-type":"application/json","cache-control":"no-store"},
+    body=json.dumps({"authorizationUrl":start_url,"loginCompleted":False,
+      "merchantOwnershipVerified":False,"paymentAuthorized":False})))
+   loginctx.route("https://accounts.example.org/**",lambda route:route.fulfill(
+    status=200,headers={"content-type":"text/html","cache-control":"no-store"},
+    body="<html><body><h1>OFFLINE FAKE IDP - NO USER AUTHORIZED</h1></body></html>"))
+   before_login=len(post_urls)
+   loginpage.locator("#sign-in button").click()
+   expect(loginpage.locator("h1")).to_contain_text("OFFLINE FAKE IDP")
+   assert loginpage.url.startswith("https://accounts.example.org/oauth2/authorize?")
+   assert post_urls[before_login:]==[ORIGIN+"/api/auth/oidc/start-url"]
+   loginctx.close()
+   scenarios.append("browser-json-login-start-to-fake-idp-page-only")
    ctx,buyer=new_actor("buyer")
    expect(buyer.locator("#role")).to_have_text("BUYER")
    assert buyer.locator("#submit").is_disabled()
@@ -155,7 +177,7 @@ try:
    assert not any("/api/paypal/" in url or "/capture" in url
                   for url in post_urls)
    assert not any("accounts.example.org" in url for url in post_urls)
-   assert len(scenarios)==6
+   assert len(scenarios)==7
    reviewer_context.close()
    seller_context.close()
    ctx.close()
