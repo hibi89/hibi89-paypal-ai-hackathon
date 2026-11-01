@@ -328,3 +328,46 @@ test('real HTTPS browser navigation callback renders no private CSRF token, keep
   assert.equal(exchanges(),1);
  });
 });
+
+
+test('real loopback HTTPS JSON login start retains strict origin, signed PKCE session and replay block',async()=>{
+ await withService(async({send,activate,provision,registerCode,exchanges})=>{
+  const path='/api/auth/oidc/start-url';
+  const accept={accept:'application/json'};
+  const blocked=await send({path,method:'POST',extraHeaders:accept});
+  assert.equal(blocked.status,503);
+  assert.equal(blocked.headers['set-cookie'],undefined);
+  await activate();await provision();
+  const badOrigin=await send({path,method:'POST',extraHeaders:{
+   ...accept,origin:'null'}});
+  assert.equal(badOrigin.status,403);
+  assert.equal(badOrigin.headers['set-cookie'],undefined);
+  const start=await send({path,method:'POST',extraHeaders:accept});
+  assert.equal(start.status,200,JSON.stringify(start.body));
+  assert.equal(start.tlsVerified,true);
+  assert.equal(start.tlsProtocol,'TLSv1.3');
+  assert.equal(start.body.paymentAuthorized,false);
+  assert.equal(start.body.loginCompleted,false);
+  assert.equal(start.headers.location,undefined);
+  assert.equal(start.headers['set-cookie'].length,1);
+  assert.match(start.headers['set-cookie'][0],
+   /^__Host-proofline_oidc=[A-Za-z0-9_-]{43}; Secure; HttpOnly; SameSite=Lax; Path=\/; Max-Age=\d+$/);
+  const url=new URL(start.body.authorizationUrl);
+  assert.equal(url.origin,issuer);
+  const code='TLS_JSON_LOGIN_CODE_2026_123456789';
+  registerCode(code,'ext-buyer');
+  const cookie=start.headers['set-cookie'][0].split(';')[0];
+  const cb='/api/auth/oidc/callback?state='+
+   encodeURIComponent(url.searchParams.get('state'))+'&code='+code;
+  const done=await send({path:cb,cookie});
+  assert.equal(done.status,200,JSON.stringify(done.body));
+  assert.equal(done.body.authenticated,true);
+  assert.equal(done.headers['set-cookie'].length,2);
+  const sessionCookie=done.headers['set-cookie'][0].split(';')[0];
+  const verified=await send({path:'/api/auth/oidc/session',cookie:sessionCookie});
+  assert.equal(verified.status,200);
+  assert.equal(verified.body.identity.actorId,'buyerA');
+  assert.equal((await send({path:cb,cookie})).status,401);
+  assert.equal(exchanges(),1);
+ });
+});
