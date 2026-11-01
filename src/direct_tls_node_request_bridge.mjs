@@ -116,9 +116,32 @@ export function createDirectTlsNodeRequestBridge({
    const response=await routeHandler.handle(request);
    if(!(response instanceof Response))
     return failReply(res,503,'INGRESS_BACKEND_UNAVAILABLE');
-   const data=Buffer.from(await response.arrayBuffer());
-   if(data.length>maxReplyBytes)
+   // Never materialize an untrusted backend response before checking its
+   // maximum size. A malicious/buggy stream may be huge or never terminate.
+   const declared=response.headers.get('content-length');
+   if(declared!==null&&(!/^(0|[1-9]\\d{0,8})$/.test(declared)||
+      Number(declared)>maxReplyBytes))
     return failReply(res,502,'RESPONSE_TOO_LARGE');
+   const chunks=[];
+   let total=0;
+   if(response.body){
+    const reader=response.body.getReader();
+    try{
+     while(true){
+      const {done,value}=await reader.read();
+      if(done)break;
+      total+=value.byteLength;
+      if(total>maxReplyBytes){
+       await reader.cancel();
+       return failReply(res,502,'RESPONSE_TOO_LARGE');
+      }
+      chunks.push(Buffer.from(value));
+     }
+    }finally{reader.releaseLock()}
+   }
+   const data=Buffer.concat(chunks,total);
+   if(declared!==null&&Number(declared)!==total)
+    return failReply(res,502,'RESPONSE_FRAMING_MISMATCH');
    const out={};
    for(const key of SAFE_OUTBOUND){
     const val=response.headers.get(key);
