@@ -4,7 +4,7 @@
 const el=id=>document.getElementById(id);
 const model={csrf:null,consents:{services:null,gifts:null},selected:null,
   server:null,quoteId:null,busy:false,revoking:false,crosspartBusy:false,
-  reviewCandidate:null,reviewBusy:false};
+  reviewCandidate:null,reviewBusy:false,confirmedRevocations:new Set()};
 const show=(id,value)=>{el(id).textContent=typeof value==='string'?value:JSON.stringify(value,null,2);};
 const key=()=>crypto.randomUUID();
 const money=n=>Number.isSafeInteger(n)?'$'+(n/100).toFixed(2):'UNKNOWN';
@@ -31,7 +31,8 @@ async function api(route,body){
  return data;
 }
 function mandateStatus(c){
- if(c.revoked)return 'REVOKED';
+ // A confirmed revoke must not be visually undone by an older in-flight GET.
+ if(c.revoked||model.confirmedRevocations.has(c.id))return 'REVOKED';
  if(c.usedMinor>0)return 'ACCEPTED_OFFLINE / USED '+money(c.usedMinor);
  if(c.expiresAt<=Date.now())return 'EXPIRED';
  const pending=model.server?.pendingAttempts?.some(p=>p.consentId===c.id);
@@ -60,14 +61,16 @@ function renderMandates(){
  }
  select.value=model.selected||'';
  const revoked=el('revoke-mandate');
- revoked.disabled=!selected?.active||model.revoking||!model.csrf;
+ revoked.disabled=!selected?.active||model.confirmedRevocations.has(selected?.id)||
+  model.revoking||!model.csrf;
  if(selected){
   const pending=data.pendingAttempts.some(p=>p.consentId===selected.id);
   show('mandate-state',selected.category.toUpperCase()+' · '+money(selected.maxMinor)+
    ' · '+mandateStatus(selected)+'. '+
    (pending?'The attempt may be running or interrupted; revoke blocks late acceptance. ':
     'This mandate cannot authorize any PayPal charge. ')+
-   (selected.active?'You can revoke this mandate before offline acceptance.':
+   (selected.active&&!model.confirmedRevocations.has(selected.id)?
+    'You can revoke this mandate before offline acceptance.':
     'For another transaction, configure a new mandate.'));
  }else show('mandate-state','No mandate exists. Configure a scoped mandate first.');
 }
@@ -279,7 +282,8 @@ async function refresh(){
    transcriptSha256:e.result.transcriptSha256||null,createdAt:e.createdAt}))
  });
  for(const c of data.consents)
-  if(c.active&&!model.consents[c.category])model.consents[c.category]=c.id;
+  if(c.active&&!model.confirmedRevocations.has(c.id)&&!model.consents[c.category])
+   model.consents[c.category]=c.id;
  renderMandates();
  renderSavedA2AHistory();
  if(data.pendingAttempts.length)
@@ -323,14 +327,21 @@ el('delegate').addEventListener('click',()=>run('Consent',async()=>{
 el('revoke-mandate').addEventListener('click',async()=>{
  if(model.revoking)return;
  const selected=model.server?.consents.find(c=>c.id===model.selected);
- if(!selected?.active||!model.csrf)return;
+ if(!selected?.active||model.confirmedRevocations.has(selected.id)||!model.csrf)return;
  model.revoking=true;
  el('revoke-mandate').disabled=true;
  show('mandate-state','Revocation submitted for this synthetic mandate…');
  try{
   const result=await api('revoke',{consentId:selected.id,idempotencyKey:key()});
+  // Record a verified server acknowledgement before any async GET can finish.
+  // Never invent a success from a missing/ambiguous response.
+  if(result?.status!=='DELEGATION_REVOKED'||result.consentId!==selected.id)
+   throw new Error('REVOCATION_ACK_UNVERIFIED');
+  model.confirmedRevocations.add(selected.id);
+  model.selected=selected.id;
   if(model.consents[selected.category]===selected.id)model.consents[selected.category]=null;
   await refresh();
+  model.selected=selected.id;
   show('mandate-state',selected.category.toUpperCase()+' · '+result.status+
    ' · No PayPal payment was reversed or attempted. Issue a new mandate to continue.');
   show('message','Mandate revoked locally. Late A2A acceptance is blocked.');
