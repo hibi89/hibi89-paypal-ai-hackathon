@@ -130,6 +130,17 @@ export function createPreprovisionedOidcAccountBindings({
   if(!row||!await bindingMember(row.actor_id,row.merchant_id))return null;
   return Object.freeze({actorId:row.actor_id,merchantId:row.merchant_id});
  }
+ // Session-time revocation lookup: a previously verified, immutable
+ // subject->actor binding must still be active at EVERY request. A revoked
+ // subject may not retain its older HttpOnly cookie until its normal TTL.
+ // Return no subject, hashed ID or operator data to callers.
+ function isAccountActive({actorId,merchantId}={}){
+  active();
+  if(!ID.test(actorId??'')||!ID.test(merchantId??''))return false;
+  return db.prepare(`SELECT 1 FROM oidc_account_bindings
+   WHERE actor_id=? AND merchant_id=? AND issuer=? AND revoked_at_ms IS NULL`)
+   .get(actorId,merchantId,trustedIssuer)!==undefined;
+ }
  async function revoke({subject}={}){
   await authorized();
   active();
@@ -144,7 +155,7 @@ export function createPreprovisionedOidcAccountBindings({
   if(!closed){closed=true;db.close();key.fill(0)}
  }
  return Object.freeze({
-  provision,lookupExternalAccount,revoke,close,
+  provision,lookupExternalAccount,isAccountActive,revoke,close,
   mode:'PRIVATE_PREPROVISIONED_OIDC_SUBJECT_BINDINGS',
   publicRegistrationEnabled:false,
   externalIdentityVerifiedByCallerOnly:true,
