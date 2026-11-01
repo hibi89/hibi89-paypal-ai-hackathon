@@ -86,6 +86,7 @@ export function createPrivateOidcMarketplaceHost({
    trustedIssuer:issuer,trustedAudience:clientId,
    verifyExternalIdentity:trust.verifyExternalIdentity,
    lookupExternalAccount:bindings.lookupExternalAccount,
+   isAccountBindingActive:bindings.isAccountActive,
    getMembership,now
   }));
   const loginFlow=createOidcHostLoginFlow({
