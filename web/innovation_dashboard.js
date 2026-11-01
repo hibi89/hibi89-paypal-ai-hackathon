@@ -346,8 +346,14 @@ el('revoke-mandate').addEventListener('click',async()=>{
    ' · No PayPal payment was reversed or attempted. Issue a new mandate to continue.');
   show('message','Mandate revoked locally. Late A2A acceptance is blocked.');
  }catch(e){
-  show('message','Revocation blocked: '+(e.code||e.message||'ERROR')+'. '+explanation(e.code));
-  try{await refresh();}catch{}
+  if(model.confirmedRevocations.has(selected.id)){
+   // Server already confirmed this revoke. A later read error is NOT
+   // evidence the mutation failed, and cannot justify an automatic retry.
+   show('message','Revocation confirmed by the server. Audit refresh is unavailable; do not retry the mutation.');
+  }else{
+   show('message','Revocation blocked: '+(e.code||e.message||'ERROR')+'. '+explanation(e.code));
+   try{await refresh();}catch{}
+  }
  }finally{model.revoking=false;renderMandates();}
 });
 el('a2a').addEventListener('click',()=>run('A2A',async()=>{
