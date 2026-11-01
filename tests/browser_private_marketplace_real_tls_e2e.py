@@ -63,6 +63,58 @@ try:
    expect(anonymous.locator("#session-status")).to_contain_text("NOT SIGNED IN")
    assert anonymous.locator("#submit").is_disabled()
    anonctx.close()
+   # Real Chromium sign-in click -> actual loopback TLS JSON PKCE start ->
+   # locally intercepted fictional IdP -> top-level callback -> HttpOnly session.
+   # Never contact a real IdP or infer merchant/payment authority.
+   authctx,authpage,_=new_page(None)
+   fake_idp_visits=[]
+   def local_fake_idp(route):
+    from urllib.parse import urlsplit,parse_qs,quote
+    from html import escape
+    url=urlsplit(route.request.url)
+    args=parse_qs(url.query)
+    assert url.scheme=="https" and url.netloc=="accounts.example.org"
+    assert url.path=="/oauth2/authorize"
+    for name in ("state","nonce","code_challenge"):
+     assert len(args.get(name,[]))==1 and len(args[name][0])==43
+    assert args.get("response_type")==["code"]
+    assert args.get("code_challenge_method")==["S256"]
+    callback=(ORIGIN+"/api/auth/oidc/callback?state="+
+      quote(args["state"][0],safe="")+
+      "&code=CHROMIUM_VISIBLE_FAKE_BUYER_CODE_2026")
+    fake_idp_visits.append(route.request.url)
+    route.fulfill(status=200,headers={"content-type":"text/html; charset=utf-8",
+       "cache-control":"no-store"},
+      body="<html><body><a id='fictional-complete' href='"+
+       escape(callback,quote=True)+"'>Finish fictional OIDC sign-in</a></body></html>")
+   authctx.route("https://accounts.example.org/**",local_fake_idp)
+   before_auth=len(requests)
+   authpage.locator("#sign-in button").click()
+   expect(authpage.locator("#fictional-complete")).to_be_visible()
+   assert len(fake_idp_visits)==1
+   authpage.locator("#fictional-complete").click()
+   expect(authpage.locator("h1")).to_have_text("Identity verification complete.")
+   assert "/api/auth/oidc/callback?" in authpage.url
+   auth_cookies=authctx.cookies([ORIGIN])
+   sessions=[cookie for cookie in auth_cookies
+       if cookie["name"]=="__Host-proofline_session"]
+   assert len(sessions)==1 and sessions[0]["secure"] is True
+   assert sessions[0]["httpOnly"] is True
+   assert "proofline_session" not in authpage.evaluate("document.cookie")
+   authpage.locator("a[href='/private/marketplace']").click()
+   expect(authpage.locator("#role")).to_have_text("BUYER")
+   expect(authpage.locator("#session-status")).to_contain_text("MERCHANT ENTITLEMENT NOT VERIFIED")
+   assert authpage.locator("#submit").is_disabled()
+   assert authpage.locator("#accept").is_disabled()
+   auth_requests=requests[before_auth:]
+   assert sum(method=="POST" and url==ORIGIN+"/api/auth/oidc/start-url"
+       for method,url in auth_requests)==1,auth_requests
+   assert sum(url.startswith("https://accounts.example.org/")
+       for method,url in auth_requests)==1,auth_requests
+   assert not any("/api/paypal/" in url or "/milestones/" in url
+       for method,url in auth_requests),auth_requests
+   del requests[before_auth:]
+   authctx.close()
    buyerctx,buyer,tls=new_page("buyer")
    expect(buyer.locator("#role")).to_have_text("BUYER")
    assert buyer.locator("#submit").is_disabled()
