@@ -106,6 +106,32 @@ async function writeMilestone(action){
  show('action-status','Recorded '+String(result?.transition?.state||'UNKNOWN')+
   ' · no PayPal payment authorized. Refresh contract and audit separately.');
 }
+byId('sign-in').addEventListener('submit',async event=>{
+ event.preventDefault();
+ if(busy||principal)return;
+ busy=true;setEnabled();
+ try{
+  // The JSON start uses the same durable, one-time PKCE challenge as the
+  // original form, without browser form navigation's opaque Origin failure
+  // in local self-signed TLS fixtures. Never relax the server Origin check.
+  const begun=await request('/api/auth/oidc/start-url',{method:'POST'});
+  const target=new URL(begun.authorizationUrl);
+  if(target.protocol!=='https:'||target.origin===location.origin||
+     target.username||target.password||target.hash||
+     target.searchParams.get('response_type')!=='code'||
+     target.searchParams.get('code_challenge_method')!=='S256'||
+     !/^[A-Za-z0-9_-]{43}$/.test(target.searchParams.get('state')??'')||
+     !/^[A-Za-z0-9_-]{43}$/.test(target.searchParams.get('nonce')??'')||
+     !/^[A-Za-z0-9_-]{43}$/.test(target.searchParams.get('code_challenge')??'')||
+     begun.loginCompleted!==false||begun.merchantOwnershipVerified!==false)
+   throw Error('LOGIN_DESTINATION_UNVERIFIED');
+  show('session-status','Redirecting to the configured identity provider. No payment authorization.');
+  location.assign(target.href);
+ }catch(e){
+  show('session-status','SIGN-IN NOT STARTED / '+(e.message||'AUTH_UNAVAILABLE')+
+   '. No account or payment was created.');
+ }finally{busy=false;setEnabled()}
+});
 byId('refresh-session').addEventListener('click',refreshSession);
 byId('read-quote').addEventListener('click',()=>withUiWork(async()=>{
  const result=await request('/api/marketplace/quotes/'+encodedId('quote-id'));
