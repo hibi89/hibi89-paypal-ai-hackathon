@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Proofline | Verified Marketplace Workspace</title>
+<link rel="stylesheet" href="/private/marketplace/app.css">
+<script type="module" src="/private/marketplace/app.js"></script></head><body>
+<header class="top"><div class="brand"><span class="mark">p.</span><div><strong>proofline</strong><small>Verified marketplace workspace</small></div></div>
+<div class="tag">PRIVATE HOST / NO PAYMENT AUTHORITY</div></header>
+<main>
+<section class="intro"><p class="eyebrow">PART 1 · TRUSTED WORKFLOW</p>
+<h1>Contracts with verifiable roles.</h1>
+<p>Access saved quotes, submit work and review milestones using your verified account. Every write requires a current session, an exact origin and a one-time CSRF refresh. No PayPal order or capture can be initiated here.</p></section>
+<div class="warning"><strong>PRIVATE PREVIEW — NOT A PUBLIC MARKETPLACE.</strong> External account and PayPal merchant ownership must be independently verified before deployment. No new PayPal payment, Gemini model call, account registration or automatic retry is supported.</div>
+<section class="panel account">
+<div class="section-head"><div><p class="eyebrow">IDENTITY / SESSION</p><h2>Verified account</h2></div>
+<button id="refresh-session" type="button" class="quiet">Refresh status</button></div>
+<p id="session-status" role="status" aria-live="polite">Checking saved session.</p>
+<dl class="identity"><div><dt>Actor</dt><dd id="actor">—</dd></div><div><dt>Merchant scope</dt><dd id="merchant">—</dd></div><div><dt>Role</dt><dd id="role">—</dd></div></dl>
+<div class="actions">
+<form id="sign-in" method="post" action="/api/auth/oidc/start"><button type="submit">Sign in with configured identity provider</button></form>
+<button id="sign-out" type="button" class="danger" disabled>Sign out</button>
+</div><p class="hint">Sign in requires a provider approved and configured by the private operator. Only enrolled accounts can obtain marketplace access. The browser never chooses its identity or merchant.</p>
+</section>
+<div class="columns">
+<section class="panel"><p class="eyebrow">01 / READ-ONLY</p><h2>Quote evidence</h2>
+<label for="quote-id">Quote ID</label><input id="quote-id" autocomplete="off" maxlength="64" placeholder="projectA" spellcheck="false">
+<button id="read-quote" type="button" disabled>Read approved quote</button>
+<pre id="quote-output" aria-label="Quote evidence">Authenticated read only. No quote selected.</pre></section>
+<section class="panel"><p class="eyebrow">02 / READ-ONLY</p><h2>Contract &amp; milestones</h2>
+<label for="contract-id">Contract ID</label><input id="contract-id" autocomplete="off" maxlength="64" placeholder="contractA" spellcheck="false">
+<div class="actions"><button id="read-contract" type="button" disabled>Read contract</button>
+<button id="read-events" type="button" class="quiet" disabled>Audit events</button></div>
+<pre id="contract-output" aria-label="Contract evidence">Authenticated read only. No contract selected.</pre></section>
+</div>
+<section class="panel action-panel"><p class="eyebrow">03 / ROLE-PROTECTED WRITE</p><h2>Milestone action</h2>
+<p>The server independently decides whether the signed-in seller may submit or the assigned reviewer may accept/reject. Client-controlled IDs and versions do not grant authority.</p>
+<div class="fields"><div><label for="milestone-id">Milestone ID</label><input id="milestone-id" maxlength="64" autocomplete="off" placeholder="stepA" spellcheck="false"></div>
+<div><label for="expected-version">Current milestone version</label><input id="expected-version" type="number" min="1" max="2147483647" step="1" value="1"></div>
+<div><label for="expected-state">Prior state (seller submission)</label><select id="expected-state"><option value="PENDING">PENDING</option><option value="REJECTED">REJECTED</option></select></div></div>
+<label for="delivery-detail">Delivery note (seller only)</label><textarea id="delivery-detail" rows="3" maxlength="1000" placeholder="Describe the completed deliverable."></textarea>
+<div class="actions"><button id="submit" type="button" disabled>Submit delivery</button>
+<button id="accept" type="button" class="good" disabled>Accept milestone</button>
+<button id="reject" type="button" class="danger" disabled>Reject milestone</button></div>
+<p id="action-status" role="status" aria-live="polite">Sign in to enable role-appropriate actions. No payment is authorized.</p>
+<pre id="action-output" aria-label="Action result">No change made.</pre></section>
+<footer>Proofline / Signed identity · Origin + CSRF checks · Scoped SQLite contract evidence. <strong>PAYMENT: NOT AUTHORIZED</strong></footer>
+</main></body></html>
