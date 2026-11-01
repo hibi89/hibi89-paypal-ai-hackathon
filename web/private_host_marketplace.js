@@ -1,4 +1,4 @@
-// Same-origin, session-only dashboard client. No self-registration, localStorage,
+// Same-origin, session-only dashboard client. No self-registration, persistent browser storage,
 // synthetic account chooser, payment route, retry, external API or HTML injection.
 'use strict';
 const byId=id=>document.getElementById(id);
