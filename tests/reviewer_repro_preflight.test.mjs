@@ -22,7 +22,10 @@ test('checked-in English reviewer assets and no-install Node scripts are locally
 });
 test('a missing browser client or empty English guide blocks reviewer prerequisites',()=>{
  for(const path of ['web/demo_client.js','web/contract_client.js',
-  'web/integration_client.js','docs/JUDGE_REPRODUCTION_EN.md']){
+  'web/integration_client.js','web/marketplace_client.js',
+  'web/agent_budget_client.js','web/github_delivery_client.js',
+  'web/evidence_client.js','web/innovation_dashboard.html',
+  'web/innovation_dashboard.js','docs/JUDGE_REPRODUCTION_EN.md']){
   const next={...files,[path]:''};
   const r=inspect({files:next});
   assert.equal(r.ready,false);
@@ -44,7 +47,7 @@ test('missing loopback script or local license is a concrete blocker',()=>{
  assert.equal(inspect({files:{...files,LICENSE:'proprietary'}}).checks.license,
   'LOCAL_LICENSE_MISSING');
 });
-test('CLI actually starts isolated loopback server, reads eight paths, rejects two POSTs and closes it',()=>{
+test('CLI verifies both product parts using 12 GETs, denies three POSTs and closes local loopback',()=>{
  const cmd=fileURLToPath(new URL('../scripts/check_reviewer_repro.mjs',import.meta.url));
  const child=spawnSync(process.execPath,['--experimental-sqlite',cmd],{
   encoding:'utf8',timeout:15000,
@@ -55,8 +58,10 @@ test('CLI actually starts isolated loopback server, reads eight paths, rejects t
  const r=JSON.parse(child.stdout);
  assert.equal(r.status,'REVIEWER_LOCAL_READY');
  assert.equal(r.ready,true);
- assert.equal(r.readOnlyRequests,8);
- assert.equal(r.blockedMutationRequests,2);
+ assert.equal(r.readOnlyRequests,12);
+ assert.equal(r.blockedMutationRequests,3);
+ assert.equal(r.twoPartReproductionVerified,true);
+ assert.equal(r.checks.part2,'READY');
  assert.equal(r.paymentPostRequests,0);
  assert.equal(r.providerNetworkCalls,0);
  assert.equal(r.externalProviderEvidence,false);

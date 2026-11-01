@@ -36,6 +36,43 @@ if(!report.ready){
     const html=await (await get('/')).text();
     if(!/offline/i.test(html)||!html.includes('draft-form'))
       throw new Error('DEMO_HTML_INVALID');
+    // Both owner-approved product parts must ship to the local judge.
+    const innovationResponse=await get('/demo/innovation');
+    if(innovationResponse.headers.get('cache-control')!=='no-store'||
+       innovationResponse.headers.get('x-content-type-options')!=='nosniff')
+      throw new Error('PART2_PAGE_CACHE_OR_MIME_UNSAFE');
+    const innovationHtml=await innovationResponse.text();
+    if(!innovationHtml.includes('OFFLINE SYNTHETIC DEMO')||
+       !innovationHtml.includes('Five agentic commerce skills')||
+       !innovationHtml.includes('/demo/innovation.js'))
+      throw new Error('PART2_PAGE_NOT_REPRODUCIBLE');
+    const innovationScript=await get('/demo/innovation.js');
+    if(!innovationScript.headers.get('content-type')?.startsWith('text/javascript')||
+       !innovationScript.headers.get('cache-control')?.includes('no-store')||
+       !(await innovationScript.text()).includes('/api/demo/innovation/'))
+      throw new Error('PART2_CLIENT_NOT_REPRODUCIBLE');
+    const part2State=await (await get('/api/demo/innovation/state')).json();
+    if(part2State?.part!=='PART_2'||
+       JSON.stringify(part2State.skills)!==JSON.stringify([
+        'a2a','delegation','gift','churn','invoice_dispute'
+       ])||part2State.paymentState!=='NOT_PAID'||
+       part2State.realGemini!==false||part2State.realPayPal!==false||
+       !Array.isArray(part2State.consents)||part2State.consents.length!==0||
+       !Array.isArray(part2State.events)||part2State.events.length!==0||
+       !Array.isArray(part2State.pendingAttempts)||
+       part2State.pendingAttempts.length!==0)
+      throw new Error('PART2_READONLY_STATE_INVALID');
+    const forbiddenPart2=await fetch(server.url+'/api/demo/innovation/state',{
+      method:'POST',redirect:'error',signal:AbortSignal.timeout(5000),
+      headers:{'content-type':'application/json'},body:'{}'
+    });
+    outcome.blockedMutationRequests++;
+    if(forbiddenPart2.status!==405||
+       forbiddenPart2.headers.get('allow')!=='GET')
+      throw new Error('PART2_READ_MODEL_ACCEPTED_MUTATION');
+    const part2StateAfter=await (await get('/api/demo/innovation/state')).json();
+    if(JSON.stringify(part2StateAfter)!==JSON.stringify(part2State))
+      throw new Error('PART2_STATE_CHANGED_AFTER_REJECTED_POST');
     const session=await (await get('/demo/session')).json();
     if(session.mode!=='OFFLINE_MOCK'||session.role!=='owner'||
        session.quoteId!=='sample-project')throw new Error('LOCAL_SESSION_INVALID');
@@ -117,7 +154,8 @@ if(!report.ready){
     if(JSON.stringify(afterForbidden)!==JSON.stringify(integration))
       throw new Error('LOCAL_READ_MODEL_CHANGED_AFTER_REJECTED_POST');
     outcome={...outcome,status:'REVIEWER_LOCAL_READY',ready:true,
-      loopbackHttpVerified:true,checks:{...outcome.checks,loopback:'READY'}};
+      loopbackHttpVerified:true,twoPartReproductionVerified:true,
+      checks:{...outcome.checks,loopback:'READY',part2:'READY'}};
   }catch{
     outcome={...outcome,status:'REVIEWER_LOCAL_BLOCKED',
       checks:{...outcome.checks,loopback:'FAILED'},reason:'LOCAL_SMOKE_TEST_FAILED'};

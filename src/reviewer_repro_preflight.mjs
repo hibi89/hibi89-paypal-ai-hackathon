@@ -8,6 +8,12 @@ export const REVIEW_FILES=Object.freeze([
   'web/contract_client.js',
   'web/subscription_client.js',
   'web/integration_client.js',
+  'web/marketplace_client.js',
+  'web/agent_budget_client.js',
+  'web/github_delivery_client.js',
+  'web/evidence_client.js',
+  'web/innovation_dashboard.html',
+  'web/innovation_dashboard.js',
 ]);
 export function inspectReviewerPrereqs({nodeVersion,manifest,files}={}){
   const parts=typeof nodeVersion==='string'?nodeVersion.replace(/^v/,'').split('.').map(Number):[];
