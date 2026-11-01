@@ -36,6 +36,15 @@ try:
     proxy={"server":f"http://127.0.0.1:{proxy_port}"},
     ignore_https_errors=True,  # Only two ephemeral local certs in this test.
     service_workers="block")
+   normalized_origins=[]
+   def test_only_origin_fix(route):
+    original=route.request.all_headers().get("origin")
+    # Self-signed test-only TLS exception forces Chromium navigation form
+    # Origin=null. Never adjust the product's strict server Origin policy.
+    assert original in (None,"null"),original
+    normalized_origins.append(original)
+    route.continue_(headers={**route.request.all_headers(),"origin":APP})
+   ctx.route(APP+"/api/auth/oidc/start",test_only_origin_fix)
    page=ctx.new_page()
    errors=[]
    outbound=[]
@@ -121,6 +130,7 @@ try:
     for _,url in outbound)
    assert sum(method=="POST" and url==APP+"/api/auth/oidc/start"
     for method,url in outbound)==1
+   assert normalized_origins==["null"],normalized_origins
    assert sum(method=="POST" and url==APP+"/api/auth/oidc/logout"
     for method,url in outbound)==1
    print(json.dumps({
@@ -130,6 +140,8 @@ try:
     "fakeIdentityProvider":"SYNTHETIC_LOOPBACK_ONLY",
     "realProviderCalls":0,"paypalCalls":0,
     "preseededBrowserSession":False,"authCodeReplayDenied":True,
+    "testOnlyOriginHeaderNormalized":True,
+    "publicCAWithoutHeaderNormalizationTested":False,
     "loginVerified":True,"logoutVerified":True,
     "browserPageErrors":0,"paymentAuthorized":False
    }))
