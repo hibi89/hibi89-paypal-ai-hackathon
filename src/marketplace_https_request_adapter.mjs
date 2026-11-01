@@ -70,6 +70,7 @@ export function createMarketplaceHttpsRequestAdapter({
  });
  const routes=new Map([
   ['/api/auth/oidc/start','POST'],
+  ['/api/auth/oidc/start-url','POST'],
   ['/api/auth/oidc/callback','GET'],
   ['/api/auth/oidc/session','GET'],
   ['/api/auth/oidc/csrf','POST'],
@@ -98,16 +99,39 @@ export function createMarketplaceHttpsRequestAdapter({
    return result(404,{error:'NOT_FOUND'});
   try{
    switch(url.pathname){
-    case '/api/auth/oidc/start':{
+    case '/api/auth/oidc/start':
+    case '/api/auth/oidc/start-url':{
      if(request.body!==null)return result(400,{error:'BODY_NOT_ALLOWED'});
-     const started=loginFlow.start(request);
-     if(typeof started?.authorizationUrl!=='string'||
-        !started.authorizationUrl.startsWith('https://')||
+     const jsonStart=url.pathname==='/api/auth/oidc/start-url';
+     // Keep the durable one-time PKCE challenge store's *original* canonical
+     // start route, strict Origin and method. Only trusted router code may
+     // remap the additive JSON API. Do not accept Origin:null or spoofed
+     // Fetch-Metadata as evidence of same-origin access.
+     if(jsonStart && request.headers.get('origin')!==origin)
+      return result(403,{error:'ORIGIN_OR_CSRF_REQUIRED'});
+     if(jsonStart && !/^application\/json(?:\s*;|\s*,|$)/i.test(
+       request.headers.get('accept')??''))
+      return result(406,{error:'JSON_ACCEPT_REQUIRED'});
+     const startRequest=jsonStart?new Request(origin+'/api/auth/oidc/start',{
+      method:'POST',headers:{origin}
+     }):request;
+     const started=loginFlow.start(startRequest);
+     let destination;
+     try{destination=new URL(started?.authorizationUrl)}catch{}
+     if(!destination||destination.protocol!=='https:'||
+        destination.username||destination.password||destination.hash||
+        !destination.hostname.includes('.')||
+        destination.origin===origin||
         typeof started?.setCookie!=='string'||
-        !started.setCookie.startsWith('__Host-proofline_oidc='))
+        !/^__Host-proofline_oidc=[A-Za-z0-9_-]{43}; Secure; HttpOnly; SameSite=Lax; Path=\/; Max-Age=\d+$/.test(
+          started.setCookie))
       bad('HOST_LOGIN_RESPONSE_REJECTED');
+     if(jsonStart)return result(200,{
+      authorizationUrl:destination.href,loginCompleted:false,
+      merchantOwnershipVerified:false
+     },{cookies:[started.setCookie]});
      return result(303,{},{
-      location:started.authorizationUrl,cookies:[started.setCookie]
+      location:destination.href,cookies:[started.setCookie]
      });
     }
     case '/api/auth/oidc/callback':{
