@@ -55,7 +55,19 @@ try:
    assert page.locator("#sign-in button").is_enabled()
    # Real browser form navigation; no preseeded session/cookie/route.fulfill.
    page.locator("#sign-in button").click()
-   expect(page.locator("h1")).to_contain_text("Identity verification complete")
+   try:
+    expect(page.locator("h1")).to_contain_text("Identity verification complete")
+   except AssertionError:
+    from urllib.parse import urlsplit
+    nav=[(status,urlsplit(url).netloc,urlsplit(url).path)
+      for status,url in sessions if "/oauth2/" in url or "/api/auth/oidc/" in url]
+    location=urlsplit(page.url)
+    print("OFFLINE_OIDC_BROWSER_NAV_DIAGNOSTIC",json.dumps({
+      "currentOrigin":location.netloc,"currentPath":location.path,
+      "navigation":nav,
+      "bodyExcerpt":page.locator("body").inner_text(timeout=2000)[:240]
+    }),flush=True)
+    raise
    assert page.url.startswith(APP+"/api/auth/oidc/callback?"),page.url
    callback_url=page.url
    assert any(url.startswith(IDP+"/oauth2/authorize?") for _,url in outbound)
