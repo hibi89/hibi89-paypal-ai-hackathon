@@ -50,6 +50,9 @@ test('private client has sign-in form, no client-controlled actor or silent paym
  assert.ok(js.includes("principal.role!=='seller'"));
  assert.ok(js.includes("principal.role!=='reviewer'"));
  assert.ok(js.includes("credentials:'same-origin'"));
+ assert.ok(js.includes("'/api/auth/oidc/start-url'"));
+ assert.ok(js.includes('location.assign(target.href)'));
+ assert.ok(js.includes("target.searchParams.get('code_challenge_method')"));
  assert.ok(js.includes("redirect:'error'"));
  assert.ok(js.includes("crypto.randomUUID()"));
  assert.ok(js.includes('No success inferred'));
