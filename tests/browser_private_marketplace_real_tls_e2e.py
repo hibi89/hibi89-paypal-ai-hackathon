@@ -3,7 +3,7 @@ A strict test-only CONNECT proxy maps one hostname to a local ephemeral TLS
 server. An ephemeral self-signed cert is accepted in this isolated browser
 context only; this does NOT validate a public trusted certificate or IdP.
 """
-import json,queue,shutil,subprocess,threading,socket
+import json,queue,shutil,subprocess,threading
 from playwright.sync_api import sync_playwright,expect,Error as PlaywrightError
 
 ORIGIN="https://proofline.example.com"
@@ -23,16 +23,6 @@ try:
  assert fixture["origin"]==ORIGIN
  port=fixture["proxyPort"]
  assert isinstance(port,int) and 1024<=port<=65535
- def verify_local_connect_proxy():
-  # Preflight real local CONNECT without any HTTP request to an outside host.
-  # Fails with a precise proxy/bootstrap diagnostic, not a payment/API claim.
-  with socket.create_connection(("127.0.0.1",port),timeout=4) as probe:
-   probe.settimeout(4)
-   probe.sendall(b"CONNECT proofline.example.com:443 HTTP/1.1\r\n"
-                 b"Host: proofline.example.com:443\r\n\r\n")
-   received=probe.recv(128)
-   assert received.startswith(b"HTTP/1.1 200 Connection Established"),received
- verify_local_connect_proxy()
  browser_binary=(shutil.which("google-chrome") or
     shutil.which("google-chrome-stable") or shutil.which("chromium"))
  assert browser_binary,"CHROMIUM_NOT_INSTALLED"
@@ -68,7 +58,10 @@ try:
      # or server mutation. Retry only one transient local CONNECT failure;
      # never retry callback, logout, quote, provider or payment POST.
      if "net::ERR_PROXY_CONNECTION_FAILED" not in str(exc): raise
-     verify_local_connect_proxy()
+     # Do not send a separate probe CONNECT that starts and abruptly
+     # abandons a TLS tunnel; Chromium itself is the network assertion.
+     if process.poll() is not None:
+      raise AssertionError("TLS_LOCAL_FIXTURE_STOPPED_BEFORE_FIRST_GET") from exc
      page.close()
      page=instrument_page()
      response=page.goto(ORIGIN+"/private/marketplace",
