@@ -21,7 +21,11 @@ export function createWorkerD1PaymentBoundary({db,resolveVerifiedPrincipal}={}) 
   async function context(request) {
     let identity;
     try {identity=await resolveVerifiedPrincipal(request);}
-    catch {throw new WorkerD1BoundaryError('UNAUTHENTICATED');}
+    catch (error) {
+      if(error?.code==='SESSION_STORE_UNAVAILABLE')
+        throw new WorkerD1BoundaryError('D1_SESSION_BINDING_UNAVAILABLE');
+      throw new WorkerD1BoundaryError('UNAUTHENTICATED');
+    }
     fail(identity?.verified!==true||!valid(identity.actorId)||
       !valid(identity.merchantId), 'UNAUTHENTICATED');
     // Do not return or expose browser/request body identity claims.
