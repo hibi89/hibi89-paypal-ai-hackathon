@@ -124,7 +124,8 @@ test('unprovisioned and revoked subject-to-actor membership cannot issue',run(as
  f.master.exec('UPDATE worker_private_oidc_bindings SET active=0');
  await assert.rejects(f.authority.issue({challengeId:challenge.challengeId,
   idToken:jwt(challenge.nonce)}),{code:'PREPROVISIONED_ACCOUNT_REQUIRED'});
- f.master.exec('DELETE FROM worker_private_oidc_bindings');
+ assert.throws(()=>f.master.exec('DELETE FROM worker_private_oidc_bindings'),
+  /OIDC_BINDING_MUST_BE_REVOKED/);
  await assert.rejects(f.authority.issue({challengeId:challenge.challengeId,
   idToken:jwt(challenge.nonce)}),{code:'PREPROVISIONED_ACCOUNT_REQUIRED'});
  assert.equal(f.master.prepare('SELECT count(*) n FROM worker_private_sessions').get().n,0);
