@@ -149,12 +149,19 @@ export function createWorkerPrivateOidcAuthority({
    if(changes(consumed)!==1)fail('LOGIN_CHALLENGE_CONSUMED');
    const token=randomToken(),digest=await hash(token),assertion=evidence.assertionHash;
    try{
+     // Membership can be revoked/reassigned after the earlier lookup.
+     // Recheck current binding and revision atomically in the INSERT statement:
+     // zero rows inserted means no new cookie may ever be returned.
      const result=await session.prepare(`INSERT INTO worker_private_sessions
        (token_sha256,actor_id,merchant_id,role,issuer,issuer_verified_at_ms,
         expires_at_ms,assertion_sha256,binding_subject_hmac,binding_revision)
-       VALUES(?,?,?,?,?,?,?,?,?,?)`)
-       .bind(digest,bound.actor_id,bound.merchant_id,'OWNER',issuer,t,t+ttlMs,
-         assertion,bindingHash,bound.revision).run();
+       SELECT ?,b.actor_id,b.merchant_id,'OWNER',b.issuer,?,?,?,
+              b.subject_hmac,b.revision
+       FROM worker_private_oidc_bindings b
+       WHERE b.issuer=? AND b.subject_hmac=? AND b.active=1 AND b.role='OWNER'
+         AND b.actor_id=? AND b.merchant_id=? AND b.revision=?`)
+       .bind(digest,t,t+ttlMs,assertion,issuer,bindingHash,
+         bound.actor_id,bound.merchant_id,bound.revision).run();
      if(changes(result)!==1)fail('D1_UNAVAILABLE');
    }catch{fail('LOGIN_SESSION_NOT_ESTABLISHED');}
    return Object.freeze({setCookie:'__Host-proofline_session='+token+

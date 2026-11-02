@@ -45,7 +45,7 @@ function fixture({bound=true,dbUnavailable=false}={}){
   (issuer,subject_hmac,actor_id,merchant_id,role,active) VALUES(?,?,?,?,?,?)`)
   .run(ISSUER,subjectHmac(SUBJECT),'owner','merchant','OWNER',1);
  const handles=[],stats={reads:0,writes:0,modes:[],errors:0};
- let failInsert=false,offline=dbUnavailable;
+ let failInsert=false,offline=dbUnavailable,beforeSessionInsert=null;
  const db={withSession(mode){
    stats.modes.push(mode);
    if(offline)throw Error('injected D1 unavailable');
@@ -54,8 +54,14 @@ function fixture({bound=true,dbUnavailable=false}={}){
    conn.exec('PRAGMA busy_timeout=1000');
    return {prepare(statement){return {bind(...values){return {
      async first(){stats.reads++;return conn.prepare(statement).get(...values)??null;},
-     async run(){stats.writes++;if(failInsert&&statement.includes('INSERT INTO worker_private_sessions'))
-        throw Error('synthetic D1 outage during insert');
+     async run(){stats.writes++;if(statement.includes('INSERT INTO worker_private_sessions')){
+       if(failInsert)throw Error('synthetic D1 outage during insert');
+       if(beforeSessionInsert){
+         const callback=beforeSessionInsert;
+         beforeSessionInsert=null;
+         callback();
+       }
+     }
        const output=conn.prepare(statement).run(...values);
        return {success:true,meta:{changes:Number(output.changes)}};}
    };}};}};
@@ -73,7 +79,8 @@ function fixture({bound=true,dbUnavailable=false}={}){
    return authority.issue({challengeId:challenge.challengeId,idToken:jwt(challenge.nonce)});}
  function close(){for(const h of handles)h.close();master.close();rmSync(dir,{recursive:true,force:true});}
  return {master,db,stats,authority,resolver,reader,establish,validCookie,request,
-   setUnavailable:x=>offline=x,failSessionInsert:x=>failInsert=x,close};
+   setUnavailable:x=>offline=x,failSessionInsert:x=>failInsert=x,
+   beforeSessionInsert:fn=>beforeSessionInsert=fn,close};
 }
 const run=fn=>async()=>{const f=fixture();try{await fn(f);}finally{f.close();}};
 
@@ -164,6 +171,25 @@ test('private same-origin POST revokes session, persists across new resolver/wor
  await assert.rejects(f.authority.revoke({request:f.request(cookie,'POST',{origin:ORIGIN})}),
    {code:'SESSION_REVOKE_NOT_AUTHORIZED'});
 }));
+
+test('revocation or merchant reassignment between lookup and INSERT cannot mint a session',async()=>{
+ for(const mutation of [
+  'UPDATE worker_private_oidc_bindings SET active=0',
+  "UPDATE worker_private_oidc_bindings SET merchant_id='another_merchant'"
+ ]){
+  const f=fixture();
+  try{
+   const c=await f.authority.beginChallenge(),signed=jwt(c.nonce);
+   f.beforeSessionInsert(()=>f.master.exec(mutation));
+   await assert.rejects(f.authority.issue({challengeId:c.challengeId,idToken:signed}),
+    {code:'LOGIN_SESSION_NOT_ESTABLISHED'});
+   assert.equal(f.master.prepare('SELECT count(*) n FROM worker_private_sessions').get().n,0);
+   assert.equal(f.master.prepare('SELECT consumed_at_ms FROM worker_private_login_challenges').get().consumed_at_ms,CURRENT);
+   await assert.rejects(f.authority.issue({challengeId:c.challengeId,idToken:signed}),
+    {code:'LOGIN_CHALLENGE_INVALID'});
+  }finally{f.close();}
+ }
+});
 
 test('ambiguous D1 insert burns challenge; never creates duplicate session on retry',run(async f=>{
  f.failSessionInsert(true);const c=await f.authority.beginChallenge(),signed=jwt(c.nonce);
