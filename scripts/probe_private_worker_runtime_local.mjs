@@ -71,7 +71,7 @@ async function main(){
   '--ip','127.0.0.1','--port',String(port),'--local-protocol','https',
   '--infer-origin-from-routes=false','--persist-to',persist],{
   cwd:root,env:{...process.env,CLOUDFLARE_API_TOKEN:'',WRANGLER_SEND_METRICS:'false'},
-  stdio:['ignore','pipe','pipe']
+  stdio:['ignore','pipe','pipe'],detached:true // Linux-only isolated process group
  });
  // Drain output to prevent pipe blockage. Never echo credentials or stack traces.
  for(const stream of [child.stdout,child.stderr])stream.on('data',()=>{});
@@ -111,7 +111,14 @@ async function main(){
 try{await main();}
 catch(e){console.error('PRIVATE_WORKER_LOCAL_PROBE_BLOCKED:'+e.message);process.exitCode=2;}
 finally{
- if(child&&child.exitCode===null){child.kill('SIGTERM');await wait(350);
-  if(child.exitCode===null)child.kill('SIGKILL');}
+ if(child?.pid){
+  // npx launches a Wrangler grandchild; killing only npx may leave workerd
+  // holding stderr/stdout open, indefinitely hanging the GitHub CI step.
+  // This probe is Linux-GHA-only, so terminate the entire detached group.
+  try{process.kill(-child.pid,'SIGTERM')}catch{try{child.kill('SIGTERM')}catch{}}
+  await wait(500);
+  try{process.kill(-child.pid,'SIGKILL')}catch{try{child.kill('SIGKILL')}catch{}}
+  child.stdout?.destroy();child.stderr?.destroy();child.unref();
+ }
  for(const file of [sqlfile,config])try{unlinkSync(file)}catch{}
 }
