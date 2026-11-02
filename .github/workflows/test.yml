@@ -84,6 +84,8 @@ jobs:
         run: node --experimental-sqlite --test tests/owner_cloudflare_d1_isolated.test.mjs
       - name: Windows read-only Worker activation fail-closed tests
         run: node --experimental-sqlite --test tests/worker_private_read_runtime.test.mjs
+      - name: Windows OIDC PKCE coordinator security and D1 session regression
+        run: node --experimental-sqlite --test tests/worker_oidc_pkce_coordinator.test.mjs
       - name: Offline Worker binding revocation and migration backup-restore
         run: node --experimental-sqlite --test tests/worker_private_d1_recovery.test.mjs
       - name: Offline read-only Worker D1 schema preflight regressions

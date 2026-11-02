@@ -6,6 +6,7 @@ import {mkdtempSync,readFileSync,rmSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {createWorkerPrivateOidcAuthority} from '../src/worker_private_oidc_authority.mjs';
+import {createWorkerOidcPkceCoordinator} from '../src/worker_oidc_pkce_coordinator.mjs';
 import {createWorkerPrivateSessionResolver} from '../src/worker_private_session_resolver.mjs';
 import {createPrivateWorkerReadHandler} from '../src/worker_private_read_entrypoint.mjs';
 const ORIGIN='https://proofline.example.test';
@@ -270,3 +271,63 @@ test('D1 migration preserves preexisting hashed private sessions without publish
   assert.equal(db.prepare('SELECT count(*) n FROM worker_private_oidc_bindings').get().n,0);
  }finally{db.close();rmSync(dir,{recursive:true,force:true});}
 });
+
+test('PKCE code callback plus REAL pinned RS256 and primary D1 issues owner-only cookie',run(async f=>{
+ let serverNonce,exchanges=0;
+ const bridge=createWorkerOidcPkceCoordinator({
+  authority:{
+   async beginChallenge(){const c=await f.authority.beginChallenge();serverNonce=c.nonce;return c;},
+   issue:result=>f.authority.issue(result)
+  },
+  codeTransport:{async exchange(x){
+   exchanges++;assert.equal(x.code,'FIXTURE_ONE_TIME_CODE');
+   assert.equal(x.clientId,AUD);
+   assert.equal(x.redirectUri,ORIGIN+'/api/auth/oidc/callback');
+   assert.match(x.codeVerifier,/^[A-Za-z0-9_-]{43}$/);
+   return {idToken:jwt(serverNonce)};
+  }},
+  issuer:ISSUER,clientId:AUD,allowedOrigin:ORIGIN,
+  authorizationEndpoint:ISSUER+'/oauth2/authorize',tokenEndpoint:ISSUER+'/oauth2/token'
+ });
+ const start=await bridge.start(new Request(ORIGIN+'/api/auth/oidc/start',{
+  method:'POST',headers:{origin:ORIGIN,'sec-fetch-site':'same-origin'}}));
+ assert.equal(start.status,303);
+ const state=new URL(start.headers.get('location')).searchParams.get('state');
+ const stateCookies=start.headers.getSetCookie().map(x=>x.split(';')[0]).join('; ');
+ const finish=await bridge.callback(new Request(ORIGIN+'/api/auth/oidc/callback?code=FIXTURE_ONE_TIME_CODE&state='+state,
+  {headers:{cookie:stateCookies,'sec-fetch-site':'cross-site'}}));
+ assert.equal(finish.status,200);
+ assert.equal(exchanges,1);
+ const session=finish.headers.getSetCookie().find(x=>x.startsWith('__Host-proofline_session='));
+ assert.ok(session);
+ const ownerCookie=session.split(';')[0];
+ assert.equal((await f.reader.fetch(f.request(ownerCookie))).status,200);
+ assert.equal(f.master.prepare('SELECT COUNT(*) n FROM worker_private_sessions').get().n,1);
+ f.master.exec('UPDATE worker_private_oidc_bindings SET active=0');
+ assert.equal((await f.reader.fetch(f.request(ownerCookie))).status,401);
+ const repeated=await bridge.callback(new Request(ORIGIN+'/api/auth/oidc/callback?code=FIXTURE_ONE_TIME_CODE&state='+state,
+  {headers:{cookie:stateCookies}}));
+ assert.equal(repeated.status,401);
+ assert.equal(f.master.prepare('SELECT COUNT(*) n FROM worker_private_sessions').get().n,1);
+}));
+
+test('PKCE forged signed OIDC audience never establishes a D1 session',run(async f=>{
+ let serverNonce;
+ const bridge=createWorkerOidcPkceCoordinator({
+  authority:{async beginChallenge(){const c=await f.authority.beginChallenge();serverNonce=c.nonce;return c;},
+   issue:result=>f.authority.issue(result)},
+  codeTransport:{async exchange(){return {idToken:jwt(serverNonce,{aud:'untrusted-client'})}}},
+  issuer:ISSUER,clientId:AUD,allowedOrigin:ORIGIN,
+  authorizationEndpoint:ISSUER+'/oauth2/authorize',tokenEndpoint:ISSUER+'/oauth2/token'
+ });
+ const start=await bridge.start(new Request(ORIGIN+'/api/auth/oidc/start',{
+  method:'POST',headers:{origin:ORIGIN,'sec-fetch-site':'same-origin'}}));
+ assert.equal(start.status,303);
+ const state=new URL(start.headers.get('location')).searchParams.get('state');
+ const cookie=start.headers.getSetCookie().map(x=>x.split(';')[0]).join('; ');
+ const finish=await bridge.callback(new Request(ORIGIN+'/api/auth/oidc/callback?code=SIGNED_BAD_AUDIENCE&state='+state,
+  {headers:{cookie}}));
+ assert.equal(finish.status,401);
+ assert.equal(finish.headers.getSetCookie().some(x=>x.startsWith('__Host-proofline_session=')),false);
+ assert.equal(f.master.prepare('SELECT COUNT(*) n FROM worker_private_sessions').get().n,0);
+}));
