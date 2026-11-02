@@ -15,7 +15,7 @@ The `d1-local-wrangler` job in `.github/workflows/test.yml` runs only on a push 
 1. `migrations/d1/` contains exactly four versioned SQL migrations, without the operational `restore_quarantine_private_sessions.sql`, which remains preserved under `scripts/`.
 2. The real local Wrangler D1 engine applies migrations 0001–0004 to a disposable temporary database.
 3. The local migration ledger reports 4 rows; `sqlite_master` contains 6 security triggers and the private OIDC binding table.
-4. Local `PRAGMA integrity_check` reports `ok`. No authentication or payment calls are made.
+4. Local `PRAGMA quick_check` reports `ok`. No authentication or payment calls are made.
 
 ## Real Cloudflare test after direct account access is available
 
@@ -28,9 +28,13 @@ Operator-only exact sequence, once access is available:
 1. Check plan/quota and existing databases first; do not reuse any existing DB.
 2. Create a new isolated database with `wrangler d1 create <unique-throwaway-name>` (remote resource creation; requires operator credentials). Keep returned UUID private.
 3. Generate an **untracked** Wrangler configuration that binds only the new database UUID and pins `migrations_dir=migrations/d1`; never point it at an existing Worker/Production binding.
-4. First `wrangler d1 migrations list <new-name> --remote --config <isolated-config>`, verify exactly four files. Apply `wrangler d1 migrations apply <new-name> --remote --config <isolated-config>` only to this new UUID. Inspect `d1_migrations`, five required tables, security triggers and `PRAGMA integrity_check`. Export a **synthetic-only** SQL snapshot to a local untracked file. Never upload credentials, private DB rows or secret output to GitHub.
+4. First `wrangler d1 migrations list <new-name> --remote --config <isolated-config>`, verify exactly four files. Apply `wrangler d1 migrations apply <new-name> --remote --config <isolated-config>` only to this new UUID. Inspect `d1_migrations`, five required tables, security triggers and `PRAGMA quick_check`. Export a **synthetic-only** SQL snapshot to a local untracked file. Never upload credentials, private DB rows or secret output to GitHub.
 5. Time Travel restoration is destructive **in place**; run only on this new throwaway database after a fresh bookmark and separately scoped approval. Never restore any existing owner DB. Remote migration and restore are **NOT EXECUTED** here.
 
 Cloudflare official current Free limits (2026-10-30): 10 databases/account, 500 MB each, 5 GB total and Time Travel 7 days; account-level availability/actual Free entitlement and quota still require direct verification: https://developers.cloudflare.com/d1/platform/limits/.
 
 Owner's historical real PayPal sandbox evidence, Part1+Part2, `main`, and the legacy locally staged `paypal-mvp` folder must remain untouched. Do not auto-enable PayPal/Gemini, live account logins, public deployment, checkout, or Devpost. No release until separately verified live identity, merchant authority, D1, hosted browser/API, and owner submission approval.
+
+## First Wrangler compatibility run and targeted correction
+
+GitHub Actions run [#41481447428](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41481447428) on initial feature SHA `5c16722be287` applied all four migrations successfully and verified 4 ledger rows / 6 security triggers / OIDC binding table in real local Wrangler D1. Its last `PRAGMA integrity_check` step exited 1 without a printed SQL diagnostic because Wrangler `--json` output was redirected; no Cloudflare account/remote migration was involved. Cloudflare's documented D1-compatible integrity check is `PRAGMA quick_check`: https://developers.cloudflare.com/d1/sql-api/sql-statements/. One narrow CI-only correction switches to this supported PRAGMA and asserts JSON `quick_check=ok`; overall success must be checked on the new exact SHA. No second failure will be papered over.
