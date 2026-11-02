@@ -109,6 +109,10 @@ export function createWorkerPrivateOidcAuthority({
      return {subject:claims.sub,assertionHash:await hash(idToken)};
    }catch{fail('OIDC_TOKEN_UNVERIFIED');}
  }
+ // Non-exportable, request-local capability for a D1-reserved authorization
+ // code exchange. The CAS persists across Worker isolates; WeakMap proof
+ // prevents a different caller from minting a session from the burned state.
+ const reservedExchanges=new WeakMap();
  const sessionResolver=createWorkerPrivateSessionResolver({db,now});
  // Only a private OIDC coordinator may call this; no public Request/Response
  // dispatch exists. The challenge must be created before IdP authorization.
@@ -120,15 +124,39 @@ export function createWorkerPrivateOidcAuthority({
    catch{fail('D1_UNAVAILABLE');}
    return Object.freeze({challengeId,nonce,expiresAtMs:t+5*60*1000});
  }
- async function issue({idToken,challengeId}={}){
+ // Reserve before ANY external token POST. No retry after an ambiguous
+ // transport outcome; fail-closed even if a callback runs on another isolate.
+ async function reserveExchange({challengeId}={}){
+   if(!TOKEN.test(challengeId??''))fail('LOGIN_CHALLENGE_INVALID');
+   const t=timestamp(now),id=await hash(challengeId);
+   let result;
+   try{result=await primary(db).prepare(`UPDATE worker_private_login_challenges
+     SET consumed_at_ms=? WHERE challenge_sha256=? AND consumed_at_ms IS NULL
+     AND expires_at_ms>?`).bind(t,id,t).run();}
+   catch{fail('D1_UNAVAILABLE');}
+   if(changes(result)!==1)fail('LOGIN_CHALLENGE_CONSUMED');
+   const proof=Object.freeze({});
+   reservedExchanges.set(proof,{challengeId,at:t});
+   return proof;
+ }
+ async function issue({idToken,challengeId,exchangeProof}={}){
    if(!TOKEN.test(challengeId??''))fail('LOGIN_CHALLENGE_INVALID');
    const t=timestamp(now),session=primary(db),challengeHash=await hash(challengeId);
+   const reserved=exchangeProof===undefined?null:reservedExchanges.get(exchangeProof);
+   if(exchangeProof!==undefined){
+     if(!reserved||reserved.challengeId!==challengeId)fail('LOGIN_CHALLENGE_INVALID');
+     // Burn local proof immediately; no duplicate session after an ambiguous
+     // signed token / D1 result, including overlapping callbacks.
+     reservedExchanges.delete(exchangeProof);
+   }
    let challenge;
    try{challenge=await session.prepare(`SELECT nonce,expires_at_ms,consumed_at_ms
      FROM worker_private_login_challenges WHERE challenge_sha256=?`)
        .bind(challengeHash).first();}
    catch{fail('D1_UNAVAILABLE');}
-   if(!challenge||challenge.consumed_at_ms!==null||challenge.expires_at_ms<=t)
+   if(!challenge||challenge.expires_at_ms<=t||
+      (reserved?challenge.consumed_at_ms!==reserved.at:
+       challenge.consumed_at_ms!==null))
      fail('LOGIN_CHALLENGE_INVALID');
    const evidence=await verify(idToken,challenge.nonce);
    const bindingHash=await fingerprint(evidence.subject);
@@ -141,12 +169,14 @@ export function createWorkerPrivateOidcAuthority({
    // Atomic update is the CAS gate; second use of the same challenge will
    // fail closed. If inserting a session later fails, login must be retried
    // with a new signed challenge; NEVER revive an ambiguous session.
-   let consumed;
-   try{consumed=await session.prepare(`UPDATE worker_private_login_challenges
-     SET consumed_at_ms=? WHERE challenge_sha256=? AND consumed_at_ms IS NULL
-     AND expires_at_ms>?`).bind(t,challengeHash,t).run();}
-   catch{fail('D1_UNAVAILABLE');}
-   if(changes(consumed)!==1)fail('LOGIN_CHALLENGE_CONSUMED');
+   if(!reserved){
+     let consumed;
+     try{consumed=await session.prepare(`UPDATE worker_private_login_challenges
+       SET consumed_at_ms=? WHERE challenge_sha256=? AND consumed_at_ms IS NULL
+       AND expires_at_ms>?`).bind(t,challengeHash,t).run();}
+     catch{fail('D1_UNAVAILABLE');}
+     if(changes(consumed)!==1)fail('LOGIN_CHALLENGE_CONSUMED');
+   }
    const token=randomToken(),digest=await hash(token),assertion=evidence.assertionHash;
    try{
      // Membership can be revoked/reassigned after the earlier lookup.
@@ -185,7 +215,7 @@ export function createWorkerPrivateOidcAuthority({
    return Object.freeze({clearCookie:'__Host-proofline_session=; Secure; HttpOnly; Path=/; SameSite=Strict; Max-Age=0',
      revoked:true,paymentAuthorized:false});
  }
- return Object.freeze({beginChallenge,issue,revoke,
+ return Object.freeze({beginChallenge,reserveExchange,issue,revoke,
    mode:'PRIVATE_OFFLINE_PINNED_IDP_D1_NO_PUBLIC_HTTP',
    providerCallsAllowed:false,hostDeploymentAuthorized:false});
 }

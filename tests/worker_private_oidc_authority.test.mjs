@@ -277,6 +277,7 @@ test('PKCE code callback plus REAL pinned RS256 and primary D1 issues owner-only
  const bridge=createWorkerOidcPkceCoordinator({
   authority:{
    async beginChallenge(){const c=await f.authority.beginChallenge();serverNonce=c.nonce;return c;},
+   reserveExchange:x=>f.authority.reserveExchange(x),
    issue:result=>f.authority.issue(result)
   },
   codeTransport:{async exchange(x){
@@ -315,6 +316,7 @@ test('PKCE forged signed OIDC audience never establishes a D1 session',run(async
  let serverNonce;
  const bridge=createWorkerOidcPkceCoordinator({
   authority:{async beginChallenge(){const c=await f.authority.beginChallenge();serverNonce=c.nonce;return c;},
+   reserveExchange:x=>f.authority.reserveExchange(x),
    issue:result=>f.authority.issue(result)},
   codeTransport:{async exchange(){return {idToken:jwt(serverNonce,{aud:'untrusted-client'})}}},
   issuer:ISSUER,clientId:AUD,allowedOrigin:ORIGIN,
@@ -330,4 +332,51 @@ test('PKCE forged signed OIDC audience never establishes a D1 session',run(async
  assert.equal(finish.status,401);
  assert.equal(finish.headers.getSetCookie().some(x=>x.startsWith('__Host-proofline_session=')),false);
  assert.equal(f.master.prepare('SELECT COUNT(*) n FROM worker_private_sessions').get().n,0);
+}));
+
+test('real primary-D1 reservation blocks concurrent token exchange and cross-isolate replay',run(async f=>{
+ let nonce,exchanges=0;
+ const makeBridge=()=>createWorkerOidcPkceCoordinator({
+  authority:{
+   async beginChallenge(){const c=await f.authority.beginChallenge();nonce=c.nonce;return c;},
+   reserveExchange:x=>f.authority.reserveExchange(x),
+   issue:x=>f.authority.issue(x)
+  },
+  codeTransport:{async exchange(){exchanges++;return {idToken:jwt(nonce)};}},
+  issuer:ISSUER,clientId:AUD,allowedOrigin:ORIGIN,
+  authorizationEndpoint:ISSUER+'/oauth2/authorize',tokenEndpoint:ISSUER+'/oauth2/token'
+ });
+ const bridge=makeBridge(),started=await bridge.start(new Request(
+  ORIGIN+'/api/auth/oidc/start',{method:'POST',headers:{origin:ORIGIN,
+  'sec-fetch-site':'same-origin'}}));
+ const state=new URL(started.headers.get('location')).searchParams.get('state');
+ const cookies=started.headers.getSetCookie().map(x=>x.split(';')[0]).join('; ');
+ const req=()=>new Request(ORIGIN+'/api/auth/oidc/callback?code=ONCE&state='+state,{headers:{cookie:cookies}});
+ const [a,b]=await Promise.all([bridge.callback(req()),makeBridge().callback(req())]);
+ assert.equal([a.status,b.status].filter(x=>x===200).length,1);
+ assert.equal([a.status,b.status].filter(x=>x===401).length,1);
+ assert.equal(exchanges,1);
+ assert.equal(f.master.prepare('SELECT COUNT(*) n FROM worker_private_sessions').get().n,1);
+ assert.equal(f.master.prepare('SELECT COUNT(*) n FROM worker_private_login_challenges WHERE consumed_at_ms IS NOT NULL').get().n,1);
+}));
+test('real D1 reservation burns challenge before ambiguous external code exchange',run(async f=>{
+ let nonce,attempts=0;
+ const bridge=createWorkerOidcPkceCoordinator({
+  authority:{async beginChallenge(){const c=await f.authority.beginChallenge();nonce=c.nonce;return c;},
+   reserveExchange:x=>f.authority.reserveExchange(x),issue:x=>f.authority.issue(x)},
+  codeTransport:{async exchange(){attempts++;throw Error('SYNTHETIC_UNKNOWN_PROVIDER_OUTCOME')}},
+  issuer:ISSUER,clientId:AUD,allowedOrigin:ORIGIN,
+  authorizationEndpoint:ISSUER+'/oauth2/authorize',tokenEndpoint:ISSUER+'/oauth2/token'
+ });
+ const started=await bridge.start(new Request(
+  ORIGIN+'/api/auth/oidc/start',{method:'POST',headers:{origin:ORIGIN,
+   'sec-fetch-site':'same-origin'}}));
+ const state=new URL(started.headers.get('location')).searchParams.get('state');
+ const cookies=started.headers.getSetCookie().map(x=>x.split(';')[0]).join('; ');
+ const req=()=>new Request(ORIGIN+'/api/auth/oidc/callback?code=ONCE&state='+state,{headers:{cookie:cookies}});
+ assert.equal((await bridge.callback(req())).status,401);
+ assert.equal((await bridge.callback(req())).status,401);
+ assert.equal(attempts,1);
+ assert.equal(f.master.prepare('SELECT COUNT(*) n FROM worker_private_sessions').get().n,0);
+ assert.equal(f.master.prepare('SELECT COUNT(*) n FROM worker_private_login_challenges WHERE consumed_at_ms IS NOT NULL').get().n,1);
 }));

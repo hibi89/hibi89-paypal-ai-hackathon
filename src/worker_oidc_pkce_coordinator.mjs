@@ -63,7 +63,8 @@ export function createWorkerOidcPkceCoordinator({authority,codeTransport,
  allowedOrigin,issuer,clientId,authorizationEndpoint,tokenEndpoint}={}){
  const pub=endpoint(allowedOrigin);
  if(pub.origin!==allowedOrigin||pub.pathname!=='/'||!CLIENT.test(clientId??'')||
-    typeof authority?.beginChallenge!=='function'||typeof authority?.issue!=='function'||
+    typeof authority?.beginChallenge!=='function'||
+    typeof authority?.reserveExchange!=='function'||typeof authority?.issue!=='function'||
     typeof codeTransport?.exchange!=='function')bad('OIDC_PKCE_DEPENDENCIES_REQUIRED');
  const trusted=endpoint(issuer);
  if(trusted.origin!==issuer||trusted.pathname!=='/')bad('OIDC_PKCE_TRUST_CONFIG_REQUIRED');
@@ -108,13 +109,17 @@ export function createWorkerOidcPkceCoordinator({authority,codeTransport,
       bad('OIDC_PKCE_CALLBACK_REJECTED');
     const cookies=getCookies(request);
     if(cookies.state!==state)bad('OIDC_PKCE_STATE_REJECTED');
+    // D1 CAS MUST win before any non-idempotent provider code POST.
+    // The one-time capability never comes from the request and cannot be
+    // replayed across isolates, even when an exchange times out.
+    const exchangeProof=await authority.reserveExchange({challengeId:state});
     const exchanged=await codeTransport.exchange(Object.freeze({
       code,codeVerifier:cookies.verifier,tokenEndpoint:exchangeEndpoint.href,
       redirectUri,clientId
     }));
     if(typeof exchanged?.idToken!=='string'||exchanged.idToken.length>8192)
       bad('OIDC_PKCE_PROVIDER_UNAVAILABLE');
-    const result=await authority.issue({challengeId:state,idToken:exchanged.idToken});
+    const result=await authority.issue({challengeId:state,idToken:exchanged.idToken,exchangeProof});
     if(!/^__Host-proofline_session=[A-Za-z0-9_-]{43}; Secure; HttpOnly; Path=\/; SameSite=Strict; Max-Age=\d+$/.test(result?.setCookie??''))
       bad('OIDC_PKCE_AUTHORITY_REJECTED');
     const out=new Response(JSON.stringify({status:'SESSION_ESTABLISHED',
