@@ -128,3 +128,23 @@ test('restored old snapshot remains untrusted even if schema passes; quarantine 
   assert.equal(post.releaseAuthorized,false);
  }finally{if(restored)restored.close();f.close();}
 });
+
+test('same-named UNIQUE index on wrong key cannot masquerade as assertion replay guard',scoped(async f=>{
+ f.writer.exec('DROP INDEX ux_worker_session_assertion');
+ f.writer.exec('CREATE UNIQUE INDEX ux_worker_session_assertion ON worker_private_sessions(actor_id) WHERE actor_id IS NOT NULL');
+ const report=await auditWorkerD1SchemaReadOnly({db:f.db});
+ assert.equal(report.status,'BLOCKED_OFFLINE_D1_SCHEMA');
+ assert.ok(report.issueCodes.includes('ASSERTION_INDEX_WRONG_COLUMNS'));
+ assert.ok(report.issueCodes.includes('ASSERTION_INDEX_PREDICATE_UNEXPECTED'));
+ assert.equal(report.releaseAuthorized,false);
+}));
+
+test('partial index with a silent always-false predicate is rejected',scoped(async f=>{
+ f.writer.exec('DROP INDEX ux_worker_session_assertion');
+ f.writer.exec('CREATE UNIQUE INDEX ux_worker_session_assertion ON worker_private_sessions(assertion_sha256) WHERE assertion_sha256 IS NOT NULL AND 0');
+ const report=await auditWorkerD1SchemaReadOnly({db:f.db});
+ assert.equal(report.status,'BLOCKED_OFFLINE_D1_SCHEMA');
+ assert.ok(report.issueCodes.includes('ASSERTION_INDEX_PREDICATE_UNEXPECTED'));
+ assert.equal(report.dbWrites,0);
+ assert.equal(report.releaseAuthorized,false);
+}));

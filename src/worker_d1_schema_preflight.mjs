@@ -63,9 +63,23 @@ export async function auditWorkerD1SchemaReadOnly({db}={}){
   for(const name of INDEXES)if(!has('index',name))issues.push('MISSING_INDEX:'+name);
   for(const name of TRIGGERS)if(!has('trigger',name))issues.push('MISSING_TRIGGER:'+name);
   if(has('index','ux_worker_session_assertion')){
+   // A same-named UNIQUE index on a different column does NOT prevent OIDC
+   // assertion replay. Verify the actual key, scope and complete predicate.
+   const definition=entries.find(x=>x.type==='index'&&x.name==='ux_worker_session_assertion');
    const indexes=await rows("PRAGMA index_list('worker_private_sessions')");
-   if(!indexes.some(x=>x.name==='ux_worker_session_assertion'&&Number(x.unique)===1))
+   const assertionIndex=indexes.find(x=>x.name==='ux_worker_session_assertion');
+   if(!assertionIndex||Number(assertionIndex.unique)!==1)
     issues.push('ASSERTION_INDEX_NOT_UNIQUE');
+   if(definition?.tbl_name!=='worker_private_sessions')
+    issues.push('ASSERTION_INDEX_WRONG_TABLE');
+   const indexColumns=await rows("PRAGMA index_xinfo('ux_worker_session_assertion')");
+   const keyColumns=indexColumns.filter(x=>Number(x.key)===1)
+    .sort((a,b)=>Number(a.seqno)-Number(b.seqno)).map(x=>x.name);
+   if(keyColumns.length!==1||keyColumns[0]!=='assertion_sha256')
+    issues.push('ASSERTION_INDEX_WRONG_COLUMNS');
+   const expectedSql=/^CREATE\s+UNIQUE\s+INDEX\s+(?:IF\s+NOT\s+EXISTS\s+)?ux_worker_session_assertion\s+ON\s+worker_private_sessions\s*\(\s*assertion_sha256\s*\)\s+WHERE\s+assertion_sha256\s+IS\s+NOT\s+NULL\s*;?$/i;
+   if(Number(assertionIndex?.partial)!==1||!expectedSql.test(definition?.sql??''))
+    issues.push('ASSERTION_INDEX_PREDICATE_UNEXPECTED');
   }
   // Structural signatures, NOT a cryptographic attestation of exact SQL.
   // Missing guard clauses prevent even offline schema-candidate status.
