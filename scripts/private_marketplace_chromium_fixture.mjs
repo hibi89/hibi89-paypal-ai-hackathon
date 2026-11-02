@@ -52,6 +52,16 @@ function close(){
 }
 process.on('SIGTERM',()=>{close();process.exit(0)});
 process.on('SIGINT',()=>{close();process.exit(0)});
+// Unhandled socket faults previously ended this child with no reason exposed
+// to the Python runner. Preserve fail-closed semantics and report a code only.
+function fatal(kind,reason){
+ const code=typeof reason?.code==='string'&&/^[A-Z0-9_]{2,48}$/.test(reason.code)
+  ?reason.code:'UNKNOWN';
+ try{process.stderr.write('FIXTURE_FATAL_'+kind+'_'+code+'\n')}catch{}
+ close();process.exit(1);
+}
+process.on('uncaughtException',reason=>fatal('EXCEPTION',reason));
+process.on('unhandledRejection',reason=>fatal('REJECTION',reason));
 async function start(){
  for(const m of [
   {actorId:'buyerA',merchantId:'tenantA',role:'buyer'},
@@ -197,6 +207,9 @@ async function start(){
    backend.setTimeout(12_000,()=>backend.destroy());
    browser.setTimeout(12_000,()=>browser.destroy());
    backend.on('connect',()=>{
+    // Chromium may abandon a CONNECT before local TLS accepts it; never
+    // pipe a new tunnel into a socket that is already closed.
+    if(browser.destroyed){backend.destroy();return;}
     browser.write('HTTP/1.1 200 Connection Established\r\n\r\n');
     if(head.length)backend.write(head);
     browser.pipe(backend);
@@ -205,6 +218,7 @@ async function start(){
    backend.on('error',()=>browser.destroy());
    browser.on('error',()=>backend.destroy());
    browser.on('close',()=>backend.destroy());
+   backend.on('close',()=>{if(!browser.destroyed)browser.destroy()});
   });
   await new Promise((ok,bad)=>{
    proxyServer.once('error',bad);

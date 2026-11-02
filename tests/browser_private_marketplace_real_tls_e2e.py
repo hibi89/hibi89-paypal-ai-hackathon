@@ -3,7 +3,7 @@ A strict test-only CONNECT proxy maps one hostname to a local ephemeral TLS
 server. An ephemeral self-signed cert is accepted in this isolated browser
 context only; this does NOT validate a public trusted certificate or IdP.
 """
-import json,queue,shutil,subprocess,threading
+import json,queue,shutil,subprocess,threading,collections,re,socket
 from playwright.sync_api import sync_playwright,expect,Error as PlaywrightError
 
 ORIGIN="https://proofline.example.com"
@@ -13,16 +13,38 @@ process=subprocess.Popen(
  text=True,bufsize=1
 )
 lines=queue.Queue()
-threading.Thread(target=lambda:[lines.put(x) for x in process.stdout],
- daemon=True).start()
+# Drain BOTH subprocess pipes. An unread stderr pipe can block a child process
+# and, more importantly, previous failures discarded its fatal error code.
+# Only emit fixed error-code summaries, never untrusted raw logs/cookies.
+runtime_codes=collections.deque(maxlen=12)
+def collect_stdout():
+ for line in process.stdout: lines.put(line)
+def collect_stderr():
+ for line in process.stderr:
+  match=re.search(r"FIXTURE_(?:FAILED|FATAL)_[A-Z0-9_]+",line)
+  if match: runtime_codes.append(match.group(0))
+  elif "Error [" in line:
+   match=re.search(r"Error \[([A-Z0-9_]+)\]",line)
+   runtime_codes.append("NODE_ERROR_"+(match.group(1) if match else "UNKNOWN"))
+threading.Thread(target=collect_stdout,daemon=True).start()
+threading.Thread(target=collect_stderr,daemon=True).start()
+def fixture_state():
+ return "exit="+str(process.poll())+" codes="+(",".join(runtime_codes) or "NO_FATAL_CODE")
 try:
  try: fixture=json.loads(lines.get(timeout=25))
- except queue.Empty: raise AssertionError("TLS_LOCAL_FIXTURE_NOT_READY")
+ except queue.Empty: raise AssertionError("TLS_LOCAL_FIXTURE_NOT_READY "+fixture_state())
  assert fixture["mode"]=="OFFLINE_CHROMIUM_REAL_TLS_TUNNEL"
  assert fixture["providerCalls"]==0 and fixture["paypalCaptureEnabled"] is False
  assert fixture["origin"]==ORIGIN
  port=fixture["proxyPort"]
  assert isinstance(port,int) and 1024<=port<=65535
+ # A plain TCP open/close does NOT issue a CONNECT, start a TLS tunnel, or
+ # stand in for Chromium's authenticated HTTPS network assertion.
+ try:
+  with socket.create_connection(("127.0.0.1",port),timeout=2): pass
+ except OSError as exc:
+  raise AssertionError("TLS_PROXY_LOOPBACK_NOT_LISTENING "+fixture_state()) from exc
+ assert process.poll() is None,"TLS_FIXTURE_EXITED_AFTER_READY "+fixture_state()
  browser_binary=(shutil.which("google-chrome") or
     shutil.which("google-chrome-stable") or shutil.which("chromium"))
  assert browser_binary,"CHROMIUM_NOT_INSTALLED"
@@ -61,7 +83,8 @@ try:
      # Do not send a separate probe CONNECT that starts and abruptly
      # abandons a TLS tunnel; Chromium itself is the network assertion.
      if process.poll() is not None:
-      raise AssertionError("TLS_LOCAL_FIXTURE_STOPPED_BEFORE_FIRST_GET") from exc
+      raise AssertionError("TLS_LOCAL_FIXTURE_STOPPED_BEFORE_FIRST_GET "+
+       fixture_state()) from exc
      page.close()
      page=instrument_page()
      response=page.goto(ORIGIN+"/private/marketplace",
