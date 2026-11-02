@@ -21,6 +21,23 @@ const TRIGGERS=Object.freeze([
  'worker_private_binding_monotonic_revision',
  'worker_private_binding_no_delete','worker_private_binding_no_replace'
 ]);
+// Independently pinned from the reviewed 0001/0004 migration definitions.
+// sqlite_master omits IF NOT EXISTS. Full SQL comparison catches inert WHEN 0
+// guards which would pass a superficial RAISE(ABORT) signature check.
+// A matching catalog remains OFFLINE evidence, not remote D1 attestation.
+const EXPECTED_GUARD_SQL=Object.freeze({
+ "protect_claimed_quote_update": "CREATE TRIGGER protect_claimed_quote_update BEFORE UPDATE ON quotes\nWHEN EXISTS(SELECT 1 FROM payment_attempts a WHERE a.quote_id=OLD.id)\nBEGIN SELECT RAISE(ABORT,'CLAIMED_QUOTE_IMMUTABLE'); END",
+ "protect_claimed_quote_delete": "CREATE TRIGGER protect_claimed_quote_delete BEFORE DELETE ON quotes\nWHEN EXISTS(SELECT 1 FROM payment_attempts a WHERE a.quote_id=OLD.id)\nBEGIN SELECT RAISE(ABORT,'CLAIMED_QUOTE_IMMUTABLE'); END",
+ "worker_private_binding_revision_on_change": "CREATE TRIGGER worker_private_binding_revision_on_change\nAFTER UPDATE OF active,actor_id,merchant_id,role,issuer,subject_hmac ON worker_private_oidc_bindings\nBEGIN\n UPDATE worker_private_oidc_bindings SET revision = OLD.revision + 1\n WHERE issuer = NEW.issuer AND subject_hmac = NEW.subject_hmac;\nEND",
+ "worker_private_binding_monotonic_revision": "CREATE TRIGGER worker_private_binding_monotonic_revision\nBEFORE UPDATE OF revision ON worker_private_oidc_bindings\nWHEN NEW.revision != OLD.revision + 1\nBEGIN SELECT RAISE(ABORT,'OIDC_BINDING_REVISION_NOT_MONOTONIC'); END",
+ "worker_private_binding_no_delete": "CREATE TRIGGER worker_private_binding_no_delete\nBEFORE DELETE ON worker_private_oidc_bindings\nBEGIN SELECT RAISE(ABORT,'OIDC_BINDING_MUST_BE_REVOKED'); END",
+ "worker_private_binding_no_replace": "CREATE TRIGGER worker_private_binding_no_replace\nBEFORE INSERT ON worker_private_oidc_bindings\nWHEN EXISTS(SELECT 1 FROM worker_private_oidc_bindings\n WHERE issuer=NEW.issuer AND subject_hmac=NEW.subject_hmac)\nBEGIN SELECT RAISE(ABORT,'OIDC_BINDING_REPLACE_FORBIDDEN'); END"
+});
+const normalizeGuardSql=sql=>typeof sql==='string'
+ ? sql.replace(/^CREATE\s+TRIGGER\s+(?:IF\s+NOT\s+EXISTS\s+)?/i,'CREATE TRIGGER ')
+    .replace(/\s+/g,' ').trim().replace(/;$/,'')
+ : '';
+
 const auditReport=(issues,queries)=>Object.freeze({
  status:issues.length?'BLOCKED_OFFLINE_D1_SCHEMA':'OFFLINE_SCHEMA_CANDIDATE_ONLY',
  issueCodes:Object.freeze([...new Set(issues)].sort()),
@@ -94,6 +111,10 @@ export async function auditWorkerD1SchemaReadOnly({db}={}){
   for(const [name,pattern] of Object.entries(guardPatterns)){
    const object=entries.find(x=>x.type==='trigger'&&x.name===name);
    if(object&&!pattern.test(object.sql??''))issues.push('GUARD_SIGNATURE_UNEXPECTED:'+name);
+   // A guard must match the complete reviewed migration contract, not
+   // merely contain RAISE(ABORT) in a path that might never execute.
+   if(object&&normalizeGuardSql(object.sql)!==normalizeGuardSql(EXPECTED_GUARD_SQL[name]))
+    issues.push('GUARD_SQL_DRIFT:'+name);
   }
   return auditReport(issues,count);
  }catch(error){

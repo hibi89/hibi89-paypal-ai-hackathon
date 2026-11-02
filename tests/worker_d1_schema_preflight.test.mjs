@@ -148,3 +148,29 @@ test('partial index with a silent always-false predicate is rejected',scoped(asy
  assert.equal(report.dbWrites,0);
  assert.equal(report.releaseAuthorized,false);
 }));
+
+test('security guard with inert WHEN 0 and valid RAISE text is blocked',scoped(async f=>{
+ f.writer.exec('DROP TRIGGER worker_private_binding_no_delete');
+ f.writer.exec(`CREATE TRIGGER worker_private_binding_no_delete
+  BEFORE DELETE ON worker_private_oidc_bindings WHEN 0
+  BEGIN SELECT RAISE(ABORT,'OIDC_BINDING_MUST_BE_REVOKED'); END`);
+ const report=await auditWorkerD1SchemaReadOnly({db:f.db});
+ assert.equal(report.status,'BLOCKED_OFFLINE_D1_SCHEMA');
+ assert.ok(report.issueCodes.includes('GUARD_SQL_DRIFT:worker_private_binding_no_delete'));
+ assert.equal(report.dbWrites,0);
+ assert.equal(report.releaseAuthorized,false);
+}));
+
+test('revision trigger with inert WHEN 0 cannot spoof full migration guard',scoped(async f=>{
+ f.writer.exec('DROP TRIGGER worker_private_binding_revision_on_change');
+ f.writer.exec(`CREATE TRIGGER worker_private_binding_revision_on_change
+  AFTER UPDATE OF active,actor_id,merchant_id,role,issuer,subject_hmac
+  ON worker_private_oidc_bindings WHEN 0 BEGIN
+  UPDATE worker_private_oidc_bindings SET revision = OLD.revision + 1
+  WHERE issuer = NEW.issuer AND subject_hmac = NEW.subject_hmac;
+  END`);
+ const report=await auditWorkerD1SchemaReadOnly({db:f.db});
+ assert.equal(report.status,'BLOCKED_OFFLINE_D1_SCHEMA');
+ assert.ok(report.issueCodes.includes('GUARD_SQL_DRIFT:worker_private_binding_revision_on_change'));
+ assert.equal(report.releaseAuthorized,false);
+}));
