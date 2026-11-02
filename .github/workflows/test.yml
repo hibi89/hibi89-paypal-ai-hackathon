@@ -129,6 +129,24 @@ jobs:
           node --input-type=module -e "import {readFileSync} from 'node:fs';const doc=JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/paypal-d1-query.json','utf8'));const match=v=>!!v&&typeof v==='object'&&(Number(v.applied)===4&&Number(v.guards)===6&&Number(v.bindings)===1||Object.values(v).some(match));if(!match(doc)){console.error('D1_LOCAL_SCHEMA_UNEXPECTED');process.exit(2)}console.log('D1_LOCAL_ENGINE_MIGRATIONS_4_TRIGGERS_6_PASS')"
       - name: Enforce actual local D1 quote, replay and OIDC revocation guards
         run: node scripts/check_wrangler_d1_local_behaviors.mjs
+      - name: Verify owner operator config finds migrations in actual Wrangler local engine
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import {writeFileSync,mkdirSync} from 'node:fs';
+          import {join} from 'node:path';
+          import {writeIsolatedD1Config} from './scripts/owner_cloudflare_d1_isolated.mjs';
+          const config=writeIsolatedD1Config(process.cwd(),
+            'proofline-d1-isolated-0123456789abcdef',
+            '00000000-0000-4000-8000-000000000002');
+          writeFileSync(join(process.env.RUNNER_TEMP,'isolated-owner-config-path'),config);
+          mkdirSync(join(process.env.RUNNER_TEMP,'owner-d1-config-check'),{recursive:true});
+          NODE
+          config="$(cat "$RUNNER_TEMP/isolated-owner-config-path")"
+          trap 'rm -f "$config"' EXIT
+          npx --yes wrangler@4.156.0 d1 migrations apply DB --local --config "$config" --persist-to "$RUNNER_TEMP/owner-d1-config-check"
+          npx --yes wrangler@4.156.0 d1 execute DB --local --config "$config" --persist-to "$RUNNER_TEMP/owner-d1-config-check" --command "SELECT COUNT(*) AS applied FROM d1_migrations" --json > "$RUNNER_TEMP/owner-d1-config-query.json"
+          node --input-type=module -e "import {readFileSync} from 'node:fs';const d=JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/owner-d1-config-query.json'));const ok=x=>x&&typeof x==='object'&&(Number(x.applied)===4||Object.values(x).some(ok));if(!ok(d))process.exit(2);console.log('OWNER_CONFIG_REAL_WRANGLER_LOCAL_4_MIGRATIONS_PASS')"
       - name: Confirm disposable database integrity and no external activation
         run: |
           npx --yes wrangler@4.156.0 d1 execute DB --local --config .wrangler-d1-local-ci.json --persist-to "$RUNNER_TEMP/paypal-d1-local-only" --command "PRAGMA quick_check" --json > "$RUNNER_TEMP/paypal-d1-integrity.json"

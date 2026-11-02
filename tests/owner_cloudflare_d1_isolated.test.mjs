@@ -2,8 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
-import {resolve} from 'node:path';
-import {assertMigrationDirectory,parseDatabases,checkUniqueNewDatabase,validateArguments}
+import {readFileSync,existsSync,unlinkSync} from 'node:fs';
+import {resolve,dirname} from 'node:path';
+import {assertMigrationDirectory,parseDatabases,checkUniqueNewDatabase,validateArguments,writeIsolatedD1Config}
  from '../scripts/owner_cloudflare_d1_isolated.mjs';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
@@ -43,4 +44,22 @@ test('no existing DB or mismatched identity can be selected for migration',()=>{
   [{name:'production',uuid:id}]
  ])assert.throws(()=>checkUniqueNewDatabase(rows,name,id));
  assert.throws(()=>checkUniqueNewDatabase([{name,uuid:id}],'production',id));
+});
+
+test('isolated Wrangler config is rooted beside the exact migration directory and removed',()=>{
+ const name='proofline-d1-isolated-0123456789abcdef',
+  uuid='11111111-1111-4111-8111-111111111111';
+ const config=writeIsolatedD1Config(root,name,uuid);
+ try{
+  assert.equal(dirname(config),root);
+  assert.equal(existsSync(config),true);
+  const file=JSON.parse(readFileSync(config,'utf8'));
+  assert.equal(file.d1_databases.length,1);
+  assert.equal(file.d1_databases[0].database_name,name);
+  assert.equal(file.d1_databases[0].database_id,uuid);
+  assert.equal(file.d1_databases[0].migrations_dir,'migrations/d1');
+  assert.equal(assertMigrationDirectory(dirname(config)).length,4);
+ }finally{unlinkSync(config);}
+ assert.equal(existsSync(config),false);
+ assert.throws(()=>writeIsolatedD1Config(root,'production',uuid),/UNSAFE_DATABASE_IDENTITY/);
 });

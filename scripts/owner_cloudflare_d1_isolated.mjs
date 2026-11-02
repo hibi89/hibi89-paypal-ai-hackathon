@@ -4,9 +4,8 @@
 // This script is not a hosted Worker or a substitute for login/owner approval.
 import {spawnSync} from 'node:child_process';
 import {randomBytes} from 'node:crypto';
-import {existsSync,mkdtempSync,readdirSync,rmSync,writeFileSync} from 'node:fs';
-import {tmpdir} from 'node:os';
-import {resolve,join} from 'node:path';
+import {existsSync,readdirSync,unlinkSync,writeFileSync} from 'node:fs';
+import {resolve} from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 
 const expected=Object.freeze([
@@ -51,6 +50,25 @@ export function validateArguments(args){
  bad('EXPLICIT_OWNER_MODE_AND_FREE_TIER_REQUIRED');
 }
 const root=fileURLToPath(new URL('..',import.meta.url));
+/**
+ * Wrangler resolves migrations_dir relative to the CONFIG location, not cwd.
+ * Keep the temporary config in this repository root, beside migrations/d1.
+ * A random, gitignored name and exclusive write avoid overwriting user files.
+ * This function does not contact Cloudflare.
+ */
+export function writeIsolatedD1Config(repositoryRoot,name,uuid){
+ if(!/^proofline-d1-isolated-[a-f0-9]{16}$/.test(name)||
+    !/^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(uuid))
+  bad('UNSAFE_DATABASE_IDENTITY');
+ const filename=resolve(repositoryRoot,
+   '.owner-d1-isolated-'+randomBytes(8).toString('hex')+'.json');
+ writeFileSync(filename,JSON.stringify({
+   name:'proofline-isolated-schema-check',compatibility_date:'2026-10-01',
+   d1_databases:[{binding:'DB',database_name:name,database_id:uuid,
+    migrations_dir:'migrations/d1'}]
+ }),{mode:0o600,flag:'wx'});
+ return filename;
+}
 function tool(args){
  // argv vector, never a shell. stdout and stderr are intentionally not
  // forwarded; Wrangler may print account data, but this script reports only
@@ -111,13 +129,8 @@ async function main(args){
  checkUniqueNewDatabase(before,parsed.name,parsed.uuid);
  // Run only against a never-migrated EMPTY DB. Even if someone copied the
  // exact name and UUID, existing application tables fail this gate.
- const work=mkdtempSync(join(tmpdir(),'paypal-d1-owner-only-'));
- const config=join(work,'wrangler.json');
+ const config=writeIsolatedD1Config(root,parsed.name,parsed.uuid);
  try{
-  writeFileSync(config,JSON.stringify({name:'proofline-isolated-schema-check',
-   compatibility_date:'2026-10-01',d1_databases:[{binding:'DB',
-    database_name:parsed.name,database_id:parsed.uuid,
-    migrations_dir:'migrations/d1'}]}),{mode:0o600,flag:'wx'});
   const empty=query(parsed.name,config,
    "SELECT COUNT(*) AS n FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
   if(!findRow(empty,x=>Number(x.n)===0))bad('REMOTE_D1_NOT_EMPTY_STOP');
@@ -143,7 +156,7 @@ async function main(args){
    databaseId:parsed.uuid,applied:4,triggers:6,quickCheck:'ok',
    actualWorkerRuntimeVerified:false,restorePerformed:false,
    paymentAuthorized:false,releaseAuthorized:false});
- }finally{rmSync(work,{recursive:true,force:true})}
+ }finally{unlinkSync(config)}
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href){
  main(process.argv.slice(2)).catch(e=>{

@@ -9,3 +9,6 @@ node_modules/
 .DS_Store
 output/
 .video-venv/
+
+# Owner-only transient D1 Wrangler config; may contain account-specific DB identifiers
+.owner-d1-isolated-*.json

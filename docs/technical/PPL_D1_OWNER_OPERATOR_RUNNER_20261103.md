@@ -47,3 +47,7 @@ The script compares both name and UUID against the authenticated Cloudflare acco
 References: https://developers.cloudflare.com/d1/wrangler-commands/ ; https://developers.cloudflare.com/d1/reference/migrations/ ; https://developers.cloudflare.com/d1/platform/limits/ ; https://developers.cloudflare.com/d1/reference/time-travel/
 
 Next gate after actual D1 proof: real IdP/PKCE, merchant/platform permissions and deployed Worker/browser/auth checks, all separately authorized.
+
+## 2026-11-03 migration path hardening
+
+Official Wrangler migration discovery resolves `migrations_dir` relative to **the Wrangler config file**, not the shell's working directory. The initial owner runner wrote its config into the OS temporary directory and incorrectly supplied `migrations/d1` as a relative directory. That could prevent any real remote apply. Corrected code generates a randomly named, owner-only ephemeral `.owner-d1-isolated-*.json` **beside the repository's `migrations/d1` directory**; it is gitignored, created exclusively with restrictive permission and deleted in a `finally` block. A dedicated GitHub Actions test exercises this exact config creation route with the real Wrangler **--local** engine and verifies four migrations applied. A successful local result is not remote Cloudflare proof. No existing DB, payment or customer data was accessed.
