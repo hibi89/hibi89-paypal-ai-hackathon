@@ -3,7 +3,7 @@ A strict test-only CONNECT proxy maps one hostname to a local ephemeral TLS
 server. An ephemeral self-signed cert is accepted in this isolated browser
 context only; this does NOT validate a public trusted certificate or IdP.
 """
-import json,queue,shutil,subprocess,threading,collections,re,socket
+import json,queue,shutil,subprocess,threading,collections,re
 from playwright.sync_api import sync_playwright,expect,Error as PlaywrightError
 
 ORIGIN="https://proofline.example.com"
@@ -21,7 +21,7 @@ def collect_stdout():
  for line in process.stdout: lines.put(line)
 def collect_stderr():
  for line in process.stderr:
-  match=re.search(r"FIXTURE_(?:FAILED|FATAL)_[A-Z0-9_]+",line)
+  match=re.search(r"FIXTURE_(?:FAILED|FATAL|PROXY)_[A-Z0-9_]+",line)
   if match: runtime_codes.append(match.group(0))
   elif "Error [" in line:
    match=re.search(r"Error \[([A-Z0-9_]+)\]",line)
@@ -38,12 +38,9 @@ try:
  assert fixture["origin"]==ORIGIN
  port=fixture["proxyPort"]
  assert isinstance(port,int) and 1024<=port<=65535
- # A plain TCP open/close does NOT issue a CONNECT, start a TLS tunnel, or
- # stand in for Chromium's authenticated HTTPS network assertion.
- try:
-  with socket.create_connection(("127.0.0.1",port),timeout=2): pass
- except OSError as exc:
-  raise AssertionError("TLS_PROXY_LOOPBACK_NOT_LISTENING "+fixture_state()) from exc
+ # Never open a second diagnostic socket before the first Chromium GET:
+ # an early TCP close can itself generate ECONNRESET in a CONNECT proxy.
+ # The actual browser HTTPS request below remains the only readiness proof.
  assert process.poll() is None,"TLS_FIXTURE_EXITED_AFTER_READY "+fixture_state()
  browser_binary=(shutil.which("google-chrome") or
     shutil.which("google-chrome-stable") or shutil.which("chromium"))

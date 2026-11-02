@@ -31,6 +31,12 @@ export function createLoopbackTlsMarketplaceService({
     key:tlsPrivateKey,cert:tlsCertificate,
     requestCert:false,allowHTTP1:true
    },(req,res)=>{void bridge.handle(req,res)});
+   // This local-only HTTPS harness must close aborted/malformed client sockets
+   // without terminating the listener. Node's 'clientError' contract requires
+   // explicit socket cleanup when a handler is installed.
+   server.on('clientError',(_err,socket)=>{
+    if(!socket.destroyed)socket.destroy();
+   });
    await new Promise((resolve,reject)=>{
     const onError=e=>{server.off('listening',onReady);reject(e)};
     const onReady=()=>{server.off('error',onError);resolve()};

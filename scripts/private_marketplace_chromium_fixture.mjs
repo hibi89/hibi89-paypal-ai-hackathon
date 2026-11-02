@@ -195,6 +195,15 @@ async function start(){
    res.writeHead(403,{'connection':'close'});
    res.end();
   });
+  // Node forwards malformed/aborted HTTP sockets through 'clientError'.
+  // The browser may terminate before CONNECT is fully parsed; this is a
+  // rejected, transient socket, NOT a reason to kill the whole fixture.
+  // In all cases destroy that one socket; never accept an alternate host.
+  proxyServer.on('clientError',(err,socket)=>{
+   if(err?.code==='ECONNRESET')
+    process.stderr.write('FIXTURE_PROXY_CLIENT_RESET\n');
+   if(!socket.destroyed)socket.destroy();
+  });
   proxyServer.on('connect',(req,browser,head)=>{
    if(req.url!=='proofline.example.com:443'||
       browser.remoteAddress!=='127.0.0.1'){
