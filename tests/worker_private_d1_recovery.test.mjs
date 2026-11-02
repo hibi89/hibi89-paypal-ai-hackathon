@@ -6,7 +6,8 @@ import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 const read=(name)=>readFileSync(new URL('../migrations/d1/'+name,import.meta.url),'utf8');
 const migrations=['0001_payment_claims.sql','0002_worker_private_sessions.sql','0003_worker_private_oidc.sql'].map(read);
-const next=read('0004_worker_private_binding_epoch.sql'),quarantine=read('restore_quarantine_private_sessions.sql');
+const next=read('0004_worker_private_binding_epoch.sql');
+const quarantine=readFileSync(new URL('../scripts/restore_quarantine_private_sessions.sql',import.meta.url),'utf8');
 function fixture(){
  const root=mkdtempSync(join(tmpdir(),'worker-d1-restore-')),file=join(root,'db.sqlite');
  const db=new DatabaseSync(file);

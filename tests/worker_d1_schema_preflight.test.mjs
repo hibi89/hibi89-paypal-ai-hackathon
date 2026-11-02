@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync,backup} from 'node:sqlite';
-import {readFileSync,mkdtempSync,rmSync,copyFileSync} from 'node:fs';
+import {readFileSync,mkdtempSync,rmSync,copyFileSync,readdirSync,existsSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {auditWorkerD1SchemaReadOnly} from '../src/worker_d1_schema_preflight.mjs';
@@ -11,7 +11,7 @@ const migrationNames=['0001_payment_claims.sql','0002_worker_private_sessions.sq
 const scripts=migrationNames.map(n=>readFileSync(
  new URL('../migrations/d1/'+n,import.meta.url),'utf8'));
 const quarantine=readFileSync(
- new URL('../migrations/d1/restore_quarantine_private_sessions.sql',import.meta.url),'utf8');
+ new URL('../scripts/restore_quarantine_private_sessions.sql',import.meta.url),'utf8');
 
 function fixture(level=4){
  const dir=mkdtempSync(join(tmpdir(),'paypal-d1-schema-preflight-'));
@@ -174,3 +174,12 @@ test('revision trigger with inert WHEN 0 cannot spoof full migration guard',scop
  assert.ok(report.issueCodes.includes('GUARD_SQL_DRIFT:worker_private_binding_revision_on_change'));
  assert.equal(report.releaseAuthorized,false);
 }));
+
+test('only ordered versioned migrations are discoverable by Wrangler default SQL glob',()=>{
+ const migrationsDir=new URL('../migrations/d1/',import.meta.url);
+ const discovered=readdirSync(migrationsDir).filter(x=>x.endsWith('.sql')).sort();
+ assert.deepEqual(discovered,[...migrationNames].sort());
+ assert.ok(discovered.every(x=>/^000[1-9][0-9]*_[a-z0-9_]+\.sql$/.test(x)));
+ assert.ok(existsSync(new URL('../scripts/restore_quarantine_private_sessions.sql',import.meta.url)));
+ assert.equal(discovered.some(x=>x.includes('quarantine')),false);
+});
