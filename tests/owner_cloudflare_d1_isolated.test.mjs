@@ -51,7 +51,7 @@ test('isolated Wrangler config is rooted beside the exact migration directory an
   uuid='11111111-1111-4111-8111-111111111111';
  const config=writeIsolatedD1Config(root,name,uuid);
  try{
-  assert.equal(dirname(config),root);
+  assert.equal(dirname(config),resolve(root));
   assert.equal(existsSync(config),true);
   const file=JSON.parse(readFileSync(config,'utf8'));
   assert.equal(file.d1_databases.length,1);
