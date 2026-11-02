@@ -9,7 +9,8 @@ import {createPrivateWorkerReadHandler} from '../src/worker_private_read_entrypo
 
 const origin='https://proofline.example.test';
 const schema=readFileSync(new URL('../migrations/d1/0001_payment_claims.sql',import.meta.url),'utf8');
-const sessions=readFileSync(new URL('../migrations/d1/0002_worker_private_sessions.sql',import.meta.url),'utf8');
+const sessions=['0002_worker_private_sessions.sql','0003_worker_private_oidc.sql',
+ '0004_worker_private_binding_epoch.sql'].map(x=>readFileSync(new URL('../migrations/d1/'+x,import.meta.url),'utf8'));
 const token=randomBytes(32).toString('base64url');
 const hash=createHash('sha256').update(token).digest('hex');
 const clock=1_800_000_000_000;
@@ -19,7 +20,10 @@ function fixture(){
  const root=mkdtempSync(join(tmpdir(),'paypal-worker-private-'));
  const filename=join(root,'db.sqlite');
  const seed=new DatabaseSync(filename);
- seed.exec(schema);seed.exec(sessions);
+ seed.exec(schema);for(const migration of sessions)seed.exec(migration);
+ const bindingHash='a'.repeat(64);
+ seed.prepare('INSERT INTO worker_private_oidc_bindings (issuer,subject_hmac,actor_id,merchant_id,role,active) VALUES(?,?,?,?,?,?)')
+  .run('fixture-idp-not-real',bindingHash,'owner','merchant','OWNER',1);
  seed.prepare(`INSERT INTO quotes(id,owner_id,merchant_id,version,currency,status,
  approval_actor,approval_version,approval_amount_minor)
  VALUES(?,?,?,?,?,?,?,?,?)`).run('q1','owner','merchant',2,'USD','APPROVED','owner',2,1500);
@@ -27,8 +31,9 @@ function fixture(){
  operation,state,amount_minor,currency) VALUES(?,?,?,?,?,?,?,?)`)
  .run('req1','q1',2,'merchant','create','IN_FLIGHT',1500,'USD');
  seed.prepare(`INSERT INTO worker_private_sessions(token_sha256,actor_id,merchant_id,
- role,issuer,issuer_verified_at_ms,expires_at_ms) VALUES(?,?,?,?,?,?,?)`)
- .run(hash,'owner','merchant','OWNER','fixture-idp-not-real',clock-3000,clock+60000);
+ role,issuer,issuer_verified_at_ms,expires_at_ms,binding_subject_hmac,binding_revision)
+ VALUES(?,?,?,?,?,?,?,?,?)`)
+ .run(hash,'owner','merchant','OWNER','fixture-idp-not-real',clock-3000,clock+60000,bindingHash,1);
  const handles=[];const calls={sessions:[],reads:0,writes:0};
  const db={withSession(mode){
    calls.sessions.push(mode);
@@ -82,7 +87,7 @@ test('expired, revoked and wrong role sessions are refused',async()=>withDb(asyn
    "UPDATE worker_private_sessions SET actor_id='owner',merchant_id='another'"
  ]){
   f.seed.exec(statement);
-  assert.equal((await f.send()).status,statement.includes('outsider')||statement.includes('another')?404:401);
+  assert.equal((await f.send()).status,401);
  }
  assert.equal(f.calls.writes,0);
 }));

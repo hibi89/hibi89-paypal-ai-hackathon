@@ -80,6 +80,8 @@ jobs:
         run: node --experimental-sqlite --test tests/worker_private_read_entrypoint.test.mjs
       - name: Offline pinned OIDC Worker sessions, replay and revocation
         run: node --experimental-sqlite --test tests/worker_private_oidc_authority.test.mjs
+      - name: Offline Worker binding revocation and migration backup-restore
+        run: node --experimental-sqlite --test tests/worker_private_d1_recovery.test.mjs
       - name: Historical owner evidence safety regressions
         run: python tests/video_owner_evidence_test.py
       - name: Full owner workflow from clean machine (no accounts or providers)

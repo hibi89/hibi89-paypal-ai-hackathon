@@ -53,7 +53,7 @@ function pinnedConfig({issuer,audience,jwks}){
 function timestamp(now){const t=now();if(!Number.isSafeInteger(t)||t<=0)fail('INVALID_CLOCK');return t;}
 function primary(db){try{const session=db.withSession('first-primary');if(!session?.prepare)throw Error();
  return session;}catch{fail('D1_UNAVAILABLE');}}
-const validRow=r=>r?.active===1&&r.role==='OWNER'&&ID.test(r.actor_id??'')&&ID.test(r.merchant_id??'');
+const validRow=r=>r?.active===1&&r.role==='OWNER'&&ID.test(r.actor_id??'')&&ID.test(r.merchant_id??'')&&Number.isSafeInteger(r.revision)&&r.revision>0;
 function changes(result){return Number(result?.meta?.changes??0);}
 
 export function createWorkerPrivateOidcAuthority({
@@ -131,10 +131,11 @@ export function createWorkerPrivateOidcAuthority({
    if(!challenge||challenge.consumed_at_ms!==null||challenge.expires_at_ms<=t)
      fail('LOGIN_CHALLENGE_INVALID');
    const evidence=await verify(idToken,challenge.nonce);
+   const bindingHash=await fingerprint(evidence.subject);
    let bound;
-   try{bound=await session.prepare(`SELECT actor_id,merchant_id,role,active
+   try{bound=await session.prepare(`SELECT actor_id,merchant_id,role,active,revision
      FROM worker_private_oidc_bindings WHERE issuer=? AND subject_hmac=?`)
-     .bind(issuer,await fingerprint(evidence.subject)).first();}
+     .bind(issuer,bindingHash).first();}
    catch{fail('D1_UNAVAILABLE');}
    if(!validRow(bound))fail('PREPROVISIONED_ACCOUNT_REQUIRED');
    // Atomic update is the CAS gate; second use of the same challenge will
@@ -150,8 +151,10 @@ export function createWorkerPrivateOidcAuthority({
    try{
      const result=await session.prepare(`INSERT INTO worker_private_sessions
        (token_sha256,actor_id,merchant_id,role,issuer,issuer_verified_at_ms,
-        expires_at_ms,assertion_sha256) VALUES(?,?,?,?,?,?,?,?)`)
-       .bind(digest,bound.actor_id,bound.merchant_id,'OWNER',issuer,t,t+ttlMs,assertion).run();
+        expires_at_ms,assertion_sha256,binding_subject_hmac,binding_revision)
+       VALUES(?,?,?,?,?,?,?,?,?,?)`)
+       .bind(digest,bound.actor_id,bound.merchant_id,'OWNER',issuer,t,t+ttlMs,
+         assertion,bindingHash,bound.revision).run();
      if(changes(result)!==1)fail('D1_UNAVAILABLE');
    }catch{fail('LOGIN_SESSION_NOT_ESTABLISHED');}
    return Object.freeze({setCookie:'__Host-proofline_session='+token+

@@ -17,7 +17,7 @@ const PEPPER=Uint8Array.from({length:32},(_,i)=>i+13); // fixture-only: never a 
 const {publicKey,privateKey}=generateKeyPairSync('rsa',{modulusLength:2048});
 const jwks={keys:[{...publicKey.export({format:'jwk'}),kid:'fixture-key',alg:'RS256',use:'sig'}]};
 const schema=['0001_payment_claims.sql','0002_worker_private_sessions.sql',
- '0003_worker_private_oidc.sql'].map(x=>readFileSync(new URL('../migrations/d1/'+x,import.meta.url),'utf8'));
+ '0003_worker_private_oidc.sql','0004_worker_private_binding_epoch.sql'].map(x=>readFileSync(new URL('../migrations/d1/'+x,import.meta.url),'utf8'));
 const b64=data=>Buffer.from(data).toString('base64url');
 const digest=x=>createHash('sha256').update(x).digest('hex');
 const subjectHmac=s=>createHmac('sha256',PEPPER)
@@ -201,6 +201,28 @@ test('pinned JWK snapshot is unaffected by caller mutation after construction',r
  assert.ok((await pinned.issue({challengeId:c.challengeId,idToken:jwt(c.nonce)})).setCookie);
 }));
 
+
+test('binding revoke, reactivate, reassignment, forbidden delete/replace never revive old sessions',run(async f=>{
+ const first=await f.establish(),cookie=f.validCookie(first.setCookie),request=f.request(cookie);
+ assert.equal((await f.reader.fetch(request)).status,200);
+ f.master.exec('UPDATE worker_private_oidc_bindings SET active=0');
+ assert.equal(f.master.prepare('SELECT revision FROM worker_private_oidc_bindings').get().revision,2);
+ await assert.rejects(f.resolver(request),{code:'UNAUTHENTICATED'});
+ assert.equal((await f.reader.fetch(request)).status,401);
+ f.master.exec('UPDATE worker_private_oidc_bindings SET active=1');
+ assert.equal(f.master.prepare('SELECT revision FROM worker_private_oidc_bindings').get().revision,3);
+ await assert.rejects(f.resolver(request),{code:'UNAUTHENTICATED'});
+ const second=await f.establish(),newCookie=f.validCookie(second.setCookie);
+ assert.equal((await f.reader.fetch(f.request(newCookie))).status,200);
+ f.master.exec("UPDATE worker_private_oidc_bindings SET merchant_id='merchant_changed'");
+ assert.equal((await f.reader.fetch(f.request(newCookie))).status,401);
+ assert.throws(()=>f.master.exec('DELETE FROM worker_private_oidc_bindings'),/OIDC_BINDING_MUST_BE_REVOKED/);
+ assert.throws(()=>f.master.exec('UPDATE worker_private_oidc_bindings SET revision=1'),/OIDC_BINDING_REVISION_NOT_MONOTONIC/);
+ assert.throws(()=>f.master.prepare('INSERT OR REPLACE INTO worker_private_oidc_bindings (issuer,subject_hmac,actor_id,merchant_id,role,active) VALUES (?,?,?,?,?,?)')
+    .run(ISSUER,subjectHmac(SUBJECT),'owner','merchant','OWNER',1),/OIDC_BINDING_REPLACE_FORBIDDEN/);
+ assert.equal(f.master.prepare('SELECT count(*) n FROM worker_private_sessions').get().n,2);
+}));
+
 test('D1 migration preserves preexisting hashed private sessions without publishing them',()=>{
  const dir=mkdtempSync(join(tmpdir(),'proofline-worker-migrate-'));
  const db=new DatabaseSync(join(dir,'offline-migration.sqlite'));
@@ -211,10 +233,13 @@ test('D1 migration preserves preexisting hashed private sessions without publish
    VALUES(?,?,?,?,?,?,?)`).run('b'.repeat(64),'owner','merchant','OWNER',ISSUER,CURRENT-5000,CURRENT+1000);
   const prior=db.prepare('SELECT * FROM worker_private_sessions').get();
   db.exec(schema[2]);
+  db.exec(schema[3]);
   const after=db.prepare('SELECT * FROM worker_private_sessions').get();
   assert.equal(after.token_sha256,prior.token_sha256);
   assert.equal(after.actor_id,prior.actor_id);
   assert.equal(after.assertion_sha256,null);
+  assert.equal(after.binding_subject_hmac,null);
+  assert.equal(after.binding_revision,null);
   assert.equal(db.prepare('SELECT count(*) n FROM worker_private_oidc_bindings').get().n,0);
  }finally{db.close();rmSync(dir,{recursive:true,force:true});}
 });
