@@ -7,7 +7,7 @@ import {randomBytes} from 'node:crypto';
 import {existsSync,mkdtempSync,readdirSync,rmSync,writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {resolve,join} from 'node:path';
-import {pathToFileURL} from 'node:url';
+import {fileURLToPath,pathToFileURL} from 'node:url';
 
 const expected=Object.freeze([
  '0001_payment_claims.sql','0002_worker_private_sessions.sql',
@@ -50,7 +50,7 @@ export function validateArguments(args){
   return {mode:'apply',name:args[1],uuid:args[2]};
  bad('EXPLICIT_OWNER_MODE_AND_FREE_TIER_REQUIRED');
 }
-const root=resolve(new URL('..',import.meta.url).pathname);
+const root=fileURLToPath(new URL('..',import.meta.url));
 function tool(args){
  // argv vector, never a shell. stdout and stderr are intentionally not
  // forwarded; Wrangler may print account data, but this script reports only

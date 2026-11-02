@@ -80,6 +80,8 @@ jobs:
         run: node --experimental-sqlite --test tests/worker_private_read_entrypoint.test.mjs
       - name: Offline pinned OIDC Worker sessions, replay and revocation
         run: node --experimental-sqlite --test tests/worker_private_oidc_authority.test.mjs
+      - name: Windows owner-only Cloudflare D1 plan and fail-closed identity tests
+        run: node --experimental-sqlite --test tests/owner_cloudflare_d1_isolated.test.mjs
       - name: Offline Worker binding revocation and migration backup-restore
         run: node --experimental-sqlite --test tests/worker_private_d1_recovery.test.mjs
       - name: Offline read-only Worker D1 schema preflight regressions
