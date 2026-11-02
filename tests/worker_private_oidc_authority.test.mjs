@@ -7,6 +7,7 @@ import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {createWorkerPrivateOidcAuthority} from '../src/worker_private_oidc_authority.mjs';
 import {createWorkerOidcPkceCoordinator} from '../src/worker_oidc_pkce_coordinator.mjs';
+import {createPrivateWorkerIdentityReadRouter} from '../src/worker_private_identity_read_router.mjs';
 import {createWorkerPrivateSessionResolver} from '../src/worker_private_session_resolver.mjs';
 import {createPrivateWorkerReadHandler} from '../src/worker_private_read_entrypoint.mjs';
 const ORIGIN='https://proofline.example.test';
@@ -379,4 +380,85 @@ test('real D1 reservation burns challenge before ambiguous external code exchang
  assert.equal(attempts,1);
  assert.equal(f.master.prepare('SELECT COUNT(*) n FROM worker_private_sessions').get().n,0);
  assert.equal(f.master.prepare('SELECT COUNT(*) n FROM worker_private_login_challenges WHERE consumed_at_ms IS NOT NULL').get().n,1);
+}));
+
+test('internal integrated Worker routes real RS256 PKCE login -> D1 read -> logout -> revoked',run(async f=>{
+ let serverNonce,exchangeCount=0;
+ const pkce=createWorkerOidcPkceCoordinator({
+  authority:{
+   async beginChallenge(){const c=await f.authority.beginChallenge();serverNonce=c.nonce;return c;},
+   reserveExchange:x=>f.authority.reserveExchange(x),
+   issue:x=>f.authority.issue(x)
+  },
+  codeTransport:{async exchange(payload){
+   exchangeCount++;
+   assert.equal(payload.code,'LOCAL_FAKE_SIGNED_CODE');
+   return {idToken:jwt(serverNonce)};
+  }},
+  allowedOrigin:ORIGIN,issuer:ISSUER,clientId:AUD,
+  authorizationEndpoint:ISSUER+'/oauth2/authorize',
+  tokenEndpoint:ISSUER+'/oauth2/token'
+ });
+ const app=createPrivateWorkerIdentityReadRouter({db:f.db,allowedOrigin:ORIGIN,
+  authority:f.authority,pkceCoordinator:pkce,enabled:true,now:()=>CURRENT});
+ const start=await app.fetch(new Request(ORIGIN+'/api/auth/oidc/start',{
+  method:'POST',headers:{origin:ORIGIN,'sec-fetch-site':'same-origin'}}));
+ assert.equal(start.status,303);
+ const state=new URL(start.headers.get('location')).searchParams.get('state');
+ const cookies=start.headers.getSetCookie().map(s=>s.split(';')[0]).join('; ');
+ const logged=await app.fetch(new Request(ORIGIN+'/api/auth/oidc/callback?code=LOCAL_FAKE_SIGNED_CODE&state='+state,
+  {headers:{cookie:cookies,'sec-fetch-site':'cross-site'}}));
+ assert.equal(logged.status,200);assert.equal(exchangeCount,1);
+ const cookie=logged.headers.getSetCookie().find(s=>s.startsWith('__Host-proofline_session=')).split(';')[0];
+ const read=await app.fetch(f.request(cookie));
+ assert.equal(read.status,200);
+ const body=await read.json();
+ assert.equal(body.state,'IN_FLIGHT');
+ assert.equal(body.paymentAuthorized,false);assert.equal(body.providerCalls,0);
+ assert.equal((await app.fetch(new Request(ORIGIN+'/api/paypal/capture',{
+  method:'POST',headers:{origin:ORIGIN,cookie}}))).status,404);
+ assert.equal((await app.fetch(new Request(ORIGIN+'/__private/attempt/status',{
+  method:'POST',headers:{origin:ORIGIN,cookie}}))).status,405);
+ const revoked=await app.fetch(new Request(ORIGIN+'/api/auth/oidc/logout',{
+  method:'POST',headers:{cookie,origin:ORIGIN,'sec-fetch-site':'same-origin'}}));
+ assert.equal(revoked.status,200);
+ assert.equal((await revoked.json()).paymentAuthorized,false);
+ assert.match(revoked.headers.get('set-cookie'),/Max-Age=0/);
+ assert.equal((await app.fetch(f.request(cookie))).status,401);
+ assert.equal((await app.fetch(new Request(ORIGIN+'/api/auth/oidc/callback?code=LOCAL_FAKE_SIGNED_CODE&state='+state,
+   {headers:{cookie:cookies}}))).status,401);
+ assert.equal(exchangeCount,1);
+ assert.equal(f.master.prepare('SELECT count(*) n FROM worker_private_sessions').get().n,1);
+ assert.ok(f.stats.modes.every(s=>s==='first-primary'));
+}));
+
+test('integrated Worker cannot activate by default; wrong origin and cross-site logout denied',run(async f=>{
+ assert.throws(()=>createPrivateWorkerIdentityReadRouter({db:f.db,allowedOrigin:ORIGIN,
+  authority:f.authority,pkceCoordinator:{start(){},callback(){}}}),
+  /WORKER_PRIVATE_IDENTITY_NOT_CONFIGURED/);
+ const pkce={async start(){throw Error('FORBIDDEN_IN_TEST')},
+  async callback(){throw Error('FORBIDDEN_IN_TEST')}};
+ const app=createPrivateWorkerIdentityReadRouter({db:f.db,allowedOrigin:ORIGIN,
+  authority:f.authority,pkceCoordinator:pkce,enabled:true,now:()=>CURRENT});
+ assert.equal((await app.fetch(new Request('https://evil.example.test/api/auth/oidc/start',
+   {method:'POST'}))).status,403);
+ assert.equal((await app.fetch(new Request(ORIGIN+'/api/auth/oidc/start'))).status,405);
+ assert.equal((await app.fetch(new Request(ORIGIN+'/api/auth/oidc/callback',
+   {method:'POST'}))).status,405);
+ assert.equal((await app.fetch(new Request(ORIGIN+'/api/auth/oidc/logout'))).status,405);
+ const issued=await f.establish(),cookie=f.validCookie(issued.setCookie);
+ for(const headers of [
+  {cookie,origin:'https://evil.example.test','sec-fetch-site':'same-origin'},
+  {cookie,origin:ORIGIN,'sec-fetch-site':'cross-site'},
+  {cookie,'sec-fetch-site':'same-origin'}
+ ]){
+  const resp=await app.fetch(new Request(ORIGIN+'/api/auth/oidc/logout',
+   {method:'POST',headers}));
+  assert.equal(resp.status,403);
+  assert.equal(resp.headers.get('set-cookie'),null);
+ }
+ assert.equal((await app.fetch(f.request(cookie))).status,200);
+ assert.equal((await app.fetch(new Request(ORIGIN+'/api/unknown'))).status,404);
+ assert.equal((await app.fetch(new Request(ORIGIN+'/api/paypal/orders',
+  {method:'POST',headers:{cookie,origin:ORIGIN}}))).status,404);
 }));
