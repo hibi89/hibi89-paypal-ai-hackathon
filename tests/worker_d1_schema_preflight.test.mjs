@@ -20,16 +20,18 @@ function fixture(level=4){
  const log={modes:[],sql:[],writes:0};
  const db={withSession(mode){
   log.modes.push(mode);
-  const ro=new DatabaseSync(path,{readOnly:true});
   return {prepare(sql){
    log.sql.push(sql);
    assert.match(sql,/^(SELECT|PRAGMA)\s/i);
-   return {async all(){const results=ro.prepare(sql).all();ro.close();
-    return {results};}};
+   return {async all(){
+    const ro=new DatabaseSync(path,{readOnly:true});
+    try{return {results:ro.prepare(sql).all()};}
+    finally{ro.close();}
+   }};
   }};
  }};
  return {writer,path,dir,db,log,
-  close(){writer.close();rmSync(dir,{force:true,recursive:true});}};
+  close(){try{writer.close();}catch{}rmSync(dir,{force:true,recursive:true});}};
 }
 const scoped=fn=>async()=>{
  const f=fixture();
