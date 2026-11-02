@@ -12,3 +12,6 @@ output/
 
 # Owner-only transient D1 Wrangler config; may contain account-specific DB identifiers
 .owner-d1-isolated-*.json
+
+# Ephemeral Worker/D1 runtime CI config; never commit local D1 binding identifiers
+.wrangler-private-read-ci-*.json

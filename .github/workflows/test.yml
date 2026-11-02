@@ -82,6 +82,8 @@ jobs:
         run: node --experimental-sqlite --test tests/worker_private_oidc_authority.test.mjs
       - name: Windows owner-only Cloudflare D1 plan and fail-closed identity tests
         run: node --experimental-sqlite --test tests/owner_cloudflare_d1_isolated.test.mjs
+      - name: Windows read-only Worker activation fail-closed tests
+        run: node --experimental-sqlite --test tests/worker_private_read_runtime.test.mjs
       - name: Offline Worker binding revocation and migration backup-restore
         run: node --experimental-sqlite --test tests/worker_private_d1_recovery.test.mjs
       - name: Offline read-only Worker D1 schema preflight regressions
@@ -147,6 +149,8 @@ jobs:
           npx --yes wrangler@4.156.0 d1 migrations apply DB --local --config "$config" --persist-to "$RUNNER_TEMP/owner-d1-config-check"
           npx --yes wrangler@4.156.0 d1 execute DB --local --config "$config" --persist-to "$RUNNER_TEMP/owner-d1-config-check" --command "SELECT COUNT(*) AS applied FROM d1_migrations" --json > "$RUNNER_TEMP/owner-d1-config-query.json"
           node --input-type=module -e "import {readFileSync} from 'node:fs';const d=JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/owner-d1-config-query.json'));const ok=x=>x&&typeof x==='object'&&(Number(x.applied)===4||Object.values(x).some(ok));if(!ok(d))process.exit(2);console.log('OWNER_CONFIG_REAL_WRANGLER_LOCAL_4_MIGRATIONS_PASS')"
+      - name: Actual local workerd HTTPS + D1 authenticated read (never remote)
+        run: node scripts/probe_private_worker_runtime_local.mjs
       - name: Confirm disposable database integrity and no external activation
         run: |
           npx --yes wrangler@4.156.0 d1 execute DB --local --config .wrangler-d1-local-ci.json --persist-to "$RUNNER_TEMP/paypal-d1-local-only" --command "PRAGMA quick_check" --json > "$RUNNER_TEMP/paypal-d1-integrity.json"
