@@ -23,7 +23,8 @@ const CLOCK=1761987600000;
 const temp=mkdtempSync(join(tmpdir(),'proofline-private-chromium-'));
 const ledger=createSqliteLedger({filename:join(temp,'ledger.sqlite'),enforceLocalMemberWrites:true});
 let host,server,tlsServer,proxyServer,closed=false;
-const tlsMode=process.argv.includes('--real-tls-proxy');
+const tlsOnly=process.argv.includes('--tls-only');
+const tlsMode=tlsOnly||process.argv.includes('--real-tls-proxy');
 const codes=new Map();
 // One fictional buyer code for the separate real-browser PKCE callback test.
 // It is accepted only by this ephemeral offline fixture, never a real IdP.
@@ -174,7 +175,7 @@ async function start(){
   server.listen(0,'127.0.0.1',ok);
  });
  const port=server.address().port;
- let proxyPort=null;
+ let proxyPort=null,tlsPort=null;
  if(tlsMode){
   const keyFile=join(temp,'temporary-browser-tls.key');
   const certFile=join(temp,'temporary-browser-tls.crt');
@@ -189,6 +190,10 @@ async function start(){
    tlsPrivateKey:readFileSync(keyFile)
   });
   const tlsEndpoint=await tlsServer.start();
+  tlsPort=tlsEndpoint.port;
+  if(!tlsOnly){
+  // Legacy Node test proxy retained for older tests; Python Chromium TLS
+  // test uses --tls-only and an independent strict loopback tunnel.
   // HTTPS proxy is an exact-host single-target CONNECT tunnel. It neither
   // terminates TLS nor performs DNS, connects to public hosts or handles HTTP.
   proxyServer=createServer((req,res)=>{
@@ -234,12 +239,13 @@ async function start(){
    proxyServer.listen(0,'127.0.0.1',ok);
   });
   proxyPort=proxyServer.address().port;
+  }
  }
  // Pipe-only fixture handoff, no credentials/accounts outside this process.
  process.stdout.write(JSON.stringify({
   port,sessions,origin:ORIGIN,
   mode:tlsMode?'OFFLINE_CHROMIUM_REAL_TLS_TUNNEL':'OFFLINE_SIGNED_OIDC_BROWSER_FIXTURE',
-  proxyPort,certificateTrust:'SELF_SIGNED_TEST_CERT_ACCEPTED_BY_TEST_ONLY',
+  proxyPort,tlsPort,certificateTrust:'SELF_SIGNED_TEST_CERT_ACCEPTED_BY_TEST_ONLY',
   providerCalls:0,paypalCaptureEnabled:false
  })+'\n');
 }

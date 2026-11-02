@@ -44,6 +44,8 @@ jobs:
         run: .browser-venv/bin/python tests/browser_innovation_e2e.py
       - name: Private signed-session buyer seller reviewer Chromium click-through (offline)
         run: .browser-venv/bin/python tests/browser_private_marketplace_e2e.py
+      - name: Validate independent localhost-only CONNECT tunnel contract
+        run: .browser-venv/bin/python tests/test_local_loopback_connect_proxy.py
       - name: Real Chromium TLS socket for signed private marketplace via strictly local proxy
         run: .browser-venv/bin/python tests/browser_private_marketplace_real_tls_e2e.py
       - name: Check recorder Python syntax and proof provenance regression

@@ -5,11 +5,13 @@ context only; this does NOT validate a public trusted certificate or IdP.
 """
 import json,queue,shutil,subprocess,threading,collections,re
 from playwright.sync_api import sync_playwright,expect,Error as PlaywrightError
+from local_loopback_connect_proxy import LocalLoopbackConnectProxy
 
 ORIGIN="https://proofline.example.com"
+proxy=None
 process=subprocess.Popen(
  ["node","--experimental-sqlite","scripts/private_marketplace_chromium_fixture.mjs",
-  "--real-tls-proxy"],stdout=subprocess.PIPE,stderr=subprocess.PIPE,
+  "--tls-only"],stdout=subprocess.PIPE,stderr=subprocess.PIPE,
  text=True,bufsize=1
 )
 lines=queue.Queue()
@@ -36,12 +38,15 @@ try:
  assert fixture["mode"]=="OFFLINE_CHROMIUM_REAL_TLS_TUNNEL"
  assert fixture["providerCalls"]==0 and fixture["paypalCaptureEnabled"] is False
  assert fixture["origin"]==ORIGIN
- port=fixture["proxyPort"]
- assert isinstance(port,int) and 1024<=port<=65535
- # Never open a second diagnostic socket before the first Chromium GET:
- # an early TCP close can itself generate ECONNRESET in a CONNECT proxy.
- # The actual browser HTTPS request below remains the only readiness proof.
+ tls_port=fixture["tlsPort"]
+ assert isinstance(tls_port,int) and 1024<=tls_port<=65535
+ assert fixture["proxyPort"] is None,"NODE_CONNECT_PROXY_MUST_BE_DISABLED"
  assert process.poll() is None,"TLS_FIXTURE_EXITED_AFTER_READY "+fixture_state()
+ # Independent local test-only proxy forwards encrypted TCP bytes unchanged
+ # to the Node HTTPS listener. Invalid hosts and early browser close are
+ # isolated per Python thread instead of terminating the Node TLS process.
+ proxy=LocalLoopbackConnectProxy(tls_port).start()
+ port=proxy.port
  browser_binary=(shutil.which("google-chrome") or
     shutil.which("google-chrome-stable") or shutil.which("chromium"))
  assert browser_binary,"CHROMIUM_NOT_INSTALLED"
@@ -230,6 +235,7 @@ try:
    }))
   finally: browser.close()
 finally:
+ if proxy is not None:proxy.close()
  if process.poll() is None:
   process.terminate()
   try: process.wait(timeout=8)
