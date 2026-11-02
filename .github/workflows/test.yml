@@ -93,6 +93,43 @@ jobs:
           npm run submission:candidate:local
           node --input-type=module -e "import {readFileSync} from 'node:fs'; const x=JSON.parse(readFileSync('output/submission/submission_candidate_status.json')); if(!x.ownerReviewReady||x.externalSubmissionEligible||x.authorizedToPublish)process.exit(2)"
 
+  d1-local-wrangler:
+    name: Isolated Wrangler D1 engine compatibility (LOCAL ONLY)
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[d1-local]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    permissions:
+      contents: read
+    env:
+      WRANGLER_SEND_METRICS: 'false'
+      CLOUDFLARE_API_TOKEN: ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Confirm no operator restore SQL in migrations
+        shell: bash
+        run: |
+          test "$(find migrations/d1 -maxdepth 1 -type f -name '*.sql' | wc -l)" -eq 4
+          ! find migrations/d1 -maxdepth 1 -type f -name '*quarantine*.sql' | grep -q .
+          test -f scripts/restore_quarantine_private_sessions.sql
+      - name: Create disposable untracked local-only D1 binding config
+        run: |
+          node --input-type=module -e "import {writeFileSync} from 'node:fs';writeFileSync('.wrangler-d1-local-ci.json',JSON.stringify({name:'paypal-d1-local-compatibility-only',compatibility_date:'2026-10-01',d1_databases:[{binding:'DB',database_name:'paypal-d1-local-only',database_id:'00000000-0000-4000-8000-000000000001',migrations_dir:'migrations/d1'}]},null,2))"
+          mkdir -p "$RUNNER_TEMP/paypal-d1-local-only"
+      - name: Apply ordered migrations using real Wrangler D1 local engine, never remote
+        run: |
+          npx --yes wrangler@4.156.0 d1 migrations apply DB --local --config .wrangler-d1-local-ci.json --persist-to "$RUNNER_TEMP/paypal-d1-local-only"
+      - name: Query actual local D1 schema and migration ledger
+        run: |
+          npx --yes wrangler@4.156.0 d1 execute DB --local --config .wrangler-d1-local-ci.json --persist-to "$RUNNER_TEMP/paypal-d1-local-only" --command "SELECT (SELECT COUNT(*) FROM d1_migrations) AS applied, (SELECT COUNT(*) FROM sqlite_master WHERE type='trigger') AS guards, (SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='worker_private_oidc_bindings') AS bindings" --json > "$RUNNER_TEMP/paypal-d1-query.json"
+          node --input-type=module -e "import {readFileSync} from 'node:fs';const doc=JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/paypal-d1-query.json','utf8'));const match=v=>!!v&&typeof v==='object'&&(Number(v.applied)===4&&Number(v.guards)===6&&Number(v.bindings)===1||Object.values(v).some(match));if(!match(doc)){console.error('D1_LOCAL_SCHEMA_UNEXPECTED');process.exit(2)}console.log('D1_LOCAL_ENGINE_MIGRATIONS_4_TRIGGERS_6_PASS')"
+      - name: Confirm disposable database integrity and no external activation
+        run: |
+          npx --yes wrangler@4.156.0 d1 execute DB --local --config .wrangler-d1-local-ci.json --persist-to "$RUNNER_TEMP/paypal-d1-local-only" --command "PRAGMA integrity_check" --json > "$RUNNER_TEMP/paypal-d1-integrity.json"
+          node --input-type=module -e "import {readFileSync} from 'node:fs';const doc=JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/paypal-d1-integrity.json','utf8'));const ok=v=>!!v&&typeof v==='object'&&(v.integrity_check==='ok'||Object.values(v).some(ok));if(!ok(doc)){console.error('D1_LOCAL_INTEGRITY_FAIL');process.exit(2)}console.log('D1_LOCAL_INTEGRITY_PASS_REMOTE_D1_UNVERIFIED_RELEASE_HOLD')"
+
   full-length-video:
     name: Default-speed synthetic video under 3 minutes
     if: github.event_name == 'pull_request' || contains(github.event.head_commit.message, '[video-full]')
