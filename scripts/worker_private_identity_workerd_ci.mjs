@@ -9,8 +9,11 @@ import {createPrivateWorkerIdentityReadRouter} from '../src/worker_private_ident
 
 const ISSUER='https://idp.workerd-fixture.invalid';
 const CLIENT='workerd-ci-owner';
-const SUBJECT='fixture-verified-owner';
-const TOKEN_CODE='CI_ONE_TIME_SIGNED_CODE';
+const SUBJECTS=Object.freeze({
+ CI_ONE_TIME_SIGNED_CODE:'fixture-verified-owner',
+ CI_ONE_TIME_SIGNED_SELLER_CODE:'ci-seller-subject',
+ CI_ONE_TIME_SIGNED_REVIEWER_CODE:'ci-reviewer-subject'
+});
 const failResponse=()=>new Response('{"error":"CI_PRIVATE_WORKER_DISABLED"}',{
  status:503,headers:{'content-type':'application/json; charset=utf-8',
   'cache-control':'no-store, max-age=0','x-content-type-options':'nosniff'}
@@ -18,18 +21,18 @@ const failResponse=()=>new Response('{"error":"CI_PRIVATE_WORKER_DISABLED"}',{
 const b64url=bytes=>btoa(String.fromCharCode(...bytes))
  .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 const utf8=new TextEncoder();
-async function issueSyntheticJwt(env,db){
+async function issueSyntheticJwt(env,db,subject){
  // This code is test-only and may not call fetch or discover an IdP.
  // A consumed SQL challenge must already exist BEFORE the code is signed.
  const session=db.withSession('first-primary');
  const row=await session.prepare(
-  'SELECT nonce FROM worker_private_login_challenges WHERE consumed_at_ms IS NOT NULL ORDER BY created_at_ms DESC LIMIT 1'
+  'SELECT nonce FROM worker_private_login_challenges WHERE consumed_at_ms IS NOT NULL ORDER BY rowid DESC LIMIT 1'
  ).first();
  if(!row||!/^[A-Za-z0-9_-]{43}$/.test(row.nonce??''))throw Error('CI_CHALLENGE_NOT_RESERVED');
  const now=Math.floor(Date.now()/1000);
  const h=b64url(utf8.encode(JSON.stringify({alg:'RS256',kid:'ci-ephemeral-key',typ:'JWT'})));
  const p=b64url(utf8.encode(JSON.stringify({
-  iss:ISSUER,aud:CLIENT,sub:SUBJECT,nonce:row.nonce,
+  iss:ISSUER,aud:CLIENT,sub:subject,nonce:row.nonce,
   iat:now-2,auth_time:now-5,exp:now+120
  })));
  const jwk=JSON.parse(env.CI_PRIVATE_SIGNING_JWK);
@@ -89,11 +92,11 @@ export default Object.freeze({
          options.redirect!=='error'||options.credentials!=='omit'||
          !validBasic||
          body.get('grant_type')!=='authorization_code'||
-         body.get('code')!==TOKEN_CODE||
+         typeof SUBJECTS[body.get('code')]!=='string'||
          body.get('redirect_uri')!==env.CI_PRIVATE_ORIGIN+'/api/auth/oidc/callback'||
          !/^[A-Za-z0-9_-]{43}$/.test(body.get('code_verifier')??''))
        throw Error('CI_SYNTHETIC_TOKEN_TRANSPORT_REJECTED');
-      const signed=await issueSyntheticJwt(env,env.DB);
+      const signed=await issueSyntheticJwt(env,env.DB,SUBJECTS[body.get('code')]);
       return new Response(JSON.stringify({token_type:'Bearer',id_token:signed,
        access_token:'DISCARD_OFFLINE_FIXTURE_ACCESS_TOKEN'}),{
        status:200,headers:{'content-type':'application/json'}

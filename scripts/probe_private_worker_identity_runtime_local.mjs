@@ -1,6 +1,6 @@
 // CI-only: real local Wrangler workerd HTTPS -> D1. No --remote or deployment.
 import {spawn,spawnSync} from 'node:child_process';
-import {createHmac,createHash,generateKeyPairSync,randomBytes} from 'node:crypto';
+import {createHmac,generateKeyPairSync,randomBytes} from 'node:crypto';
 import {existsSync,writeFileSync,unlinkSync} from 'node:fs';
 import {request as httpsRequest} from 'node:https';
 import {createServer} from 'node:net';
@@ -142,23 +142,16 @@ async function main(){
  );
  // Test-only operator-provisioned role sessions. No real IdP exchange,
  // external login, public enrollment or role cookie logging.
- const roleIssuedAt=Date.now()-1000;
  const roleSessions=[['SELLER','ciSeller','ci-seller-subject'],
   ['REVIEWER','ciReviewer','ci-reviewer-subject']].map(([role,actor,sub])=>{
-  const cookie=randomBytes(32).toString('base64url');
+  const sep=String.fromCharCode(0);
   const subjectHash=createHmac('sha256',pepper)
-   .update('proofline:worker-oidc:v1\\0'+issuer+'\\0'+sub).digest('hex');
-  const tokenHash=createHash('sha256').update(cookie).digest('hex');
-  const assertionHash=createHash('sha256')
-   .update('LOCAL_SYNTHETIC_ROLE_ONLY:'+role+':'+subjectHash).digest('hex');
+   .update('proofline:worker-oidc:v1'+sep+issuer+sep+sub).digest('hex');
   statements.push(
    "INSERT INTO worker_contract_role_bindings(issuer,subject_hmac,actor_id,merchant_id,role) VALUES('"+
-    issuer+"','"+subjectHash+"','"+actor+"','ciMerchant','"+role+"')",
-   "INSERT INTO worker_contract_role_sessions(token_sha256,issuer,subject_hmac,actor_id,merchant_id,role,binding_revision,membership_revision,assertion_sha256,issued_at_ms,expires_at_ms) VALUES('"+
-    tokenHash+"','"+issuer+"','"+subjectHash+"','"+actor+"','ciMerchant','"+role+"',1,1,'"+
-    assertionHash+"',"+roleIssuedAt+","+(roleIssuedAt+600000)+")"
+    issuer+"','"+subjectHash+"','"+actor+"','ciMerchant','"+role+"')"
   );
-  return {role,cookie};
+  return {role};
  });
  writeFileSync(sqlfile,statements.join(';\n')+';\n',{mode:0o600,flag:'wx'});
  seed();
@@ -410,9 +403,35 @@ async function main(){
   sellerReviewerRealLoginVerified:false,paymentAuthorized:false,
   actualProviderCalls:0,remoteCloudflareVerified:false}));
 
- // Exercise the SAME real local Workerd and D1 with separate preprovisioned
- // SELLER/REVIEWER synthetic cookies. These are not real external IdP logins.
- const roleCookie=role=>roleSessions.find(r=>r.role===role)?.cookie;
+ // Each synthetic role must complete a NEW pinned RS256/PKCE callback through
+ // actual local Workerd. Do not preinsert bearer sessions in SQL.
+ async function syntheticRoleLogin(code){
+  const began=await request('/api/auth/oidc/start',{
+   origin,'sec-fetch-site':'same-origin'
+  },'POST');
+  if(began.status!==303)fail('ROLE_PKCE_CHALLENGE_UNAVAILABLE');
+  const uri=new URL(began.headers.location);
+  const state=uri.searchParams.get('state');
+  const temporary=began.headers['set-cookie']??[];
+  if(uri.origin!==issuer||uri.pathname!=='/authorize'||
+     !/^[A-Za-z0-9_-]{43}$/.test(state??'')||
+     !Array.isArray(temporary)||temporary.length!==2)
+   fail('ROLE_PKCE_STATE_INVALID');
+  const cookie=temporary.map(x=>x.split(';')[0]).join('; ');
+  const completed=await request('/api/auth/oidc/callback?code='+code+
+   '&state='+state,{cookie,'sec-fetch-site':'cross-site'});
+  const setCookies=completed.headers['set-cookie']??[];
+  const issued=Array.isArray(setCookies)?
+   setCookies.find(x=>/^__Host-proofline_contract_role=[A-Za-z0-9_-]{43}; Secure; HttpOnly/.test(x)):null;
+  if(completed.status!==200||!issued)
+   fail('ROLE_SIGNED_PKCE_CALLBACK_FAILED');
+  return issued.split(';')[0].split('=')[1];
+ }
+ const roleCookies={
+  SELLER:await syntheticRoleLogin('CI_ONE_TIME_SIGNED_SELLER_CODE'),
+  REVIEWER:await syntheticRoleLogin('CI_ONE_TIME_SIGNED_REVIEWER_CODE')
+ };
+ const roleCookie=role=>roleCookies[role];
  async function transition(role,action,version,eventId,detail,expectedState){
   const path=contractsPath+'/'+contract.contract.contractId+'/milestones/delivery1/'+action;
   const res=await request(path,{
@@ -441,10 +460,21 @@ async function main(){
   cookie:sessionCookie+'; __Host-proofline_contract_role='+roleCookie('SELLER'),
   'sec-fetch-site':'same-origin'});
  if(ownerAndRole.status!==401)fail('AMBIGUOUS_ROLE_COOKIES_ACCEPTED');
+ const roleLogout=await request('/api/auth/oidc/logout',{
+  cookie:'__Host-proofline_contract_role='+roleCookie('SELLER'),
+  origin,'sec-fetch-site':'same-origin'
+ },'POST');
+ if(roleLogout.status!==200||(roleLogout.headers['set-cookie']??[])
+   .every(x=>!x.includes('__Host-proofline_contract_role=;')))
+  fail('SIGNED_ROLE_LOGOUT_FAILED');
+ if((await request('/__private/contracts',{
+  cookie:'__Host-proofline_contract_role='+roleCookie('SELLER')
+ })).status!==401)fail('SIGNED_ROLE_COOKIE_REUSED');
  console.log(JSON.stringify({
   status:'LOCAL_WORKERD_D1_SYNTHETIC_ROLE_MILESTONES_PASS',
   localWorkerd:true,localD1:true,contractFinalState:'ACCEPTED',
   verifiedTransitions:4,d1PersistedEvents:5,
+  localSignedRS256PkceRoleLogins:2,
   ownerAndRoleCookieMixDenied:true,ownerQuotesDeniedToSeller:true,
   realSellerReviewerOidcVerified:false,paymentAuthorized:false,providerCalls:0
  }));
