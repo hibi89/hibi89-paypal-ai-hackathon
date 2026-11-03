@@ -4,7 +4,8 @@ import {createWorkerPrivateSessionResolver,hashPrivateSessionCookie} from './wor
 import {createWorkerPaymentClaimGate} from './worker_payment_claim_gate.mjs';
 const ROUTES=Object.freeze({
  '/__private/paypal/create-claim':'first-claim-no-provider',
- '/__private/paypal/claim-recovery':'inspect-recovery-only'
+ '/__private/paypal/claim-recovery':'inspect-recovery-only',
+ '/__private/paypal/claim-audit':'read-audit-only'
 });
 const ID=/^[A-Za-z0-9_-]{1,128}$/;
 const HEADERS={'content-type':'application/json; charset=utf-8',
@@ -75,6 +76,7 @@ export function createWorkerPrivatePaymentClaimRoute({
   let result;
   try{result=intent==='first-claim-no-provider'?
    await gate.claimWithVerifiedSession({...fields,sessionDigest,checkedAt}):
+   intent==='read-audit-only'?await gate.auditTrail(fields):
    await gate.inspectRecovery(fields);
   }catch(error){
    const unavailable=/UNKNOWN|UNAVAILABLE|NO_RETRY/.test(error?.code??'');
@@ -97,6 +99,9 @@ export function createWorkerPrivatePaymentClaimRoute({
   if(intent==='first-claim-no-provider')
    return respond(result.claimed?201:409,{status:result.state,
     claimed:result.claimed,remoteOrderCreated:false});
+  if(intent==='read-audit-only')
+   return respond(200,{status:'AUDIT_READ_ONLY',events:result.events,
+    hasMore:result.hasMore,remoteOrderCreated:false});
   return respond(200,{status:result.state,next:result.next,
    remoteIdKnown:result.remoteIdKnown,remoteOrderCreated:false});
  }});
