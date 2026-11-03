@@ -4,6 +4,7 @@ import {createWorkerPrivateOidcAuthority} from './worker_private_oidc_authority.
 import {createWorkerOidcPkceCoordinator} from './worker_oidc_pkce_coordinator.mjs';
 import {createWorkerOidcTokenTransport} from './worker_oidc_token_transport.mjs';
 import {createPrivateWorkerIdentityReadRouter} from './worker_private_identity_read_router.mjs';
+import {ownerSignInAsset,redirectVerifiedOwnerLogin} from './worker_private_sign_in.mjs';
 
 const HEADERS=Object.freeze({
  'content-type':'application/json; charset=utf-8',
@@ -61,7 +62,8 @@ export function createPrivateWorkerIdentityHost({tokenFetch=fetch}={}){
   // cannot activate login, token POST, private D1 reads or payment routes.
   if(env?.PRIVATE_IDENTITY_HOST_OPT_IN!=='OWNER_APPROVED_ISOLATED_D1_OIDC'||
      env?.PRIVATE_IDENTITY_IDP_NETWORK_OPT_IN!=='OWNER_APPROVED_REAL_IDP_EXCHANGE'||
-     typeof env?.DB?.withSession!=='function')return unavailable();
+     typeof env?.DB?.withSession!=='function'||
+     typeof env?.PRIVATE_IDENTITY_RATE_LIMITER?.limit!=='function')return unavailable();
   try{
    if(!(request instanceof Request))return unavailable();
    const origin=trustedOrigin(env.PRIVATE_IDENTITY_ORIGIN);
@@ -89,7 +91,33 @@ export function createPrivateWorkerIdentityHost({tokenFetch=fetch}={}){
    const router=createPrivateWorkerIdentityReadRouter({
     db:env.DB,allowedOrigin:origin,authority,pkceCoordinator,enabled:true
    });
-   return await router.fetch(request);
+   const path=new URL(request.url);
+   // Static public sign-in is inert: no D1 writes, IdP POST or session data.
+   const signIn=ownerSignInAsset(request,origin);
+   if(signIn)return signIn;
+   // Cloudflare-native approximate location-scoped counter. No raw IP,
+   // browser-supplied identity or in-memory-only counters. A missing/failed
+   // binding stops the request BEFORE OIDC challenge or token operations.
+   const start=path.pathname==='/api/auth/oidc/start'&&request.method==='POST'&&
+     path.origin===origin&&!path.search&&!path.hash&&
+     request.headers.get('origin')===origin&&
+     ['same-origin','none'].includes(request.headers.get('sec-fetch-site'));
+   const callback=path.pathname==='/api/auth/oidc/callback'&&
+     request.method==='GET'&&path.origin===origin;
+   if(start||callback){
+    let verdict;
+    try{
+     verdict=await env.PRIVATE_IDENTITY_RATE_LIMITER.limit({
+      key:start?'proofline:owner-oidc:start':'proofline:owner-oidc:callback'
+     });
+    }catch{return unavailable()}
+    if(verdict?.success===false)return new Response(JSON.stringify({
+     error:'LOGIN_RATE_LIMITED',paymentAuthorized:false
+    }),{status:429,headers:{...HEADERS,'retry-after':'60'}});
+    if(verdict?.success!==true)return unavailable();
+   }
+   const routed=await router.fetch(request);
+   return callback?redirectVerifiedOwnerLogin(routed,origin):routed;
   }catch{
    // No error messages, credentials, D1 schema or IdP details in HTTP.
    return unavailable();

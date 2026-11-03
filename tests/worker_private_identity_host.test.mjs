@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import defaultRuntime,{createPrivateWorkerIdentityHost}
  from '../src/worker_private_identity_host.mjs';
+import {redirectVerifiedOwnerLogin} from '../src/worker_private_sign_in.mjs';
 
 const ORIGIN='https://owner.proofline-review.dev';
 const ISSUER='https://login.oidc-review.dev';
@@ -12,6 +13,7 @@ const jwks=JSON.stringify({keys:[{
  n:Buffer.alloc(256,0x42).toString('base64url'),e:'AQAB'
 }]});
 let writes=0,network=0;
+const limits=[];
 const db={withSession(mode){
  assert.equal(mode,'first-primary');
  return {prepare(sql){
@@ -30,6 +32,9 @@ const active=()=>({
  PRIVATE_IDENTITY_AUTHORIZATION_ENDPOINT:AUTH,
  PRIVATE_IDENTITY_TOKEN_ENDPOINT:TOKEN,
  PRIVATE_IDENTITY_CLIENT_ID:'prooflineowner',
+ PRIVATE_IDENTITY_RATE_LIMITER:{async limit({key}){
+  limits.push(key);return {success:true};
+ }},
  PRIVATE_IDENTITY_CLIENT_SECRET:'fake-fixture-credential',
  PRIVATE_IDENTITY_JWKS_JSON:jwks,
  PRIVATE_IDENTITY_SUBJECT_PEPPER_B64:Buffer.alloc(32,0x4f).toString('base64'),
@@ -133,4 +138,90 @@ test('host refuses malformed callback and cannot turn GET/refresh into external 
  const logout=await runtime.fetch(req('/api/auth/oidc/logout',{method:'POST'}),env);
  assert.equal(logout.status,403);
  assert.equal(network,0);
+});
+
+test('public sign-in form and CSS are accessible only when host enabled, without JavaScript or data access',async()=>{
+ writes=0;network=0;
+ const html=await runtime.fetch(req('/__private/sign-in'),active());
+ assert.equal(html.status,200);
+ assert.match(html.headers.get('content-type'),/^text\/html/);
+ assert.match(html.headers.get('content-security-policy'),/script-src 'none'/);
+ assert.match(html.headers.get('content-security-policy'),/form-action 'self'/);
+ assert.equal(html.headers.get('cache-control'),'no-store, max-age=0');
+ const body=await html.text();
+ assert.match(body,/<form method="POST" action="\/api\/auth\/oidc\/start">/);
+ assert.match(body,/pre-authorized owner accounts/);
+ assert.doesNotMatch(body,/<script\b|<input[^>]+type="hidden"/i);
+ const css=await runtime.fetch(req('/__private/sign-in.css'),active());
+ assert.equal(css.status,200);
+ assert.match(css.headers.get('content-type'),/^text\/css/);
+ assert.match(await css.text(),/button:focus-visible/);
+ assert.equal((await runtime.fetch(req('/__private/sign-in?next=https://attacker.dev'),active())).status,404);
+ const badMethod=await runtime.fetch(req('/__private/sign-in',{method:'POST'}),active());
+ assert.equal(badMethod.status,405);
+ await blocked(await runtime.fetch(req('/__private/sign-in'),{}));
+ assert.equal(writes,0);assert.equal(network,0);
+});
+test('host requires Cloudflare Rate Limiting binding and fails closed before database changes',async()=>{
+ writes=0;network=0;
+ await blocked(await runtime.fetch(req('/__private/sign-in'),{
+  ...active(),PRIVATE_IDENTITY_RATE_LIMITER:null
+ }));
+ await blocked(await runtime.fetch(req('/api/auth/oidc/start',{
+  method:'POST',headers:{origin:ORIGIN,'sec-fetch-site':'same-origin'}
+ }),{...active(),PRIVATE_IDENTITY_RATE_LIMITER:undefined}));
+ assert.equal(writes,0);assert.equal(network,0);
+});
+test('rate limiting denial and binding failure block owner login POST before D1 challenge',async()=>{
+ writes=0;network=0;
+ const start=req('/api/auth/oidc/start',{
+  method:'POST',headers:{origin:ORIGIN,'sec-fetch-site':'same-origin'}
+ });
+ const rejected=await runtime.fetch(start,{
+  ...active(),PRIVATE_IDENTITY_RATE_LIMITER:{
+   async limit({key}){assert.equal(key,'proofline:owner-oidc:start');return {success:false}}
+  }
+ });
+ assert.equal(rejected.status,429);
+ assert.equal((await rejected.json()).error,'LOGIN_RATE_LIMITED');
+ assert.equal(rejected.headers.get('access-control-allow-origin'),null);
+ assert.equal(rejected.headers.get('retry-after'),'60');
+ await blocked(await runtime.fetch(start,{
+  ...active(),PRIVATE_IDENTITY_RATE_LIMITER:{async limit(){throw Error('RATE_LIMITER_DOWN')}}
+ }));
+ await blocked(await runtime.fetch(start,{
+  ...active(),PRIVATE_IDENTITY_RATE_LIMITER:{async limit(){return {}}}
+ }));
+ assert.equal(writes,0);assert.equal(network,0);
+});
+test('callback rate guard blocks provider exchange before callback can consume a challenge',async()=>{
+ writes=0;network=0;
+ const callback=req('/api/auth/oidc/callback?code=guess&state='+('Z'.repeat(43)));
+ const denied=await runtime.fetch(callback,{
+  ...active(),PRIVATE_IDENTITY_RATE_LIMITER:{
+   async limit({key}){assert.equal(key,'proofline:owner-oidc:callback');return {success:false}}
+  }
+ });
+ assert.equal(denied.status,429);
+ assert.equal(writes,0);assert.equal(network,0);
+});
+test('a verified callback is converted to a same-origin 303, preserving all secure one-time cookies',()=>{
+ const ok=new Response(JSON.stringify({status:'SESSION_ESTABLISHED',paymentAuthorized:false}),{
+  status:200,headers:{'content-type':'application/json'}
+ });
+ ok.headers.append('set-cookie','__Host-proofline_oidc_state=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0');
+ ok.headers.append('set-cookie','__Host-proofline_oidc_pkce=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0');
+ ok.headers.append('set-cookie','__Host-proofline_session='+('A'.repeat(43))+
+  '; Secure; HttpOnly; Path=/; SameSite=Strict; Max-Age=900');
+ const redirected=redirectVerifiedOwnerLogin(ok,ORIGIN);
+ assert.equal(redirected.status,303);
+ assert.equal(redirected.headers.get('location'),ORIGIN+'/__private/attempts/view');
+ assert.equal(redirected.headers.get('cache-control'),'no-store, max-age=0');
+ assert.equal(redirected.headers.getSetCookie().length,3);
+ assert.equal(redirected.headers.get('access-control-allow-origin'),null);
+ const tampered=new Response('{}',{status:200});
+ tampered.headers.append('set-cookie','__Host-proofline_session='+('B'.repeat(43))+
+  '; Secure; HttpOnly; Path=/; SameSite=Strict; Max-Age=900');
+ assert.equal(redirectVerifiedOwnerLogin(tampered,ORIGIN).status,503);
+ assert.equal(redirectVerifiedOwnerLogin(new Response('{}',{status:401}),ORIGIN).status,401);
 });
