@@ -85,7 +85,15 @@ export function createWorkerPrivatePaymentClaimRoute({
   try{const after=await resolve(request);
    if(after.verified!==true||after.actorId!==owner.actorId||
       after.merchantId!==owner.merchantId)throw Error('OWNER_CHANGED');
-  }catch{return respond(401,{error:'OWNER_SESSION_CHANGED_NO_RETRY'})}
+  }catch{
+   // A successful first-claim may precede session revocation. This route
+   // never invokes PayPal, so move its orphan IN_FLIGHT record to UNKNOWN.
+   // If the cleanup is ambiguous, leave the claim blocked; NEVER retry CREATE.
+   if(intent==='first-claim-no-provider'&&result?.claimed===true){
+    try{await gate.markUnknown(fields)}catch{/* fail-closed: claim remains held */}
+   }
+   return respond(401,{error:'OWNER_SESSION_CHANGED_NO_RETRY'});
+  }
   if(intent==='first-claim-no-provider')
    return respond(result.claimed?201:409,{status:result.state,
     claimed:result.claimed,remoteOrderCreated:false});
