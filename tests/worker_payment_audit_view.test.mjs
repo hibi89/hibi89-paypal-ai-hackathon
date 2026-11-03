@@ -200,3 +200,63 @@ test('opted-in private router rejects role-cookie ambiguity and cross-owner audi
  assert.equal(f.sql.prepare('SELECT COUNT(*) n FROM payment_attempts').get().n,0);
  f.sql.close();
 });
+
+test('audit history paginates beyond 50 entries without duplicates or missing events',async()=>{
+ const f=fixture();
+ await f.gate.claim(CLAIM);
+ const insert=f.sql.prepare(`INSERT INTO payment_attempt_audit
+ (request_id,quote_id,quote_version,merchant_id,operation,event_type,before_state,after_state,remote_id,observed_at)
+ VALUES('req1','quote1',1,?,'create','STATE_CHANGED','IN_FLIGHT','UNKNOWN',NULL,?)`);
+ for(let i=0;i<60;i++)insert.run(MERCHANT,'event-'+String(i).padStart(3,'0'));
+ const first=await f.handler.fetch(req());
+ assert.equal(first.status,200);
+ const p1=await first.json();
+ assert.equal(p1.events.length,50);
+ assert.equal(p1.hasMore,true);
+ assert.ok(Number.isSafeInteger(p1.nextBeforeSequence));
+ assert.ok(p1.nextBeforeSequence>0);
+ const second=await f.handler.fetch(req(undefined,{requestId:'req1',quoteId:'quote1',quoteVersion:1,
+  beforeSequence:p1.nextBeforeSequence}));
+ assert.equal(second.status,200);
+ const p2=await second.json();
+ assert.equal(p2.events.length,11);
+ assert.equal(p2.hasMore,false);
+ assert.equal(p2.nextBeforeSequence,null);
+ const all=[...p2.events,...p1.events]; // older page first, all chronological
+ const expected=f.sql.prepare('SELECT observed_at FROM payment_attempt_audit ORDER BY sequence').all()
+  .map(x=>x.observed_at);
+ assert.deepEqual(all.map(e=>e.observedAt),expected);
+ assert.ok(all.every(e=>!Object.keys(e).includes('remote_id')));
+ assert.equal((await f.handler.fetch(req('/__private/paypal/claim-recovery',
+  {requestId:'req1',quoteId:'quote1',quoteVersion:1,
+   beforeSequence:p1.nextBeforeSequence}))).status,400);
+ f.sql.close();
+});
+
+test('audit cursor refuses zero, negative, string, null and unsafe integer input',async()=>{
+ const f=fixture();await f.gate.claim(CLAIM);
+ for(const beforeSequence of [0,-1,'2',null,Number.MAX_SAFE_INTEGER+1,1.5]){
+  const res=await f.handler.fetch(req(undefined,
+   {requestId:'req1',quoteId:'quote1',quoteVersion:1,beforeSequence}));
+  assert.equal(res.status,400);
+ }
+ assert.equal(f.reads(),0);
+ assert.equal(f.sql.prepare('SELECT COUNT(*) n FROM payment_attempt_audit').get().n,1);
+ f.sql.close();
+});
+
+test('audit history ignores mismatched attempt identity even with a valid foreign key',async()=>{
+ const f=fixture();await f.gate.claim(CLAIM);
+ f.sql.prepare(`INSERT INTO payment_attempt_audit
+ (request_id,quote_id,quote_version,merchant_id,operation,event_type,before_state,after_state,remote_id,observed_at)
+ VALUES('req1','OTHER_QUOTE',1,?,'create','STATE_CHANGED','IN_FLIGHT','UNKNOWN',NULL,'forged-marker')`)
+  .run(MERCHANT);
+ const response=await f.handler.fetch(req());
+ assert.equal(response.status,200);
+ const body=await response.json();
+ assert.equal(body.events.length,1);
+ assert.equal(body.hasMore,false);
+ assert.equal(body.nextBeforeSequence,null);
+ assert.ok(!JSON.stringify(body).includes('forged-marker'));
+ f.sql.close();
+});
