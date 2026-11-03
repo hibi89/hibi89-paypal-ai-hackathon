@@ -1,3 +1,16 @@
+## 2026-11-03 19:20:46 KST — Worker sign-in and rate guard, verified offline; RELEASE HOLD
+1. Goal/stack: Preserve Proofline Part1 and five Part2 modules; provide an owner login entry using Worker OIDC PKCE, D1 and static HTML/CSS.
+2. Changes/decision: Prefer native Cloudflare Rate Limiting binding over new D1 counter schema to avoid migrations. Added GET-only sign-in page with same-origin POST form, secure callback redirect and two separate rate-limit keys. Missing or failed limiter blocks login; native limits are approximate by region.
+3. Tested SHA: 7338cc9dc35b565fe205137ca5b21fa8db8af845. Full Actions #41617975462 SUCCESS: Linux Node 959 PASS, zero fail/skip; Windows and existing Chromium journeys SUCCESS. MVP Smoke #41617975572 SUCCESS. Optional local D1 and full-length video jobs SKIPPED.
+4. Done/pending: Static form, cookie redirect and limiter interface pass offline tests. New form's real browser rendering and real Cloudflare limiter are not yet independently verified. RELEASE HOLD.
+5. Failures/recovery: No failure on this feature commit. Separate previous source scanner fixture issue corrected earlier. Do not count conditional skips as passes.
+6. Source/rollback: hibi89/hibi89-paypal-ai-hackathon lead/paypal; baseline 1d57fedbfb93723790eb8ddf297d543b72a7064f. Added src/worker_private_sign_in.mjs and edited src/worker_private_identity_host.mjs plus tests/worker_private_identity_host.test.mjs. Use ordinary non-force revert if needed.
+7. Environment/production: GitHub Windows/Linux CI only; no Vercel or Cloudflare production URL, deployment or verified production SHA.
+8. Preservation: Original Part1/Part2 code, migrations, existing workerd synthetic fixture, historical user evidence and main unchanged. No external service operations.
+9. Next/approvals: Owner-controlled Cloudflare Free D1, actual IdP and callback settings, reviewed rate-limit binding, public login browser and abuse tests, real PayPal/Gemini evidence. External operations and publication require separate approval; deadline 2026-11-13 05:00 KST.
+10. Updated 2026-11-03 19:20:46 KST; verified functional SHA 7338cc9dc35b565fe205137ca5b21fa8db8af845 via CI #41617975462 and Smoke #41617975572; documentation commit only, RELEASE HOLD.
+
+---
 ## 2026-11-03 19:10:21 KST — optional real-IdP Worker host candidate implemented; 954/954 Node and Windows/Chromium SUCCESS; no remote activation; RELEASE HOLD
 
 1. **Goals, requirements, technology:** Preserve Proofline Part1 Freelancer Platform, all five Part2 Innovation Lab skills, exact D1/RS256 OIDC/PKCE guards, zero-new-cash and separate provider approvals. Address a real engineering gap: previous real-workerd login used only `scripts/worker_private_identity_workerd_ci.mjs` with a synthetic IdP, not a separately configurable host entrypoint.
