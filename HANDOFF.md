@@ -1,3 +1,15 @@
+## 2026-11-04 — P0 private payment claim route checkpoint (latest)
+1. **Goal / scope:** two-part Proofline Freelancer Platform + five Part2 AI skills; integrate D1 first-claim and recovery with verified OWNER OIDC session, preserving provider/payment approval gates.
+2. **Implemented / rationale:** feature/test SHA `438f988e7171ef3ced14d92ae06493788ea3f30c`; added `src/worker_private_payment_claim_route.mjs`, router opt-in `paymentClaimEnabled=false`, new test. Reuses existing crypto session resolver (more secure than client-provided ownerId); no direct PayPal or capture path.
+3. **Evidence:** Node v22.16 focused local route tests **5 PASS / 0 FAIL** using four original D1 migrations, existing session resolver and payment gate; previous gate isolated tests **10 PASS / 0 FAIL**. Command `node --experimental-sqlite --test tests/worker_private_payment_claim_route.test.mjs`. GitHub new test also covers private router, but complete repository CI/Workerd/Production **unverified**.
+4. **Status:** 75% estimated final readiness (previous 74%, +1pp for checked standalone route); **RELEASE HOLD**, feature opt-in dark, no real provider calls, no external deploy.
+5. **Risks / recovery:** revocation concurrent with D1 claim can leave an orphan IN_FLIGHT record; post-write session check returns 401, never PayPal CREATE. Next gate must resolve via recovery instead of repeat. Prior SHA `2902b83dc9f65103e97f1ca42317c4f9ecff3e64` remains rollback point; no remote data touched.
+6. **Repo / refs:** `hibi89/hibi89-paypal-ai-hackathon` `lead/paypal`, exact feature/test SHA above; touched new route, router, test only.
+7. **Execution / deployment:** Node 22.16.0, local SQLite focus. Cloudflare Workers+D1 Production URL/SHA, IdP, PayPal Sandbox/Gemini and public Devpost unverified; no deployment command run.
+8. **Assets / secrets:** GitHub source authoritative, previous commits preserved. No credential, token, .env, production session or customer data modified; four D1 migrations used only in memory.
+9. **Next:** run exact full-repo tests/CI; verify router opt-in and revocation race with real local Workerd/D1; only after approvals enable any remote PayPal call, Cloudflare deploy and public YouTube/Devpost submission. Done criterion = product-level functional verification + submission, not source commit.
+10. **Updated/checked:** 2026-11-04 KST; isolated Node testing and current GitHub source only; doc-only SHA follows this source SHA.
+
 ## 2026-11-04 — owner-binding CAS checkpoint, P0 (current)
 1. **Goal / constraints:** Proofline Part 1 + five Part 2 AI skills, PayPal-first verified provider path; no unapproved provider calls, payments, public deployments, or submissions. This checkpoint closes a missing owner check in D1 order-ID persistence.
 2. **Implemented:** commit `4221d60d82329a7fd76abeff2963ae2fee85ac40` adds quote owner predicate to conditional INSERT-claim follow-up `persistRemoteOrder()` UPDATE and owner-joined re-read; rejects wrong/missing owners and mismatched merchants without changes. Legacy modules preserved; no schema modifications.
