@@ -140,8 +140,13 @@ async function main(){
   cookie:sessionCookie,'sec-fetch-site':'same-origin'
  });
  let listed;try{listed=JSON.parse(recent.body)}catch{fail('D1_RECENT_LIST_JSON_INVALID')}
- if(recent.status!==200||!recent.encrypted||listed.count!==1||
-    listed.attempts?.[0]?.requestId!=='ciIdentityRequest'||
+ // The preceding read-only Worker probe seeds one owner-bound attempt,
+ // and this identity probe adds a second one in the SAME disposable local D1.
+ // Both must remain visible; never delete the earlier fixture to fake success.
+ if(recent.status!==200||!recent.encrypted||listed.count!==2||
+    !Array.isArray(listed.attempts)||
+    !['ciRequest','ciIdentityRequest'].every(id=>
+      listed.attempts.some(item=>item.requestId===id))||
     listed.source!=='D1_LOCAL_METADATA_ONLY'||
     listed.verifiedPayPalGet!==false||listed.paymentAuthorized!==false||
     listed.providerCalls!==0||recent.headers['access-control-allow-origin']!==undefined||
