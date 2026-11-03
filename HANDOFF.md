@@ -1,3 +1,10 @@
+## 2026-11-04 — P0 UNKNOWN recovery checkpoint
+- **Repo / branch:** `hibi89/hibi89-paypal-ai-hackathon` / `lead/paypal`; verified feature/test SHA `903bac4d22f0b047f51cd900738445cf68dd0c7d`. Confirm subsequent documentation SHA on branch.
+- **Change:** atomic owner-bound D1 `markUnknown()` (IN_FLIGHT only) and read-only `inspectRecovery()`. Unknown with known order ID requires GET reconciliation; unknown without ID requires manual provider lookup; no automatic CREATE retry, capture or paid assertion. Only unmounted offline module, NOT deployed.
+- **Tests:** `node --experimental-sqlite --test tests/worker_payment_claim_gate.test.mjs`; isolated reproduction of exact module/schema/tests on Node v22.16: **9 PASS / 0 FAIL**; full repository CI and exact GitHub SHA CI **unverified**. Production, real PayPal/Cloudflare/IdP/Gemini likewise unverified. No external network calls made.
+- **Estimated final readiness 73% (+1pp locally verified subsystem)**; RELEASE HOLD. Next P0: ensure owner binding on remote ID CAS, integrate owner-authenticated flow, run full CI and real D1 behind owner approval; prohibit unapproved provider calls or payments.
+- **Source and backups:** GitHub history preserves earlier SHA `19cf16c9676ebb59459636ff974f9cb323065448`; no migration or data changed. No credentials stored. Checked 2026-11-04 KST.
+
 ## 2026-11-04 — PayPal D1 remote order CAS (unverified)
 - Repository `hibi89/hibi89-paypal-ai-hackathon`, branch `lead/paypal`, feature SHA `144169399a9ee5eb44454d03930ac71a09ad70e4`.
 - Added unmounted offline `src/worker_payment_claim_gate.mjs`: approved quote first-claim and conditional remote order ID binding to a unique request, with fail-closed ambiguity and no network calls.
