@@ -59,10 +59,9 @@ def main():
                     route.continue_()
             context.route("**/*",filter_route)
             page=context.new_page()
-            page.on("pageerror",lambda exc: errors.append("PAGE_SCRIPT_ERROR"))
-            page.on("console",lambda msg:
-                errors.append("CONSOLE_ERROR") if msg.type=="error" and
-                "favicon" not in msg.text.lower() else None)
+            # Anonymous 401 is a *required* auth denial and Chrome may log it
+            # as a console error. Do not mix that with authenticated UI errors.
+            # Register pageerror/console listeners on the signed-in page only.
             view="/__private/attempts/view"
             # Anonymous browser never receives the shell page or its JS.
             mark('ANONYMOUS_NAVIGATION')
