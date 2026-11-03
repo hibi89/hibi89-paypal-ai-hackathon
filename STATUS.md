@@ -1,3 +1,9 @@
+## 2026-11-04 — P0 UNKNOWN reconciliation guard (local verified)
+- **Functional SHA:** `903bac4d22f0b047f51cd900738445cf68dd0c7d`; files: `src/worker_payment_claim_gate.mjs`, `tests/worker_payment_claim_gate.test.mjs`.
+- Added owner-bound, first-primary D1 atomic `IN_FLIGHT→UNKNOWN` and idempotent `markUnknown()`; `inspectRecovery()` distinguishes missing remote ID (manual provider lookup), known remote ID (read-only GET reconciliation), `APPROVED` and `PAID` without authorizing charges or capture. Prevents duplicate CREATE and downgrade of approved/paid states. Not mounted in live route.
+- **Actual local isolated Node 22.16 SQLite verification: 9/9 PASS, 0 FAIL**, using the matching source module, test fixture and `0001_payment_claims.sql` reproduced from branch. This is not a full-repo CI or Workerd/remote D1 result. No external API calls/payments/deploy.
+- **Overall final-product estimate: 73% (+1 pp)**, conditional on retained functionality and future full CI; release remains HOLD. Next: review remote order persistence owner validation, integrate guarded recovery via owner-only API, CI and real D1 verification.
+
 ## 2026-11-04 P0 D1 first-claim (verification pending)
 - Added `src/worker_payment_claim_gate.mjs` as an **unmounted**, offline-only D1 first-primary INSERT SELECT claim boundary. First valid approved quote wins; duplicate or ambiguous outcome cannot authorize another create.
 - Added `tests/worker_payment_claim_gate.test.mjs` for single winner, duplicate, unapproved input and D1 failure. **CI and local execution not yet verified**; not production-ready.
