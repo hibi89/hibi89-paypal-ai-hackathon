@@ -61,7 +61,9 @@ async function main(){
   CI_PRIVATE_JWKS:JSON.stringify({keys:[publicJwk]}),
   CI_PRIVATE_SIGNING_JWK:JSON.stringify(privateKey.export({format:'jwk'})),
   CI_PRIVATE_PEPPER:pepper.toString('base64'),
-  CI_PRIVATE_OIDC_SECRET:randomBytes(32).toString('base64url')
+  // Synthetic per-run credential deliberately exercises RFC6749 form
+  // encoding in actual workerd; never printed or checked into git.
+  CI_PRIVATE_OIDC_SECRET:randomBytes(32).toString('base64url')+" !'()é"
  };
  writeFileSync(config,JSON.stringify({
   name:'proofline-internal-identity-workerd-ci',

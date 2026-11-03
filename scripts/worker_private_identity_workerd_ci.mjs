@@ -66,11 +66,24 @@ export default Object.freeze({
      networkApproved:true,allowLocalCallback:true,
      fetchImpl:async(url,options)=>{
       const body=new URLSearchParams(options.body);
-      const basic='Basic '+btoa(encodeURIComponent(CLIENT)+':'+
-       encodeURIComponent(env.CI_PRIVATE_OIDC_SECRET));
+      // Independently inspect the actual Worker-generated Basic header.
+      // The old encodeURIComponent oracle wrongly accepted non-RFC6749
+      // encodings for spaces, punctuation and non-ASCII credentials.
+      let validBasic=false;
+      try{
+       const raw=options.headers.authorization;
+       if(typeof raw==='string'&&/^Basic [A-Za-z0-9+/]+=*$/.test(raw)){
+        const parts=atob(raw.slice(6)).split(':');
+        const encodedSecret=parts[1]??'';
+        validBasic=parts.length===2&&
+         new URLSearchParams('client='+parts[0]).get('client')===CLIENT&&
+         new URLSearchParams('secret='+encodedSecret).get('secret')===env.CI_PRIVATE_OIDC_SECRET&&
+         encodedSecret.includes('+%21%27%28%29%C3%A9');
+       }
+      }catch{/* reject malformed Basic auth without exposing credentials */}
       if(url!==ISSUER+'/token'||options.method!=='POST'||
          options.redirect!=='error'||options.credentials!=='omit'||
-         options.headers.authorization!==basic||
+         !validBasic||
          body.get('grant_type')!=='authorization_code'||
          body.get('code')!==TOKEN_CODE||
          body.get('redirect_uri')!==env.CI_PRIVATE_ORIGIN+'/api/auth/oidc/callback'||
