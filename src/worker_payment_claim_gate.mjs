@@ -63,13 +63,16 @@ WHERE a.request_id=? AND a.quote_id=? AND a.quote_version=?
  AND q.owner_id=? AND a.merchant_id=? AND a.operation='create'`;
 // Audit timeline is read-only, bounded and bound to a verified quote owner.
 // Never return raw PayPal remote IDs or cross-merchant audit events.
-const READ_AUDIT=`SELECT e.event_type,e.before_state,e.after_state,
+const READ_AUDIT=`SELECT e.sequence,e.event_type,e.before_state,e.after_state,
  e.remote_id,e.observed_at FROM payment_attempt_audit e
 JOIN payment_attempts a ON a.request_id=e.request_id
+ AND a.quote_id=e.quote_id AND a.quote_version=e.quote_version
+ AND a.merchant_id=e.merchant_id AND a.operation=e.operation
 JOIN quotes q ON q.id=a.quote_id AND q.version=a.quote_version
  AND q.merchant_id=a.merchant_id
 WHERE a.request_id=? AND a.quote_id=? AND a.quote_version=?
  AND a.merchant_id=? AND q.owner_id=? AND a.operation='create'
+ AND (? IS NULL OR e.sequence<?)
 ORDER BY e.sequence DESC LIMIT 51`;
 const AUDIT_TYPES=new Set(['MIGRATION_BASELINE','CLAIM_CREATED',
  'STATE_CHANGED','REMOTE_ID_BOUND']);
@@ -161,17 +164,23 @@ export function createWorkerPaymentClaimGate({db}={}){
    fail('UNKNOWN_MARK_UNCONFIRMED_NO_RETRY');
   }
  },async auditTrail(details={}){
-  if(!validOwnedClaim(details))fail('INVALID_AUDIT_INPUT');
+  if(!validOwnedClaim(details)||
+     (details.beforeSequence!==undefined&&
+      (!Number.isSafeInteger(details.beforeSequence)||details.beforeSequence<1)))
+   fail('INVALID_AUDIT_INPUT');
   const {requestId,quoteId,quoteVersion,ownerId,merchantId}=details;
+  const beforeSequence=details.beforeSequence??null;
   let rows;
   try{
    const response=await db.withSession('first-primary').prepare(READ_AUDIT)
-    .bind(requestId,quoteId,quoteVersion,merchantId,ownerId).all();
+    .bind(requestId,quoteId,quoteVersion,merchantId,ownerId,
+      beforeSequence,beforeSequence).all();
    if(!Array.isArray(response?.results))fail('AUDIT_MALFORMED');
    rows=response.results;
   }catch{fail('AUDIT_STORE_UNAVAILABLE');}
   if(rows.length===0)fail('AUDIT_CLAIM_NOT_AVAILABLE');
-  if(rows.length>51||rows.some(r=>!AUDIT_TYPES.has(r.event_type)||
+  if(rows.length>51||rows.some(r=>!Number.isSafeInteger(r.sequence)||r.sequence<1||
+     !AUDIT_TYPES.has(r.event_type)||
      !AUDIT_STATES.has(r.after_state)||
      (r.before_state!==null&&!AUDIT_STATES.has(r.before_state))||
      typeof r.observed_at!=='string'||
@@ -181,7 +190,8 @@ export function createWorkerPaymentClaimGate({db}={}){
   return Object.freeze({events:rows.slice(0,50).reverse().map(r=>Object.freeze({
    eventType:r.event_type,fromState:r.before_state,toState:r.after_state,
    remoteOrderKnown:r.remote_id!==null,observedAt:r.observed_at
-  })),hasMore,providerCalls:0,paymentAuthorized:false});
+  })),hasMore,nextBeforeSequence:hasMore?rows[49].sequence:null,
+   providerCalls:0,paymentAuthorized:false});
  },async inspectRecovery(details={}){
   if(!validOwnedClaim(details))fail('INVALID_RECOVERY_INPUT');
   const {requestId,quoteId,quoteVersion,ownerId,merchantId}=details;
