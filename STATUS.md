@@ -1,3 +1,9 @@
+## 2026-11-04 — P0 private Worker audit E2E + ambiguous identity hardening
+- **Estimated whole-product completeness: 80% (from 79%, +1pp)**. This is a scoped engineering estimate, NOT production readiness. **RELEASE HOLD**.
+- Feature/test commit `91f36b686847aa9354554f1a3a93d475367b8181`: `src/worker_private_payment_claim_route.mjs` now rejects any contract-role credential at the payment claim/recovery/audit boundary, preventing ambiguous simultaneous owner/role cookies. Added three regression/integration tests to `tests/worker_payment_audit_view.test.mjs` covering disabled-by-default host, enabled claim→remote-ID bind→UNKNOWN→recovery→audit, owner-only access, no extra claims, and ambiguous-cookie refusal.
+- **Executed locally:** Node 22.16 experimental SQLite, `node --experimental-sqlite --test tests/*.test.mjs` in isolated `/mnt/data/paypal_claim`: **44 PASS / 0 FAIL / 0 SKIP**. Actual private router source, modified payment route and test source are byte-identical to GitHub content (Git blob SHA matches); unrelated host modules are minimal local test stubs. No actual Workerd, complete repo test suite, remote Cloudflare D1, PayPal Sandbox, real IdP, or Production verification on this SHA.
+- No external provider/capture calls; no config, schema, customer data or secret changes. Next: full GitHub Windows/Linux CI and a genuine Workerd/D1 integrated test when available; validate provider-authorized sandbox integration and submission only with separate approval.
+
 ## 2026-11-04 — Private owner payment audit timeline (locally verified, RELEASE HOLD)
 - **Estimated final-product completion: 79% (+1pp from 78%)**; not a production or external-payment validation.
 - **Feature/test SHA:** `221abf1e2d0f1f61957e68f2255da29f2cfe4a1c`; updated `src/worker_payment_claim_gate.mjs`, `src/worker_private_payment_claim_route.mjs`, `src/worker_private_identity_read_router.mjs`; added `tests/worker_payment_audit_view.test.mjs`.
