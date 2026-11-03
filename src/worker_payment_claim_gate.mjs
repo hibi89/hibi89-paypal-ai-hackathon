@@ -36,6 +36,24 @@ ON CONFLICT DO NOTHING`;
 const LOOKUP=`SELECT request_id,state,remote_id,amount_minor,currency
 FROM payment_attempts WHERE quote_id=? AND quote_version=?
 AND merchant_id=? AND operation='create'`;
+// D1 meta.changes includes trigger writes. A successful first-claim INSERT
+// into the 0005 audit schema changes TWO rows (attempt + audit event).
+// Verify that complete and current audit tail before accepting the count.
+const VERIFY_TRIGGERED_CLAIM=`SELECT a.request_id,a.state,a.remote_id
+FROM payment_attempts a
+JOIN quotes q ON q.id=a.quote_id AND q.version=a.quote_version
+ AND q.merchant_id=a.merchant_id AND q.owner_id=?
+JOIN payment_attempt_audit e ON e.request_id=a.request_id
+ AND e.quote_id=a.quote_id AND e.quote_version=a.quote_version
+ AND e.merchant_id=a.merchant_id AND e.operation=a.operation
+WHERE a.request_id=? AND a.quote_id=? AND a.quote_version=?
+ AND a.merchant_id=? AND a.operation='create'
+ AND a.state='IN_FLIGHT' AND a.remote_id IS NULL
+ AND e.event_type='CLAIM_CREATED' AND e.before_state IS NULL
+ AND e.after_state='IN_FLIGHT' AND e.remote_id IS NULL
+ AND e.sequence=(SELECT MAX(t.sequence) FROM payment_attempt_audit t
+  WHERE t.request_id=a.request_id)
+LIMIT 1`;
 const PERSIST=`UPDATE payment_attempts SET remote_id=?,observed_at=CURRENT_TIMESTAMP
 WHERE request_id=? AND quote_id=? AND quote_version=? AND merchant_id=?
 AND operation='create' AND state='IN_FLIGHT' AND remote_id IS NULL
@@ -92,12 +110,24 @@ export function createWorkerPaymentClaimGate({db}={}){
      !Number.isSafeInteger(checkedAt)||checkedAt<=0)
    fail('INVALID_AUTHENTICATED_CLAIM');
   try{
-   const result=await db.withSession('first-primary').prepare(AUTHENTICATED_INSERT)
+   const primary=db.withSession('first-primary');
+   const result=await primary.prepare(AUTHENTICATED_INSERT)
     .bind(requestId,sessionDigest,quoteId,quoteVersion,ownerId,merchantId,
       checkedAt,checkedAt).run();
+   // Legacy four-migration SQLite shim reports 1; D1 with the append-only
+   // audit trigger reports 2. Never treat 2 alone as successful authorization.
    if(result?.meta?.changes===1)
     return Object.freeze({claimed:true,requestId,state:'IN_FLIGHT',
      providerCalls:0,paymentAuthorized:false});
+   if(result?.meta?.changes===2){
+    const row=await primary.prepare(VERIFY_TRIGGERED_CLAIM).bind(
+     ownerId,requestId,quoteId,quoteVersion,merchantId).first();
+    if(row?.request_id===requestId&&row.state==='IN_FLIGHT'&&
+       row.remote_id===null)
+     return Object.freeze({claimed:true,requestId,state:'IN_FLIGHT',
+      providerCalls:0,paymentAuthorized:false});
+    fail('AUTHENTICATED_CLAIM_AUDIT_UNAVAILABLE');
+   }
    if(result?.meta?.changes===0)
     return Object.freeze({claimed:false,state:'UNKNOWN_RECONCILIATION_REQUIRED',
      providerCalls:0,paymentAuthorized:false});

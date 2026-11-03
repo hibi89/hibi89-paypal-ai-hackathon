@@ -7,7 +7,7 @@ const OWNER='owner1',MERCHANT='PAYPALMERCH13',SUBJECT='a'.repeat(64),DIGEST='b'.
 const T=1800000000000;
 const args={requestId:'req1',quoteId:'quote1',quoteVersion:1,ownerId:OWNER,
  merchantId:MERCHANT,sessionDigest:DIGEST,checkedAt:T};
-function fixture({beforeWrite}={}){
+function fixture({beforeWrite,withAudit=false,d1TotalChanges=false}={}){
  const sql=new DatabaseSync(':memory:');
  for(const name of ['0001_payment_claims.sql','0002_worker_private_sessions.sql',
   '0003_worker_private_oidc.sql','0004_worker_private_binding_epoch.sql'])
@@ -21,11 +21,16 @@ function fixture({beforeWrite}={}){
   issuer,issuer_verified_at_ms,expires_at_ms,binding_subject_hmac,binding_revision)
   VALUES(?,?,?,?,?,?,?,?,1)`)
   .run(DIGEST,OWNER,MERCHANT,'OWNER','https://idp.invalid',T-1000,T+60000,SUBJECT);
+ if(withAudit)sql.exec(readFileSync(
+  new URL('../migrations/d1/0005_payment_attempt_audit.sql',import.meta.url),'utf8'));
  const db={withSession(mode){assert.equal(mode,'first-primary');return {
   prepare(query){return {bind(...parameters){return {
    async run(){if(beforeWrite&&query.includes('JOIN worker_private_sessions'))
      beforeWrite(sql);const out=sql.prepare(query).run(...parameters);
-     return {meta:{changes:out.changes}};}
+     const changes=d1TotalChanges&&query.startsWith('INSERT INTO payment_attempts')&&out.changes===1?
+      2:out.changes;
+     return {meta:{changes}};},
+   async first(){return sql.prepare(query).get(...parameters)??null;}
   }}}}
  };}};
  return {sql,gate:createWorkerPaymentClaimGate({db})};
@@ -35,6 +40,22 @@ test('valid live OWNER session creates exactly one D1 first claim',async()=>{
  const f=fixture();const first=await f.gate.claimWithVerifiedSession(args);
  assert.equal(first.claimed,true);assert.equal(first.paymentAuthorized,false);
  assert.equal((await f.gate.claimWithVerifiedSession(args)).claimed,false);
+ assert.equal(count(f.sql),1);f.sql.close();
+});
+test('D1 trigger-inclusive two-row first claim succeeds only with exact audit',async()=>{
+ const f=fixture({withAudit:true,d1TotalChanges:true});
+ const first=await f.gate.claimWithVerifiedSession(args);
+ assert.equal(first.claimed,true);
+ assert.equal(first.providerCalls,0);
+ assert.equal(f.sql.prepare("SELECT event_type FROM payment_attempt_audit").get().event_type,
+  'CLAIM_CREATED');
+ assert.equal((await f.gate.claimWithVerifiedSession(args)).claimed,false);
+ assert.equal(count(f.sql),1);f.sql.close();
+});
+test('trigger-inclusive count without audit is ambiguous, never claimed success',async()=>{
+ const f=fixture({d1TotalChanges:true});
+ await assert.rejects(f.gate.claimWithVerifiedSession(args),
+  {code:'AUTHENTICATED_CLAIM_UNAVAILABLE_NO_RETRY'});
  assert.equal(count(f.sql),1);f.sql.close();
 });
 test('revocation immediately before the atomic INSERT prevents D1 claim',async()=>{

@@ -575,8 +575,16 @@ async function main(){
  if(firstClaim.status!==201||!firstClaim.encrypted||
     claim.status!=='IN_FLIGHT'||claim.claimed!==true||
     claim.remoteOrderCreated!==false||claim.paymentAuthorized!==false||
-    claim.providerCalls!==0||claim.captureAuthorized!==false)
+    claim.providerCalls!==0||claim.captureAuthorized!==false){
+  // Bound diagnostic: never echo cookies, SQL, quote or provider data.
+  const allowed=['OWNER_SESSION_REQUIRED','CLAIM_NOT_AVAILABLE',
+   'D1_UNAVAILABLE_NO_RETRY','INVALID_BODY','OWNER_SESSION_CHANGED_NO_RETRY'];
+  console.error(JSON.stringify({status:'LOCAL_CLAIM_DIAGNOSTIC',
+   httpStatus:firstClaim.status,
+   reason:allowed.includes(claim.error)?claim.error:'UNKNOWN',
+   claimed:claim.claimed===true,reportedState:claim.status==='IN_FLIGHT'?'IN_FLIGHT':'OTHER'}));
   fail('LOCAL_OWNER_WORKER_D1_FIRST_CLAIM_FAILED');
+ }
  const repeatClaim=await request(claimPath,claimHeaders,'POST',claimBody);
  let repeatClaimJson;try{repeatClaimJson=JSON.parse(repeatClaim.body)}
  catch{fail('LOCAL_CLAIM_REPLAY_JSON_INVALID')}
