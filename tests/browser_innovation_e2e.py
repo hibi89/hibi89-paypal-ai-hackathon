@@ -102,6 +102,9 @@ try:
    expect(page.locator("#mandate-state")).to_contain_text("REVOKED")
    expect(page.locator("#activity")).to_contain_text("DELEGATION_REVOKED")
    assert page.locator("#revoke-mandate").is_disabled()
+   # A late prior operation must not overwrite confirmed revocation status.
+   expect(page.locator("#message")).to_contain_text("Mandate revoked locally")
+   expect(page.locator("#a2a")).to_be_enabled()
    a2a_before=sum(method=="POST" and url.endswith("/api/demo/innovation/a2a") for method,url in requests)
    page.locator("#a2a").click()
    expect(page.locator("#message")).to_contain_text("CONFIGURE_SERVICES_MANDATE_FIRST")

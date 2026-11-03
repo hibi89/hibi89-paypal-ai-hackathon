@@ -4,7 +4,8 @@
 const el=id=>document.getElementById(id);
 const model={csrf:null,consents:{services:null,gifts:null},selected:null,
   server:null,quoteId:null,busy:false,revoking:false,crosspartBusy:false,
-  reviewCandidate:null,reviewBusy:false,confirmedRevocations:new Set()};
+  reviewCandidate:null,reviewBusy:false,confirmedRevocations:new Set(),
+  messageEpoch:0};
 const show=(id,value)=>{el(id).textContent=typeof value==='string'?value:JSON.stringify(value,null,2);};
 const key=()=>crypto.randomUUID();
 const money=n=>Number.isSafeInteger(n)?'$'+(n/100).toFixed(2):'UNKNOWN';
@@ -292,7 +293,9 @@ async function refresh(){
  else show('pending-status','No pending A2A attempts in the local ledger. All reads are GET-only.');
 }
 async function run(name,fn){
- if(model.busy)return;
+ if(model.busy||model.revoking)return;
+ // A confirmed revoke supersedes any earlier operation's status message.
+ const epoch=++model.messageEpoch;
  model.busy=true;
  // Revoke and read-only audit stay available while A2A is in flight.
  for(const b of document.querySelectorAll('button:not(#revoke-mandate):not(#refresh)'))
@@ -300,15 +303,18 @@ async function run(name,fn){
  try{
   await fn();
   await refresh();
-  show('message',name+' completed locally. No real payment or AI provider called.');
+  if(epoch===model.messageEpoch)
+   show('message',name+' completed locally. No real payment or AI provider called.');
  }catch(e){
-  show('message',name+' blocked: '+(e.code||e.message||'ERROR')+'. '+explanation(e.code));
-  if(name==='A2A')show('a2a-progress','A2A request BLOCKED: '+(e.code||'ERROR')+'. No payment executed.');
+  if(epoch===model.messageEpoch)
+   show('message',name+' blocked: '+(e.code||e.message||'ERROR')+'. '+explanation(e.code));
+  if(name==='A2A'&&epoch===model.messageEpoch)
+   show('a2a-progress','A2A request BLOCKED: '+(e.code||'ERROR')+'. No payment executed.');
   try{await refresh();}catch{}
  }finally{
   model.busy=false;
   for(const b of document.querySelectorAll('button:not(#revoke-mandate):not(#refresh)'))
-   b.disabled=false;
+   b.disabled=model.revoking;
   renderMandates();
  }
 }
@@ -328,6 +334,8 @@ el('revoke-mandate').addEventListener('click',async()=>{
  if(model.revoking)return;
  const selected=model.server?.consents.find(c=>c.id===model.selected);
  if(!selected?.active||model.confirmedRevocations.has(selected.id)||!model.csrf)return;
+ // In-flight A2A may still return; it must never overwrite the later revoke.
+ const epoch=++model.messageEpoch;
  model.revoking=true;
  el('revoke-mandate').disabled=true;
  show('mandate-state','Revocation submitted for this synthetic mandate…');
@@ -344,17 +352,26 @@ el('revoke-mandate').addEventListener('click',async()=>{
   model.selected=selected.id;
   show('mandate-state',selected.category.toUpperCase()+' · '+result.status+
    ' · No PayPal payment was reversed or attempted. Issue a new mandate to continue.');
-  show('message','Mandate revoked locally. Late A2A acceptance is blocked.');
+  if(epoch===model.messageEpoch)
+   show('message','Mandate revoked locally. Late A2A acceptance is blocked.');
  }catch(e){
   if(model.confirmedRevocations.has(selected.id)){
    // Server already confirmed this revoke. A later read error is NOT
    // evidence the mutation failed, and cannot justify an automatic retry.
-   show('message','Revocation confirmed by the server. Audit refresh is unavailable; do not retry the mutation.');
+   if(epoch===model.messageEpoch)
+    show('message','Revocation confirmed by the server. Audit refresh is unavailable; do not retry the mutation.');
   }else{
-   show('message','Revocation blocked: '+(e.code||e.message||'ERROR')+'. '+explanation(e.code));
+   if(epoch===model.messageEpoch)
+    show('message','Revocation blocked: '+(e.code||e.message||'ERROR')+'. '+explanation(e.code));
    try{await refresh();}catch{}
   }
- }finally{model.revoking=false;renderMandates();}
+ }finally{
+  model.revoking=false;
+  if(!model.busy)
+   for(const b of document.querySelectorAll('button:not(#revoke-mandate):not(#refresh)'))
+    b.disabled=false;
+  renderMandates();
+ }
 });
 el('a2a').addEventListener('click',()=>run('A2A',async()=>{
  const consentId=model.consents.services;
