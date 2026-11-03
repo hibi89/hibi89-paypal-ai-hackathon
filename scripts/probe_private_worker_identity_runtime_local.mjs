@@ -340,6 +340,18 @@ async function main(){
    'D1_CONTRACT_DEPENDENCY_UNAVAILABLE','TRUST_CHANGED',
    'UNAUTHENTICATED_OR_ROLE_UNAVAILABLE','EXPLICIT_WRITE_INTENT_REQUIRED',
    'CONTRACT_IDEMPOTENCY_CONFLICT','DEPENDENCY_UNAVAILABLE'];
+  // Check whether D1 persisted the contract despite the failed create reply.
+  // Only bounded count and status are emitted; never echo IDs or row content.
+  const peek=await request(contractsPath+'?limit=2',{
+   cookie:sessionCookie,'sec-fetch-site':'same-origin'
+  });
+  let peekResult;try{peekResult=JSON.parse(peek.body)}catch{/* bounded status only */}
+  console.error(JSON.stringify({status:'LOCAL_CONTRACT_POST_FAILURE_READ',
+   httpStatus:peek.status,
+   recordCount:Number.isSafeInteger(peekResult?.count)?peekResult.count:null,
+   errorClass:['UNAUTHENTICATED_OR_ROLE_UNAVAILABLE',
+    'D1_CONTRACT_DEPENDENCY_UNAVAILABLE','TRUST_CHANGED'].includes(peekResult?.error)?
+    peekResult.error:'NONE_OR_UNKNOWN'}));
   console.error(JSON.stringify({status:'LOCAL_CONTRACT_CREATE_DIAGNOSTIC',
    httpStatus:createdContract.status,errorCode:codes.includes(contract.error)?
     contract.error:'UNRECOGNIZED',
