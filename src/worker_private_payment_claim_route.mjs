@@ -60,6 +60,12 @@ export function createWorkerPrivatePaymentClaimRoute({
      !['same-origin','none'].includes(request.headers.get('sec-fetch-site'))||
      request.headers.get('x-proofline-intent')!==intent)
    return respond(403,{error:'OWNER_EXPLICIT_INTENT_REQUIRED'});
+  // A second role credential makes the request's identity ambiguous.
+  // Match the contract host's fail-closed two-cookie rule; never silently
+  // choose OWNER to perform a D1 payment write or reveal its audit timeline.
+  if((request.headers.get('cookie')??'').split(';').some(x=>
+    x.trim().startsWith('__Host-proofline_contract_role=')))
+   return respond(401,{error:'AMBIGUOUS_SESSION'});
   let data;try{data=await readBody(request)}catch{return respond(400,{error:'INVALID_BODY'})}
   let owner;
   let sessionDigest,checkedAt;
