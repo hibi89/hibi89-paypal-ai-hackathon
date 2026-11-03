@@ -12,6 +12,27 @@ AND q.status='APPROVED' AND q.approval_actor=q.owner_id
 AND q.approval_version=q.version AND q.currency='USD'
 AND q.approval_amount_minor BETWEEN 100 AND 1000000
 ON CONFLICT DO NOTHING`;
+// The session is checked IN THE SAME D1 INSERT statement as the quote claim.
+// An authorization revoked between the initial HTTP resolve and this INSERT
+// cannot win a payment claim (read-then-write would allow that race).
+const AUTHENTICATED_INSERT=`INSERT INTO payment_attempts
+(request_id,quote_id,quote_version,merchant_id,operation,state,amount_minor,currency)
+SELECT ?,q.id,q.version,q.merchant_id,'create','IN_FLIGHT',q.approval_amount_minor,q.currency
+FROM quotes q
+JOIN worker_private_sessions s ON s.token_sha256=?
+ AND s.actor_id=q.owner_id AND s.merchant_id=q.merchant_id
+JOIN worker_private_oidc_bindings b ON b.issuer=s.issuer
+ AND b.subject_hmac=s.binding_subject_hmac
+WHERE q.id=? AND q.version=? AND q.owner_id=? AND q.merchant_id=?
+ AND q.status='APPROVED' AND q.approval_actor=q.owner_id
+ AND q.approval_version=q.version AND q.currency='USD'
+ AND q.approval_amount_minor BETWEEN 100 AND 1000000
+ AND s.role='OWNER' AND s.revoked_at_ms IS NULL
+ AND s.expires_at_ms>? AND s.issuer_verified_at_ms>0
+ AND s.issuer_verified_at_ms<=?
+ AND b.active=1 AND b.role='OWNER' AND b.actor_id=q.owner_id
+ AND b.merchant_id=q.merchant_id AND b.revision=s.binding_revision
+ON CONFLICT DO NOTHING`;
 const LOOKUP=`SELECT request_id,state,remote_id,amount_minor,currency
 FROM payment_attempts WHERE quote_id=? AND quote_version=?
 AND merchant_id=? AND operation='create'`;
@@ -47,7 +68,26 @@ const validOwnedClaim=v=>[v?.requestId,v?.quoteId,v?.ownerId].every(x=>
  Number.isSafeInteger(v?.quoteVersion)&&v.quoteVersion>=1;
 export function createWorkerPaymentClaimGate({db}={}){
  if(typeof db?.withSession!=='function')fail('D1_PRIMARY_REQUIRED');
- return Object.freeze({async claim({requestId,quoteId,quoteVersion,ownerId,merchantId}={}){
+ return Object.freeze({async claimWithVerifiedSession({
+  requestId,quoteId,quoteVersion,ownerId,merchantId,sessionDigest,checkedAt
+ }={}){
+  if(!validOwnedClaim({requestId,quoteId,quoteVersion,ownerId,merchantId})||
+     typeof sessionDigest!=='string'||!/^[a-f0-9]{64}$/.test(sessionDigest)||
+     !Number.isSafeInteger(checkedAt)||checkedAt<=0)
+   fail('INVALID_AUTHENTICATED_CLAIM');
+  try{
+   const result=await db.withSession('first-primary').prepare(AUTHENTICATED_INSERT)
+    .bind(requestId,sessionDigest,quoteId,quoteVersion,ownerId,merchantId,
+      checkedAt,checkedAt).run();
+   if(result?.meta?.changes===1)
+    return Object.freeze({claimed:true,requestId,state:'IN_FLIGHT',
+     providerCalls:0,paymentAuthorized:false});
+   if(result?.meta?.changes===0)
+    return Object.freeze({claimed:false,state:'UNKNOWN_RECONCILIATION_REQUIRED',
+     providerCalls:0,paymentAuthorized:false});
+   fail('AUTHENTICATED_CLAIM_AMBIGUOUS');
+  }catch{fail('AUTHENTICATED_CLAIM_UNAVAILABLE_NO_RETRY');}
+ },async claim({requestId,quoteId,quoteVersion,ownerId,merchantId}={}){
   if(![requestId,quoteId,ownerId].every(x=>typeof x==='string'&&ID.test(x))||
    !MERCHANT.test(merchantId??'')||!Number.isSafeInteger(quoteVersion)||quoteVersion<1)
    fail('INVALID_CLAIM_INPUT');
