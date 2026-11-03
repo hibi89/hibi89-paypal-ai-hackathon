@@ -67,7 +67,7 @@ export function redirectVerifiedOwnerLogin(result,origin,{roleSessionsEnabled=fa
   return respond(503,'{"error":"LOGIN_RESPONSE_UNAVAILABLE"}','application/json');
  const isRole=roleSessionsEnabled===true&&cookies.some(x=>
   x.startsWith('__Host-proofline_contract_role='));
- const url=origin+(isRole?'/__private/contracts':'/__private/attempts/view');
+ const url=origin+(isRole?'/__private/contracts/view':'/__private/attempts/view');
  const out=new Response(null,{status:303,headers:{
   ...BASE_HEADERS,location:url
  }});

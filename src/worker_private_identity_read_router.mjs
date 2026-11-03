@@ -11,6 +11,7 @@ import {createWorkerPrivateQuoteDashboard} from './worker_private_quote_dashboar
 import {createWorkerD1ContractFlow} from './worker_d1_contract_flow.mjs';
 import {createWorkerPrivateSessionResolver} from './worker_private_session_resolver.mjs';
 import {createWorkerContractRoleSessionResolver} from './worker_contract_role_session_resolver.mjs';
+import {createWorkerPrivateContractDashboard} from './worker_private_contract_dashboard.mjs';
 
 const headers={
  'content-type':'application/json; charset=utf-8',
@@ -68,6 +69,9 @@ export function createPrivateWorkerIdentityReadRouter({
    return rolePrincipal(request);
   }
  }):null;
+ const contractView=contracts?createWorkerPrivateContractDashboard({
+  contracts,allowedOrigin:origin
+ }):null;
  return Object.freeze({async fetch(request){
   if(!(request instanceof Request))return res(400,'INVALID_REQUEST');
   let url;
@@ -88,6 +92,9 @@ export function createPrivateWorkerIdentityReadRouter({
   if(['/__private/quotes/view','/__private/quotes/view.css',
       '/__private/quotes/view.js'].includes(url.pathname))
    return quoteView.fetch(request);
+  if(contractView&&['/__private/contracts/view','/__private/contracts/view.css',
+   '/__private/contracts/view.js'].includes(url.pathname))
+   return contractView.fetch(request);
   if(contracts&&(url.pathname==='/__private/contracts'||
      /^\/__private\/contracts\/[A-Za-z0-9_-]{1,128}\/milestones\/[A-Za-z0-9_-]{1,64}\/(submit|accept|reject)$/.test(url.pathname)))
    return contracts.fetch(request);

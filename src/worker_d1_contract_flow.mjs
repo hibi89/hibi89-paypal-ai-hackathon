@@ -203,7 +203,7 @@ export function createWorkerD1ContractFlow({db,allowedOrigin,resolveVerifiedPrin
      g.role,scope.actor,g.role,scope.actor,g.role,scope.actor,limit).all())?.results;
     if(!Array.isArray(rows)||rows.length>limit)throw Error('INVALID_ROWS');
     output=reply(200,{contracts:rows.map(mapRow),count:rows.length,
-     source:'D1_CONTRACT_CANDIDATE'});
+     activeRole:g.role,source:'D1_CONTRACT_CANDIDATE'});
    }else if(collection){
     if(g.role!=='BUYER')return reply(403,{error:'BUYER_ONLY'});
     if(!exact(body,['quoteId','quoteVersion','sellerId','reviewerId','milestoneId',
