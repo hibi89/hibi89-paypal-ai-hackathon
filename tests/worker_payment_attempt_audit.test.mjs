@@ -86,3 +86,12 @@ test('audit failure rolls back claim write rather than leaving unaudited money s
  assert.equal(f.sql.prepare('SELECT COUNT(*) n FROM payment_attempts').get().n,0);
  f.sql.close();
 });
+test('migration replay preserves existing audit events without inventing backfill',async()=>{
+ const f=dbFixture();
+ await f.gate.claim(quote);
+ await f.gate.markUnknown(quote);
+ const prior=entries(f.sql);
+ f.sql.exec(migration('0005_payment_attempt_audit.sql'));
+ assert.deepEqual(entries(f.sql),prior);
+ f.sql.close();
+});
