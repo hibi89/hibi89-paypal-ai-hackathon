@@ -187,6 +187,7 @@ test('concurrent GET confirmation is single-winner, with one APPROVED audit even
  f.sql.close();
 });
 
+
 test('full private host leaves reconciliation dark until separate explicit approval flag',async()=>{
  const f=fixture();await claimed(f,{unknown:true});
  const auth={revoke:async()=>{throw Error('UNUSED')}};
