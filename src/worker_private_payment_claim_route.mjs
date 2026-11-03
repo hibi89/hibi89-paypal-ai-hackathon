@@ -16,18 +16,35 @@ const HEADERS={'content-type':'application/json; charset=utf-8',
 const respond=(code,body)=>new Response(JSON.stringify({
  ...body,paymentAuthorized:false,providerCalls:0,captureAuthorized:false
 }),{status:code,headers:HEADERS});
-async function readBody(request,intent){
+async function readBody(request,intent,bodyReadTimeoutMs){
  if(!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(request.headers.get('content-type')??''))
   throw Error('INVALID_CONTENT_TYPE');
  const length=request.headers.get('content-length');
  if(length!==null&&(!/^\d{1,5}$/.test(length)||Number(length)>512))
   throw Error('BODY_LIMIT');
  if(!request.body)throw Error('EMPTY_BODY');
- const reader=request.body.getReader(),pieces=[];let size=0;
- try{for(;;){const {done,value}=await reader.read();if(done)break;
+ // A single limit covers the full upload; intermittent chunks cannot reset it.
+ // A broken stream may ignore AbortSignal and cancel(), so neither is awaited.
+ const reader=request.body.getReader(),pieces=[];let size=0,timer,onAbort;
+ const deadline=new Promise((_,reject)=>{
+  timer=setTimeout(()=>reject(Error('BODY_READ_TIMEOUT')),bodyReadTimeoutMs);
+ });
+ const aborted=new Promise((_,reject)=>{
+  onAbort=()=>reject(Error('BODY_ABORTED'));
+  request.signal.addEventListener('abort',onAbort,{once:true});
+  if(request.signal.aborted)onAbort();
+ });
+ try{for(;;){
+  const {done,value}=await Promise.race([reader.read(),deadline,aborted]);
+  if(done)break;
   if(!(value instanceof Uint8Array)||(size+=value.byteLength)>512)throw Error('BODY_LIMIT');
   pieces.push(value);
- }}finally{try{await reader.cancel()}catch{}try{reader.releaseLock()}catch{}}
+ }}finally{
+  clearTimeout(timer);
+  request.signal.removeEventListener('abort',onAbort);
+  try{const cancellation=reader.cancel();cancellation?.catch?.(()=>{});}catch{}
+  try{reader.releaseLock()}catch{}
+ }
  const bytes=new Uint8Array(size);let offset=0;
  for(const part of pieces){bytes.set(part,offset);offset+=part.byteLength}
  const parsed=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
@@ -45,13 +62,14 @@ async function readBody(request,intent){
  return parsed;
 }
 export function createWorkerPrivatePaymentClaimRoute({
- db,allowedOrigin,enabled=false,now=Date.now
+ db,allowedOrigin,enabled=false,now=Date.now,bodyReadTimeoutMs=2000
 }={}){
  let origin;
  try{const url=new URL(allowedOrigin);
   if(url.protocol==='https:'&&url.origin===allowedOrigin&&
      !url.username&&!url.password)origin=allowedOrigin;}catch{}
- if(enabled!==true||!origin||typeof db?.withSession!=='function'||typeof now!=='function')
+ if(enabled!==true||!origin||typeof db?.withSession!=='function'||typeof now!=='function'||
+    !Number.isSafeInteger(bodyReadTimeoutMs)||bodyReadTimeoutMs<100||bodyReadTimeoutMs>5000)
   throw Error('PRIVATE_PAYMENT_CLAIM_EXPLICIT_CONFIGURATION_REQUIRED');
  const resolve=createWorkerPrivateSessionResolver({db,now});
  const gate=createWorkerPaymentClaimGate({db});
@@ -72,7 +90,8 @@ export function createWorkerPrivatePaymentClaimRoute({
   if((request.headers.get('cookie')??'').split(';').some(x=>
     x.trim().startsWith('__Host-proofline_contract_role=')))
    return respond(401,{error:'AMBIGUOUS_SESSION'});
-  let data;try{data=await readBody(request,intent)}catch{return respond(400,{error:'INVALID_BODY'})}
+  let data;try{data=await readBody(request,intent,bodyReadTimeoutMs)}
+  catch{return respond(400,{error:'INVALID_BODY'})}
   let owner;
   let sessionDigest,checkedAt;
   try{owner=await resolve(request);
