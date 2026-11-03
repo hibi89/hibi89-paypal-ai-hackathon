@@ -89,7 +89,9 @@ export function createPrivateWorkerIdentityHost({tokenFetch=fetch}={}){
     issuer,clientId,authorizationEndpoint,tokenEndpoint
    });
    const router=createPrivateWorkerIdentityReadRouter({
-    db:env.DB,allowedOrigin:origin,authority,pkceCoordinator,enabled:true
+    db:env.DB,allowedOrigin:origin,authority,pkceCoordinator,enabled:true,
+    contractsEnabled:env.PRIVATE_CONTRACTS_HOST_OPT_IN===
+      'OWNER_APPROVED_CONTRACTS_AFTER_D1_MIGRATION'
    });
    const path=new URL(request.url);
    // Static public sign-in is inert: no D1 writes, IdP POST or session data.

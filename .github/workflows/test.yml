@@ -165,6 +165,10 @@ jobs:
           .browser-venv/bin/pip install --disable-pip-version-check playwright==1.56.0
           python3 -m py_compile tests/browser_private_d1_workerd_e2e.py
           command -v google-chrome || command -v google-chrome-stable || command -v chromium
+      - name: Apply separately staged contract role candidate ONLY to disposable local D1
+        run: |
+          npx --yes wrangler@4.156.0 d1 execute DB --local --config .wrangler-d1-local-ci.json --persist-to "$RUNNER_TEMP/paypal-d1-local-only" --file migrations/d1_candidate/0005_contract_role_milestones.sql
+          echo 'D1_CONTRACT_CANDIDATE_LOCAL_ONLY_NO_REMOTE_MIGRATION'
       - name: Actual local workerd S256 PKCE + RSA D1 session + HTTPS read + Chromium owner dashboard + revoke
         run: node scripts/probe_private_worker_identity_runtime_local.mjs
       - name: Confirm disposable database integrity and no external activation

@@ -110,6 +110,7 @@ async function main(){
  const origin='https://127.0.0.1:'+port;
  const vars={
   CI_PRIVATE_IDENTITY_OPT_IN:'LOCAL_SYNTHETIC_NO_DEPLOY',
+  CI_CONTRACTS_OPT_IN:'LOCAL_CONTRACT_CANDIDATE_ONLY',
   CI_PRIVATE_ORIGIN:origin,
   CI_PRIVATE_JWKS:JSON.stringify({keys:[publicJwk]}),
   CI_PRIVATE_SIGNING_JWK:JSON.stringify(privateKey.export({format:'jwk'})),
@@ -131,6 +132,13 @@ async function main(){
   "INSERT INTO payment_attempts(request_id,quote_id,quote_version,merchant_id,operation,state,amount_minor,currency) VALUES('ciIdentityRequest','ciIdentityQuote',1,'ciMerchant','create','IN_FLIGHT',250,'USD')",
   "INSERT INTO worker_private_oidc_bindings(issuer,subject_hmac,actor_id,merchant_id,role,active) VALUES('"+issuer+"','"+bindingHash+"','ciOwner','ciMerchant','OWNER',1)"
  ];
+ // Only CI has this candidate schema and the three preprovisioned role rows.
+ // No public endpoint may register these actors or grant roles.
+ statements.push(
+  "INSERT INTO worker_contract_memberships(actor_id,merchant_id,role) VALUES('ciOwner','ciMerchant','BUYER')",
+  "INSERT INTO worker_contract_memberships(actor_id,merchant_id,role) VALUES('ciSeller','ciMerchant','SELLER')",
+  "INSERT INTO worker_contract_memberships(actor_id,merchant_id,role) VALUES('ciReviewer','ciMerchant','REVIEWER')"
+ );
  writeFileSync(sqlfile,statements.join(';\n')+';\n',{mode:0o600,flag:'wx'});
  seed();
  child=spawn('npx',['--yes','wrangler@4.156.0','dev','--config',config,
@@ -304,6 +312,58 @@ async function main(){
   approvedExactMinor:12750,ownerBoundQuoteCount:3,sessionAuthenticated:true,
   crossSiteDenied:true,UIAssetsRealHTTPS:true,externalRequests:0,
   actualProviderCalls:0,paymentAuthorized:false,publicDeployment:false}));
+
+
+ // Owner OIDC session -> server-side BUYER grant -> committed contract+audit.
+ // Seller/reviewer have no real role-aware OIDC sessions in this runtime:
+ // role transitions MUST remain denied even if owner guesses their IDs.
+ const contractsPath='/__private/contracts';
+ const contractData={
+  quoteId:'ciIdentityQuote',quoteVersion:1,
+  sellerId:'ciSeller',reviewerId:'ciReviewer',
+  milestoneId:'delivery1',
+  milestoneTitle:'Deliver verified technical report and source archive',
+  clientRequestId:'ea850c4b-f130-4e5f-a445-5b1d8e0e69b0'
+ };
+ if((await request(contractsPath)).status!==401)
+  fail('ANONYMOUS_D1_CONTRACTS_ALLOWED');
+ const contractHeaders={cookie:sessionCookie,origin,'sec-fetch-site':'same-origin',
+  'content-type':'application/json','x-proofline-intent':'contract-create'};
+ const contractPost=()=>request(contractsPath,contractHeaders,'POST',JSON.stringify(contractData));
+ const createdContract=await contractPost();
+ let contract;try{contract=JSON.parse(createdContract.body)}catch{fail('D1_CONTRACT_INVALID_JSON')}
+ if(createdContract.status!==201||contract.contract?.state!=='PENDING'||
+    contract.contract?.amountMinor!==250||contract.created!==true||
+    contract.paymentAuthorized!==false||contract.providerCalls!==0)
+  fail('REAL_WORKERD_OWNER_D1_CONTRACT_CREATION_FAILED');
+ const replayContract=await contractPost();
+ let repeated;try{repeated=JSON.parse(replayContract.body)}catch{fail('CONTRACT_REPLAY_JSON_INVALID')}
+ if(replayContract.status!==200||repeated.idempotentReplay!==true||
+    repeated.contract?.contractId!==contract.contract.contractId)
+  fail('REAL_WORKERD_D1_CONTRACT_REPLAY_FAILED');
+ const contractList=await request(contractsPath+'?limit=20',{
+  cookie:sessionCookie,'sec-fetch-site':'same-origin'
+ });
+ let savedContracts;try{savedContracts=JSON.parse(contractList.body)}catch{fail('CONTRACT_LIST_JSON_INVALID')}
+ if(contractList.status!==200||savedContracts.count!==1||
+    savedContracts.contracts?.[0]?.contractId!==contract.contract.contractId||
+    savedContracts.source!=='D1_CONTRACT_CANDIDATE')
+  fail('REAL_WORKERD_D1_CONTRACT_LIST_FAILED');
+ const sellerPath=contractsPath+'/'+contract.contract.contractId+'/milestones/delivery1/submit';
+ if((await request(sellerPath,{cookie:sessionCookie,origin,'sec-fetch-site':'same-origin',
+  'content-type':'application/json','x-proofline-intent':'contract-submit'},
+  'POST',JSON.stringify({expectedVersion:1,
+   eventId:'38f96011-8010-4fe3-9e14-d7452ae724aa',detail:'Cannot impersonate seller'}))).status!==403)
+  fail('OWNER_IMPERSONATED_SELLER_D1');
+ if((await request(contractsPath,{...contractHeaders,origin:'https://attacker.invalid'},
+  'POST',JSON.stringify(contractData))).status!==403)
+  fail('CROSS_SITE_CONTRACT_CREATE_ALLOWED');
+ console.log(JSON.stringify({status:'LOCAL_WORKERD_D1_OWNER_BUYER_CONTRACT_CREATE_PASS',
+  realLocalWorkerd:true,realLocalD1:true,ownerOidcSessionVerified:true,
+  buyerMembershipPreprovisioned:true,contractCreated:true,
+  idempotentReplayVerified:true,sellerImpersonationDenied:true,
+  sellerReviewerRealLoginVerified:false,paymentAuthorized:false,
+  actualProviderCalls:0,remoteCloudflareVerified:false}));
 
  await browserVerify('active',origin,sessionCookie);
  if((await request('/__private/attempts?limit=5')).status!==401)

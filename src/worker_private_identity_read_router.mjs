@@ -8,6 +8,8 @@ import {createPrivateWorkerRecentAttemptsHandler} from './worker_private_recent_
 import {createPrivateWorkerAttemptsDashboard} from './worker_private_attempts_dashboard.mjs';
 import {createWorkerPrivateQuoteWorkflow} from './worker_private_quote_workflow.mjs';
 import {createWorkerPrivateQuoteDashboard} from './worker_private_quote_dashboard.mjs';
+import {createWorkerD1ContractFlow} from './worker_d1_contract_flow.mjs';
+import {createWorkerPrivateSessionResolver} from './worker_private_session_resolver.mjs';
 
 const headers={
  'content-type':'application/json; charset=utf-8',
@@ -23,7 +25,7 @@ const res=(status,error,extra={})=>new Response(JSON.stringify({
 const fail=()=>{throw Error('WORKER_PRIVATE_IDENTITY_NOT_CONFIGURED')};
 
 export function createPrivateWorkerIdentityReadRouter({
- db,allowedOrigin,authority,pkceCoordinator,enabled=false,now
+ db,allowedOrigin,authority,pkceCoordinator,enabled=false,contractsEnabled=false,now
 }={}){
  // A non-exported integration factory, not a production opt-in or permission.
  if(enabled!==true||!db||typeof db.withSession!=='function'||
@@ -41,6 +43,13 @@ export function createPrivateWorkerIdentityReadRouter({
  const dashboard=createPrivateWorkerAttemptsDashboard({db,allowedOrigin:origin,now});
  const quotes=createWorkerPrivateQuoteWorkflow({db,allowedOrigin:origin,now});
  const quoteView=createWorkerPrivateQuoteDashboard({db,allowedOrigin:origin,now});
+ // Owner can exercise BUYER role only with a real, current hashed OIDC+D1
+ // session and separately pre-provisioned contract BUYER membership. Neither
+ // SELLER nor REVIEWER identity can be forged from this owner-only host.
+ const contracts=contractsEnabled===true?createWorkerD1ContractFlow({
+  db,allowedOrigin:origin,now,
+  resolveVerifiedPrincipal:createWorkerPrivateSessionResolver({db,now})
+ }):null;
  return Object.freeze({async fetch(request){
   if(!(request instanceof Request))return res(400,'INVALID_REQUEST');
   let url;
@@ -61,6 +70,9 @@ export function createPrivateWorkerIdentityReadRouter({
   if(['/__private/quotes/view','/__private/quotes/view.css',
       '/__private/quotes/view.js'].includes(url.pathname))
    return quoteView.fetch(request);
+  if(contracts&&(url.pathname==='/__private/contracts'||
+     /^\/__private\/contracts\/[A-Za-z0-9_-]{1,128}\/milestones\/[A-Za-z0-9_-]{1,64}\/(submit|accept|reject)$/.test(url.pathname)))
+   return contracts.fetch(request);
   if(url.pathname==='/api/auth/oidc/start')
    return request.method==='POST'
     ?pkceCoordinator.start(request)
