@@ -12,15 +12,19 @@ const expected=Object.freeze([
  '0001_payment_claims.sql','0002_worker_private_sessions.sql',
  '0003_worker_private_oidc.sql','0004_worker_private_binding_epoch.sql'
 ]);
+// 0005 and 0006 are reviewable OFFLINE candidates, not approved remote migrations.
+const knownLocalFiles=Object.freeze([...expected,
+ '0005_payment_attempt_audit.sql','0006_payment_state_integrity.sql'
+]);
 const PREFIX='proofline-d1-isolated-';
 const VERSION='4.156.0';
 const bad=code=>{throw new Error(code)};
 export function assertMigrationDirectory(root){
  const dir=resolve(root,'migrations','d1');
  const files=readdirSync(dir).filter(x=>x.endsWith('.sql')).sort();
- if(JSON.stringify(files)!==JSON.stringify([...expected].sort())||
+ if(JSON.stringify(files)!==JSON.stringify([...knownLocalFiles].sort())||
     !existsSync(resolve(root,'scripts','restore_quarantine_private_sessions.sql')))
-  bad('MIGRATION_DIRECTORY_NOT_EXACTLY_FOUR_SAFE_FILES');
+  bad('MIGRATION_DIRECTORY_NOT_EXACTLY_SIX_KNOWN_FILES');
  return files;
 }
 export function parseDatabases(value){
@@ -104,6 +108,13 @@ async function main(args){
     wranglerVersion:VERSION,remoteD1Verified:false,releaseAuthorized:false});
   return;
  }
+ // 0005/0006 are offline-only migration candidates. Since Wrangler picks up
+ // every migration in migrations_dir, do not silently apply them to any remote
+ // database (or provision a DB that this flow cannot safely initialize).
+ // The owner must separately approve the new remote plan and rollback first.
+ // This gate executes BEFORE any Wrangler/account/network access.
+ if(knownLocalFiles.length!==expected.length)
+  bad('REMOTE_D1_OPERATIONS_HOLD_NEW_MIGRATIONS_REQUIRE_APPROVAL');
  // An operator must have authenticated Wrangler in their own trusted shell.
  // Never copy Cloudflare credentials into GitHub, ChatGPT or CI.
  const before=listRemote();

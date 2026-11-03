@@ -9,7 +9,7 @@ import {assertMigrationDirectory,parseDatabases,checkUniqueNewDatabase,validateA
 
 const root=fileURLToPath(new URL('../',import.meta.url));
 test('plan only checks fixed migrations and never invokes npx or Wrangler',()=>{
- assert.equal(assertMigrationDirectory(root).length,4);
+ assert.equal(assertMigrationDirectory(root).length,6);
  const probe=spawnSync(process.execPath,
   [resolve(root,'scripts/owner_cloudflare_d1_isolated.mjs')],{
    cwd:root,encoding:'utf8',env:{PATH:''},timeout:10000});
@@ -17,6 +17,21 @@ test('plan only checks fixed migrations and never invokes npx or Wrangler',()=>{
  const report=JSON.parse(probe.stdout);
  assert.equal(report.status,'LOCAL_PLAN_ONLY_NO_ACCOUNT_CALLS');
  assert.equal(report.releaseAuthorized,false);
+});
+test('new audit/state migrations cannot trigger remote D1 operations without separate approval',()=>{
+ const script=resolve(root,'scripts/owner_cloudflare_d1_isolated.mjs');
+ for(const args of [
+  ['--create-isolated','--free-confirmed'],
+  ['--apply-isolated','proofline-d1-isolated-0123456789abcdef',
+   '11111111-1111-4111-8111-111111111111','--free-confirmed']
+ ]){
+  const probe=spawnSync(process.execPath,[script,...args],{
+   cwd:root,encoding:'utf8',env:{PATH:''},timeout:10000});
+  assert.equal(probe.status,2);
+  const report=JSON.parse(probe.stderr);
+  assert.equal(report.status,'BLOCKED_NO_RETRY');
+  assert.equal(report.reason,'REMOTE_D1_OPERATIONS_HOLD_NEW_MIGRATIONS_REQUIRE_APPROVAL');
+ }
 });
 test('creation and migration require independently explicit operation and Free confirmation',()=>{
  assert.equal(validateArguments(['--create-isolated','--free-confirmed']).mode,'create');
@@ -58,7 +73,7 @@ test('isolated Wrangler config is rooted beside the exact migration directory an
   assert.equal(file.d1_databases[0].database_name,name);
   assert.equal(file.d1_databases[0].database_id,uuid);
   assert.equal(file.d1_databases[0].migrations_dir,'migrations/d1');
-  assert.equal(assertMigrationDirectory(dirname(config)).length,4);
+  assert.equal(assertMigrationDirectory(dirname(config)).length,6);
  }finally{unlinkSync(config);}
  assert.equal(existsSync(config),false);
  assert.throws(()=>writeIsolatedD1Config(root,'production',uuid),/UNSAFE_DATABASE_IDENTITY/);

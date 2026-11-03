@@ -178,7 +178,10 @@ test('revision trigger with inert WHEN 0 cannot spoof full migration guard',scop
 test('only ordered versioned migrations are discoverable by Wrangler default SQL glob',()=>{
  const migrationsDir=new URL('../migrations/d1/',import.meta.url);
  const discovered=readdirSync(migrationsDir).filter(x=>x.endsWith('.sql')).sort();
- assert.deepEqual(discovered,[...migrationNames].sort());
+ // Only the original four are audited by this legacy read-only contract.
+ // 0005/0006 are separate offline migration candidates, NOT remote-approved.
+ assert.deepEqual(discovered,[...migrationNames,
+  '0005_payment_attempt_audit.sql','0006_payment_state_integrity.sql'].sort());
  assert.ok(discovered.every(x=>/^000[1-9][0-9]*_[a-z0-9_]+\.sql$/.test(x)));
  assert.ok(existsSync(new URL('../scripts/restore_quarantine_private_sessions.sql',import.meta.url)));
  assert.equal(discovered.some(x=>x.includes('quarantine')),false);
