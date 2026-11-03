@@ -46,3 +46,30 @@ test('D1 write errors remain ambiguous and fail closed',async()=>{
  sql.close();
  await assert.rejects(gate.claim(input),{code:'CLAIM_OUTCOME_UNKNOWN_RECONCILE_BEFORE_RETRY'});
 });
+
+test('remote order binding is compare-and-set, idempotent and rejects conflicting IDs',async()=>{
+ const {sql,gate}=fixture();
+ await gate.claim(input);
+ const first=await gate.persistRemoteOrder({...input,remoteId:'ORDER_001'});
+ assert.equal(first.persisted,true);
+ const same=await gate.persistRemoteOrder({...input,remoteId:'ORDER_001'});
+ assert.equal(same.persisted,false);
+ assert.equal(same.state,'ALREADY_BOUND_RECONCILE');
+ await assert.rejects(gate.persistRemoteOrder({...input,remoteId:'ORDER_002'}),
+  {code:'REMOTE_ORDER_BINDING_UNKNOWN_RECONCILE_BEFORE_RETRY'});
+ assert.equal(sql.prepare('SELECT remote_id FROM payment_attempts').get().remote_id,'ORDER_001');
+ assert.equal(sql.prepare('SELECT COUNT(*) n FROM payment_attempts').get().n,1);
+ sql.close();
+});
+test('remote order binding cannot create a claim or bind an unowned request',async()=>{
+ const {sql,gate}=fixture();
+ await assert.rejects(gate.persistRemoteOrder({...input,remoteId:'ORDER_001'}),
+  {code:'REMOTE_ORDER_BINDING_UNKNOWN_RECONCILE_BEFORE_RETRY'});
+ await gate.claim(input);
+ await assert.rejects(gate.persistRemoteOrder({...input,requestId:'other',remoteId:'ORDER_001'}),
+  {code:'REMOTE_ORDER_BINDING_UNKNOWN_RECONCILE_BEFORE_RETRY'});
+ await assert.rejects(gate.persistRemoteOrder({...input,remoteId:'../capture'}),
+  {code:'INVALID_REMOTE_ORDER_BINDING'});
+ assert.equal(sql.prepare('SELECT remote_id FROM payment_attempts').get().remote_id,null);
+ sql.close();
+});
