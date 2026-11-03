@@ -1,3 +1,10 @@
+## 2026-11-04 — P0 D1 remote-order CAS owner binding (isolated test PASS)
+- **Final-product readiness estimate:** **74%** (previous 73%, +1 percentage point for verified unmounted P0 security contract; not a release success). **RELEASE HOLD.**
+- **Verified feature/test commit:** `4221d60d82329a7fd76abeff2963ae2fee85ac40`; `src/worker_payment_claim_gate.mjs` now requires `ownerId` on `persistRemoteOrder()`. D1 first-primary conditional UPDATE checks immutable approved quote owner, merchant, version, amount, currency, and an owner-bound post-write read. Wrong/missing owner cannot persist an order ID or receive a positive idempotent result. No capture or network calls.
+- **Isolated local Node v22.16.0 + SQLite:** `node --experimental-sqlite --test tests/worker_payment_claim_gate.test.mjs` **10 PASS / 0 FAIL**, including 9 prior cases and one new owner/merchant negative case; source syntax checks PASS. This tested only these matched module, schema, and test files; full repository CI, Workerd and remote D1 unverified.
+- **GitHub commit identity:** author/committer account `hibi89` matched. No real PayPal/Cloudflare/Gemini/production calls, configuration or DB migrations. Function remains unmounted; actual endpoint authentication/authorization is still pending.
+- **Next:** inject verified owner principal from authenticated private route (never from client body), verify integration with local Workerd/D1, then provider calls only after independent approval. Do not mistake code-level ownerId checks for a real login proof.
+
 ## 2026-11-04 — P0 UNKNOWN reconciliation guard (local verified)
 - **Functional SHA:** `903bac4d22f0b047f51cd900738445cf68dd0c7d`; files: `src/worker_payment_claim_gate.mjs`, `tests/worker_payment_claim_gate.test.mjs`.
 - Added owner-bound, first-primary D1 atomic `IN_FLIGHT→UNKNOWN` and idempotent `markUnknown()`; `inspectRecovery()` distinguishes missing remote ID (manual provider lookup), known remote ID (read-only GET reconciliation), `APPROVED` and `PAID` without authorizing charges or capture. Prevents duplicate CREATE and downgrade of approved/paid states. Not mounted in live route.
