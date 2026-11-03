@@ -166,6 +166,29 @@ async function main(){
   }));
   fail('OWNER_SCOPED_WORKER_D1_RECENT_LIST_FAILED');
  }
+ // Serve a real same-origin private browser page and its static assets
+ // from the same Worker session, without any public route or external calls.
+ for(const [asset,type,marker] of [
+  ['/__private/attempts/view','text/html','id="rows"'],
+  ['/__private/attempts/view.js','text/javascript','void load();'],
+  ['/__private/attempts/view.css','text/css','.table-scroll']
+ ]){
+  const reply=await request(asset,{cookie:sessionCookie,'sec-fetch-site':'same-origin'});
+  if(reply.status!==200||!reply.encrypted||
+     !reply.headers['content-type']?.startsWith(type)||
+     reply.headers['cache-control']!=='no-store, max-age=0'||
+     !reply.headers['content-security-policy']?.includes("connect-src 'self'")||
+     reply.headers['access-control-allow-origin']!==undefined||
+     !reply.body.includes(marker))
+   fail('WORKER_PRIVATE_D1_DASHBOARD_ASSET_FAILED');
+  if((await request(asset)).status!==401)
+   fail('ANONYMOUS_PRIVATE_D1_DASHBOARD_ASSET_ALLOWED');
+  if((await request(asset,{cookie:sessionCookie,
+    'sec-fetch-site':'cross-site'})).status!==403)
+   fail('CROSS_SITE_PRIVATE_D1_DASHBOARD_ASSET_ALLOWED');
+ }
+ if((await request('/__private/attempts/view',{cookie:sessionCookie},'POST')).status!==405)
+  fail('PRIVATE_D1_DASHBOARD_MUTATION_ROUTE_ALLOWED');
  if((await request('/__private/attempts?limit=5')).status!==401)
   fail('ANONYMOUS_RECENT_LIST_ALLOWED');
  if((await request('/__private/attempts?limit=0',{cookie:sessionCookie})).status!==400)
@@ -190,13 +213,16 @@ async function main(){
   fail('WORKER_D1_REVOKE_FAILED');
  if((await request(path,{cookie:sessionCookie,'sec-fetch-site':'same-origin'})).status!==401)
   fail('REVOKED_COOKIE_REUSED');
+ if((await request('/__private/attempts/view',{cookie:sessionCookie})).status!==401)
+  fail('REVOKED_PRIVATE_D1_DASHBOARD_COOKIE_REUSED');
  if((await request(callback,{cookie:loginCookie})).status!==401)
   fail('PKCE_CALLBACK_REPLAY_ACCEPTED');
  console.log(JSON.stringify({
   status:'ACTUAL_LOCAL_WORKERD_PKCE_RSA_D1_LOGIN_READ_REVOKE_PASS',
   realWorkerdHttps:true,localTls:true,realLocalD1:true,pinnedRS256:true,
   s256Pkce:true,duplicateCallbackBlocked:true,sessionRevoked:true,
-  unauthorizedPaymentRoutesBlocked:true,ownerScopedRecentList:true,syntheticIdpOnly:true,
+  unauthorizedPaymentRoutesBlocked:true,ownerScopedRecentList:true,
+  privateOwnerDashboardAssets:true,syntheticIdpOnly:true,
   actualProviderCalls:0,publicDeployment:false,remoteD1Verified:false,
   paymentAuthorized:false
  }));
