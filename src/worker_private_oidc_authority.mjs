@@ -3,6 +3,7 @@
 // The private coordinator must supply pinned public JWKs and preprovision
 // issuer+HMAC(subject) bindings; it must own the OIDC code/PKCE exchange.
 import {createWorkerPrivateSessionResolver,hashPrivateSessionCookie} from './worker_private_session_resolver.mjs';
+import {createWorkerContractRoleSessionResolver,hashContractRoleSessionCookie} from './worker_contract_role_session_resolver.mjs';
 
 export class WorkerOidcError extends Error {
   constructor(code){super(code);this.name='WorkerOidcError';this.code=code;}
@@ -58,7 +59,7 @@ function changes(result){return Number(result?.meta?.changes??0);}
 
 export function createWorkerPrivateOidcAuthority({
  db,issuer,audience,jwks,subjectPepper,allowedOrigin,now=Date.now,
- ttlMs=15*60*1000
+ ttlMs=15*60*1000,roleSessionsEnabled=false
 }={}){
  if(!db||typeof db.withSession!=='function'||typeof now!=='function'||
    !Number.isSafeInteger(ttlMs)||ttlMs<60_000||ttlMs>30*60*1000||
@@ -117,6 +118,8 @@ export function createWorkerPrivateOidcAuthority({
  // prevents a different caller from minting a session from the burned state.
  const reservedExchanges=new WeakMap();
  const sessionResolver=createWorkerPrivateSessionResolver({db,now});
+ const roleSessionResolver=roleSessionsEnabled===true?
+  createWorkerContractRoleSessionResolver({db,now}):null;
  // Only a private OIDC coordinator may call this; no public Request/Response
  // dispatch exists. The challenge must be created before IdP authorization.
  async function beginChallenge(){
@@ -168,7 +171,29 @@ export function createWorkerPrivateOidcAuthority({
      FROM worker_private_oidc_bindings WHERE issuer=? AND subject_hmac=?`)
      .bind(issuer,bindingHash).first();}
    catch{fail('D1_UNAVAILABLE');}
-   if(!validRow(bound))fail('PREPROVISIONED_ACCOUNT_REQUIRED');
+   // A disabled/revoked OWNER binding is never allowed to downgrade to a
+   // different role binding. Candidate role login requires a DISTINCT
+   // preprovisioned issuer/subject and a live matching contract membership.
+   if(bound&&!validRow(bound))fail('PREPROVISIONED_ACCOUNT_REQUIRED');
+   let roleBinding=null;
+   if(!bound&&roleSessionsEnabled===true){
+    try{roleBinding=await session.prepare(
+     `SELECT b.actor_id,b.merchant_id,b.role,b.active,b.revision,
+       m.role AS member_role,m.active AS member_active,m.revision AS member_revision
+       FROM worker_contract_role_bindings b
+       LEFT JOIN worker_contract_memberships m
+        ON m.actor_id=b.actor_id AND m.merchant_id=b.merchant_id
+       WHERE b.issuer=? AND b.subject_hmac=?`
+    ).bind(issuer,bindingHash).first();}
+    catch{fail('D1_UNAVAILABLE');}
+    if(!roleBinding||roleBinding.active!==1||
+       !['SELLER','REVIEWER'].includes(roleBinding.role)||
+       !ID.test(roleBinding.actor_id??'')||!ID.test(roleBinding.merchant_id??'')||
+       !Number.isSafeInteger(roleBinding.revision)||roleBinding.revision<1||
+       roleBinding.member_role!==roleBinding.role||roleBinding.member_active!==1||
+       !Number.isSafeInteger(roleBinding.member_revision)||roleBinding.member_revision<1)
+     fail('PREPROVISIONED_ACCOUNT_REQUIRED');
+   }else if(!validRow(bound))fail('PREPROVISIONED_ACCOUNT_REQUIRED');
    // Atomic update is the CAS gate; second use of the same challenge will
    // fail closed. If inserting a session later fails, login must be retried
    // with a new signed challenge; NEVER revive an ambiguous session.
@@ -181,10 +206,31 @@ export function createWorkerPrivateOidcAuthority({
      if(changes(consumed)!==1)fail('LOGIN_CHALLENGE_CONSUMED');
    }
    const token=randomToken(),digest=await hash(token),assertion=evidence.assertionHash;
+   let cookieName='__Host-proofline_session';
    try{
-     // Membership can be revoked/reassigned after the earlier lookup.
-     // Recheck current binding and revision atomically in the INSERT statement:
-     // zero rows inserted means no new cookie may ever be returned.
+    if(roleBinding){
+     // A role can be issued only from an independently RS256-verified JWT,
+     // with matched issuer/subject, a preprovisioned binding AND membership.
+     // The INSERT rechecks both versions and scopes within ONE D1 statement.
+     const rows=await session.prepare(`INSERT INTO worker_contract_role_sessions
+       (token_sha256,issuer,subject_hmac,actor_id,merchant_id,role,
+        binding_revision,membership_revision,assertion_sha256,issued_at_ms,expires_at_ms)
+       SELECT ?,b.issuer,b.subject_hmac,b.actor_id,b.merchant_id,b.role,
+        b.revision,m.revision,?,?,?
+       FROM worker_contract_role_bindings b
+       JOIN worker_contract_memberships m
+        ON m.actor_id=b.actor_id AND m.merchant_id=b.merchant_id
+       WHERE b.issuer=? AND b.subject_hmac=? AND b.active=1
+        AND b.actor_id=? AND b.merchant_id=? AND b.role=? AND b.revision=?
+        AND m.active=1 AND m.role=b.role AND m.revision=?
+       RETURNING token_sha256`)
+       .bind(digest,assertion,t,t+ttlMs,issuer,bindingHash,
+        roleBinding.actor_id,roleBinding.merchant_id,roleBinding.role,
+        roleBinding.revision,roleBinding.member_revision).all();
+     if(rows?.results?.length!==1||rows.results[0]?.token_sha256!==digest)
+      fail('D1_UNAVAILABLE');
+     cookieName='__Host-proofline_contract_role';
+    }else{
      const result=await session.prepare(`INSERT INTO worker_private_sessions
        (token_sha256,actor_id,merchant_id,role,issuer,issuer_verified_at_ms,
         expires_at_ms,assertion_sha256,binding_subject_hmac,binding_revision)
@@ -196,8 +242,9 @@ export function createWorkerPrivateOidcAuthority({
        .bind(digest,t,t+ttlMs,assertion,issuer,bindingHash,
          bound.actor_id,bound.merchant_id,bound.revision).run();
      if(changes(result)!==1)fail('D1_UNAVAILABLE');
+    }
    }catch{fail('LOGIN_SESSION_NOT_ESTABLISHED');}
-   return Object.freeze({setCookie:'__Host-proofline_session='+token+
+   return Object.freeze({setCookie:cookieName+'='+token+
      '; Secure; HttpOnly; Path=/; SameSite=Strict; Max-Age='+Math.floor(ttlMs/1000),
      expiresAtMs:t+ttlMs,paymentAuthorized:false});
  }
@@ -207,6 +254,25 @@ export function createWorkerPrivateOidcAuthority({
       request.headers.get('origin')!==allowedOrigin||
       !['same-origin','none'].includes(request.headers.get('sec-fetch-site')))
      fail('SESSION_REVOKE_NOT_AUTHORIZED');
+   const cookies=(request.headers.get('cookie')??'').split(';').map(x=>x.trim());
+   const owner=cookies.some(x=>x.startsWith('__Host-proofline_session='));
+   const role=roleSessionsEnabled===true&&
+    cookies.some(x=>x.startsWith('__Host-proofline_contract_role='));
+   if(owner&&role)fail('SESSION_REVOKE_NOT_AUTHORIZED');
+   if(role){
+    try{await roleSessionResolver(request);}catch{fail('SESSION_REVOKE_NOT_AUTHORIZED');}
+    const digest=await hashContractRoleSessionCookie(request);
+    let rows;
+    try{rows=await primary(db).prepare(`UPDATE worker_contract_role_sessions
+     SET revoked_at_ms=? WHERE token_sha256=? AND revoked_at_ms IS NULL
+     RETURNING token_sha256`).bind(timestamp(now),digest).all();}
+    catch{fail('D1_UNAVAILABLE');}
+    if(rows?.results?.length!==1||rows.results[0]?.token_sha256!==digest)
+     fail('SESSION_REVOKE_NOT_AUTHORIZED');
+    return Object.freeze({
+     clearCookie:'__Host-proofline_contract_role=; Secure; HttpOnly; Path=/; SameSite=Strict; Max-Age=0',
+     revoked:true,paymentAuthorized:false});
+   }
    try{await sessionResolver(request);}catch{fail('SESSION_REVOKE_NOT_AUTHORIZED');}
    const digest=await hashPrivateSessionCookie(request);
    let changed;

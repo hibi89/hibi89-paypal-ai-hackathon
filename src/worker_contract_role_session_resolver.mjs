@@ -21,7 +21,7 @@ const SQL=[
  'ON m.actor_id=s.actor_id AND m.merchant_id=s.merchant_id',
  'WHERE s.token_sha256=?'
 ].join(' ');
-async function getSessionHash(request){
+export async function hashContractRoleSessionCookie(request){
  if(!(request instanceof Request))denied();
  const raw=request.headers.get('cookie')??'';
  if(raw.length>4096)denied();
@@ -35,7 +35,7 @@ export function createWorkerContractRoleSessionResolver({db,now=Date.now}={}){
  if(typeof db?.withSession!=='function'||typeof now!=='function')
   throw new PrivateSessionError('ROLE_SESSION_DEPENDENCIES_REQUIRED');
  return async function resolveVerifiedContractRole(request){
-  const sessionHash=await getSessionHash(request);
+  const sessionHash=await hashContractRoleSessionCookie(request);
   let row;
   try{
    const primary=db.withSession('first-primary');

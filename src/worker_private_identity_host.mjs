@@ -73,11 +73,14 @@ export function createPrivateWorkerIdentityHost({tokenFetch=fetch}={}){
     env.PRIVATE_IDENTITY_AUTHORIZATION_ENDPOINT,issuer);
    const tokenEndpoint=pinnedEndpoint(env.PRIVATE_IDENTITY_TOKEN_ENDPOINT,issuer);
    const clientId=env.PRIVATE_IDENTITY_CLIENT_ID;
+   const roleSessionsEnabled=env.PRIVATE_ROLE_SESSIONS_HOST_OPT_IN===
+    'OWNER_APPROVED_ROLE_D1_MIGRATION'&&
+    env.PRIVATE_CONTRACTS_HOST_OPT_IN==='OWNER_APPROVED_CONTRACTS_AFTER_D1_MIGRATION';
    const authority=createWorkerPrivateOidcAuthority({
     db:env.DB,issuer,audience:clientId,
     jwks:jsonKeys(env.PRIVATE_IDENTITY_JWKS_JSON),
     subjectPepper:pepperFromB64(env.PRIVATE_IDENTITY_SUBJECT_PEPPER_B64),
-    allowedOrigin:origin
+    allowedOrigin:origin,roleSessionsEnabled
    });
    const codeTransport=createWorkerOidcTokenTransport({
     tokenEndpoint,redirectUri:origin+'/api/auth/oidc/callback',
@@ -86,12 +89,14 @@ export function createPrivateWorkerIdentityHost({tokenFetch=fetch}={}){
    });
    const pkceCoordinator=createWorkerOidcPkceCoordinator({
     authority,codeTransport,allowedOrigin:origin,
-    issuer,clientId,authorizationEndpoint,tokenEndpoint
+    issuer,clientId,authorizationEndpoint,tokenEndpoint,
+    roleSessionsEnabled
    });
    const router=createPrivateWorkerIdentityReadRouter({
     db:env.DB,allowedOrigin:origin,authority,pkceCoordinator,enabled:true,
     contractsEnabled:env.PRIVATE_CONTRACTS_HOST_OPT_IN===
-      'OWNER_APPROVED_CONTRACTS_AFTER_D1_MIGRATION'
+      'OWNER_APPROVED_CONTRACTS_AFTER_D1_MIGRATION',
+    contractRoleSessionsEnabled:roleSessionsEnabled
    });
    const path=new URL(request.url);
    // Static public sign-in is inert: no D1 writes, IdP POST or session data.
@@ -119,7 +124,7 @@ export function createPrivateWorkerIdentityHost({tokenFetch=fetch}={}){
     if(verdict?.success!==true)return unavailable();
    }
    const routed=await router.fetch(request);
-   return callback?redirectVerifiedOwnerLogin(routed,origin):routed;
+   return callback?redirectVerifiedOwnerLogin(routed,origin,{roleSessionsEnabled}):routed;
   }catch{
    // No error messages, credentials, D1 schema or IdP details in HTTP.
    return unavailable();

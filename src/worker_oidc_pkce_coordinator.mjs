@@ -60,7 +60,8 @@ function allowedRequest(request,origin,path,method){
 // The private authority beginChallenge() must durably save nonce + challenge hash
 // to first-primary D1. issue() must consume the challenge atomically before mint.
 export function createWorkerOidcPkceCoordinator({authority,codeTransport,
- allowedOrigin,issuer,clientId,authorizationEndpoint,tokenEndpoint}={}){
+ allowedOrigin,issuer,clientId,authorizationEndpoint,tokenEndpoint,
+ roleSessionsEnabled=false}={}){
  const pub=endpoint(allowedOrigin);
  if(pub.origin!==allowedOrigin||pub.pathname!=='/'||!CLIENT.test(clientId??'')||
     typeof authority?.beginChallenge!=='function'||
@@ -120,7 +121,10 @@ export function createWorkerOidcPkceCoordinator({authority,codeTransport,
     if(typeof exchanged?.idToken!=='string'||exchanged.idToken.length>8192)
       bad('OIDC_PKCE_PROVIDER_UNAVAILABLE');
     const result=await authority.issue({challengeId:state,idToken:exchanged.idToken,exchangeProof});
-    if(!/^__Host-proofline_session=[A-Za-z0-9_-]{43}; Secure; HttpOnly; Path=\/; SameSite=Strict; Max-Age=\d+$/.test(result?.setCookie??''))
+    const allowedCookie=roleSessionsEnabled===true?
+     /^__Host-proofline_(?:session|contract_role)=[A-Za-z0-9_-]{43}; Secure; HttpOnly; Path=\/; SameSite=Strict; Max-Age=\d+$/:
+     /^__Host-proofline_session=[A-Za-z0-9_-]{43}; Secure; HttpOnly; Path=\/; SameSite=Strict; Max-Age=\d+$/;
+    if(!allowedCookie.test(result?.setCookie??''))
       bad('OIDC_PKCE_AUTHORITY_REJECTED');
     const out=new Response(JSON.stringify({status:'SESSION_ESTABLISHED',
       paymentAuthorized:false}),{status:200,headers:{...headers,

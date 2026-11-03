@@ -107,7 +107,10 @@ export function createPrivateWorkerIdentityReadRouter({
    try{
     const result=await authority.revoke({request});
     if(result?.revoked!==true||
-       !/^__Host-proofline_session=; Secure; HttpOnly; Path=\/; SameSite=Strict; Max-Age=0$/.test(result.clearCookie??''))
+       !(contractRoleSessionsEnabled===true?
+        /^__Host-proofline_(?:session|contract_role)=; Secure; HttpOnly; Path=\/; SameSite=Strict; Max-Age=0$/:
+        /^__Host-proofline_session=; Secure; HttpOnly; Path=\/; SameSite=Strict; Max-Age=0$/
+       ).test(result.clearCookie??''))
       return res(503,'DEPENDENCY_UNAVAILABLE');
     const response=new Response(JSON.stringify({
       status:'SESSION_REVOKED',paymentAuthorized:false

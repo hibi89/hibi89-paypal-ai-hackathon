@@ -52,11 +52,15 @@ export default Object.freeze({
    const pepper=Uint8Array.from(atob(env.CI_PRIVATE_PEPPER),c=>c.charCodeAt(0));
    const authority=createWorkerPrivateOidcAuthority({
     db:env.DB,issuer:ISSUER,audience:CLIENT,jwks:JSON.parse(env.CI_PRIVATE_JWKS),
-    subjectPepper:pepper,allowedOrigin:env.CI_PRIVATE_ORIGIN
+    subjectPepper:pepper,allowedOrigin:env.CI_PRIVATE_ORIGIN,
+    roleSessionsEnabled:env.CI_CONTRACT_ROLE_SESSIONS_OPT_IN===
+     'LOCAL_VERIFIED_ROLE_FIXTURE_ONLY'
    });
    const pkce=createWorkerOidcPkceCoordinator({
     authority,allowedOrigin:env.CI_PRIVATE_ORIGIN,issuer:ISSUER,clientId:CLIENT,
     authorizationEndpoint:ISSUER+'/authorize',tokenEndpoint:ISSUER+'/token',
+    roleSessionsEnabled:env.CI_CONTRACT_ROLE_SESSIONS_OPT_IN===
+     'LOCAL_VERIFIED_ROLE_FIXTURE_ONLY',
     // Explicit enablement is safe ONLY because fetchImpl below is an in-process
     // synthetic fixture: global fetch is never called and no network is used.
     codeTransport:createWorkerOidcTokenTransport({

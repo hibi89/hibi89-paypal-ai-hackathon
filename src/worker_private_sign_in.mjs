@@ -52,17 +52,22 @@ export function ownerSignInAsset(request,origin){
   respond(200,HTML,'text/html; charset=utf-8'):
   respond(200,STYLE,'text/css; charset=utf-8');
 }
-export function redirectVerifiedOwnerLogin(result,origin){
+export function redirectVerifiedOwnerLogin(result,origin,{roleSessionsEnabled=false}={}){
  // The existing trusted OIDC router issues all three cookies only after
  // RSA/nonce/tenant authorization. Reject malformed or partial responses.
  if(!(result instanceof Response)||result.status!==200)return result;
  const cookies=result.headers.getSetCookie?.()??[];
  if(cookies.length!==3||
-    !cookies.some(x=>/^__Host-proofline_session=[A-Za-z0-9_-]{43}; Secure; HttpOnly; Path=\/; SameSite=Strict; Max-Age=\d+$/.test(x))||
+    !cookies.some(x=>(roleSessionsEnabled===true?
+      /^__Host-proofline_(?:session|contract_role)=[A-Za-z0-9_-]{43}; Secure; HttpOnly; Path=\/; SameSite=Strict; Max-Age=\d+$/:
+      /^__Host-proofline_session=[A-Za-z0-9_-]{43}; Secure; HttpOnly; Path=\/; SameSite=Strict; Max-Age=\d+$/
+     ).test(x))||
     !cookies.some(x=>/^__Host-proofline_oidc_state=; Path=\/; Secure; HttpOnly; SameSite=Lax; Max-Age=0$/.test(x))||
     !cookies.some(x=>/^__Host-proofline_oidc_pkce=; Path=\/; Secure; HttpOnly; SameSite=Lax; Max-Age=0$/.test(x)))
   return respond(503,'{"error":"LOGIN_RESPONSE_UNAVAILABLE"}','application/json');
- const url=origin+'/__private/attempts/view';
+ const isRole=roleSessionsEnabled===true&&cookies.some(x=>
+  x.startsWith('__Host-proofline_contract_role='));
+ const url=origin+(isRole?'/__private/contracts':'/__private/attempts/view');
  const out=new Response(null,{status:303,headers:{
   ...BASE_HEADERS,location:url
  }});
