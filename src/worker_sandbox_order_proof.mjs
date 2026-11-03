@@ -123,9 +123,12 @@ export function createWorkerSandboxOrderProof({
    const after=await resolve(request);
    if(after.actorId!==principal.actorId||after.merchantId!==principal.merchantId)
     throw Error('PRINCIPAL_CHANGED');
+   const checkedAt=now();
+   if(!Number.isSafeInteger(checkedAt)||checkedAt<time)
+    throw Error('CLOCK_MOVED_BACKWARDS');
    const fresh=await db.withSession('first-primary').prepare(READ)
     .bind(args.quoteId,args.quoteVersion,principal.actorId,
-     principal.merchantId,digest,now(),now()).first();
+     principal.merchantId,digest,checkedAt,checkedAt).first();
    if(!fresh||fresh.remote_id!==row.remote_id||
       fresh.ledger_state!==row.ledger_state||
       fresh.attempt_minor!==row.attempt_minor||
