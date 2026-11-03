@@ -221,3 +221,22 @@ test('provider response is rejected when D1 order binding or ledger state change
   f.sql.close();
  }
 });
+
+test('non-approved remote orders require reconciliation and mismatched D1 currency blocks provider calls',async()=>{
+ for(const status of ['CREATED','PAYER_ACTION_REQUIRED','COMPLETED']){
+  const f=fixture({order:{...ORDER_DATA(),status}});
+  const response=await f.handler.fetch(req());
+  assert.equal(response.status,200);
+  const data=await response.json();
+  assert.equal(data.reconciliationRequired,true);
+  assert.equal(data.paymentAuthorized,false);
+  f.sql.close();
+ }
+ const f=fixture();
+ f.sql.exec("PRAGMA ignore_check_constraints=ON");
+ f.sql.exec("UPDATE payment_attempts SET currency='EUR' WHERE operation='create'");
+ const response=await f.handler.fetch(req());
+ assert.equal(response.status,409);
+ assert.deepEqual(f.calls,[]);
+ f.sql.close();
+});
