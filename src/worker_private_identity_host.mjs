@@ -5,6 +5,7 @@ import {createWorkerOidcPkceCoordinator} from './worker_oidc_pkce_coordinator.mj
 import {createWorkerOidcTokenTransport} from './worker_oidc_token_transport.mjs';
 import {createPrivateWorkerIdentityReadRouter} from './worker_private_identity_read_router.mjs';
 import {ownerSignInAsset,redirectVerifiedOwnerLogin} from './worker_private_sign_in.mjs';
+import {prepareWorkerSandboxGetGate} from './worker_sandbox_proof_host_gate.mjs';
 
 const HEADERS=Object.freeze({
  'content-type':'application/json; charset=utf-8',
@@ -55,8 +56,8 @@ function jsonKeys(value){
   throw Error('OIDC_JWKS_INVALID');
  return data;
 }
-export function createPrivateWorkerIdentityHost({tokenFetch=fetch}={}){
- if(typeof tokenFetch!=='function')throw Error('TRUSTED_TOKEN_FETCH_REQUIRED');
+export function createPrivateWorkerIdentityHost({tokenFetch=fetch,sandboxFetch=fetch}={}){
+ if(typeof tokenFetch!=='function'||typeof sandboxFetch!=='function')throw Error('TRUSTED_TOKEN_FETCH_REQUIRED');
  return Object.freeze({async fetch(request,env){
   // Independent owner and network permissions; deploying a source file alone
   // cannot activate login, token POST, private D1 reads or payment routes.
@@ -92,11 +93,15 @@ export function createPrivateWorkerIdentityHost({tokenFetch=fetch}={}){
     issuer,clientId,authorizationEndpoint,tokenEndpoint,
     roleSessionsEnabled
    });
+   const sandboxGate=prepareWorkerSandboxGetGate({env,fetchImpl:sandboxFetch});
    const router=createPrivateWorkerIdentityReadRouter({
     db:env.DB,allowedOrigin:origin,authority,pkceCoordinator,enabled:true,
     contractsEnabled:env.PRIVATE_CONTRACTS_HOST_OPT_IN===
       'OWNER_APPROVED_CONTRACTS_AFTER_D1_MIGRATION',
-    contractRoleSessionsEnabled:roleSessionsEnabled
+    contractRoleSessionsEnabled:roleSessionsEnabled,
+    sandboxOrderProofEnabled:sandboxGate.enabled,
+    sandboxOrderGetTransport:sandboxGate.transport,
+    sandboxExpectedMerchantId:sandboxGate.merchantId
    });
    const path=new URL(request.url);
    // Static public sign-in is inert: no D1 writes, IdP POST or session data.

@@ -64,7 +64,7 @@ function fixture({order=ORDER_DATA(),dbOptions,afterGet}={}){
    calls.push(id);if(afterGet)afterGet(sql);return order;
   }};
  const handler=createWorkerSandboxOrderProof({db,allowedOrigin:ORIGIN,
-  transport,enabled:true,now:()=>T});
+  transport,expectedMerchantId:MERCHANT,enabled:true,now:()=>T});
  return {sql,db,handler,calls,transport};
 }
 test('disabled-by-default Worker transport and proof cannot contact a provider',async()=>{
@@ -198,7 +198,8 @@ test('router keeps provider route dark by default and exposes only opted-in owne
  assert.equal((await dark.fetch(req())).status,404);
  const opted=createPrivateWorkerIdentityReadRouter({db:f.db,allowedOrigin:ORIGIN,
   authority,pkceCoordinator,enabled:true,now:()=>T,
-  sandboxOrderProofEnabled:true,sandboxOrderGetTransport:f.transport});
+  sandboxOrderProofEnabled:true,sandboxOrderGetTransport:f.transport,
+  sandboxExpectedMerchantId:MERCHANT});
  assert.equal((await opted.fetch(req())).status,200);
  assert.deepEqual(f.calls,[ORDER]);
  f.sql.close();

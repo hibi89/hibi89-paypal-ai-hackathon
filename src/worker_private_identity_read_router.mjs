@@ -30,7 +30,7 @@ const fail=()=>{throw Error('WORKER_PRIVATE_IDENTITY_NOT_CONFIGURED')};
 export function createPrivateWorkerIdentityReadRouter({
  db,allowedOrigin,authority,pkceCoordinator,enabled=false,contractsEnabled=false,
  contractRoleSessionsEnabled=false,sandboxOrderProofEnabled=false,
- sandboxOrderGetTransport,now
+ sandboxOrderGetTransport,sandboxExpectedMerchantId,now
 }={}){
  // A non-exported integration factory, not a production opt-in or permission.
  if(enabled!==true||!db||typeof db.withSession!=='function'||
@@ -76,7 +76,8 @@ export function createPrivateWorkerIdentityReadRouter({
  }):null;
  const sandboxOrderProof=sandboxOrderProofEnabled===true?
   createWorkerSandboxOrderProof({db,allowedOrigin:origin,
-   transport:sandboxOrderGetTransport,enabled:true,now}):null;
+   transport:sandboxOrderGetTransport,
+   expectedMerchantId:sandboxExpectedMerchantId,enabled:true,now}):null;
  return Object.freeze({async fetch(request){
   if(!(request instanceof Request))return res(400,'INVALID_REQUEST');
   let url;

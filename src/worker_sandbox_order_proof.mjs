@@ -73,13 +73,14 @@ function verified(order,row){
  return order.status;
 }
 export function createWorkerSandboxOrderProof({
- db,allowedOrigin,transport,enabled=false,now=Date.now
+ db,allowedOrigin,transport,expectedMerchantId,enabled=false,now=Date.now
 }={}){
  let origin;
  try{const u=new URL(allowedOrigin);
   if(u.protocol==='https:'&&u.origin===allowedOrigin&&!u.username&&!u.password)
    origin=allowedOrigin;}catch{}
- if(enabled!==true||!origin||typeof db?.withSession!=='function'||
+ if(enabled!==true||!origin||!MERCHANT.test(expectedMerchantId??'')||
+   typeof db?.withSession!=='function'||
    transport?.mode!=='PAYPAL_SANDBOX_READ_ONLY'||
    transport?.networkEnabled!==true||transport?.paymentPostsEnabled!==false||
    typeof transport.getOrder!=='function'||typeof now!=='function')
@@ -107,7 +108,7 @@ export function createWorkerSandboxOrderProof({
    row=await dbp.prepare(READ).bind(args.quoteId,args.quoteVersion,
      principal.actorId,principal.merchantId,digest,time,time).first();
   }catch{return reply(401,{error:'OWNER_OR_D1_UNAVAILABLE'})}
-  if(!row||!MERCHANT.test(row.merchant_id??'')||
+  if(!row||row.merchant_id!==expectedMerchantId||
     !ORDER.test(row.remote_id??'')||
     !['IN_FLIGHT','UNKNOWN','APPROVED'].includes(row.ledger_state))
    return reply(409,{error:'ORDER_PROOF_PRECONDITION_UNAVAILABLE'});
