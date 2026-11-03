@@ -334,8 +334,20 @@ async function main(){
  let contract;try{contract=JSON.parse(createdContract.body)}catch{fail('D1_CONTRACT_INVALID_JSON')}
  if(createdContract.status!==201||contract.contract?.state!=='PENDING'||
     contract.contract?.amountMinor!==250||contract.created!==true||
-    contract.paymentAuthorized!==false||contract.providerCalls!==0)
+    contract.paymentAuthorized!==false||contract.providerCalls!==0){
+  // Bounded CI-only diagnostic. No raw response, cookie, actor or D1 rows.
+  const codes=['INVALID_CONTRACT','QUOTE_OR_ROLES_NOT_AVAILABLE',
+   'D1_CONTRACT_DEPENDENCY_UNAVAILABLE','TRUST_CHANGED',
+   'UNAUTHENTICATED_OR_ROLE_UNAVAILABLE','EXPLICIT_WRITE_INTENT_REQUIRED',
+   'CONTRACT_IDEMPOTENCY_CONFLICT','DEPENDENCY_UNAVAILABLE'];
+  console.error(JSON.stringify({status:'LOCAL_CONTRACT_CREATE_DIAGNOSTIC',
+   httpStatus:createdContract.status,errorCode:codes.includes(contract.error)?
+    contract.error:'UNRECOGNIZED',
+   stateExpected:contract.contract?.state==='PENDING',
+   contractAmountExpected:contract.contract?.amountMinor===250,
+   paymentSafety:contract.paymentAuthorized===false}));
   fail('REAL_WORKERD_OWNER_D1_CONTRACT_CREATION_FAILED');
+ }
  const replayContract=await contractPost();
  let repeated;try{repeated=JSON.parse(replayContract.body)}catch{fail('CONTRACT_REPLAY_JSON_INVALID')}
  if(replayContract.status!==200||repeated.idempotentReplay!==true||
