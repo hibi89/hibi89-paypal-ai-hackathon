@@ -145,8 +145,22 @@ async function main(){
     listed.source!=='D1_LOCAL_METADATA_ONLY'||
     listed.verifiedPayPalGet!==false||listed.paymentAuthorized!==false||
     listed.providerCalls!==0||recent.headers['access-control-allow-origin']!==undefined||
-    recent.headers['cache-control']!=='no-store, max-age=0')
+    recent.headers['cache-control']!=='no-store, max-age=0'){
+  // Synthetic CI diagnostic only: never echo row content or session material.
+  console.error(JSON.stringify({
+   status:'LOCAL_RECENT_D1_DIAGNOSTIC',
+   httpStatus:recent.status,
+   errorCode:['UNAUTHENTICATED','DEPENDENCY_UNAVAILABLE','INVALID_QUERY',
+    'NOT_FOUND','ORIGIN_NOT_ALLOWED','CROSS_SITE_BLOCKED'].includes(listed.error)
+     ?listed.error:'NONE_OR_UNRECOGNIZED',
+   count:Number.isSafeInteger(listed.count)?listed.count:null,
+   hasArray:Array.isArray(listed.attempts),
+   sourceOK:listed.source==='D1_LOCAL_METADATA_ONLY',
+   cacheOK:recent.headers['cache-control']==='no-store, max-age=0',
+   paymentProofFalse:listed.paymentAuthorized===false
+  }));
   fail('OWNER_SCOPED_WORKER_D1_RECENT_LIST_FAILED');
+ }
  if((await request('/__private/attempts?limit=5')).status!==401)
   fail('ANONYMOUS_RECENT_LIST_ALLOWED');
  if((await request('/__private/attempts?limit=0',{cookie:sessionCookie})).status!==400)
