@@ -16,7 +16,8 @@ const ARGS={requestId:'req1',quoteId:'quote1',quoteVersion:1,ownerId:OWNER,merch
 const load=name=>readFileSync(new URL('../migrations/d1/'+name,import.meta.url),'utf8');
 const remote=(override={})=>({id:'ORDER_001',intent:'CAPTURE',status:'APPROVED',
  purchase_units:[{reference_id:'quote1',payee:{merchant_id:MERCHANT},amount:{currency_code:'USD',value:'1.50'}}],...override});
-function fixture({provider=remote(),afterGet,throwGet=false,withoutAudit=false}={}){
+function fixture({provider=remote(),afterGet,throwGet=false,
+ withoutAudit=false,d1TotalChanges=false,forgedTwoWithoutWrite=false}={}){
  const sql=new DatabaseSync(':memory:');
  for(const name of ['0001_payment_claims.sql','0002_worker_private_sessions.sql',
   '0003_worker_private_oidc.sql','0004_worker_private_binding_epoch.sql',
@@ -30,7 +31,14 @@ function fixture({provider=remote(),afterGet,throwGet=false,withoutAudit=false}=
  const db={withSession(mode){assert.equal(mode,'first-primary');return {
   prepare(query){return {bind(...params){return {
    async first(){return sql.prepare(query).get(...params)??null;},
-   async run(){const result=sql.prepare(query).run(...params);return {meta:{changes:result.changes}};},
+   async run(){
+    if(forgedTwoWithoutWrite&&query.startsWith("UPDATE payment_attempts SET state='APPROVED'"))
+     return {meta:{changes:2}};
+    const result=sql.prepare(query).run(...params);
+    const total=d1TotalChanges&&query.startsWith("UPDATE payment_attempts SET state='APPROVED'")&&
+     result.changes===1?2:result.changes;
+    return {meta:{changes:total}};
+   },
    async all(){return {results:sql.prepare(query).all(...params)};}
   }}}}
  };}};
@@ -93,6 +101,25 @@ test('APPROVED sandbox GET atomically reconciles existing UNKNOWN to APPROVED; n
  f.sql.close();
 });
 
+test('trigger-inclusive D1 2-change count reconciles only with exact APPROVED audit tail',async()=>{
+ const f=fixture({d1TotalChanges:true});await claimed(f,{unknown:true});
+ const old=audit(f.sql).length;
+ const response=await f.make().fetch(request());
+ assert.equal(response.status,200);
+ assert.equal((await response.json()).ledgerState,'APPROVED');
+ assert.equal(audit(f.sql).length,old+1);
+ assert.equal(audit(f.sql).at(-1).after_state,'APPROVED');
+ assert.equal((await f.make().fetch(request())).status,409);
+ assert.equal(f.gets(),1);f.sql.close();
+});
+test('forged two-change result without a state or audit write fails closed',async()=>{
+ const f=fixture({forgedTwoWithoutWrite:true});await claimed(f);
+ const response=await f.make().fetch(request());
+ assert.equal(response.status,409);
+ assert.equal(state(f.sql).state,'IN_FLIGHT');
+ assert.equal(audit(f.sql).at(-1).after_state,'IN_FLIGHT');
+ f.sql.close();
+});
 test('IN_FLIGHT to APPROVED is supported but duplicate request cannot write again',async()=>{
  const f=fixture();await claimed(f);
  assert.equal((await f.make().fetch(request())).status,200);

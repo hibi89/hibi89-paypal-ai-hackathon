@@ -6,6 +6,7 @@ import {createWorkerPrivateOidcAuthority} from '../src/worker_private_oidc_autho
 import {createWorkerOidcPkceCoordinator} from '../src/worker_oidc_pkce_coordinator.mjs';
 import {createWorkerOidcTokenTransport} from '../src/worker_oidc_token_transport.mjs';
 import {createPrivateWorkerIdentityReadRouter} from '../src/worker_private_identity_read_router.mjs';
+import {createPinnedPayPalSandboxGetTransport} from '../src/worker_pinned_paypal_sandbox_get.mjs';
 
 const ISSUER='https://idp.workerd-fixture.invalid';
 const CLIENT='workerd-ci-owner';
@@ -104,6 +105,27 @@ export default Object.freeze({
      }
     })
    });
+   // CI-only synthetic transport: the official Sandbox GET URL is checked,
+   // but fetchImpl is an in-process fixture and NEVER calls global fetch.
+   // No token, endpoint or merchant ID is supplied by the browser.
+   const localReconcile=env.CI_RECONCILE_OPT_IN==='LOCAL_SANDBOX_GET_FIXTURE_NO_EGRESS';
+   const transport=localReconcile?createPinnedPayPalSandboxGetTransport({
+    enabled:true,timeoutMs:2000,
+    getAccessToken:async()=> 'ci-synthetic-token-no-network',
+    fetchImpl:async(url,options)=>{
+     if(url!=='https://api-m.sandbox.paypal.com/v2/checkout/orders/ORDER_FIXTURE_001'||
+        options?.method!=='GET'||options.redirect!=='error'||
+        options.headers?.authorization!=='Bearer ci-synthetic-token-no-network'||
+        options.headers?.accept!=='application/json')
+      throw Error('LOCAL_PINNED_SANDBOX_GET_FIXTURE_REJECTED');
+     return new Response(JSON.stringify({
+      id:'ORDER_FIXTURE_001',intent:'CAPTURE',status:'APPROVED',
+      purchase_units:[{reference_id:'ciIdentityQuote',
+       payee:{merchant_id:'PAYPALMERCH13'},
+       amount:{currency_code:'USD',value:'2.50'}}]
+     }),{status:200,headers:{'content-type':'application/json'}});
+    }
+   }):undefined;
    const router=createPrivateWorkerIdentityReadRouter({
     db:env.DB,allowedOrigin:env.CI_PRIVATE_ORIGIN,authority,
     pkceCoordinator:pkce,enabled:true,
@@ -111,6 +133,9 @@ export default Object.freeze({
     // Explicit CI-only payment claim/audit first-claim path. No PayPal
     // transport exists in this host and no CREATE/CAPTURE route is mounted.
     paymentClaimEnabled:env.CI_PRIVATE_CLAIM_OPT_IN==='LOCAL_CLAIM_NO_PROVIDER_ONLY',
+    sandboxOrderApprovalEnabled:localReconcile,
+    sandboxOrderGetTransport:transport,
+    sandboxExpectedMerchantId:localReconcile?'PAYPALMERCH13':undefined,
     contractRoleSessionsEnabled:env.CI_CONTRACT_ROLE_SESSIONS_OPT_IN===
      'LOCAL_VERIFIED_ROLE_FIXTURE_ONLY'
    });

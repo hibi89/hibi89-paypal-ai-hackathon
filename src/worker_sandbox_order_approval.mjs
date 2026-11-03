@@ -70,6 +70,23 @@ const update=`UPDATE payment_attempts SET state='APPROVED',observed_at=CURRENT_T
    AND b.active=1 AND b.role='OWNER' AND b.actor_id=q.owner_id
    AND b.merchant_id=q.merchant_id AND b.revision=s.binding_revision)`;
 
+// A D1 UPDATE on a six-migration schema mutates one claim row AND
+// appends one audit row via trigger. D1 meta.changes can therefore be 2.
+// Verify the exact current audit tail before treating that as a success.
+const APPROVED_AUDIT_PROOF=`SELECT a.request_id,a.state FROM payment_attempts a
+JOIN quotes q ON q.id=a.quote_id AND q.version=a.quote_version
+ AND q.merchant_id=a.merchant_id AND q.owner_id=?
+JOIN payment_attempt_audit e ON e.request_id=a.request_id
+ AND e.quote_id=a.quote_id AND e.quote_version=a.quote_version
+ AND e.merchant_id=a.merchant_id AND e.operation=a.operation
+WHERE a.request_id=? AND a.quote_id=? AND a.quote_version=?
+ AND a.merchant_id=? AND a.remote_id=? AND a.amount_minor=?
+ AND a.operation='create' AND a.state='APPROVED' AND a.currency='USD'
+ AND e.event_type='STATE_CHANGED' AND e.before_state IN ('IN_FLIGHT','UNKNOWN')
+ AND e.after_state='APPROVED' AND e.remote_id=a.remote_id
+ AND e.sequence=(SELECT MAX(t.sequence) FROM payment_attempt_audit t
+  WHERE t.request_id=a.request_id)
+LIMIT 1`;
 async function parse(request,bodyReadTimeoutMs){
  if(!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(request.headers.get('content-type')??''))
   throw Error('BAD_TYPE');
@@ -176,10 +193,17 @@ export function createWorkerSandboxApprovalReconcile({
    if(!Number.isSafeInteger(afterAt)||afterAt<checkedAt)throw Error('CLOCK_ROLLBACK');
   }catch{return respond(401,{error:'OWNER_CHANGED_NO_LEDGER_WRITE'})}
   try{
-   const result=await db.withSession('first-primary').prepare(update).bind(
+   const primary=db.withSession('first-primary');
+   const result=await primary.prepare(update).bind(
     args.requestId,args.quoteId,args.quoteVersion,owner.merchantId,
     row.remote_id,row.amount_minor,digest,owner.actorId,afterAt,afterAt).run();
-   if(result?.meta?.changes!==1)
+   if(result?.meta?.changes===2){
+    const verified=await primary.prepare(APPROVED_AUDIT_PROOF).bind(
+     owner.actorId,args.requestId,args.quoteId,args.quoteVersion,
+     owner.merchantId,row.remote_id,row.amount_minor).first();
+    if(verified?.request_id!==args.requestId||verified?.state!=='APPROVED')
+     return respond(409,{error:'D1_APPROVED_AUDIT_NOT_VERIFIED_NO_RETRY'});
+   }else if(result?.meta?.changes!==1)
     return respond(409,{error:'D1_RECONCILE_CONFLICT_NO_RETRY'});
   }catch{return respond(503,{error:'D1_RECONCILE_UNKNOWN_NO_RETRY'})}
   return respond(200,{status:'APPROVED_GET_RECONCILED_NO_CAPTURE',

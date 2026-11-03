@@ -155,6 +155,7 @@ async function main(){
   CI_CONTRACTS_OPT_IN:'LOCAL_CONTRACT_CANDIDATE_ONLY',
   CI_CONTRACT_ROLE_SESSIONS_OPT_IN:'LOCAL_VERIFIED_ROLE_FIXTURE_ONLY',
   CI_PRIVATE_CLAIM_OPT_IN:'LOCAL_CLAIM_NO_PROVIDER_ONLY',
+  CI_RECONCILE_OPT_IN:'LOCAL_SANDBOX_GET_FIXTURE_NO_EGRESS',
   CI_PRIVATE_ORIGIN:origin,
   CI_PRIVATE_JWKS:JSON.stringify({keys:[publicJwk]}),
   CI_PRIVATE_SIGNING_JWK:JSON.stringify(privateKey.export({format:'jwk'})),
@@ -174,6 +175,8 @@ async function main(){
  const statements=[
   "INSERT INTO quotes(id,owner_id,merchant_id,version,currency,status,approval_actor,approval_version,approval_amount_minor) VALUES('ciIdentityQuote','ciOwner','PAYPALMERCH13',1,'USD','APPROVED','ciOwner',1,250)",
   "INSERT INTO payment_attempts(request_id,quote_id,quote_version,merchant_id,operation,state,amount_minor,currency) VALUES('ciIdentityRequest','ciIdentityQuote',1,'PAYPALMERCH13','create','IN_FLIGHT',250,'USD')",
+  // Disposable setup fixture for provider GET proof; not a CREATE or payment.
+  "UPDATE payment_attempts SET remote_id='ORDER_FIXTURE_001' WHERE request_id='ciIdentityRequest' AND state='IN_FLIGHT'",
   "INSERT INTO worker_private_oidc_bindings(issuer,subject_hmac,actor_id,merchant_id,role,active) VALUES('"+issuer+"','"+bindingHash+"','ciOwner','PAYPALMERCH13','OWNER',1)"
  ];
  // Only CI has this candidate schema and the three preprovisioned role rows.
@@ -619,6 +622,56 @@ async function main(){
   crossOriginDenied:true,crossSiteDenied:true,roleMixDenied:true,
   paymentPosts:0,providerCalls:0,realPaymentAuthorized:false,
   remoteCloudflareVerified:false,productionDeployed:false}));
+
+ // Test the existing disabled-by-default reconciliation through REAL local
+ // Workerd HTTPS and D1, but with an in-process pinned GET fixture: no egress.
+ const reconcilePath='/__private/paypal/reconcile-approved';
+ const reconcileBody=JSON.stringify({
+  requestId:'ciIdentityRequest',quoteId:'ciIdentityQuote',quoteVersion:1
+ });
+ const reconcileHeaders={cookie:sessionCookie,origin,'sec-fetch-site':'same-origin',
+  'content-type':'application/json',
+  'x-proofline-intent':'sandbox-get-approved-reconcile-only'};
+ if((await request(reconcilePath)).status!==405||
+    (await request(reconcilePath,reconcileHeaders,'GET')).status!==405||
+    (await request(reconcilePath,{...reconcileHeaders,origin:'https://evil.invalid'},
+     'POST',reconcileBody)).status!==403||
+    (await request(reconcilePath,{...reconcileHeaders,'sec-fetch-site':'cross-site'},
+     'POST',reconcileBody)).status!==403||
+    (await request(reconcilePath,{...reconcileHeaders,
+      cookie:sessionCookie+'; __Host-proofline_contract_role='+roleCookie('REVIEWER')},
+     'POST',reconcileBody)).status!==401)
+  fail('LOCAL_RECONCILE_UNAUTHORIZED_HTTP_ALLOWED');
+ const mismatched=await request(reconcilePath,reconcileHeaders,'POST',
+  JSON.stringify({requestId:'ciIdentityRequest',quoteId:'ciIdentityQuote',quoteVersion:2}));
+ if(mismatched.status!==409)
+  fail('LOCAL_RECONCILE_WRONG_VERSION_ALLOWED');
+ const approved=await request(reconcilePath,reconcileHeaders,'POST',reconcileBody);
+ let confirmedOrder;try{confirmedOrder=JSON.parse(approved.body)}
+ catch{fail('LOCAL_RECONCILE_JSON_INVALID')}
+ if(approved.status!==200||!approved.encrypted||
+    confirmedOrder.status!=='APPROVED_GET_RECONCILED_NO_CAPTURE'||
+    confirmedOrder.ledgerState!=='APPROVED'||
+    confirmedOrder.providerGetInvoked!==true||confirmedOrder.ledgerWrites!==1||
+    confirmedOrder.paymentAuthorized!==false||
+    confirmedOrder.captureAuthorized!==false||
+    confirmedOrder.paymentPosts!==0||
+    confirmedOrder.providerReceiptIsPaymentAuthorization!==false)
+  fail('LOCAL_WORKERD_D1_RECONCILE_APPROVED_FAILED');
+ const replayApproval=await request(reconcilePath,reconcileHeaders,'POST',reconcileBody);
+ if(replayApproval.status!==409)fail('LOCAL_RECONCILE_REPLAY_ALLOWED');
+ const afterApproved=await request(path,{cookie:sessionCookie,'sec-fetch-site':'same-origin'});
+ let approvedRow;try{approvedRow=JSON.parse(afterApproved.body)}
+ catch{fail('LOCAL_RECONCILE_ROW_INVALID')}
+ if(afterApproved.status!==200||approvedRow.state!=='APPROVED'||
+    approvedRow.paymentAuthorized!==false||approvedRow.providerCalls!==0)
+  fail('LOCAL_D1_RECONCILE_STATE_NOT_PERSISTED');
+ console.log(JSON.stringify({status:'LOCAL_WORKERD_D1_SYNTHETIC_PINNED_GET_APPROVAL_PASS',
+  realLocalWorkerd:true,realLocalD1:true,syntheticGetOnly:true,
+  verifiedMerchantAmountQuoteAndOrder:true,approvedRecorded:true,
+  conflictingVersionDenied:true,duplicateDenied:true,
+  externalProviderNetworkCalls:0,postCaptureCount:0,
+  paymentAuthorized:false,productionDeployed:false}));
  if((await request('/api/auth/oidc/logout',{
   cookie:sessionCookie,origin:'https://evil.invalid','sec-fetch-site':'cross-site'
  },'POST')).status!==403)fail('CROSS_SITE_LOGOUT_ALLOWED');
@@ -632,6 +685,8 @@ async function main(){
   fail('REVOKED_COOKIE_REUSED');
  if((await request(claimPath,claimHeaders,'POST',claimBody)).status!==401)
   fail('REVOKED_OWNER_CLAIM_ALLOWED');
+ if((await request(reconcilePath,reconcileHeaders,'POST',reconcileBody)).status!==401)
+  fail('REVOKED_OWNER_RECONCILE_ALLOWED');
  if((await request('/__private/attempts/view',{cookie:sessionCookie})).status!==401)
   fail('REVOKED_PRIVATE_D1_DASHBOARD_COOKIE_REUSED');
  if((await request('/__private/quotes/view',{cookie:sessionCookie})).status!==401)
