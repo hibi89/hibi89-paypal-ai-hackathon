@@ -155,6 +155,8 @@ jobs:
           node --input-type=module -e "import {readFileSync} from 'node:fs';const d=JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/owner-d1-config-query.json'));const ok=x=>x&&typeof x==='object'&&(Number(x.applied)===4||Object.values(x).some(ok));if(!ok(d))process.exit(2);console.log('OWNER_CONFIG_REAL_WRANGLER_LOCAL_4_MIGRATIONS_PASS')"
       - name: Actual local workerd HTTPS + D1 authenticated read (never remote)
         run: node scripts/probe_private_worker_runtime_local.mjs
+      - name: Actual local workerd S256 PKCE + RSA D1 session + HTTPS read + logout (synthetic IdP only)
+        run: node scripts/probe_private_worker_identity_runtime_local.mjs
       - name: Confirm disposable database integrity and no external activation
         run: |
           npx --yes wrangler@4.156.0 d1 execute DB --local --config .wrangler-d1-local-ci.json --persist-to "$RUNNER_TEMP/paypal-d1-local-only" --command "PRAGMA quick_check" --json > "$RUNNER_TEMP/paypal-d1-integrity.json"
