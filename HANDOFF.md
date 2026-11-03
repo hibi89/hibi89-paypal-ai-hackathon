@@ -1,3 +1,15 @@
+## 2026-11-04 — P0 Payment private-router integrated checkpoint
+1. Goal: Preserve two-part Proofline product and payment approval gates; test full private router for D1 claim→recovery→audit and eliminate ambiguous multi-role cookie access.
+2. Completed: `src/worker_private_payment_claim_route.mjs` rejects `__Host-proofline_contract_role` on payment routes. `tests/worker_payment_audit_view.test.mjs` adds default-dark opt-in, real router dispatch, ownership and replay regressions. Chose minimal route-level fix over changing shared OIDC resolver (lower regression risk, no schema or credential changes).
+3. Tests: Node22.16.0 `node --experimental-sqlite --test tests/*.test.mjs` from isolated `/mnt/data/paypal_claim`: **44 PASS, 0 FAIL, 0 SKIP**. Exact private identity router, payment route and modified test Git blobs matched. Other host modules were local stubs, NOT whole-repository/Workerd validation.
+4. Status: estimated final completeness **80% (+1pp)**, scoped offline verified; RELEASE HOLD. Full CI/Production/real provider evidence pending.
+5. Risk/failures: prior mixed owner+contract-role cookies could be accepted by payment owner resolver; now returns HTTP 401. Unknown Workerd adapter behavior remains unverified. No production changes, rollback by existing GitHub history; do not rerun external payment create/capture.
+6. Repo/branch/sha: `hibi89/hibi89-paypal-ai-hackathon` / `lead/paypal`, feature+test SHA `91f36b686847aa9354554f1a3a93d475367b8181`, touched `src/worker_private_payment_claim_route.mjs`, `tests/worker_payment_audit_view.test.mjs`; original other modules unchanged.
+7. Runtime/deploy: local Node22 + SQLite; no current Vercel/Cloudflare Production URL or SHA verified; real Workerd unavailable here; provider calls 0.
+8. Sources/security: official GitHub private repo is canonical; previous checkpoint `b2225cf52dd3cd08ce1b6778f704d23eff8f4b41` recoverable in history. No token/.env/customer record or remote DB changed.
+9. Next: CI Windows/Linux and exact SHA, real Workerd D1 route test, verify PayPal owner sandbox GET evidence with explicit approval, production access policy, then judge/video/Devpost deliverables with owner approval. Never infer CI PASS from an absent PR-scoped run.
+10. Checked: 2026-11-04 KST; local focused suite + blob SHA equality; full CI/production unverified, documentation commit follows.
+
 ## 2026-11-04 — P0 owner audit timeline checkpoint
 1. **Goal/requirements:** PayPal Proofline Part1 + Part2 five AI skills, persistent payment audit provenance; preserve original data and provider approval gates.
 2. **Work/decision:** `221abf1e2d0f1f61957e68f2255da29f2cfe4a1c`: owner-only read-only D1 audit timeline API, limit 50, no raw order ID, default-dark. Chose separate `claim-audit` POST over changing existing recovery response to avoid regressions.
