@@ -10,7 +10,7 @@ const TOKEN='a'.repeat(43);
 const SQL=['0001_payment_claims.sql','0002_worker_private_sessions.sql',
  '0003_worker_private_oidc.sql','0004_worker_private_binding_epoch.sql']
  .map(x=>readFileSync(new URL('../migrations/d1/'+x,import.meta.url),'utf8'));
-const URL=ORIGIN+'/__private/attempts';
+const LIST_URL=ORIGIN+'/__private/attempts';
 
 function fixture(){
  const sql=new DatabaseSync(':memory:');
@@ -42,7 +42,7 @@ function fixture(){
   }};
  }};
  const handler=createPrivateWorkerRecentAttemptsHandler({db,allowedOrigin:ORIGIN,now:()=>NOW});
- const req=(path=URL,init={})=>new Request(path,{
+ const req=(path=LIST_URL,init={})=>new Request(path,{
   ...init,headers:{cookie:'__Host-proofline_session='+TOKEN,
    'sec-fetch-site':'same-origin',...init.headers}});
  return {sql,handler,db,req,stats:()=>({reads,writes}),close:()=>sql.close()};
@@ -69,19 +69,19 @@ test('private recent attempts returns only matching owner AND merchant, never re
 test('strict query and HTTP method validation happens before D1',
  withDb(async f=>{
   const before=f.stats().reads;
-  for(const path of [URL+'?limit=0',URL+'?limit=21',URL+'?limit=01',
-   URL+'?limit=2&limit=2',URL+'?ownerId=owner',URL+'?limit=999999'])
+  for(const path of [LIST_URL+'?limit=0',LIST_URL+'?limit=21',LIST_URL+'?limit=01',
+   LIST_URL+'?limit=2&limit=2',LIST_URL+'?ownerId=owner',LIST_URL+'?limit=999999'])
    assert.equal((await f.handler.fetch(f.req(path))).status,400);
-  assert.equal((await f.handler.fetch(f.req(URL,{method:'POST'}))).status,405);
-  assert.equal((await f.handler.fetch(f.req(URL,{headers:{'sec-fetch-site':'cross-site'}}))).status,403);
-  assert.equal((await f.handler.fetch(f.req(URL,{headers:{origin:'https://evil.test'}}))).status,403);
+  assert.equal((await f.handler.fetch(f.req(LIST_URL,{method:'POST'}))).status,405);
+  assert.equal((await f.handler.fetch(f.req(LIST_URL,{headers:{'sec-fetch-site':'cross-site'}}))).status,403);
+  assert.equal((await f.handler.fetch(f.req(LIST_URL,{headers:{origin:'https://evil.test'}}))).status,403);
   assert.equal((await f.handler.fetch(f.req('https://evil.test/__private/attempts'))).status,403);
   assert.equal(f.stats().reads,before);
   assert.equal(f.stats().writes,0);
  }));
 test('limit bounded to 20, default 10 and no payment writes',
  withDb(async f=>{
-  for(const path of [URL,URL+'?limit=1',URL+'?limit=20']){
+  for(const path of [LIST_URL,LIST_URL+'?limit=1',LIST_URL+'?limit=20']){
    const res=await f.handler.fetch(f.req(path));
    assert.equal(res.status,200);
    assert.equal((await res.json()).count,1);
@@ -90,7 +90,7 @@ test('limit bounded to 20, default 10 and no payment writes',
  }));
 test('missing, expired or revoked session cannot list even if quote belongs to owner',
  withDb(async f=>{
-  assert.equal((await f.handler.fetch(f.req(URL,{headers:{cookie:''}}))).status,401);
+  assert.equal((await f.handler.fetch(f.req(LIST_URL,{headers:{cookie:''}}))).status,401);
   f.sql.exec('UPDATE worker_private_oidc_bindings SET active=0');
   assert.equal((await f.handler.fetch(f.req())).status,401);
   assert.equal(f.stats().writes,0);
@@ -98,7 +98,7 @@ test('missing, expired or revoked session cannot list even if quote belongs to o
 test('D1 errors are generic and never leak SQL/server details',async()=>{
  const db={withSession(){throw Error('SECRET_SQLITE_TABLE')}};
  const list=createPrivateWorkerRecentAttemptsHandler({db,allowedOrigin:ORIGIN,now:()=>NOW});
- const res=await list.fetch(new Request(URL,{headers:{
+ const res=await list.fetch(new Request(LIST_URL,{headers:{
   cookie:'__Host-proofline_session='+TOKEN
  }}));
  assert.equal(res.status,503);
@@ -112,7 +112,7 @@ test('private OIDC router integrates the read-only list but leaves payment route
    pkceCoordinator:{start:async()=>new Response('start'),
     callback:async()=>new Response('callback')}
   });
-  const res=await router.fetch(f.req(URL+'?limit=5'));
+  const res=await router.fetch(f.req(LIST_URL+'?limit=5'));
   assert.equal(res.status,200);
   assert.equal((await res.json()).attempts[0].requestId,'reqOwned');
   assert.equal((await router.fetch(f.req(ORIGIN+'/api/paypal/capture',
