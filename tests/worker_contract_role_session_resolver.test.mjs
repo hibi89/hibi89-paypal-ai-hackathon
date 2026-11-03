@@ -10,7 +10,7 @@ const SUBJECT='a'.repeat(64),ASSERTION='b'.repeat(64);
 const TOKEN=Buffer.alloc(32,21).toString('base64url');
 const DIGEST=createHash('sha256').update(TOKEN).digest('hex');
 const ORIGIN='https://proofline.fixture.invalid';
-function dbFixture(role='SELLER'){
+function dbFixture(role='SELLER',clock=()=>T){
  const sqlite=new DatabaseSync(':memory:');
  for(const f of ['0001_payment_claims.sql','0002_worker_private_sessions.sql',
    '0003_worker_private_oidc.sql','0004_worker_private_binding_epoch.sql']){
@@ -34,7 +34,7 @@ function dbFixture(role='SELLER'){
    }};
   }
  };
- return {sqlite,actor,resolve:createWorkerContractRoleSessionResolver({db,now:()=>T})};
+ return {sqlite,actor,resolve:createWorkerContractRoleSessionResolver({db,now:clock})};
 }
 const request=(cookie=TOKEN)=>new Request(ORIGIN+'/__private/contracts',{
  headers:{cookie:'__Host-proofline_contract_role='+cookie}
@@ -67,9 +67,12 @@ test('anonymous, forged, duplicate, owner and expired credentials fail closed',a
   cookie:'__Host-proofline_contract_role='+TOKEN+'; __Host-proofline_contract_role='+TOKEN
  }})));
  assert.throws(()=>f.sqlite.prepare("UPDATE worker_contract_role_sessions SET role='OWNER'").run());
- f.sqlite.prepare('UPDATE worker_contract_role_sessions SET expires_at_ms=?').run(T-1);
- await assert.rejects(f.resolve(request()));
+ assert.throws(()=>f.sqlite.prepare('UPDATE worker_contract_role_sessions SET expires_at_ms=?').run(T-1),
+  /ROLE_SESSION_IDENTITY_IMMUTABLE/);
  f.sqlite.close();
+ const expired=dbFixture('SELLER',()=>T+61000);
+ await assert.rejects(expired.resolve(request()));
+ expired.sqlite.close();
 });
 test('revocation, role binding generation and member generation prevent ABA reuse',async()=>{
  const f=dbFixture();
