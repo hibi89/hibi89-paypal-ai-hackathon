@@ -24,10 +24,16 @@ function dbFixture(role='SELLER'){
   .run(ISSUER,SUBJECT,actor,MERCHANT,role);
  sqlite.prepare('INSERT INTO worker_contract_role_sessions(token_sha256,issuer,subject_hmac,actor_id,merchant_id,role,binding_revision,membership_revision,assertion_sha256,issued_at_ms,expires_at_ms) VALUES(?,?,?,?,?, ?,1,1,?,?,?)')
   .run(DIGEST,ISSUER,SUBJECT,actor,MERCHANT,role,ASSERTION,T-60000,T+60000);
- const db={withSession(mode){
-  assert.equal(mode,'first-primary');
-  return {prepare(sql){return {bind(...args){return {async first(){return sqlite.prepare(sql).get(...args);}}}}};
- }};
+ const db={
+  withSession(mode){
+   assert.equal(mode,'first-primary');
+   return {prepare(sql){
+    return {bind(...args){
+     return {async first(){return sqlite.prepare(sql).get(...args);}};
+    }};
+   }};
+  }
+ };
  return {sqlite,actor,resolve:createWorkerContractRoleSessionResolver({db,now:()=>T})};
 }
 const request=(cookie=TOKEN)=>new Request(ORIGIN+'/__private/contracts',{
@@ -73,16 +79,22 @@ test('revocation, role binding generation and member generation prevent ABA reus
  f.sqlite.prepare('UPDATE worker_contract_role_bindings SET active=1,revision=3').run();
  await assert.rejects(f.resolve(request()));
  assert.throws(()=>f.sqlite.prepare('UPDATE worker_contract_role_bindings SET revision=1').run(),/ROLE_BINDING_EPOCH_MUST_INCREASE/);
- f.sqlite.prepare('UPDATE worker_contract_role_sessions SET binding_revision=3').run();
- assert.equal((await f.resolve(request())).identityRole,'SELLER');
- f.sqlite.prepare('UPDATE worker_contract_memberships SET active=0,revision=2').run();
- await assert.rejects(f.resolve(request()));
- f.sqlite.prepare('UPDATE worker_contract_memberships SET active=1,revision=3').run();
- await assert.rejects(f.resolve(request()));
- assert.throws(()=>f.sqlite.prepare('UPDATE worker_contract_memberships SET revision=1').run(),/CONTRACT_ROLE_EPOCH_MUST_INCREASE/);
- f.sqlite.prepare('UPDATE worker_contract_role_sessions SET membership_revision=3,revoked_at_ms=?').run(T);
- await assert.rejects(f.resolve(request()));
+ assert.throws(()=>f.sqlite.prepare('UPDATE worker_contract_role_sessions SET binding_revision=3').run(),
+  /ROLE_SESSION_IDENTITY_IMMUTABLE/);
  f.sqlite.close();
+ const g=dbFixture();
+ g.sqlite.prepare('UPDATE worker_contract_memberships SET active=0,revision=2').run();
+ await assert.rejects(f.resolve(request()));
+ g.sqlite.prepare('UPDATE worker_contract_memberships SET active=1,revision=3').run();
+ await assert.rejects(g.resolve(request()));
+ assert.throws(()=>g.sqlite.prepare('UPDATE worker_contract_memberships SET revision=1').run(),/CONTRACT_ROLE_EPOCH_MUST_INCREASE/);
+ assert.throws(()=>g.sqlite.prepare('UPDATE worker_contract_role_sessions SET membership_revision=3').run(),
+  /ROLE_SESSION_IDENTITY_IMMUTABLE/);
+ g.sqlite.prepare('UPDATE worker_contract_role_sessions SET revoked_at_ms=?').run(T);
+ await assert.rejects(g.resolve(request()));
+ assert.throws(()=>g.sqlite.prepare('UPDATE worker_contract_role_sessions SET revoked_at_ms=NULL').run(),
+  /ROLE_SESSION_REVOCATION_FINAL/);
+ g.sqlite.close();
 });
 test('candidate 0006 never adds an HTTP user-enrollment or PayPal API route',()=>{
  const f=dbFixture();

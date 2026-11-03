@@ -41,3 +41,14 @@ BEGIN SELECT RAISE(ABORT,'ROLE_BINDING_DELETE_FORBIDDEN'); END;
 CREATE TRIGGER IF NOT EXISTS worker_contract_role_session_no_delete BEFORE DELETE
  ON worker_contract_role_sessions
 BEGIN SELECT RAISE(ABORT,'ROLE_SESSION_DELETE_FORBIDDEN'); END;
+
+-- Identity and membership epochs cannot be edited after credential issuance.
+CREATE TRIGGER IF NOT EXISTS worker_contract_role_session_identity_immutable
+BEFORE UPDATE OF token_sha256,issuer,subject_hmac,actor_id,merchant_id,
+ role,binding_revision,membership_revision,assertion_sha256,issued_at_ms,expires_at_ms
+ON worker_contract_role_sessions
+BEGIN SELECT RAISE(ABORT,'ROLE_SESSION_IDENTITY_IMMUTABLE'); END;
+CREATE TRIGGER IF NOT EXISTS worker_contract_role_session_revocation_final
+BEFORE UPDATE OF revoked_at_ms ON worker_contract_role_sessions
+WHEN OLD.revoked_at_ms IS NOT NULL OR NEW.revoked_at_ms IS NULL
+BEGIN SELECT RAISE(ABORT,'ROLE_SESSION_REVOCATION_FINAL'); END;
