@@ -104,6 +104,42 @@ async function browserVerify(mode,origin,sessionCookie){
   fail('CHROMIUM_PROOF_REJECTED');
  console.log(JSON.stringify(report));
 }
+async function browserRoleVerify(origin,ownerCookie,sellerCookie,reviewerCookie){
+ const python=resolve(root,'.browser-venv/bin/python');
+ if(!existsSync(python))fail('LOCAL_CHROMIUM_ROLE_TOOLING_REQUIRED');
+ const report=await new Promise((ok,bad)=>{
+  const child=spawn(python,['tests/browser_contract_roles_workerd_e2e.py',origin],{
+   cwd:root,env:{...process.env,CLOUDFLARE_API_TOKEN:'',
+    WRANGLER_SEND_METRICS:'false'},stdio:['pipe','pipe','pipe']
+  });
+  let output='',overflow=false;
+  const timeout=setTimeout(()=>{overflow=true;child.kill('SIGKILL')},40000);
+  child.stdout.on('data',chunk=>{
+   output+=chunk.toString('utf8');
+   if(output.length>4096){overflow=true;child.kill('SIGKILL')}
+  });
+  child.stderr.on('data',()=>{});
+  child.once('error',()=>{clearTimeout(timeout);bad(Error('CHROMIUM_ROLE_LAUNCH_FAILED'))});
+  child.once('close',code=>{
+   clearTimeout(timeout);
+   let result;try{result=JSON.parse(output.trim())}catch{}
+   if(code!==0||overflow||result?.status!=='LOCAL_WORKERD_CHROMIUM_3ROLE_D1_CONTRACT_PASS'){
+    const reasons=['BROWSER_POST_COUNT_UNEXPECTED','BROWSER_SCRIPT_OR_CONSOLE_ERROR',
+     'EXTERNAL_REQUEST_ATTEMPTED','BROWSER_ASSERTION_FAILED'];
+    console.error(JSON.stringify({status:'CHROMIUM_ROLE_DIAGNOSTIC',
+     reason:reasons.includes(result?.reason)?result.reason:'ROLE_BROWSER_FAILED',
+     exitCode:code}));
+    return bad(Error('REAL_LOCAL_CHROMIUM_ROLE_WORKFLOW_FAILED'));
+   }
+   ok(result);
+  });
+  child.stdin.end(JSON.stringify({ownerCookie,sellerCookie,reviewerCookie}));
+ });
+ if(report.browserPosts!==5||report.externalRequests!==0||
+   report.browserErrors!==0||report.paymentAuthorized!==false)
+  fail('ROLE_BROWSER_PROOF_REJECTED');
+ console.log(JSON.stringify(report));
+}
 const path='/__private/attempt/status?quoteId=ciIdentityQuote&quoteVersion=1&operation=create&requestId=ciIdentityRequest';
 async function main(){
  port=await unusedPort();
@@ -460,6 +496,10 @@ async function main(){
   cookie:sessionCookie+'; __Host-proofline_contract_role='+roleCookie('SELLER'),
   'sec-fetch-site':'same-origin'});
  if(ownerAndRole.status!==401)fail('AMBIGUOUS_ROLE_COOKIES_ACCEPTED');
+ // Real Chromium exercises buyer contract CREATE and all four
+ // seller/reviewer state transitions with a second approved synthetic quote.
+ await browserRoleVerify(origin,sessionCookie.split('=')[1],
+  roleCookie('SELLER'),roleCookie('REVIEWER'));
  const roleLogout=await request('/api/auth/oidc/logout',{
   cookie:'__Host-proofline_contract_role='+roleCookie('SELLER'),
   origin,'sec-fetch-site':'same-origin'

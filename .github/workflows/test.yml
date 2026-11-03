@@ -163,7 +163,7 @@ jobs:
         run: |
           python3 -m venv .browser-venv
           .browser-venv/bin/pip install --disable-pip-version-check playwright==1.56.0
-          python3 -m py_compile tests/browser_private_d1_workerd_e2e.py
+          python3 -m py_compile tests/browser_private_d1_workerd_e2e.py tests/browser_contract_roles_workerd_e2e.py
           command -v google-chrome || command -v google-chrome-stable || command -v chromium
       - name: Apply separately staged contract role candidate ONLY to disposable local D1
         run: |
