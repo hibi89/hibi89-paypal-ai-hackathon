@@ -73,9 +73,23 @@ async function browserVerify(mode,origin,sessionCookie){
   proc.once('error',()=>{clearTimeout(timeout);bad(Error('CHROMIUM_START_FAILED'))});
   proc.once('close',code=>{
    clearTimeout(timeout);
-   if(overflow||code!==0)return bad(Error('CHROMIUM_'+mode.toUpperCase()+'_FAILED'));
-   try{ok(JSON.parse(output.trim()))}
-   catch{bad(Error('CHROMIUM_PROOF_INVALID'))}
+   let result;
+   try{result=JSON.parse(output.trim())}catch{/* no raw log output */}
+   if(overflow||code!==0){
+    // Fixed, finite classifications only. Browser stderr, URLs and cookies
+    // are never echoed into logs or artifacts.
+    const phases=['START','CHROMIUM_LAUNCH','ANONYMOUS_NAVIGATION',
+     'SYNTHETIC_COOKIE_SET','AUTHENTICATED_NAVIGATION','D1_ROWS_RENDER',
+     'BROWSER_REFRESH_AND_RELOAD','CONSOLE_NETWORK_VERIFY'];
+    const reason=typeof result?.reason==='string'&&
+     /^[A-Z_]{4,80}$/.test(result.reason)?result.reason:'UNCLASSIFIED';
+    console.error(JSON.stringify({status:'LOCAL_CHROMIUM_DIAGNOSTIC',
+     phase:phases.includes(result?.phase)?result.phase:'UNKNOWN',
+     reason,exitCode:code}));
+    return bad(Error('CHROMIUM_'+mode.toUpperCase()+'_FAILED'));
+   }
+   if(!result)return bad(Error('CHROMIUM_PROOF_INVALID'));
+   ok(result);
   });
   proc.stdin.end(JSON.stringify({sessionCookie}));
  });

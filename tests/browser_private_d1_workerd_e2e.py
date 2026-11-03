@@ -9,6 +9,11 @@ import sys
 from urllib.parse import urlsplit
 from playwright.sync_api import sync_playwright, expect
 
+PHASE='START'
+def mark(name):
+    global PHASE
+    PHASE=name
+
 def checked_origin(text):
     u=urlsplit(text)
     if (u.scheme!="https" or u.hostname!="127.0.0.1" or
@@ -31,6 +36,7 @@ def main():
             shutil.which("google-chrome-stable") or shutil.which("chromium"))
     if not binary:
         raise AssertionError("CHROMIUM_NOT_INSTALLED")
+    mark('CHROMIUM_LAUNCH')
     with sync_playwright() as playwright:
         browser=playwright.chromium.launch(
             executable_path=binary,headless=True,
@@ -59,9 +65,11 @@ def main():
                 "favicon" not in msg.text.lower() else None)
             view="/__private/attempts/view"
             # Anonymous browser never receives the shell page or its JS.
+            mark('ANONYMOUS_NAVIGATION')
             anonymous=page.goto(origin+view,wait_until="domcontentloaded")
             assert anonymous is not None and anonymous.status==401,"ANONYMOUS_BROWSER_VIEW_ALLOWED"
             assert page.locator("#rows").count()==0,"ANONYMOUS_BROWSER_SHELL_RENDERED"
+            mark('SYNTHETIC_COOKIE_SET')
             context.add_cookies([{
                 "name":"__Host-proofline_session",
                 "value":cookie.split("=",1)[1],
@@ -73,6 +81,7 @@ def main():
             page.on("console",lambda msg:
                 errors.append("CONSOLE_ERROR") if msg.type=="error" and
                 "favicon" not in msg.text.lower() else None)
+            mark('AUTHENTICATED_NAVIGATION')
             response=page.goto(origin+view,wait_until="domcontentloaded")
             if mode=="revoked":
                 assert response is not None and response.status==401,"REVOKED_BROWSER_VIEW_ALLOWED"
@@ -85,6 +94,7 @@ def main():
                 return
             assert response is not None and response.status==200,"AUTH_BROWSER_VIEW_UNAVAILABLE"
             expect(page.locator("h1")).to_contain_text("Recent attempt evidence")
+            mark('D1_ROWS_RENDER')
             expect(page.locator("#rows tr")).to_have_count(2,timeout=8000)
             expect(page.locator("#status")).to_contain_text("2 owner-scoped",timeout=8000)
             for value in ("ciRequest","ciIdentityRequest"):
@@ -94,12 +104,14 @@ def main():
             assert "IN_FLIGHT (LOCAL)" in page.locator("tbody").inner_text()
             # A user-visible limit change and Refresh must GET the same
             # owner-only data without an API POST, checkout or model call.
+            mark('BROWSER_REFRESH_AND_RELOAD')
             page.locator("#limit").select_option("20")
             expect(page.locator("#status")).to_contain_text("2 owner-scoped",timeout=8000)
             page.locator("#refresh").click()
             expect(page.locator("#rows tr")).to_have_count(2,timeout=8000)
             page.reload(wait_until="domcontentloaded")
             expect(page.locator("#rows tr")).to_have_count(2,timeout=8000)
+            mark('CONSOLE_NETWORK_VERIFY')
             assert not errors,"CHROMIUM_CONSOLE_OR_SCRIPT_ERROR"
             assert not blocked,"BROWSER_EXTERNAL_REQUEST_ATTEMPTED"
             assert all(m=="GET" for m,_ in network),"BROWSER_MUTATION_NETWORK_ATTEMPTED"
@@ -122,5 +134,7 @@ if __name__=="__main__":
         # Never print raw exceptions, network URLs or bearer/session material.
         message=str(exc)
         code=message if re.fullmatch(r"[A-Z_]{4,80}",message) else "BROWSER_ASSERTION_FAILED"
-        print(json.dumps({"status":"LOCAL_WORKERD_CHROMIUM_BLOCKED","reason":code}))
+        print(json.dumps({"status":"LOCAL_WORKERD_CHROMIUM_BLOCKED",
+                          "phase":PHASE,"reason":code,
+                          "exceptionType":type(exc).__name__}))
         sys.exit(2)
