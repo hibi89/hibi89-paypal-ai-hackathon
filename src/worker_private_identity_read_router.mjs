@@ -12,6 +12,7 @@ import {createWorkerD1ContractFlow} from './worker_d1_contract_flow.mjs';
 import {createWorkerPrivateSessionResolver} from './worker_private_session_resolver.mjs';
 import {createWorkerContractRoleSessionResolver} from './worker_contract_role_session_resolver.mjs';
 import {createWorkerPrivateContractDashboard} from './worker_private_contract_dashboard.mjs';
+import {createWorkerSandboxOrderProof} from './worker_sandbox_order_proof.mjs';
 
 const headers={
  'content-type':'application/json; charset=utf-8',
@@ -28,7 +29,8 @@ const fail=()=>{throw Error('WORKER_PRIVATE_IDENTITY_NOT_CONFIGURED')};
 
 export function createPrivateWorkerIdentityReadRouter({
  db,allowedOrigin,authority,pkceCoordinator,enabled=false,contractsEnabled=false,
- contractRoleSessionsEnabled=false,now
+ contractRoleSessionsEnabled=false,sandboxOrderProofEnabled=false,
+ sandboxOrderGetTransport,now
 }={}){
  // A non-exported integration factory, not a production opt-in or permission.
  if(enabled!==true||!db||typeof db.withSession!=='function'||
@@ -72,6 +74,9 @@ export function createPrivateWorkerIdentityReadRouter({
  const contractView=contracts?createWorkerPrivateContractDashboard({
   contracts,allowedOrigin:origin
  }):null;
+ const sandboxOrderProof=sandboxOrderProofEnabled===true?
+  createWorkerSandboxOrderProof({db,allowedOrigin:origin,
+   transport:sandboxOrderGetTransport,enabled:true,now}):null;
  return Object.freeze({async fetch(request){
   if(!(request instanceof Request))return res(400,'INVALID_REQUEST');
   let url;
@@ -98,6 +103,8 @@ export function createPrivateWorkerIdentityReadRouter({
   if(contracts&&(url.pathname==='/__private/contracts'||
      /^\/__private\/contracts\/[A-Za-z0-9_-]{1,128}\/milestones\/[A-Za-z0-9_-]{1,64}\/(submit|accept|reject)$/.test(url.pathname)))
    return contracts.fetch(request);
+  if(sandboxOrderProof&&url.pathname==='/__private/paypal/order-proof')
+   return sandboxOrderProof.fetch(request);
   if(url.pathname==='/api/auth/oidc/start')
    return request.method==='POST'
     ?pkceCoordinator.start(request)
