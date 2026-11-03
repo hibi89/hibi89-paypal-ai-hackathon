@@ -73,3 +73,58 @@ test('remote order binding cannot create a claim or bind an unowned request',asy
  assert.equal(sql.prepare('SELECT remote_id FROM payment_attempts').get().remote_id,null);
  sql.close();
 });
+
+test('UNKNOWN transition is atomic, idempotent and blocks new create after ambiguous result',async()=>{
+ const {sql,gate}=fixture();
+ await gate.claim(input);
+ const first=await gate.markUnknown(input);
+ assert.equal(first.marked,true);
+ assert.equal(first.state,'UNKNOWN');
+ assert.equal(first.next,'MANUAL_PROVIDER_LOOKUP_REQUIRED');
+ const repeat=await gate.markUnknown(input);
+ assert.equal(repeat.marked,false);
+ assert.equal((await gate.claim({...input,requestId:'request2'})).claimed,false);
+ const status=await gate.inspectRecovery(input);
+ assert.equal(status.remoteIdKnown,false);
+ assert.equal(status.paymentAuthorized,false);
+ assert.equal(status.providerCalls,0);
+ assert.equal(sql.prepare('SELECT COUNT(*) AS n FROM payment_attempts').get().n,1);
+ sql.close();
+});
+test('UNKNOWN recovery with persisted remote order requires GET, not another CREATE',async()=>{
+ const {sql,gate}=fixture();
+ await gate.claim(input);
+ await gate.persistRemoteOrder({...input,remoteId:'ORDER_001'});
+ const marked=await gate.markUnknown(input);
+ assert.equal(marked.next,'REMOTE_ORDER_GET_RECONCILIATION_REQUIRED');
+ assert.equal((await gate.inspectRecovery(input)).remoteIdKnown,true);
+ await assert.rejects(gate.persistRemoteOrder({...input,remoteId:'ORDER_002'}),
+ {code:'REMOTE_ORDER_BINDING_UNKNOWN_RECONCILE_BEFORE_RETRY'});
+ assert.equal(sql.prepare('SELECT remote_id FROM payment_attempts').get().remote_id,'ORDER_001');
+ sql.close();
+});
+test('UNKNOWN mark and inspection reject wrong owner and missing claims',async()=>{
+ const {sql,gate}=fixture();
+ await gate.claim(input);
+ await assert.rejects(gate.markUnknown({...input,ownerId:'other'}),
+ {code:'UNKNOWN_MARK_UNCONFIRMED_NO_RETRY'});
+ await assert.rejects(gate.inspectRecovery({...input,ownerId:'other'}),
+ {code:'RECOVERY_UNAVAILABLE_NO_RETRY'});
+ await assert.rejects(gate.markUnknown({...input,requestId:'other'}),
+ {code:'UNKNOWN_MARK_UNCONFIRMED_NO_RETRY'});
+ await assert.rejects(gate.markUnknown({...input,requestId:'..'}),
+ {code:'INVALID_UNKNOWN_MARK_INPUT'});
+ assert.equal(sql.prepare('SELECT state FROM payment_attempts').get().state,'IN_FLIGHT');
+ sql.close();
+});
+test('UNKNOWN cannot downgrade already approved or paid ledger state',async()=>{
+ const {sql,gate}=fixture();
+ await gate.claim(input);
+ sql.prepare("UPDATE payment_attempts SET state='APPROVED' WHERE request_id=?").run(input.requestId);
+ await assert.rejects(gate.markUnknown(input),{code:'UNKNOWN_MARK_UNCONFIRMED_NO_RETRY'});
+ assert.equal((await gate.inspectRecovery(input)).next,'READ_ONLY_REMOTE_VERIFICATION_REQUIRED');
+ sql.prepare("UPDATE payment_attempts SET state='PAID' WHERE request_id=?").run(input.requestId);
+ await assert.rejects(gate.markUnknown(input),{code:'UNKNOWN_MARK_UNCONFIRMED_NO_RETRY'});
+ assert.equal((await gate.inspectRecovery(input)).next,'PAYMENT_ATTESTATION_NOT_PROVIDED');
+ sql.close();
+});
