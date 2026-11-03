@@ -199,6 +199,21 @@ async function main(){
   );
   return {role};
  });
+ // Synthetic CI pagination fixture: append 52 deliberately labeled
+ // MIGRATION_BASELINE events to the pre-existing ciRequest only.
+ // This never creates a payment attempt or rewrites actual transaction state.
+ // It proves the real D1 audit cursor (>50) via an authenticated Chromium click.
+ statements.push(`WITH RECURSIVE audit_page_fixture(n) AS (
+  SELECT 1 UNION ALL SELECT n+1 FROM audit_page_fixture WHERE n<52
+ ) INSERT INTO payment_attempt_audit
+ (request_id,quote_id,quote_version,merchant_id,operation,event_type,
+  before_state,after_state,remote_id,observed_at)
+ SELECT a.request_id,a.quote_id,a.quote_version,a.merchant_id,a.operation,
+  'MIGRATION_BASELINE',NULL,a.state,NULL,
+  datetime('now','+'||audit_page_fixture.n||' seconds')
+ FROM payment_attempts a CROSS JOIN audit_page_fixture
+ WHERE a.request_id='ciRequest' AND a.state='IN_FLIGHT'
+ AND a.remote_id IS NULL`);
  writeFileSync(sqlfile,statements.join(';\n')+';\n',{mode:0o600,flag:'wx'});
  seed();
  child=spawn('npx',['--yes','wrangler@4.156.0','dev','--config',config,

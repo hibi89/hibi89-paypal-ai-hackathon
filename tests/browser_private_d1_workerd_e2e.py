@@ -132,7 +132,29 @@ def main():
             expect(page.locator('#audit-events')).to_contain_text('REMOTE_ID_BOUND')
             assert 'ORDER_FIXTURE_001' not in page.locator('#audit-panel').inner_text(), 'RAW_REMOTE_ORDER_LEAKED'
             assert page.locator('#audit-older').is_hidden(), 'UNEXPECTED_AUDIT_CURSOR'
+            # The OTHER owner-bound attempt is seeded with 52 explicitly
+            # synthetic audit baselines plus its original real D1 insert
+            # trigger. Prove the 50+3 page boundary through a live browser.
+            mark('BROWSER_D1_AUDIT_PAGINATION')
+            historic=page.locator('#rows tr').filter(has_text='ciRequest')
+            expect(historic).to_have_count(1)
+            historic.locator('button.audit-action').click()
+            expect(page.locator('#audit-status')).to_contain_text(
+                '50 internal D1 audit event(s)',timeout=8000)
+            expect(page.locator('#audit-events li')).to_have_count(50,timeout=8000)
+            expect(page.locator('#audit-older')).to_be_visible()
+            page.locator('#audit-older').click()
+            expect(page.locator('#audit-status')).to_contain_text(
+                '53 internal D1 audit event(s)',timeout=8000)
+            expect(page.locator('#audit-events li')).to_have_count(53,timeout=8000)
+            assert page.locator('#audit-older').is_hidden(), 'AUDIT_PAGE_CURSOR_NOT_EXHAUSTED'
+            audit_lines=page.locator('#audit-events li').all_inner_texts()
+            assert audit_lines[0].startswith('CLAIM_CREATED'), 'OLD_AUDIT_PAGE_NOT_PREPENDED'
+            assert sum('MIGRATION_BASELINE' in s for s in audit_lines)==52, 'AUDIT_HISTORY_LOST_OR_DUPLICATED'
+            assert 'ORDER_FIXTURE_001' not in page.locator('#audit-panel').inner_text(), 'AUDIT_PAGE_RAW_ORDER_LEAK'
             assert [p for m,p in network if m=='POST']==[
+                '/__private/paypal/claim-audit',
+                '/__private/paypal/claim-audit',
                 '/__private/paypal/claim-audit'
             ],'AUDIT_VIEW_UNEXPECTED_NETWORK_POST'
             assert not errors,'AUDIT_BROWSER_CONSOLE_ERROR'
@@ -178,7 +200,8 @@ def main():
                 "realChromium":True,"localHttps":True,"renderedRows":2,
                 "anonymousBlocked":True,"browserRefreshReadOnly":True,
                 "browserQuoteD1CreateApprove":True,"quoteApiPosts":2,
-                "realLocalD1AuditButton":True,"auditEventsRead":2,
+                "realLocalD1AuditButton":True,"auditEventsRead":55,
+                "auditOlderPageLoaded":True,"auditPagesVerified":3,
                 "browserQuoteD1CountAfterReload":4,
                 "scriptAndStylesLoaded":True,"pageErrors":0,"externalRequests":0,
                 "paymentPosts":0,"realIdpCalls":0,"providerCalls":0,
