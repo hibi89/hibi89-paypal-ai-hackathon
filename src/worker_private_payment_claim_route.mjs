@@ -1,6 +1,6 @@
 // Private, disabled-by-default D1 claim + recovery inspection. NO PayPal calls.
 // Owner identity comes exclusively from a validated OIDC-bound D1 session.
-import {createWorkerPrivateSessionResolver} from './worker_private_session_resolver.mjs';
+import {createWorkerPrivateSessionResolver,hashPrivateSessionCookie} from './worker_private_session_resolver.mjs';
 import {createWorkerPaymentClaimGate} from './worker_payment_claim_gate.mjs';
 const ROUTES=Object.freeze({
  '/__private/paypal/create-claim':'first-claim-no-provider',
@@ -61,14 +61,21 @@ export function createWorkerPrivatePaymentClaimRoute({
    return respond(403,{error:'OWNER_EXPLICIT_INTENT_REQUIRED'});
   let data;try{data=await readBody(request)}catch{return respond(400,{error:'INVALID_BODY'})}
   let owner;
+  let sessionDigest,checkedAt;
   try{owner=await resolve(request);
    if(owner.verified!==true||!ID.test(owner.actorId)||
       !/^[A-Za-z0-9]{13}$/.test(owner.merchantId))throw Error('INVALID_OWNER');
+   if(intent==='first-claim-no-provider'){
+    sessionDigest=await hashPrivateSessionCookie(request);
+    checkedAt=now();
+    if(!Number.isSafeInteger(checkedAt)||checkedAt<=0)throw Error('INVALID_CLOCK');
+   }
   }catch{return respond(401,{error:'OWNER_SESSION_REQUIRED'})}
   const fields={...data,ownerId:owner.actorId,merchantId:owner.merchantId};
   let result;
   try{result=intent==='first-claim-no-provider'?
-   await gate.claim(fields):await gate.inspectRecovery(fields);
+   await gate.claimWithVerifiedSession({...fields,sessionDigest,checkedAt}):
+   await gate.inspectRecovery(fields);
   }catch(error){
    const unavailable=/UNKNOWN|UNAVAILABLE|NO_RETRY/.test(error?.code??'');
    return respond(unavailable?503:409,{error:unavailable?
