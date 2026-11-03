@@ -120,12 +120,29 @@ test('signature tampering, unknown signing key, wrong issuer/nonce/audience are 
   n=>jwt('another-signed-nonce'),n=>jwt(n,{aud:'wrong-client'}),
   n=>jwt(n,{exp:Math.floor(CURRENT/1000)-10}),
   n=>jwt(n,{auth_time:Math.floor(CURRENT/1000)-1000}),
+  n=>jwt(n,{nbf:Math.floor(CURRENT/1000)+600}),
+  n=>jwt(n,{nbf:'tomorrow'}),
+  n=>jwt(n,{nbf:0}),
   n=>{const signed=jwt(n);return signed.slice(0,-1)+(signed.endsWith('a')?'b':'a');}]){
   const challenge=await f.authority.beginChallenge();
   await assert.rejects(f.authority.issue({challengeId:challenge.challengeId,
     idToken:construct(challenge.nonce)}),{code:'OIDC_TOKEN_UNVERIFIED'});
  }
  assert.equal(f.master.prepare('SELECT count(*) n FROM worker_private_sessions').get().n,0);
+}));
+
+test('optional JWT nbf permits current time/brief clock skew but refuses future assertion',run(async f=>{
+ for(const nbf of [Math.floor(CURRENT/1000)-30,Math.floor(CURRENT/1000)+30]){
+  const c=await f.authority.beginChallenge();
+  const issued=await f.authority.issue({challengeId:c.challengeId,
+   idToken:jwt(c.nonce,{nbf})});
+  assert.match(issued.setCookie,/^__Host-proofline_session=/);
+ }
+ const c=await f.authority.beginChallenge();
+ await assert.rejects(f.authority.issue({challengeId:c.challengeId,
+  idToken:jwt(c.nonce,{nbf:Math.floor(CURRENT/1000)+31})}),
+  {code:'OIDC_TOKEN_UNVERIFIED'});
+ assert.equal(f.master.prepare('SELECT count(*) n FROM worker_private_sessions').get().n,2);
 }));
 
 test('unprovisioned and revoked subject-to-actor membership cannot issue',run(async f=>{

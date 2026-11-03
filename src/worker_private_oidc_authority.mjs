@@ -103,6 +103,9 @@ export function createWorkerPrivateOidcAuthority({
        claims.sub.length<1||claims.sub.length>256||claims.nonce!==nonce||
        !secs(claims.iat)||!secs(claims.auth_time)||!secs(claims.exp)||
        claims.exp<=claims.iat||claims.exp*1000<=t||claims.iat*1000>t+30_000||
+       // RFC 7519 §4.1.5: an optional not-before claim still binds token
+       // validity. Match the existing 30-second local clock tolerance.
+       (claims.nbf!==undefined&&(!secs(claims.nbf)||claims.nbf*1000>t+30_000))||
        claims.auth_time*1000>claims.iat*1000+30_000||
        t-claims.auth_time*1000>5*60*1000||t-claims.iat*1000>5*60*1000)
        fail('OIDC_TOKEN_UNVERIFIED');
