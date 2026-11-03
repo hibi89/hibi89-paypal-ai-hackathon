@@ -47,7 +47,8 @@ function fixture({provider=remote(),afterGet,throwGet=false,withoutAudit=false}=
     headers:{'content-type':'application/json'}});
   }});
  const gate=createWorkerPaymentClaimGate({db});
- const make=()=>createWorkerSandboxApprovalReconcile({db,allowedOrigin:ORIGIN,
+ const make=(options={})=>createWorkerSandboxApprovalReconcile({db,allowedOrigin:ORIGIN,
+  bodyReadTimeoutMs:options.bodyReadTimeoutMs??2000,
   expectedMerchantId:MERCHANT,transport,enabled:true,now:()=>T});
  return {sql,db,transport,gate,make,gets:()=>gets,withoutAudit};
 }
@@ -284,5 +285,98 @@ test('approval CAS still accepts audit-consistent UNKNOWN path and writes exactl
  assert.equal(state(f.sql).state,'APPROVED');
  assert.equal(audit(f.sql).length,before+1);
  assert.equal(audit(f.sql).at(-1).after_state,'APPROVED');
+ f.sql.close();
+});
+
+
+test('stalled request body times out before any D1 or provider operation',async()=>{
+ const f=fixture();await claimed(f);
+ const stream=new ReadableStream({
+  start(c){c.enqueue(new TextEncoder().encode('{"requestId":"req1",'));},
+  pull(){return new Promise(()=>{});},
+  cancel(){return new Promise(()=>{});}
+ });
+ const raw=new Request(ORIGIN+'/__private/paypal/reconcile-approved',{
+  method:'POST',duplex:'half',headers:{origin:ORIGIN,
+   'sec-fetch-site':'same-origin','content-type':'application/json',
+   'x-proofline-intent':'sandbox-get-approved-reconcile-only',
+   cookie:'__Host-proofline_session='+COOKIE},body:stream
+ });
+ const before=audit(f.sql).length;
+ const start=Date.now();
+ const response=await f.make({bodyReadTimeoutMs:100}).fetch(raw);
+ assert.equal(response.status,400);
+ assert.ok(Date.now()-start<800);
+ assert.equal(f.gets(),0);
+ assert.equal(state(f.sql).state,'IN_FLIGHT');
+ assert.equal(audit(f.sql).length,before);
+ f.sql.close();
+});
+
+test('abort during partial body returns no provider GET or ledger mutation',async()=>{
+ const f=fixture();await claimed(f);
+ const controller=new AbortController();
+ const stream=new ReadableStream({pull(){return new Promise(()=>{});}});
+ const raw=new Request(ORIGIN+'/__private/paypal/reconcile-approved',{
+  method:'POST',duplex:'half',signal:controller.signal,
+  headers:{origin:ORIGIN,'sec-fetch-site':'same-origin',
+   'content-type':'application/json',
+   'x-proofline-intent':'sandbox-get-approved-reconcile-only',
+   cookie:'__Host-proofline_session='+COOKIE},body:stream
+ });
+ const task=f.make({bodyReadTimeoutMs:1000}).fetch(raw);
+ setTimeout(()=>controller.abort(),35);
+ const response=await task;
+ assert.equal(response.status,400);
+ assert.equal(f.gets(),0);
+ assert.equal(state(f.sql).state,'IN_FLIGHT');
+ f.sql.close();
+});
+
+test('valid split JSON body is parsed and reconciled within one body-read budget',async()=>{
+ const f=fixture();await claimed(f);
+ const payload=new TextEncoder().encode(JSON.stringify({
+  requestId:'req1',quoteId:'quote1',quoteVersion:1
+ }));
+ const stream=new ReadableStream({start(c){
+  c.enqueue(payload.slice(0,9));c.enqueue(payload.slice(9,18));
+  c.enqueue(payload.slice(18));c.close();
+ }});
+ const raw=new Request(ORIGIN+'/__private/paypal/reconcile-approved',{
+  method:'POST',duplex:'half',headers:{origin:ORIGIN,
+   'sec-fetch-site':'same-origin','content-type':'application/json',
+   'x-proofline-intent':'sandbox-get-approved-reconcile-only',
+   cookie:'__Host-proofline_session='+COOKIE},body:stream
+ });
+ const response=await f.make({bodyReadTimeoutMs:400}).fetch(raw);
+ assert.equal(response.status,200);
+ assert.equal(f.gets(),1);
+ assert.equal(state(f.sql).state,'APPROVED');
+ f.sql.close();
+});
+
+test('body timeout config outside bounded range is refused at constructor',()=>{
+ const f=fixture();
+ for(const bodyReadTimeoutMs of [0,99,5001,'2000',Infinity])
+  assert.throws(()=>f.make({bodyReadTimeoutMs}),
+   /SANDBOX_APPROVAL_RECONCILE_EXPLICIT_DEPENDENCIES_REQUIRED/);
+ f.sql.close();
+});
+
+test('oversize multi-chunk body is rejected before any provider or D1 modification',async()=>{
+ const f=fixture();await claimed(f);
+ const stream=new ReadableStream({start(c){
+  c.enqueue(new Uint8Array(260));c.enqueue(new Uint8Array(260));c.close();
+ }});
+ const raw=new Request(ORIGIN+'/__private/paypal/reconcile-approved',{
+  method:'POST',duplex:'half',headers:{origin:ORIGIN,
+   'sec-fetch-site':'same-origin','content-type':'application/json',
+   'x-proofline-intent':'sandbox-get-approved-reconcile-only',
+   cookie:'__Host-proofline_session='+COOKIE},body:stream
+ });
+ const response=await f.make({bodyReadTimeoutMs:400}).fetch(raw);
+ assert.equal(response.status,400);
+ assert.equal(f.gets(),0);
+ assert.equal(state(f.sql).state,'IN_FLIGHT');
  f.sql.close();
 });
