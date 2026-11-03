@@ -227,3 +227,62 @@ test('host read-only order proof flag cannot implicitly enable approval reconcil
  assert.equal(f.gets(),0);
  f.sql.close();
 });
+
+test('approval CAS refuses audit tail whose recorded state differs from current ledger',async()=>{
+ const f=fixture();await claimed(f);
+ // A direct D1 writer can lose the audit trigger; the state would drift.
+ f.sql.exec('DROP TRIGGER payment_attempt_audit_on_state_or_remote');
+ await f.gate.markUnknown(ARGS);
+ assert.equal(state(f.sql).state,'UNKNOWN');
+ assert.equal(audit(f.sql).at(-1).after_state,'IN_FLIGHT');
+ const before=audit(f.sql).length;
+ const result=await f.make().fetch(request());
+ assert.equal(result.status,409);
+ assert.equal(state(f.sql).state,'UNKNOWN');
+ assert.equal(audit(f.sql).length,before);
+ f.sql.close();
+});
+
+test('approval CAS refuses forged latest audit row with the wrong PayPal order reference',async()=>{
+ const f=fixture();await claimed(f);
+ f.sql.prepare(`INSERT INTO payment_attempt_audit
+ (request_id,quote_id,quote_version,merchant_id,operation,event_type,before_state,after_state,remote_id)
+ VALUES('req1','quote1',1,?,'create','REMOTE_ID_BOUND','IN_FLIGHT','IN_FLIGHT','OTHER_ORDER')`).run(MERCHANT);
+ const result=await f.make().fetch(request());
+ assert.equal(result.status,409);
+ assert.equal(state(f.sql).state,'IN_FLIGHT');
+ assert.equal(audit(f.sql).filter(e=>e.after_state==='APPROVED').length,0);
+ f.sql.close();
+});
+
+test('approval CAS refuses audit event whose owner, version or operation metadata is inconsistent',async()=>{
+ for(const mismatch of [
+  {quote_id:'OTHER_QUOTE'}, {quote_version:2},
+  {merchant_id:'WRONGMERCH123'}, {operation:'capture'}
+ ]){
+  const f=fixture();await claimed(f);
+  const record={request_id:'req1',quote_id:'quote1',quote_version:1,
+   merchant_id:MERCHANT,operation:'create',event_type:'STATE_CHANGED',
+   before_state:'IN_FLIGHT',after_state:'IN_FLIGHT',remote_id:'ORDER_001',...mismatch};
+  f.sql.prepare(`INSERT INTO payment_attempt_audit
+ (request_id,quote_id,quote_version,merchant_id,operation,event_type,before_state,after_state,remote_id)
+ VALUES(?,?,?,?,?,?,?,?,?)`).run(record.request_id,record.quote_id,record.quote_version,
+   record.merchant_id,record.operation,record.event_type,record.before_state,
+   record.after_state,record.remote_id);
+  const response=await f.make().fetch(request());
+  assert.equal(response.status,409);
+  assert.equal(state(f.sql).state,'IN_FLIGHT');
+  f.sql.close();
+ }
+});
+
+test('approval CAS still accepts audit-consistent UNKNOWN path and writes exactly one audit transition',async()=>{
+ const f=fixture();await claimed(f,{unknown:true});
+ const before=audit(f.sql).length;
+ const response=await f.make().fetch(request());
+ assert.equal(response.status,200);
+ assert.equal(state(f.sql).state,'APPROVED');
+ assert.equal(audit(f.sql).length,before+1);
+ assert.equal(audit(f.sql).at(-1).after_state,'APPROVED');
+ f.sql.close();
+});
