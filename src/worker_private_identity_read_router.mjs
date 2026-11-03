@@ -13,6 +13,7 @@ import {createWorkerPrivateSessionResolver} from './worker_private_session_resol
 import {createWorkerContractRoleSessionResolver} from './worker_contract_role_session_resolver.mjs';
 import {createWorkerPrivateContractDashboard} from './worker_private_contract_dashboard.mjs';
 import {createWorkerSandboxOrderProof} from './worker_sandbox_order_proof.mjs';
+import {createWorkerPrivatePaymentClaimRoute} from './worker_private_payment_claim_route.mjs';
 
 const headers={
  'content-type':'application/json; charset=utf-8',
@@ -30,7 +31,7 @@ const fail=()=>{throw Error('WORKER_PRIVATE_IDENTITY_NOT_CONFIGURED')};
 export function createPrivateWorkerIdentityReadRouter({
  db,allowedOrigin,authority,pkceCoordinator,enabled=false,contractsEnabled=false,
  contractRoleSessionsEnabled=false,sandboxOrderProofEnabled=false,
- sandboxOrderGetTransport,sandboxExpectedMerchantId,now
+ paymentClaimEnabled=false,sandboxOrderGetTransport,sandboxExpectedMerchantId,now
 }={}){
  // A non-exported integration factory, not a production opt-in or permission.
  if(enabled!==true||!db||typeof db.withSession!=='function'||
@@ -78,6 +79,9 @@ export function createPrivateWorkerIdentityReadRouter({
   createWorkerSandboxOrderProof({db,allowedOrigin:origin,
    transport:sandboxOrderGetTransport,
    expectedMerchantId:sandboxExpectedMerchantId,enabled:true,now}):null;
+ // Explicit opt-in only. Existing hosting entrypoints do not enable this D1 claim route.
+ const paymentClaim=paymentClaimEnabled===true?
+  createWorkerPrivatePaymentClaimRoute({db,allowedOrigin:origin,enabled:true,now}):null;
  return Object.freeze({async fetch(request){
   if(!(request instanceof Request))return res(400,'INVALID_REQUEST');
   let url;
@@ -106,6 +110,9 @@ export function createPrivateWorkerIdentityReadRouter({
    return contracts.fetch(request);
   if(sandboxOrderProof&&url.pathname==='/__private/paypal/order-proof')
    return sandboxOrderProof.fetch(request);
+  if(paymentClaim&&['/__private/paypal/create-claim',
+      '/__private/paypal/claim-recovery'].includes(url.pathname))
+   return paymentClaim.fetch(request);
   if(url.pathname==='/api/auth/oidc/start')
    return request.method==='POST'
     ?pkceCoordinator.start(request)
