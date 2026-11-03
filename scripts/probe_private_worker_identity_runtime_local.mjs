@@ -530,6 +530,15 @@ async function main(){
   fail('CROSS_SITE_WORKER_READ_ALLOWED');
  if((await request(path,{cookie:sessionCookie},'POST')).status!==405)
   fail('WORKER_PAYMENT_METADATA_POST_ALLOWED');
+ // Even a signed OWNER session cannot trigger PayPal OAuth or Orders GET
+ // until a separate operator opts in BOTH host flags and pins merchant identity.
+ // This local CI Worker deliberately has neither permission nor credentials.
+ const darkProof=await request('/__private/paypal/order-proof',{
+  cookie:sessionCookie,origin,'sec-fetch-site':'same-origin',
+  'content-type':'application/json',
+  'x-proofline-intent':'sandbox-order-get-only'
+ },'POST',JSON.stringify({quoteId:'ciIdentityQuote',quoteVersion:1}));
+ if(darkProof.status!==404)fail('UNAPPROVED_SANDBOX_GET_ROUTE_ACTIVATED');
  if((await request('/api/paypal/capture',{cookie:sessionCookie,origin},'POST')).status!==404)
   fail('WORKER_PAYMENT_MUTATION_ROUTE_EXPOSED');
  if((await request('/api/auth/oidc/logout',{
