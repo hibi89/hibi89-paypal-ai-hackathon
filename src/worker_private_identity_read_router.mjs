@@ -13,6 +13,7 @@ import {createWorkerPrivateSessionResolver} from './worker_private_session_resol
 import {createWorkerContractRoleSessionResolver} from './worker_contract_role_session_resolver.mjs';
 import {createWorkerPrivateContractDashboard} from './worker_private_contract_dashboard.mjs';
 import {createWorkerSandboxOrderProof} from './worker_sandbox_order_proof.mjs';
+import {createWorkerSandboxApprovalReconcile} from './worker_sandbox_order_approval.mjs';
 import {createWorkerPrivatePaymentClaimRoute} from './worker_private_payment_claim_route.mjs';
 
 const headers={
@@ -31,7 +32,7 @@ const fail=()=>{throw Error('WORKER_PRIVATE_IDENTITY_NOT_CONFIGURED')};
 export function createPrivateWorkerIdentityReadRouter({
  db,allowedOrigin,authority,pkceCoordinator,enabled=false,contractsEnabled=false,
  contractRoleSessionsEnabled=false,sandboxOrderProofEnabled=false,
- paymentClaimEnabled=false,sandboxOrderGetTransport,sandboxExpectedMerchantId,now
+ sandboxOrderApprovalEnabled=false,paymentClaimEnabled=false,sandboxOrderGetTransport,sandboxExpectedMerchantId,now
 }={}){
  // A non-exported integration factory, not a production opt-in or permission.
  if(enabled!==true||!db||typeof db.withSession!=='function'||
@@ -82,6 +83,12 @@ export function createPrivateWorkerIdentityReadRouter({
  // Explicit opt-in only. Existing hosting entrypoints do not enable this D1 claim route.
  const paymentClaim=paymentClaimEnabled===true?
   createWorkerPrivatePaymentClaimRoute({db,allowedOrigin:origin,enabled:true,now}):null;
+ // A separate, explicitly enabled GET-evidence reconciliation; existing
+ // read-only order-proof and payment-claim flags never imply mutation rights.
+ const sandboxApproval=sandboxOrderApprovalEnabled===true?
+  createWorkerSandboxApprovalReconcile({db,allowedOrigin:origin,
+   transport:sandboxOrderGetTransport,expectedMerchantId:sandboxExpectedMerchantId,
+   enabled:true,now}):null;
  return Object.freeze({async fetch(request){
   if(!(request instanceof Request))return res(400,'INVALID_REQUEST');
   let url;
@@ -110,6 +117,8 @@ export function createPrivateWorkerIdentityReadRouter({
    return contracts.fetch(request);
   if(sandboxOrderProof&&url.pathname==='/__private/paypal/order-proof')
    return sandboxOrderProof.fetch(request);
+  if(sandboxApproval&&url.pathname==='/__private/paypal/reconcile-approved')
+   return sandboxApproval.fetch(request);
   if(paymentClaim&&['/__private/paypal/create-claim',
       '/__private/paypal/claim-recovery',
       '/__private/paypal/claim-audit'].includes(url.pathname))
