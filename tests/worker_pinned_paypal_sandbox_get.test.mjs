@@ -112,3 +112,52 @@ test('handler cannot accept arbitrary unpinned GET stubs even with matching flag
   db:{withSession:()=>({})},expectedMerchantId:'PAYPALMERCH13',
   transport:forged}),/EXPLICIT_DEPENDENCIES_REQUIRED/);
 });
+
+test('single deadline aborts hung token acquisition without starting any order GET',async()=>{
+ let fetches=0,signal;
+ const transport=createPinnedPayPalSandboxGetTransport({enabled:true,timeoutMs:100,
+  getAccessToken:({signal:s})=>{signal=s;return new Promise(()=>{});},
+  fetchImpl:async()=>{fetches++;return json();}});
+ const start=Date.now();
+ await assert.rejects(transport.getOrder(ORDER),{code:'SANDBOX_GET_TIMEOUT_NO_RETRY'});
+ assert.equal(fetches,0);
+ assert.equal(signal.aborted,true);
+ assert.ok(Date.now()-start<650);
+});
+
+test('single deadline rejects a fetch promise that ignores AbortSignal',async()=>{
+ let fetches=0,signal;
+ const transport=createPinnedPayPalSandboxGetTransport({enabled:true,timeoutMs:100,
+  getAccessToken:async()=> 'sandbox-test-token',
+  fetchImpl:(_url,options)=>{fetches++;signal=options.signal;return new Promise(()=>{});}});
+ const start=Date.now();
+ await assert.rejects(transport.getOrder(ORDER),{code:'SANDBOX_GET_TIMEOUT_NO_RETRY'});
+ assert.equal(fetches,1);
+ assert.equal(signal.aborted,true);
+ assert.ok(Date.now()-start<650);
+});
+
+test('response body stalled and cancel never resolving cannot block the deadline',async()=>{
+ let cancels=0;
+ const stream=new ReadableStream({
+  pull(){return new Promise(()=>{});},
+  cancel(){cancels++;return new Promise(()=>{});}
+ });
+ const h=harness({timeoutMs:100,fetchImpl:async()=>new Response(stream,{
+  headers:{'content-type':'application/json'}})});
+ const start=Date.now();
+ await assert.rejects(h.transport.getOrder(ORDER),{code:'SANDBOX_GET_TIMEOUT_NO_RETRY'});
+ assert.equal(cancels,1);
+ assert.ok(Date.now()-start<650);
+});
+
+test('token acquisition and GET share one budget, never separate full timeouts',async()=>{
+ let fetches=0;
+ const transport=createPinnedPayPalSandboxGetTransport({enabled:true,timeoutMs:130,
+  getAccessToken:async()=>{await new Promise(r=>setTimeout(r,85));return 'sandbox-test-token';},
+  fetchImpl:async()=>{fetches++;await new Promise(r=>setTimeout(r,85));return json();}});
+ const start=Date.now();
+ await assert.rejects(transport.getOrder(ORDER),{code:'SANDBOX_GET_TIMEOUT_NO_RETRY'});
+ assert.equal(fetches,1);
+ assert.ok(Date.now()-start<650);
+});
