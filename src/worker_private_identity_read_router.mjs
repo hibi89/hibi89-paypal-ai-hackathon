@@ -10,6 +10,7 @@ import {createWorkerPrivateQuoteWorkflow} from './worker_private_quote_workflow.
 import {createWorkerPrivateQuoteDashboard} from './worker_private_quote_dashboard.mjs';
 import {createWorkerD1ContractFlow} from './worker_d1_contract_flow.mjs';
 import {createWorkerPrivateSessionResolver} from './worker_private_session_resolver.mjs';
+import {createWorkerContractRoleSessionResolver} from './worker_contract_role_session_resolver.mjs';
 
 const headers={
  'content-type':'application/json; charset=utf-8',
@@ -25,7 +26,8 @@ const res=(status,error,extra={})=>new Response(JSON.stringify({
 const fail=()=>{throw Error('WORKER_PRIVATE_IDENTITY_NOT_CONFIGURED')};
 
 export function createPrivateWorkerIdentityReadRouter({
- db,allowedOrigin,authority,pkceCoordinator,enabled=false,contractsEnabled=false,now
+ db,allowedOrigin,authority,pkceCoordinator,enabled=false,contractsEnabled=false,
+ contractRoleSessionsEnabled=false,now
 }={}){
  // A non-exported integration factory, not a production opt-in or permission.
  if(enabled!==true||!db||typeof db.withSession!=='function'||
@@ -46,9 +48,25 @@ export function createPrivateWorkerIdentityReadRouter({
  // Owner can exercise BUYER role only with a real, current hashed OIDC+D1
  // session and separately pre-provisioned contract BUYER membership. Neither
  // SELLER nor REVIEWER identity can be forged from this owner-only host.
+ const ownerPrincipal=createWorkerPrivateSessionResolver({db,now});
+ const rolePrincipal=contractsEnabled===true&&contractRoleSessionsEnabled===true?
+  createWorkerContractRoleSessionResolver({db,now}):null;
  const contracts=contractsEnabled===true?createWorkerD1ContractFlow({
-  db,allowedOrigin:origin,now,
-  resolveVerifiedPrincipal:createWorkerPrivateSessionResolver({db,now})
+  db,allowedOrigin:origin,now,roleSessionsEnabled:rolePrincipal!==null,
+  resolveVerifiedPrincipal:async request=>{
+   if(!rolePrincipal)return ownerPrincipal(request);
+   const cookies=(request.headers.get('cookie')??'').split(';').map(s=>s.trim());
+   const hasOwner=cookies.some(s=>s.startsWith('__Host-proofline_session='));
+   const hasRole=cookies.some(s=>s.startsWith('__Host-proofline_contract_role='));
+   // Two credentials are ambiguous. An invalid owner cookie cannot silently
+   // fall back to a role session or become another identity.
+   if(hasOwner&&hasRole)throw Error('AMBIGUOUS_SESSION');
+   if(hasOwner){
+    const p=await ownerPrincipal(request);
+    return {...p,identityRole:'OWNER'};
+   }
+   return rolePrincipal(request);
+  }
  }):null;
  return Object.freeze({async fetch(request){
   if(!(request instanceof Request))return res(400,'INVALID_REQUEST');

@@ -51,6 +51,17 @@ const UPDATE=`UPDATE worker_contracts SET state=?,version=version+1,
  state IN (?,?) AND
  ((?='SELLER' AND seller_id=?) OR (?='REVIEWER' AND reviewer_id=?))
  AND ${AUTH} RETURNING id`;
+
+const ROLE_UPDATE=UPDATE.replace(' RETURNING id', " AND EXISTS("+
+ "SELECT 1 FROM worker_contract_role_sessions s "+
+ "JOIN worker_contract_role_bindings b ON b.issuer=s.issuer AND b.subject_hmac=s.subject_hmac "+
+ "WHERE s.token_sha256=? AND s.actor_id=? AND s.merchant_id=? AND s.role=? "+
+ "AND s.binding_revision=? AND s.membership_revision=? "+
+ "AND s.binding_revision=b.revision AND b.active=1 "+
+ "AND b.actor_id=s.actor_id AND b.merchant_id=s.merchant_id AND b.role=s.role "+
+ "AND s.issued_at_ms<=? AND s.expires_at_ms>? AND s.revoked_at_ms IS NULL "+
+ ") RETURNING id");
+
 const stateOf=x=>x==='submit'?'SUBMITTED':x==='accept'?'ACCEPTED':'REJECTED';
 const roleOf=x=>x==='submit'?'SELLER':'REVIEWER';
 const actionOf=x=>x.toUpperCase();
@@ -105,7 +116,7 @@ async function contractKey(scope){
  const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(scope));
  return 'ctr_'+hex(b).slice(0,32);
 }
-export function createWorkerD1ContractFlow({db,allowedOrigin,resolveVerifiedPrincipal,now=Date.now}={}){
+export function createWorkerD1ContractFlow({db,allowedOrigin,resolveVerifiedPrincipal,now=Date.now,roleSessionsEnabled=false}={}){
  let origin;
  try{const u=new URL(allowedOrigin);
   if(typeof allowedOrigin==='string'&&u.protocol==='https:'&&u.origin===allowedOrigin&&
@@ -121,18 +132,34 @@ export function createWorkerD1ContractFlow({db,allowedOrigin,resolveVerifiedPrin
   const p=await resolveVerifiedPrincipal(req);
   if(p?.verified!==true||!ID.test(p.actorId)||!ID.test(p.merchantId))
    throw Error('VERIFIED_OIDC_PRINCIPAL_REQUIRED');
-  return {actor:p.actorId,merchant:p.merchantId};
+  if(roleSessionsEnabled===true&&
+     !['OWNER','SELLER','REVIEWER'].includes(p.identityRole))
+   throw Error('VERIFIED_IDENTITY_ROLE_REQUIRED');
+  if(roleSessionsEnabled===true&&p.identityRole!=='OWNER'&&
+     (!/^[a-f0-9]{64}$/.test(p.roleSessionHash??'')||
+      !Number.isSafeInteger(p.roleBindingRevision)||p.roleBindingRevision<1))
+   throw Error('VERIFIED_ROLE_SESSION_REQUIRED');
+  return {actor:p.actorId,merchant:p.merchantId,
+   identityRole:p.identityRole,roleSessionHash:p.roleSessionHash,
+   roleBindingRevision:p.roleBindingRevision};
  }
  async function grant(dbp,scope){
   const g=await dbp.prepare(MEMBERSHIP).bind(scope.actor,scope.merchant).first();
   if(!g||!['BUYER','SELLER','REVIEWER'].includes(g.role)||
      !Number.isSafeInteger(g.revision)||g.revision<1)
    throw Error('PREPROVISIONED_CONTRACT_ROLE_REQUIRED');
+  if(roleSessionsEnabled===true&&
+    (scope.identityRole==='OWNER'?g.role!=='BUYER':scope.identityRole!==g.role))
+   throw Error('IDENTITY_ROLE_NOT_ALLOWED');
   return {role:g.role,revision:g.revision};
  }
  async function current(req,scope,previous){
   const same=await trusted(req);
-  if(same.actor!==scope.actor||same.merchant!==scope.merchant)
+  if(same.actor!==scope.actor||same.merchant!==scope.merchant||
+     (roleSessionsEnabled===true&&
+      (same.identityRole!==scope.identityRole||
+       same.roleSessionHash!==scope.roleSessionHash||
+       same.roleBindingRevision!==scope.roleBindingRevision)))
    throw Error('PRINCIPAL_CHANGED');
   const g=await grant(primary(),scope);
   if(g.role!==previous.role||g.revision!==previous.revision)
@@ -212,10 +239,15 @@ export function createWorkerD1ContractFlow({db,allowedOrigin,resolveVerifiedPrin
      return reply(400,{error:'INVALID_MILESTONE_EVENT'});
     const next=stateOf(verb),from1=verb==='submit'?'PENDING':'SUBMITTED',
      from2=verb==='submit'?'REJECTED':'SUBMITTED';
-    const n=directRows(await dbp.prepare(UPDATE).bind(next,body.eventId,actionOf(verb),
+    const args=[next,body.eventId,actionOf(verb),
      scope.actor,body.detail,event[1],event[2],scope.merchant,body.expectedVersion,
      from1,from2,role,scope.actor,role,scope.actor,
-     scope.actor,scope.merchant,role,g.revision).all(),event[1]);
+     scope.actor,scope.merchant,role,g.revision];
+    if(roleSessionsEnabled===true)
+     args.push(scope.roleSessionHash,scope.actor,scope.merchant,role,
+      scope.roleBindingRevision,g.revision,tick,tick);
+    const n=directRows(await dbp.prepare(roleSessionsEnabled===true?ROLE_UPDATE:UPDATE)
+     .bind(...args).all(),event[1]);
     const row=await dbp.prepare(ONE).bind(event[1],scope.merchant).first();
     if(!row)return reply(404,{error:'CONTRACT_NOT_FOUND'});
     if(row.milestone_id!==event[2])return reply(404,{error:'MILESTONE_NOT_FOUND'});
