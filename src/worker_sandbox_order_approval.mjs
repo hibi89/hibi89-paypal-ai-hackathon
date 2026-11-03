@@ -70,17 +70,35 @@ const update=`UPDATE payment_attempts SET state='APPROVED',observed_at=CURRENT_T
    AND b.active=1 AND b.role='OWNER' AND b.actor_id=q.owner_id
    AND b.merchant_id=q.merchant_id AND b.revision=s.binding_revision)`;
 
-async function parse(request){
+async function parse(request,bodyReadTimeoutMs){
  if(!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(request.headers.get('content-type')??''))
   throw Error('BAD_TYPE');
  const length=request.headers.get('content-length');
  if(length!==null&&(!/^\d{1,5}$/.test(length)||Number(length)>512))throw Error('TOO_LARGE');
  if(!request.body)throw Error('NO_BODY');
- const reader=request.body.getReader(),chunks=[];let size=0;
- try{for(;;){const {value,done}=await reader.read();if(done)break;
+ // Bound the entire upload, not each individual read. A stalled client must
+ // never consume a Worker request indefinitely before OWNER/D1 verification.
+ const reader=request.body.getReader(),chunks=[];let size=0,timer,onAbort;
+ const deadline=new Promise((_,reject)=>{
+  timer=setTimeout(()=>reject(Error('BODY_READ_TIMEOUT')),bodyReadTimeoutMs);
+ });
+ const aborted=new Promise((_,reject)=>{
+  onAbort=()=>reject(Error('BODY_ABORTED'));
+  request.signal.addEventListener('abort',onAbort,{once:true});
+  if(request.signal.aborted)onAbort();
+ });
+ try{for(;;){
+  const {value,done}=await Promise.race([reader.read(),deadline,aborted]);
+  if(done)break;
   if(!(value instanceof Uint8Array)||(size+=value.length)>512)throw Error('TOO_LARGE');
   chunks.push(value);
- }}finally{try{await reader.cancel()}catch{}try{reader.releaseLock()}catch{}}
+ }}finally{
+  clearTimeout(timer);
+  request.signal.removeEventListener('abort',onAbort);
+  // A malicious stream can ignore cancel. Never await its cancellation.
+  try{const cancelled=reader.cancel();cancelled?.catch?.(()=>{});}catch{}
+  try{reader.releaseLock()}catch{}
+ }
  const bytes=new Uint8Array(size);let pos=0;
  for(const c of chunks){bytes.set(c,pos);pos+=c.length}
  const d=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
@@ -101,7 +119,8 @@ function matchApprovedGet(order,row,expectedMerchantId){
   unit.amount?.value===(row.approval_amount_minor/100).toFixed(2);
 }
 export function createWorkerSandboxApprovalReconcile({
- db,allowedOrigin,transport,expectedMerchantId,enabled=false,now=Date.now
+ db,allowedOrigin,transport,expectedMerchantId,enabled=false,now=Date.now,
+ bodyReadTimeoutMs=2000
 }={}){
  let origin;
  try{const u=new URL(allowedOrigin);
@@ -112,7 +131,8 @@ export function createWorkerSandboxApprovalReconcile({
   transport?.mode!=='PAYPAL_SANDBOX_READ_ONLY'||
   transport?.networkEnabled!==true||transport?.paymentPostsEnabled!==false||
   typeof transport.getOrder!=='function'||
-  !isPinnedPayPalSandboxGetTransport(transport))
+  !Number.isSafeInteger(bodyReadTimeoutMs)||bodyReadTimeoutMs<100||
+  bodyReadTimeoutMs>5000||!isPinnedPayPalSandboxGetTransport(transport))
   throw Error('SANDBOX_APPROVAL_RECONCILE_EXPLICIT_DEPENDENCIES_REQUIRED');
  const resolve=createWorkerPrivateSessionResolver({db,now});
  return Object.freeze({async fetch(request){
@@ -128,7 +148,8 @@ export function createWorkerSandboxApprovalReconcile({
   if((request.headers.get('cookie')??'').split(';').some(x=>
     x.trim().startsWith('__Host-proofline_contract_role=')))
    return respond(401,{error:'AMBIGUOUS_SESSION'});
-  let args;try{args=await parse(request)}catch{return respond(400,{error:'INVALID_BODY'})}
+  let args;try{args=await parse(request,bodyReadTimeoutMs)}
+  catch{return respond(400,{error:'INVALID_BODY'})}
   let owner,digest,checkedAt,row;
   try{
    owner=await resolve(request);
