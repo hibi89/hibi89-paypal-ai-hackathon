@@ -1,3 +1,4 @@
+import {hashPrivateSessionCookie} from './worker_private_session_resolver.mjs';
 // NON-DEFAULT Worker/D1 Part1 contract workflow candidate.
 // Verified principal is injected ONLY by a separately reviewed OIDC host.
 // Buyer/seller/reviewer grants are operator-preprovisioned D1 data, never
@@ -35,6 +36,17 @@ const CREATE=`INSERT INTO worker_contracts(
  AND q.status='APPROVED' AND q.approval_actor=q.owner_id
  AND q.approval_version=q.version AND q.approval_amount_minor BETWEEN 100 AND 1000000
  AND buyer.revision=? ON CONFLICT DO NOTHING RETURNING id`;
+const OWNER_CREATE=CREATE.replace(' ON CONFLICT DO NOTHING RETURNING id',`
+ AND EXISTS (SELECT 1 FROM worker_private_sessions s
+ JOIN worker_private_oidc_bindings b ON b.issuer=s.issuer
+ AND b.subject_hmac=s.binding_subject_hmac
+ WHERE s.token_sha256=? AND s.actor_id=? AND s.merchant_id=?
+ AND s.role='OWNER' AND s.revoked_at_ms IS NULL
+ AND s.expires_at_ms>? AND s.issuer_verified_at_ms<=?
+ AND b.active=1 AND b.role='OWNER'
+ AND b.actor_id=s.actor_id AND b.merchant_id=s.merchant_id
+ AND b.revision=s.binding_revision)
+ ON CONFLICT DO NOTHING RETURNING id`);
 const ONE=`SELECT id,quote_id,merchant_id,buyer_id,seller_id,reviewer_id,
  milestone_id,milestone_title,amount_minor,currency,state,version,
  last_event_id,last_action,last_actor_id,last_detail
@@ -218,10 +230,17 @@ export function createWorkerD1ContractFlow({db,allowedOrigin,resolveVerifiedPrin
      return reply(400,{error:'INVALID_CONTRACT'});
     const contractId=await contractKey('proofline:contract:v1\0'+scope.merchant+'\0'+scope.actor+'\0'+body.clientRequestId);
     const createdEvent=contractId+'_create';
-    const n=directRows(await dbp.prepare(CREATE).bind(contractId,
-     body.sellerId,body.reviewerId,body.milestoneId,body.milestoneTitle,
-     createdEvent,tick,body.sellerId,body.reviewerId,body.quoteId,
-     scope.actor,scope.merchant,body.quoteVersion,g.revision).all(),contractId);
+    const args=[contractId,body.sellerId,body.reviewerId,body.milestoneId,
+     body.milestoneTitle,createdEvent,tick,body.sellerId,body.reviewerId,
+     body.quoteId,scope.actor,scope.merchant,body.quoteVersion,g.revision];
+    // In the authenticated role-aware Workerd host, an OWNER session must
+    // still be valid INSIDE the same atomic INSERT as the contract mutation.
+    if(roleSessionsEnabled===true){
+     if(scope.identityRole!=='OWNER')return reply(403,{error:'BUYER_OWNER_REQUIRED'});
+     args.push(await hashPrivateSessionCookie(request),scope.actor,scope.merchant,tick,tick);
+    }
+    const sql=roleSessionsEnabled===true?OWNER_CREATE:CREATE;
+    const n=directRows(await dbp.prepare(sql).bind(...args).all(),contractId);
     const row=await dbp.prepare(ONE).bind(contractId,scope.merchant).first();
     if(!row)return reply(409,{error:'QUOTE_OR_ROLES_NOT_AVAILABLE'});
     if(row.quote_id!==body.quoteId||row.seller_id!==body.sellerId||
