@@ -42,8 +42,18 @@ const update=`UPDATE payment_attempts SET state='APPROVED',observed_at=CURRENT_T
  WHERE request_id=? AND quote_id=? AND quote_version=? AND merchant_id=?
  AND operation='create' AND state IN ('IN_FLIGHT','UNKNOWN')
  AND remote_id=? AND amount_minor=? AND currency='USD'
+ -- The newest append-only audit row must match the exact, current claim.
+ -- A stale or forged audit tail cannot authorize a provider-backed state write.
  AND EXISTS(SELECT 1 FROM payment_attempt_audit e
-    WHERE e.request_id=payment_attempts.request_id)
+    WHERE e.sequence=(SELECT MAX(t.sequence) FROM payment_attempt_audit t
+      WHERE t.request_id=payment_attempts.request_id)
+     AND e.request_id=payment_attempts.request_id
+     AND e.quote_id=payment_attempts.quote_id
+     AND e.quote_version=payment_attempts.quote_version
+     AND e.merchant_id=payment_attempts.merchant_id
+     AND e.operation=payment_attempts.operation
+     AND e.after_state=payment_attempts.state
+     AND e.remote_id IS payment_attempts.remote_id)
  AND EXISTS(SELECT 1 FROM quotes q
    JOIN worker_private_sessions s ON s.token_sha256=?
     AND s.actor_id=q.owner_id AND s.merchant_id=q.merchant_id
