@@ -157,7 +157,13 @@ jobs:
           node --input-type=module -e "import {readFileSync} from 'node:fs';const d=JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/owner-d1-config-query.json'));const ok=x=>x&&typeof x==='object'&&(Number(x.applied)===4||Object.values(x).some(ok));if(!ok(d))process.exit(2);console.log('OWNER_CONFIG_REAL_WRANGLER_LOCAL_4_MIGRATIONS_PASS')"
       - name: Actual local workerd HTTPS + D1 authenticated read (never remote)
         run: node scripts/probe_private_worker_runtime_local.mjs
-      - name: Actual local workerd S256 PKCE + RSA D1 session + HTTPS read + logout (synthetic IdP only)
+      - name: Install pinned Chromium controller for real local private D1 view test
+        run: |
+          python3 -m venv .browser-venv
+          .browser-venv/bin/pip install --disable-pip-version-check playwright==1.56.0
+          python3 -m py_compile tests/browser_private_d1_workerd_e2e.py
+          command -v google-chrome || command -v google-chrome-stable || command -v chromium
+      - name: Actual local workerd S256 PKCE + RSA D1 session + HTTPS read + Chromium owner dashboard + revoke
         run: node scripts/probe_private_worker_identity_runtime_local.mjs
       - name: Confirm disposable database integrity and no external activation
         run: |

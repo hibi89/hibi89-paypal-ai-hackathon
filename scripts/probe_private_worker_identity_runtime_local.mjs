@@ -51,6 +51,45 @@ async function request(path,headers={},method='GET'){
   req.on('error',bad);req.end();
  });
 }
+// Run real Chromium against this same ephemeral HTTPS workerd. The one-use
+// synthetic session cookie is sent through process stdin, never argv/logs.
+async function browserVerify(mode,origin,sessionCookie){
+ const binary=resolve(root,'.browser-venv/bin/python');
+ if(!existsSync(binary)||!['active','revoked'].includes(mode))
+  fail('LOCAL_WORKERD_CHROMIUM_TOOLING_REQUIRED');
+ const report=await new Promise((ok,bad)=>{
+  const proc=spawn(binary,['tests/browser_private_d1_workerd_e2e.py',origin,mode],{
+   cwd:root,env:{...process.env,CLOUDFLARE_API_TOKEN:'',
+    WRANGLER_SEND_METRICS:'false'},stdio:['pipe','pipe','pipe']
+  });
+  let output='',overflow=false;
+  const timeout=setTimeout(()=>{overflow=true;proc.kill('SIGKILL')},30000);
+  proc.stdout.on('data',chunk=>{
+   output+=chunk.toString('utf8');
+   if(output.length>4096){overflow=true;proc.kill('SIGKILL')}
+  });
+  // Never copy raw browser stderr to CI logs; no synthetic cookie leakage.
+  proc.stderr.on('data',()=>{});
+  proc.once('error',()=>{clearTimeout(timeout);bad(Error('CHROMIUM_START_FAILED'))});
+  proc.once('close',code=>{
+   clearTimeout(timeout);
+   if(overflow||code!==0)return bad(Error('CHROMIUM_'+mode.toUpperCase()+'_FAILED'));
+   try{ok(JSON.parse(output.trim()))}
+   catch{bad(Error('CHROMIUM_PROOF_INVALID'))}
+  });
+  proc.stdin.end(JSON.stringify({sessionCookie}));
+ });
+ const expected=mode==='active'?'REAL_LOCAL_WORKERD_CHROMIUM_OWNER_D1_VIEW_PASS':
+  'LOCAL_WORKERD_CHROMIUM_REVOKED_SESSION_BLOCKED';
+ if(report?.status!==expected||report.realChromium!==true||
+    report.localHttps!==true||report.externalRequests!==0||
+    report.paymentPosts!==0||
+    (mode==='active'&&(report.renderedRows!==2||
+      report.browserRefreshReadOnly!==true||report.pageErrors!==0))||
+    (mode==='revoked'&&report.revokedCookieBlocked!==true))
+  fail('CHROMIUM_PROOF_REJECTED');
+ console.log(JSON.stringify(report));
+}
 const path='/__private/attempt/status?quoteId=ciIdentityQuote&quoteVersion=1&operation=create&requestId=ciIdentityRequest';
 async function main(){
  port=await unusedPort();
@@ -189,6 +228,7 @@ async function main(){
  }
  if((await request('/__private/attempts/view',{cookie:sessionCookie},'POST')).status!==405)
   fail('PRIVATE_D1_DASHBOARD_MUTATION_ROUTE_ALLOWED');
+ await browserVerify('active',origin,sessionCookie);
  if((await request('/__private/attempts?limit=5')).status!==401)
   fail('ANONYMOUS_RECENT_LIST_ALLOWED');
  if((await request('/__private/attempts?limit=0',{cookie:sessionCookie})).status!==400)
@@ -215,6 +255,7 @@ async function main(){
   fail('REVOKED_COOKIE_REUSED');
  if((await request('/__private/attempts/view',{cookie:sessionCookie})).status!==401)
   fail('REVOKED_PRIVATE_D1_DASHBOARD_COOKIE_REUSED');
+ await browserVerify('revoked',origin,sessionCookie);
  if((await request(callback,{cookie:loginCookie})).status!==401)
   fail('PKCE_CALLBACK_REPLAY_ACCEPTED');
  console.log(JSON.stringify({
@@ -222,7 +263,8 @@ async function main(){
   realWorkerdHttps:true,localTls:true,realLocalD1:true,pinnedRS256:true,
   s256Pkce:true,duplicateCallbackBlocked:true,sessionRevoked:true,
   unauthorizedPaymentRoutesBlocked:true,ownerScopedRecentList:true,
-  privateOwnerDashboardAssets:true,syntheticIdpOnly:true,
+  privateOwnerDashboardAssets:true,realLocalChromiumOwnerDashboard:true,
+  revokedChromiumSessionBlocked:true,syntheticIdpOnly:true,
   actualProviderCalls:0,publicDeployment:false,remoteD1Verified:false,
   paymentAuthorized:false
  }));
