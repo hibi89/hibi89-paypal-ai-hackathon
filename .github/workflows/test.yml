@@ -118,6 +118,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Compile real owner Worker as isolated Wrangler dry-run (no deploy or credentials)
+        run: node scripts/check_owner_worker_bundle_dryrun.mjs --check
       - name: Confirm no operator restore SQL in migrations
         shell: bash
         run: |
