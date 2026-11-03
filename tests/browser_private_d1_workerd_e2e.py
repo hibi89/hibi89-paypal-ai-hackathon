@@ -117,9 +117,48 @@ def main():
             assert any(path=="/__private/attempts/view.js" for _,path in network),"BROWSER_JS_MISSING"
             assert any(path=="/__private/attempts/view.css" for _,path in network),"BROWSER_CSS_MISSING"
             assert sum(path.startswith("/__private/attempts?limit=") for _,path in network)>=3,"BROWSER_D1_GET_MISSING"
+            # Unlike the attempts panel (GET-only), the owner quote form has
+            # two explicitly authorized same-origin D1 writes. Prove these
+            # through actual Chromium clicks against the same live Workerd.
+            mark('QUOTE_UI_BROWSER_WRITE')
+            quote_response=page.goto(origin+"/__private/quotes/view",wait_until="domcontentloaded")
+            assert quote_response is not None and quote_response.status==200,"QUOTE_BROWSER_VIEW_UNAVAILABLE"
+            expect(page.locator("h1")).to_contain_text("Quotes and human approval")
+            expect(page.locator("#status")).to_contain_text("Showing 3 D1 owner quotes",timeout=8000)
+            scope_text="Chromium-created owner service with saved deliverables and an audit checklist"
+            page.locator("#scope").fill(scope_text)
+            page.locator("#draft button").click()
+            expect(page.locator("#status")).to_contain_text("Draft saved to real D1.",timeout=8000)
+            quote=page.locator("article.quote").filter(has_text=scope_text)
+            expect(quote).to_have_count(1,timeout=8000)
+            quote_id=quote.locator("h3").inner_text()
+            assert re.fullmatch(r"q_[a-f0-9]{32}",quote_id),"BROWSER_QUOTE_ID_INVALID"
+            expect(quote).to_contain_text("Status: PROPOSED")
+            quote.locator(".approval input[type=number]").fill("26375")
+            quote.locator(".approval input[type=checkbox]").check()
+            quote.locator(".approval button").click()
+            expect(page.locator("#status")).to_contain_text(
+                "Amount approved and saved to D1; no PayPal action.",timeout=8000)
+            expect(quote).to_contain_text("Human approved: USD 263.75",timeout=8000)
+            page.reload(wait_until="domcontentloaded")
+            expect(page.locator("#status")).to_contain_text("Showing 4 D1 owner quotes",timeout=8000)
+            saved_quote=page.locator("article.quote").filter(has_text=scope_text)
+            expect(saved_quote).to_have_count(1)
+            expect(saved_quote).to_contain_text("Human approved: USD 263.75")
+            assert saved_quote.locator(".approval").count()==0,"BROWSER_APPROVED_QUOTE_EDITABLE"
+            post_paths=[path for method,path in network if method=="POST"]
+            assert post_paths==[
+                "/__private/quotes",f"/__private/quotes/{quote_id}/approve"
+            ],"BROWSER_UNEXPECTED_MUTATION_ENDPOINT"
+            assert not errors,"QUOTE_CHROMIUM_CONSOLE_OR_SCRIPT_ERROR"
+            assert not blocked,"QUOTE_BROWSER_EXTERNAL_REQUEST_ATTEMPTED"
+            assert any(path=="/__private/quotes/view.js" for _,path in network),"QUOTE_BROWSER_JS_MISSING"
+            assert any(path=="/__private/quotes/view.css" for _,path in network),"QUOTE_BROWSER_CSS_MISSING"
             print(json.dumps({"status":"REAL_LOCAL_WORKERD_CHROMIUM_OWNER_D1_VIEW_PASS",
                 "realChromium":True,"localHttps":True,"renderedRows":2,
                 "anonymousBlocked":True,"browserRefreshReadOnly":True,
+                "browserQuoteD1CreateApprove":True,"quoteApiPosts":2,
+                "browserQuoteD1CountAfterReload":4,
                 "scriptAndStylesLoaded":True,"pageErrors":0,"externalRequests":0,
                 "paymentPosts":0,"realIdpCalls":0,"providerCalls":0,
                 "publicDeployment":False,"remoteD1Verified":False}))
