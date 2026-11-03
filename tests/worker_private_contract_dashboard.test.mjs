@@ -33,7 +33,7 @@ test('signed role contract page renders with strict CSP and no external dependen
  assert.equal(res.headers.has('access-control-allow-origin'),false);
  const html=await res.text();
  for(const token of ['id="contracts"','id="contract-form"','id="buyer-panel"',
-  '/__private/contracts/view.js','This does not','No payment']) assert.ok(html.includes(token),token);
+  '/__private/contracts/view.js','never PayPal payment authorization','No payment']) assert.ok(html.includes(token),token);
  assert.deepEqual(f.calls,[{method:'GET',path:'/__private/contracts',limit:'1'}]);
 });
 test('client JavaScript parses and contains explicit POST role intents and safe text rendering',async()=>{
@@ -44,7 +44,7 @@ test('client JavaScript parses and contains explicit POST role intents and safe 
  assert.equal(js.status,200);assert.match(js.headers.get('content-type'),/^text\/javascript/);
  const src=await js.text();
  assert.doesNotThrow(()=>new Script(src,{filename:'contracts-view.js'}));
- for(const marker of ['contract-create','contract-submit','contract-accept',
+ for(const marker of ['contract-create',"'contract-'+verb",'/milestones/',
   'crypto.randomUUID()','textContent','credentials:\'same-origin\''])
   assert.ok(src.includes(marker),marker);
  assert.equal(src.includes('innerHTML'),false);
