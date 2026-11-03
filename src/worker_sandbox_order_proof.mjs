@@ -54,7 +54,7 @@ const READ=[
  "AND q.currency='USD' AND q.status='APPROVED'",
  'AND q.approval_actor=q.owner_id AND q.approval_version=q.version',
  'AND q.approval_amount_minor BETWEEN 100 AND 1000000',
- 'AND a.amount_minor=q.approval_amount_minor',
+ 'AND a.amount_minor=q.approval_amount_minor AND a.currency=q.currency',
  'AND s.token_sha256=? AND s.revoked_at_ms IS NULL',
  'AND s.expires_at_ms>? AND s.issuer_verified_at_ms<=?',
  "AND s.role='OWNER' AND b.active=1 AND b.role='OWNER'",
@@ -140,7 +140,7 @@ export function createWorkerSandboxOrderProof({
    status:'SANDBOX_GET_EVIDENCE_VALIDATED_NO_LEDGER_COMMIT',
    quoteVersion:row.version,orderStatus,ledgerState:row.ledger_state,
    amountMinor:row.approval_amount_minor,currency:'USD',
-   reconciliationRequired:orderStatus==='COMPLETED'||row.ledger_state!=='APPROVED',
+   reconciliationRequired:orderStatus!=='APPROVED'||row.ledger_state!=='APPROVED',
    orderReferenceMatches:true,providerGetInvoked:true,
    providerReceiptIsPaymentAuthorization:false
   });
