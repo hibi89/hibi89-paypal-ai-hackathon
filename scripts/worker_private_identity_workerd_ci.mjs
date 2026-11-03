@@ -100,7 +100,9 @@ export default Object.freeze({
    const router=createPrivateWorkerIdentityReadRouter({
     db:env.DB,allowedOrigin:env.CI_PRIVATE_ORIGIN,authority,
     pkceCoordinator:pkce,enabled:true,
-    contractsEnabled:env.CI_CONTRACTS_OPT_IN==='LOCAL_CONTRACT_CANDIDATE_ONLY'
+    contractsEnabled:env.CI_CONTRACTS_OPT_IN==='LOCAL_CONTRACT_CANDIDATE_ONLY',
+    contractRoleSessionsEnabled:env.CI_CONTRACT_ROLE_SESSIONS_OPT_IN===
+     'LOCAL_VERIFIED_ROLE_FIXTURE_ONLY'
    });
    return await router.fetch(request);
   }catch{return failResponse();}

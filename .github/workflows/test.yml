@@ -168,7 +168,8 @@ jobs:
       - name: Apply separately staged contract role candidate ONLY to disposable local D1
         run: |
           npx --yes wrangler@4.156.0 d1 execute DB --local --config .wrangler-d1-local-ci.json --persist-to "$RUNNER_TEMP/paypal-d1-local-only" --file migrations/d1_candidate/0005_contract_role_milestones.sql
-          echo 'D1_CONTRACT_CANDIDATE_LOCAL_ONLY_NO_REMOTE_MIGRATION'
+          npx --yes wrangler@4.156.0 d1 execute DB --local --config .wrangler-d1-local-ci.json --persist-to "$RUNNER_TEMP/paypal-d1-local-only" --file migrations/d1_candidate/0006_contract_role_sessions.sql
+          echo 'D1_CONTRACT_ROLE_CANDIDATES_0005_0006_LOCAL_ONLY_NO_REMOTE_MIGRATION'
       - name: Actual local workerd S256 PKCE + RSA D1 session + HTTPS read + Chromium owner dashboard + revoke
         run: node scripts/probe_private_worker_identity_runtime_local.mjs
       - name: Confirm disposable database integrity and no external activation
