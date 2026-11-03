@@ -38,7 +38,7 @@ function seed(){
  });
  if(p.error||p.status!==0)fail('LOCAL_WORKER_D1_SEED_FAILED');
 }
-async function request(path,headers={},method='GET'){
+async function request(path,headers={},method='GET',body=null){
  return new Promise((ok,bad)=>{
   const req=httpsRequest({hostname:'127.0.0.1',port,path,method,headers,
    rejectUnauthorized:false,timeout:2500},res=>{
@@ -48,7 +48,7 @@ async function request(path,headers={},method='GET'){
    res.on('end',()=>ok({status:res.statusCode,body,headers:res.headers,encrypted}));
   });
   req.on('timeout',()=>req.destroy(Error('LOOPBACK_TIMEOUT')));
-  req.on('error',bad);req.end();
+  req.on('error',bad);req.end(body);
  });
 }
 // Run real Chromium against this same ephemeral HTTPS workerd. The one-use
@@ -242,6 +242,69 @@ async function main(){
  }
  if((await request('/__private/attempts/view',{cookie:sessionCookie},'POST')).status!==405)
   fail('PRIVATE_D1_DASHBOARD_MUTATION_ROUTE_ALLOWED');
+
+ // First genuinely persisted Part1 business mutation in actual local Workerd:
+ // authorized owner draft -> unique D1 idempotency -> explicit human USD
+ // approval. No synthetic PayPal capture or AI model, no public deployment.
+ const draftPath='/__private/quotes',approvalDraft={
+  clientRequestId:'0047f90c-96d4-4fca-a28c-f6e9a78fd193',
+  scopeText:'Deliver an authenticated freelance client dashboard and provide source code'
+ };
+ const writeHeaders={cookie:sessionCookie,origin,'sec-fetch-site':'same-origin',
+  'content-type':'application/json','x-proofline-intent':'quote-draft'};
+ const postDraft=()=>request(draftPath,writeHeaders,'POST',JSON.stringify(approvalDraft));
+ if((await request(draftPath)).status!==401)fail('ANONYMOUS_OWNER_D1_QUOTE_ROUTE_ALLOWED');
+ const draftCreated=await postDraft();
+ let quoteCreated;try{quoteCreated=JSON.parse(draftCreated.body)}catch{fail('OWNER_D1_DRAFT_INVALID_JSON')}
+ if(draftCreated.status!==201||!draftCreated.encrypted||
+   quoteCreated.quote?.status!=='PROPOSED'||quoteCreated.created!==true||
+   quoteCreated.paymentAuthorized!==false||quoteCreated.providerCalls!==0||
+   !/^q_[a-f0-9]{32}$/.test(quoteCreated.quote.quoteId??''))
+  fail('REAL_WORKERD_D1_DRAFT_CREATE_FAILED');
+ const repeat=await postDraft();let replay;
+ try{replay=JSON.parse(repeat.body)}catch{fail('OWNER_D1_DRAFT_REPLAY_JSON_INVALID')}
+ if(repeat.status!==200||replay.idempotentReplay!==true||
+   replay.quote?.quoteId!==quoteCreated.quote.quoteId)
+  fail('REAL_WORKERD_D1_DRAFT_IDEMPOTENCY_FAILED');
+ const approvalPath=draftPath+'/'+quoteCreated.quote.quoteId+'/approve';
+ const approveHeaders={...writeHeaders,'x-proofline-intent':'quote-approve'};
+ const approveBody=JSON.stringify({expectedVersion:1,amountMinor:12750});
+ if((await request(approvalPath,{...approveHeaders,origin:'https://evil.invalid'},
+  'POST',approveBody)).status!==403)fail('CROSS_SITE_D1_QUOTE_APPROVAL_ALLOWED');
+ const approved=await request(approvalPath,approveHeaders,'POST',approveBody);
+ let confirmed;try{confirmed=JSON.parse(approved.body)}catch{fail('OWNER_D1_APPROVAL_JSON_INVALID')}
+ if(approved.status!==200||confirmed.quote?.status!=='APPROVED'||
+   confirmed.quote.approvedAmountMinor!==12750||confirmed.humanApproval!==true||
+   confirmed.paymentAuthorized!==false||confirmed.providerCalls!==0)
+  fail('REAL_WORKERD_D1_HUMAN_APPROVAL_FAILED');
+ const listing=await request(draftPath+'?limit=20',{
+  cookie:sessionCookie,'sec-fetch-site':'same-origin'
+ });
+ let saved;try{saved=JSON.parse(listing.body)}catch{fail('OWNER_D1_QUOTES_JSON_INVALID')}
+ if(listing.status!==200||saved.source!=='D1_OWNER_QUOTES'||
+   !Array.isArray(saved.quotes)||saved.quotes.length!==3||
+   !['ciQuote','ciIdentityQuote'].every(id=>saved.quotes.some(q=>q.quoteId===id))||
+   !saved.quotes.some(q=>q.quoteId===quoteCreated.quote.quoteId&&q.approvedAmountMinor===12750)||
+   saved.paymentAuthorized!==false||saved.providerCalls!==0)
+  fail('REAL_WORKERD_D1_QUOTES_LIST_FAILED');
+ for(const [asset,type,marker] of [
+  ['/__private/quotes/view','text/html','id="draft"'],
+  ['/__private/quotes/view.js','text/javascript','crypto.randomUUID()'],
+  ['/__private/quotes/view.css','text/css','.quote']
+ ]){
+  const a=await request(asset,{cookie:sessionCookie,'sec-fetch-site':'same-origin'});
+  if(a.status!==200||!a.encrypted||
+    !a.headers['content-type']?.startsWith(type)||!a.body.includes(marker))
+   fail('REAL_WORKERD_OWNER_QUOTES_UI_ASSET_FAILED');
+  if((await request(asset)).status!==401)
+   fail('ANONYMOUS_OWNER_QUOTES_UI_ALLOWED');
+ }
+ console.log(JSON.stringify({status:'LOCAL_WORKERD_REAL_D1_OWNER_QUOTE_HUMAN_APPROVAL_PASS',
+  actualLocalWorkerd:true,ownerD1DraftCreated:true,uniqueClientRequestReplaySafe:true,
+  approvedExactMinor:12750,ownerBoundQuoteCount:3,sessionAuthenticated:true,
+  crossSiteDenied:true,UIAssetsRealHTTPS:true,externalRequests:0,
+  actualProviderCalls:0,paymentAuthorized:false,publicDeployment:false}));
+
  await browserVerify('active',origin,sessionCookie);
  if((await request('/__private/attempts?limit=5')).status!==401)
   fail('ANONYMOUS_RECENT_LIST_ALLOWED');
@@ -269,6 +332,8 @@ async function main(){
   fail('REVOKED_COOKIE_REUSED');
  if((await request('/__private/attempts/view',{cookie:sessionCookie})).status!==401)
   fail('REVOKED_PRIVATE_D1_DASHBOARD_COOKIE_REUSED');
+ if((await request('/__private/quotes/view',{cookie:sessionCookie})).status!==401)
+  fail('REVOKED_PRIVATE_OWNER_QUOTES_COOKIE_REUSED');
  await browserVerify('revoked',origin,sessionCookie);
  if((await request(callback,{cookie:loginCookie})).status!==401)
   fail('PKCE_CALLBACK_REPLAY_ACCEPTED');
