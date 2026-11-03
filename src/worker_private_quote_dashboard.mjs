@@ -49,7 +49,7 @@ async function refresh(){
   for(const q of data.quotes){
    const card=node('article','');card.className='quote';
    card.append(node('h3',q.quoteId),node('p','Status: '+q.status+' · Version '+q.version),
-     node('p',q.scopeText));
+     node('p',q.scopeText??'Historical quote: scope not recorded'));
    if(q.status==='APPROVED'){
     card.append(node('p','Human approved: USD '+(q.approvedAmountMinor/100).toFixed(2)+' · No payment executed'));
    }else{

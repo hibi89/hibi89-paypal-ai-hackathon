@@ -37,7 +37,7 @@ const ONE=`SELECT id,version,currency,status,scope_text,suggestion_source,
 function mapQuote(row){
  if(!row||!ID.test(row.id)||!Number.isSafeInteger(row.version)||row.version<1||
     row.currency!=='USD'||!['PROPOSED','APPROVED'].includes(row.status)||
-    typeof row.scope_text!=='string'||row.scope_text.length>600||
+    (row.scope_text!==null&&(typeof row.scope_text!=='string'||row.scope_text.length>600))||
     (row.status==='APPROVED'&&(!Number.isSafeInteger(row.approval_amount_minor)||
       row.approval_amount_minor<100||row.approval_amount_minor>1000000||
       row.approval_version!==row.version)))throw Error('INVALID_QUOTE_ROW');

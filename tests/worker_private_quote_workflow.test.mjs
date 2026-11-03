@@ -105,3 +105,18 @@ test('invalid body and cross-origin write never create quote',async()=>{
  assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM quotes').get().n,0);
  f.db.close();
 });
+
+test('pre-existing D1 approved quotes without a scope remain readable and immutable',async()=>{
+ const f=fixture();
+ f.db.prepare("INSERT INTO quotes(id,owner_id,merchant_id,version,currency,status,approval_actor,approval_version,approval_amount_minor) VALUES('legacyQuote','owner-1','merchant-1',1,'USD','APPROVED','owner-1',1,250)").run();
+ const listed=await f.handler.fetch(request('/__private/quotes?limit=20'));
+ assert.equal(listed.status,200);
+ const data=await listed.json();
+ assert.equal(data.count,1);
+ assert.equal(data.quotes[0].quoteId,'legacyQuote');
+ assert.equal(data.quotes[0].scopeText,null);
+ assert.equal(data.quotes[0].approvedAmountMinor,250);
+ assert.equal((await f.handler.fetch(request('/__private/quotes/legacyQuote/approve','POST',
+  {amountMinor:300,expectedVersion:1}))).status,409);
+ f.db.close();
+});
