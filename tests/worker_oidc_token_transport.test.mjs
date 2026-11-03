@@ -93,7 +93,7 @@ test('undeclared >16KiB stream and invalid JSON are rejected',async()=>{
 test('missing, malformed ID token or wrong token type fail closed',async()=>{
  for(const json of [
   {token_type:'Bearer'},{token_type:'Bearer',id_token:'a.b.c'},
-  {token_type:'Bearer',id_token:'invalid'},{token_type:'bearer',id_token},
+  {token_type:'Bearer',id_token:'invalid'},{token_type:'bearer',id_token:idToken},
   {id_token:idToken}
  ]){
   const t=make({fetchImpl:async()=>new Response(JSON.stringify(json),
