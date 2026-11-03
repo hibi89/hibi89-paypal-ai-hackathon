@@ -17,10 +17,18 @@ FROM payment_attempts WHERE quote_id=? AND quote_version=?
 AND merchant_id=? AND operation='create'`;
 const PERSIST=`UPDATE payment_attempts SET remote_id=?,observed_at=CURRENT_TIMESTAMP
 WHERE request_id=? AND quote_id=? AND quote_version=? AND merchant_id=?
-AND operation='create' AND state='IN_FLIGHT' AND remote_id IS NULL`;
-const READ_BY_REQUEST=`SELECT request_id,state,remote_id FROM payment_attempts
-WHERE request_id=? AND quote_id=? AND quote_version=? AND merchant_id=?
-AND operation='create'`;
+AND operation='create' AND state='IN_FLIGHT' AND remote_id IS NULL
+AND EXISTS(SELECT 1 FROM quotes q WHERE q.id=payment_attempts.quote_id
+ AND q.version=payment_attempts.quote_version AND q.owner_id=?
+ AND q.merchant_id=payment_attempts.merchant_id AND q.status='APPROVED'
+ AND q.approval_actor=q.owner_id AND q.approval_version=q.version
+ AND q.approval_amount_minor=payment_attempts.amount_minor
+ AND q.currency=payment_attempts.currency)`;
+const READ_BY_REQUEST=`SELECT a.request_id,a.state,a.remote_id FROM payment_attempts a
+JOIN quotes q ON q.id=a.quote_id AND q.version=a.quote_version
+ AND q.merchant_id=a.merchant_id
+WHERE a.request_id=? AND a.quote_id=? AND a.quote_version=? AND a.merchant_id=?
+AND q.owner_id=? AND a.operation='create'`;
 const MARK_UNKNOWN=`UPDATE payment_attempts SET state='UNKNOWN',observed_at=CURRENT_TIMESTAMP
 WHERE request_id=? AND quote_id=? AND quote_version=? AND merchant_id=?
 AND operation='create' AND state='IN_FLIGHT'
@@ -60,8 +68,8 @@ export function createWorkerPaymentClaimGate({db}={}){
    // D1 errors or ambiguous commit outcomes must not trigger a second create.
    fail('CLAIM_OUTCOME_UNKNOWN_RECONCILE_BEFORE_RETRY');
   }
- },async persistRemoteOrder({requestId,quoteId,quoteVersion,merchantId,remoteId}={}){
-  if(![requestId,quoteId].every(x=>typeof x==='string'&&ID.test(x))||
+ },async persistRemoteOrder({requestId,quoteId,quoteVersion,ownerId,merchantId,remoteId}={}){
+  if(![requestId,quoteId,ownerId].every(x=>typeof x==='string'&&ID.test(x))||
      !MERCHANT.test(merchantId??'')||
      !Number.isSafeInteger(quoteVersion)||quoteVersion<1||
      typeof remoteId!=='string'||!/^[A-Za-z0-9_-]{1,64}$/.test(remoteId))
@@ -69,9 +77,9 @@ export function createWorkerPaymentClaimGate({db}={}){
   try{
    const primary=db.withSession('first-primary');
    const result=await primary.prepare(PERSIST).bind(
-    remoteId,requestId,quoteId,quoteVersion,merchantId).run();
+    remoteId,requestId,quoteId,quoteVersion,merchantId,ownerId).run();
    const row=await primary.prepare(READ_BY_REQUEST).bind(
-    requestId,quoteId,quoteVersion,merchantId).first();
+    requestId,quoteId,quoteVersion,merchantId,ownerId).first();
    if(result?.meta?.changes===1&&row?.remote_id===remoteId&&row.state==='IN_FLIGHT')
     return Object.freeze({persisted:true,state:'IN_FLIGHT',paymentAuthorized:false,providerCalls:0});
    // Idempotent re-read is not a license to call PayPal CREATE again.
