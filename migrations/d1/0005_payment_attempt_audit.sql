@@ -24,7 +24,8 @@ CREATE INDEX IF NOT EXISTS idx_payment_attempt_audit_request
 INSERT INTO payment_attempt_audit
  (request_id,quote_id,quote_version,merchant_id,operation,event_type,before_state,after_state,remote_id)
 SELECT request_id,quote_id,quote_version,merchant_id,operation,
- 'MIGRATION_BASELINE',NULL,state,remote_id FROM payment_attempts;
+ 'MIGRATION_BASELINE',NULL,state,remote_id FROM payment_attempts AS a
+WHERE NOT EXISTS (SELECT 1 FROM payment_attempt_audit x WHERE x.request_id=a.request_id);
 CREATE TRIGGER IF NOT EXISTS payment_attempt_audit_on_insert
 AFTER INSERT ON payment_attempts
 BEGIN
