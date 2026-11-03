@@ -34,7 +34,7 @@ const CREATE=`INSERT INTO worker_contracts(
  WHERE q.id=? AND q.owner_id=? AND q.merchant_id=? AND q.version=?
  AND q.status='APPROVED' AND q.approval_actor=q.owner_id
  AND q.approval_version=q.version AND q.approval_amount_minor BETWEEN 100 AND 1000000
- AND buyer.revision=? ON CONFLICT DO NOTHING`;
+ AND buyer.revision=? ON CONFLICT DO NOTHING RETURNING id`;
 const ONE=`SELECT id,quote_id,merchant_id,buyer_id,seller_id,reviewer_id,
  milestone_id,milestone_title,amount_minor,currency,state,version,
  last_event_id,last_action,last_actor_id,last_detail
@@ -50,14 +50,17 @@ const UPDATE=`UPDATE worker_contracts SET state=?,version=version+1,
  WHERE id=? AND milestone_id=? AND merchant_id=? AND version=? AND
  state IN (?,?) AND
  ((?='SELLER' AND seller_id=?) OR (?='REVIEWER' AND reviewer_id=?))
- AND ${AUTH}`;
+ AND ${AUTH} RETURNING id`;
 const stateOf=x=>x==='submit'?'SUBMITTED':x==='accept'?'ACCEPTED':'REJECTED';
 const roleOf=x=>x==='submit'?'SELLER':'REVIEWER';
 const actionOf=x=>x.toUpperCase();
-const changes=result=>{
- const n=result?.meta?.changes;
- if(!Number.isSafeInteger(n)||n<0||n>1)throw Error('D1_WRITE_RESULT_UNAVAILABLE');
- return n;
+// D1 meta.changes may count audit-trigger inserts as well as the base row.
+// Count only the exact IDs returned by INSERT/UPDATE ... RETURNING.
+const directRows=(result,id)=>{
+ const rows=result?.results;
+ if(!Array.isArray(rows)||rows.length>1||rows.some(r=>r?.id!==id))
+  throw Error('D1_RETURNING_CONTRACT_ID_INVALID');
+ return rows.length;
 };
 function mapRow(row){
  if(!row||!ID.test(row.id)||!ID.test(row.quote_id)||!ID.test(row.merchant_id)||
@@ -188,10 +191,10 @@ export function createWorkerD1ContractFlow({db,allowedOrigin,resolveVerifiedPrin
      return reply(400,{error:'INVALID_CONTRACT'});
     const contractId=await contractKey('proofline:contract:v1\0'+scope.merchant+'\0'+scope.actor+'\0'+body.clientRequestId);
     const createdEvent=contractId+'_create';
-    const n=changes(await dbp.prepare(CREATE).bind(contractId,
+    const n=directRows(await dbp.prepare(CREATE).bind(contractId,
      body.sellerId,body.reviewerId,body.milestoneId,body.milestoneTitle,
      createdEvent,tick,body.sellerId,body.reviewerId,body.quoteId,
-     scope.actor,scope.merchant,body.quoteVersion,g.revision).run());
+     scope.actor,scope.merchant,body.quoteVersion,g.revision).all(),contractId);
     const row=await dbp.prepare(ONE).bind(contractId,scope.merchant).first();
     if(!row)return reply(409,{error:'QUOTE_OR_ROLES_NOT_AVAILABLE'});
     if(row.quote_id!==body.quoteId||row.seller_id!==body.sellerId||
@@ -209,10 +212,10 @@ export function createWorkerD1ContractFlow({db,allowedOrigin,resolveVerifiedPrin
      return reply(400,{error:'INVALID_MILESTONE_EVENT'});
     const next=stateOf(verb),from1=verb==='submit'?'PENDING':'SUBMITTED',
      from2=verb==='submit'?'REJECTED':'SUBMITTED';
-    const n=changes(await dbp.prepare(UPDATE).bind(next,body.eventId,actionOf(verb),
+    const n=directRows(await dbp.prepare(UPDATE).bind(next,body.eventId,actionOf(verb),
      scope.actor,body.detail,event[1],event[2],scope.merchant,body.expectedVersion,
      from1,from2,role,scope.actor,role,scope.actor,
-     scope.actor,scope.merchant,role,g.revision).run());
+     scope.actor,scope.merchant,role,g.revision).all(),event[1]);
     const row=await dbp.prepare(ONE).bind(event[1],scope.merchant).first();
     if(!row)return reply(404,{error:'CONTRACT_NOT_FOUND'});
     if(row.milestone_id!==event[2])return reply(404,{error:'MILESTONE_NOT_FOUND'});
