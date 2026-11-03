@@ -2,6 +2,7 @@
 // reconcile an approved order into D1. No CREATE, CAPTURE, payout, or LIVE API.
 // Never accept a provider receipt or merchant/owner identity from the browser.
 import {createWorkerPrivateSessionResolver,hashPrivateSessionCookie} from './worker_private_session_resolver.mjs';
+import {isPinnedPayPalSandboxGetTransport} from './worker_pinned_paypal_sandbox_get.mjs';
 
 const ORIGIN_ROUTE='/__private/paypal/reconcile-approved';
 const ID=/^[A-Za-z0-9_-]{1,128}$/;
@@ -100,7 +101,8 @@ export function createWorkerSandboxApprovalReconcile({
   typeof db?.withSession!=='function'||typeof now!=='function'||
   transport?.mode!=='PAYPAL_SANDBOX_READ_ONLY'||
   transport?.networkEnabled!==true||transport?.paymentPostsEnabled!==false||
-  typeof transport.getOrder!=='function')
+  typeof transport.getOrder!=='function'||
+  !isPinnedPayPalSandboxGetTransport(transport))
   throw Error('SANDBOX_APPROVAL_RECONCILE_EXPLICIT_DEPENDENCIES_REQUIRED');
  const resolve=createWorkerPrivateSessionResolver({db,now});
  return Object.freeze({async fetch(request){
