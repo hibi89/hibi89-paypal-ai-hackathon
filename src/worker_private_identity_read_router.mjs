@@ -6,6 +6,8 @@
 import {createPrivateWorkerReadHandler} from './worker_private_read_entrypoint.mjs';
 import {createPrivateWorkerRecentAttemptsHandler} from './worker_private_recent_attempts.mjs';
 import {createPrivateWorkerAttemptsDashboard} from './worker_private_attempts_dashboard.mjs';
+import {createWorkerPrivateQuoteWorkflow} from './worker_private_quote_workflow.mjs';
+import {createWorkerPrivateQuoteDashboard} from './worker_private_quote_dashboard.mjs';
 
 const headers={
  'content-type':'application/json; charset=utf-8',
@@ -37,6 +39,8 @@ export function createPrivateWorkerIdentityReadRouter({
  const read=createPrivateWorkerReadHandler({db,allowedOrigin:origin,now});
  const recent=createPrivateWorkerRecentAttemptsHandler({db,allowedOrigin:origin,now});
  const dashboard=createPrivateWorkerAttemptsDashboard({db,allowedOrigin:origin,now});
+ const quotes=createWorkerPrivateQuoteWorkflow({db,allowedOrigin:origin,now});
+ const quoteView=createWorkerPrivateQuoteDashboard({db,allowedOrigin:origin,now});
  return Object.freeze({async fetch(request){
   if(!(request instanceof Request))return res(400,'INVALID_REQUEST');
   let url;
@@ -51,6 +55,12 @@ export function createPrivateWorkerIdentityReadRouter({
   if(['/__private/attempts/view','/__private/attempts/view.css',
       '/__private/attempts/view.js'].includes(url.pathname))
    return dashboard.fetch(request);
+  if(url.pathname==='/__private/quotes'||
+     /^\/__private\/quotes\/[A-Za-z0-9_-]{1,128}\/approve$/.test(url.pathname))
+   return quotes.fetch(request);
+  if(['/__private/quotes/view','/__private/quotes/view.css',
+      '/__private/quotes/view.js'].includes(url.pathname))
+   return quoteView.fetch(request);
   if(url.pathname==='/api/auth/oidc/start')
    return request.method==='POST'
     ?pkceCoordinator.start(request)
