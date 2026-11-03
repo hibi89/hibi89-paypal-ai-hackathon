@@ -126,3 +126,49 @@ test('malicious extra amount/role fields and lack of true STOP cannot pass to A2
   assert.equal(adapter.status().circuitOpen,true);
  }
 });
+
+test('noncooperative injected provider cannot hold an agent turn past deadline',async()=>{
+ let calls=0,signalled=false;
+ const adapter=setup(async(_,init)=>{
+  calls++;init.signal.addEventListener('abort',()=>{signalled=true},{once:true});
+  return new Promise(()=>{});
+ },{timeoutMs:80});
+ await assert.rejects(()=>adapter.sellerAgent(sellerView),
+  e=>e.code==='GEMINI_A2A_TIMEOUT_NO_RETRY');
+ assert.equal(calls,1);
+ assert.equal(signalled,true);
+ assert.equal(adapter.status().requestsAttempted,1);
+ assert.equal(adapter.status().circuitOpen,true);
+ await assert.rejects(()=>adapter.sellerAgent(sellerView),
+  e=>e.code==='GEMINI_A2A_CIRCUIT_OPEN');
+ assert.equal(calls,1);
+});
+test('stalled provider response stream is bounded and never retried',async()=>{
+ let calls=0;
+ const adapter=setup(async()=>{
+  calls++;
+  return new Response(new ReadableStream({
+   start(controller){controller.enqueue(new TextEncoder().encode('{"candidates":['));},
+   cancel(){return new Promise(()=>{})}
+  }),{status:200,headers:{'content-type':'application/json'}});
+ },{timeoutMs:80});
+ await assert.rejects(()=>adapter.sellerAgent(sellerView),
+  e=>e.code==='GEMINI_A2A_TIMEOUT_NO_RETRY');
+ assert.equal(adapter.status().circuitOpen,true);
+ assert.equal(adapter.status().requestsAttempted,1);
+ assert.equal(calls,1);
+});
+test('caller abort interrupts noncooperative provider and consumes reservation',async()=>{
+ let start;
+ const began=new Promise(ok=>{start=ok});
+ let calls=0;
+ const signal=new AbortController();
+ const adapter=setup(async()=>{calls++;start();return new Promise(()=>{})},{timeoutMs:1000});
+ const pending=adapter.sellerAgent({...sellerView,signal:signal.signal});
+ await began;
+ signal.abort();
+ await assert.rejects(pending,e=>e.code==='GEMINI_A2A_CANCELLED_NO_RETRY');
+ assert.equal(calls,1);
+ assert.equal(adapter.status().requestsAttempted,1);
+ assert.equal(adapter.status().circuitOpen,true);
+});

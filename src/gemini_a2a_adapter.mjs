@@ -117,13 +117,30 @@ export function createGeminiA2ARoleAgents({
    ].join('\n');
    const promptBytes=Buffer.byteLength(prompt,'utf8');
    if(promptBytes>2300)throwCode('GEMINI_A2A_PROMPT_TOO_LARGE');
-   if(view.signal){
-    const abort=()=>abortController.abort();
-    view.signal.addEventListener('abort',abort,{once:true});
-    removeAbort=()=>view.signal.removeEventListener('abort',abort);
-   }
-   timer=setTimeout(()=>abortController.abort(),timeoutMs);
-   const response=await fetchImpl(GEMINI_P0_ENDPOINT,{
+   // One hard deadline across provider invocation and all streamed reads.
+   // AbortSignal alone is insufficient if a transport ignores cancellation.
+   const expired=new Promise((_,reject)=>{
+    timer=setTimeout(()=>{
+     abortController.abort();
+     reject(Object.assign(new Error('GEMINI_A2A_TIMEOUT_NO_RETRY'),
+      {code:'GEMINI_A2A_TIMEOUT_NO_RETRY'}));
+    },timeoutMs);
+   });
+   const cancelled=new Promise((_,reject)=>{
+    if(view.signal){
+     const abort=()=>{
+      abortController.abort();
+      reject(Object.assign(new Error('GEMINI_A2A_CANCELLED_NO_RETRY'),
+       {code:'GEMINI_A2A_CANCELLED_NO_RETRY'}));
+     };
+     view.signal.addEventListener('abort',abort,{once:true});
+     removeAbort=()=>view.signal.removeEventListener('abort',abort);
+     if(view.signal.aborted)abort();
+    }
+   });
+   const bounded=work=>Promise.race([Promise.resolve().then(work),expired,cancelled]);
+   if(view.signal?.aborted)throwCode('GEMINI_A2A_ABORTED_BEFORE_SEND');
+   const response=await bounded(()=>fetchImpl(GEMINI_P0_ENDPOINT,{
     method:'POST',redirect:'error',signal:abortController.signal,
     headers:{accept:'application/json','content-type':'application/json',
       'x-goog-api-key':apiKey},
@@ -134,7 +151,7 @@ export function createGeminiA2ARoleAgents({
       responseMimeType:'application/json',responseSchema:SCHEMA
      }
     })
-   });
+   }));
    if(!Number.isInteger(response?.status)||response.status!==200)
     throwCode(response?.status===429?'GEMINI_A2A_PROVIDER_QUOTA_BLOCKED':
       'GEMINI_A2A_PROVIDER_HTTP_FAILED');
@@ -149,14 +166,18 @@ export function createGeminiA2ARoleAgents({
    const chunks=[];let bytes=0;
    try{
     for(;;){
-     const {done,value}=await reader.read();
+     const {done,value}=await bounded(()=>reader.read());
      if(done)break;
      if(!(value instanceof Uint8Array))throwCode('GEMINI_A2A_RESPONSE_INVALID');
      bytes+=value.byteLength;
      if(bytes>MAX_ENVELOPE_BYTES)throwCode('GEMINI_A2A_RESPONSE_TOO_LARGE');
      chunks.push(value);
     }
-   }finally{reader.releaseLock();}
+   }finally{
+    // A stalled stream may ignore cancellation. Do not await its cancel().
+    try{const pending=reader.cancel();pending?.catch?.(()=>{});}catch{}
+    try{reader.releaseLock();}catch{}
+   }
    const data=new Uint8Array(bytes);let offset=0;
    for(const chunk of chunks){data.set(chunk,offset);offset+=chunk.length;}
    const decoded=new TextDecoder('utf-8',{fatal:true}).decode(data);
