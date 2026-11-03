@@ -5,6 +5,7 @@ import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import {createWorkerSandboxApprovalReconcile} from '../src/worker_sandbox_order_approval.mjs';
 import {createWorkerPaymentClaimGate} from '../src/worker_payment_claim_gate.mjs';
+import {createPinnedPayPalSandboxGetTransport} from '../src/worker_pinned_paypal_sandbox_get.mjs';
 import {createPrivateWorkerIdentityReadRouter} from '../src/worker_private_identity_read_router.mjs';
 
 const ORIGIN='https://fixture.invalid', MERCHANT='PAYPALMERCH13';
@@ -34,12 +35,17 @@ function fixture({provider=remote(),afterGet,throwGet=false,withoutAudit=false}=
   }}}}
  };}};
  let gets=0;
- const transport={mode:'PAYPAL_SANDBOX_READ_ONLY',networkEnabled:true,paymentPostsEnabled:false,
-  getOrder:async id=>{gets++;assert.equal(id,'ORDER_001');
+ const transport=createPinnedPayPalSandboxGetTransport({enabled:true,
+  getAccessToken:async()=> 'sandbox-test-token',
+  fetchImpl:async(url,options)=>{gets++;
+   assert.equal(url,'https://api-m.sandbox.paypal.com/v2/checkout/orders/ORDER_001');
+   assert.equal(options.method,'GET');
+   assert.equal(options.redirect,'error');
    if(throwGet)throw Error('SYNTHETIC_GET_UNAVAILABLE');
    if(afterGet)await afterGet(sql);
-   return provider;
-  }};
+   return new Response(JSON.stringify(provider),{status:200,
+    headers:{'content-type':'application/json'}});
+  }});
  const gate=createWorkerPaymentClaimGate({db});
  const make=()=>createWorkerSandboxApprovalReconcile({db,allowedOrigin:ORIGIN,
   expectedMerchantId:MERCHANT,transport,enabled:true,now:()=>T});
