@@ -112,6 +112,14 @@ export function createPinnedSandboxOAuthTokenSource({
   });
  }
  const source=Object.freeze({
+  // A GET 401 invalidates only its own token. A late response must not
+  // evict a freshly rotated credential fetched by a concurrent request.
+  invalidateAccessToken(rejectedToken){
+   if(typeof rejectedToken==='string'&&cached===rejectedToken){
+    cached=null;
+    expiresAt=0;
+   }
+  },
   async getAccessToken({signal}={}){
    if(signal?.aborted)throw fail('SANDBOX_OAUTH_CALLER_ABORTED');
    const timestamp=now();
@@ -137,5 +145,6 @@ export function createPinnedSandboxGetWithOAuth({
  const source=createPinnedSandboxOAuthTokenSource({enabled,clientId,clientSecret,
   fetchImpl,now,timeoutMs:tokenTimeoutMs});
  return createPinnedPayPalSandboxGetTransport({enabled,fetchImpl,
-  getAccessToken:source.getAccessToken,timeoutMs:orderTimeoutMs});
+  getAccessToken:source.getAccessToken,
+  invalidateAccessToken:source.invalidateAccessToken,timeoutMs:orderTimeoutMs});
 }
