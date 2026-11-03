@@ -11,10 +11,11 @@ export function isPinnedPayPalSandboxGetTransport(t){
  return !!t&&typeof t==='object'&&pinned.has(t);
 }
 export function createPinnedPayPalSandboxGetTransport({
- enabled=false,fetchImpl,getAccessToken,timeoutMs=8000
+ enabled=false,fetchImpl,getAccessToken,invalidateAccessToken,timeoutMs=8000
 }={}){
  if(enabled!==true||typeof fetchImpl!=='function'||
     typeof getAccessToken!=='function'||
+    (invalidateAccessToken!==undefined&&typeof invalidateAccessToken!=='function')||
     !Number.isSafeInteger(timeoutMs)||timeoutMs<100||timeoutMs>10000)
   throw error('SANDBOX_GET_TRANSPORT_EXPLICIT_SETUP_REQUIRED');
  const transport=Object.freeze({
@@ -52,8 +53,14 @@ export function createPinnedPayPalSandboxGetTransport({
        (response.url&&response.url!==url))
      throw error('SANDBOX_GET_REDIRECT_OR_SOURCE_UNTRUSTED');
     if(response.status===429)throw error('SANDBOX_GET_RATE_LIMITED_NO_RETRY');
-    if(response.status===401||response.status===403)
+    if(response.status===401){
+     // Explicitly discard only the rejected token, never refetch/retry here.
+     // Cache invalidation from the composed OAuth source is synchronous.
+     try{const task=invalidateAccessToken?.(token);task?.catch?.(()=>{});}
+     catch{/* fail closed regardless of cache health */}
      throw error('SANDBOX_GET_AUTH_REJECTED_NO_RETRY');
+    }
+    if(response.status===403)throw error('SANDBOX_GET_AUTH_REJECTED_NO_RETRY');
     if(response.status>=500)throw error('SANDBOX_GET_PROVIDER_UNAVAILABLE_NO_RETRY');
     if(response.status!==200)throw error('SANDBOX_GET_UNEXPECTED_STATUS_NO_RETRY');
     if(!/^application\/json(?:\s*;.*)?$/i.test(response.headers.get('content-type')??''))
