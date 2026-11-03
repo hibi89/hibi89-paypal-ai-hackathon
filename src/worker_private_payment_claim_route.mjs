@@ -16,7 +16,7 @@ const HEADERS={'content-type':'application/json; charset=utf-8',
 const respond=(code,body)=>new Response(JSON.stringify({
  ...body,paymentAuthorized:false,providerCalls:0,captureAuthorized:false
 }),{status:code,headers:HEADERS});
-async function readBody(request){
+async function readBody(request,intent){
  if(!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(request.headers.get('content-type')??''))
   throw Error('INVALID_CONTENT_TYPE');
  const length=request.headers.get('content-length');
@@ -31,10 +31,16 @@ async function readBody(request){
  const bytes=new Uint8Array(size);let offset=0;
  for(const part of pieces){bytes.set(part,offset);offset+=part.byteLength}
  const parsed=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
+ const keys=parsed&&typeof parsed==='object'&&!Array.isArray(parsed)?
+  Object.keys(parsed).sort().join(','):'';
+ const hasCursor=keys==='beforeSequence,quoteId,quoteVersion,requestId';
  if(!parsed||typeof parsed!=='object'||Array.isArray(parsed)||
-   Object.keys(parsed).sort().join(',')!=='quoteId,quoteVersion,requestId'||
+   (keys!=='quoteId,quoteVersion,requestId'&&
+    !(intent==='read-audit-only'&&hasCursor))||
    !ID.test(parsed.requestId)||!ID.test(parsed.quoteId)||
-   !Number.isSafeInteger(parsed.quoteVersion)||parsed.quoteVersion<1)
+   !Number.isSafeInteger(parsed.quoteVersion)||parsed.quoteVersion<1||
+   (hasCursor&&(!Number.isSafeInteger(parsed.beforeSequence)||
+     parsed.beforeSequence<1)))
   throw Error('INVALID_BODY');
  return parsed;
 }
@@ -66,7 +72,7 @@ export function createWorkerPrivatePaymentClaimRoute({
   if((request.headers.get('cookie')??'').split(';').some(x=>
     x.trim().startsWith('__Host-proofline_contract_role=')))
    return respond(401,{error:'AMBIGUOUS_SESSION'});
-  let data;try{data=await readBody(request)}catch{return respond(400,{error:'INVALID_BODY'})}
+  let data;try{data=await readBody(request,intent)}catch{return respond(400,{error:'INVALID_BODY'})}
   let owner;
   let sessionDigest,checkedAt;
   try{owner=await resolve(request);
@@ -107,7 +113,8 @@ export function createWorkerPrivatePaymentClaimRoute({
     claimed:result.claimed,remoteOrderCreated:false});
   if(intent==='read-audit-only')
    return respond(200,{status:'AUDIT_READ_ONLY',events:result.events,
-    hasMore:result.hasMore,remoteOrderCreated:false});
+    hasMore:result.hasMore,nextBeforeSequence:result.nextBeforeSequence,
+    remoteOrderCreated:false});
   return respond(200,{status:result.state,next:result.next,
    remoteIdKnown:result.remoteIdKnown,remoteOrderCreated:false});
  }});
