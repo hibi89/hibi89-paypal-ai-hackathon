@@ -1,3 +1,15 @@
+## 2026-11-04 — P0 owner audit timeline checkpoint
+1. **Goal/requirements:** PayPal Proofline Part1 + Part2 five AI skills, persistent payment audit provenance; preserve original data and provider approval gates.
+2. **Work/decision:** `221abf1e2d0f1f61957e68f2255da29f2cfe4a1c`: owner-only read-only D1 audit timeline API, limit 50, no raw order ID, default-dark. Chose separate `claim-audit` POST over changing existing recovery response to avoid regressions.
+3. **Tests:** Node 22.16 experimental SQLite `node --experimental-sqlite --test tests/*.test.mjs` in isolated `/mnt/data/paypal_claim`: **41 PASS, 0 FAIL, 0 SKIP**; source/test Git blob hashes exactly match tested files. No full repo CI, Workerd or real D1 evidence.
+4. **Status:** Estimated final completion **79%** (+1pp), RELEASE HOLD; feature verified offline only; production/PayPal/Gemini/video/Devpost unverified.
+5. **Risk/recovery:** missing audit migration returns 503; audit activity exposed only to verified owner; no cross-owner or raw remote-ID disclosure. Existing Git history enables code rollback; migration 0005 has NOT been remotely applied, backup/restore approval required.
+6. **Repo/branch/SHA:** `hibi89/hibi89-paypal-ai-hackathon` / `lead/paypal`, feature/test SHA `221abf1e2d0f1f61957e68f2255da29f2cfe4a1c`; `src/worker_payment_claim_gate.mjs`, `src/worker_private_payment_claim_route.mjs`, `src/worker_private_identity_read_router.mjs`, `tests/worker_payment_audit_view.test.mjs`.
+7. **Environment/deployment:** Isolated Node 22.16 local in-memory SQLite with migrations 0001–0005. Wrangler unavailable; no verified Production SHA/URL, remote Cloudflare D1 or IdP/PayPal environment.
+8. **Assets/security:** Original source/version retained in GitHub; earlier docs SHA `cf841ded2d049e5039711f7de2b4d3a064feeee3`; no secrets, external data or credentials stored/changed.
+9. **Next:** run full CI & Workerd D1 integration, audit view router end-to-end, compare production SHA and verify both parts; only with explicit user approval apply remote DB migration, call PayPal/Gemini, deploy publicly or submit Devpost/YouTube.
+10. **Updated/verified:** 2026-11-04 KST. New source/test blob hashes and isolated 41 tests verified; CI/Production remain unverified. Document SHA is later.
+
 ## 2026-11-04 — P0 append-only D1 payment audit checkpoint (current)
 1. **Goal/confirmed scope:** Two-part Proofline freelancer platform and five AI skills, safe PayPal Sandbox proof. Prevent unaudited `IN_FLIGHT→UNKNOWN` recovery and remote-order-ID binding; preserve all existing functionality/data.
 2. **Implementation:** `migrations/d1/0005_payment_attempt_audit.sql` creates append-only `payment_attempt_audit`, triggers for initial claim, remote ID bind, state change and anti-tamper constraints; existing rows marked `MIGRATION_BASELINE`, replay avoids duplicates; SQL rollback restores both ledger and audit. Compares favorably with application-side audit writes because triggers are atomic in the same SQLite statement; no new network or cloud logic.
