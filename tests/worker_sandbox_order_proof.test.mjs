@@ -28,13 +28,23 @@ function makeDb({state='APPROVED',remoteId=ORDER,merchant=MERCHANT}={}){
   .run('ciProofQuote',ACTOR,merchant,1,'USD','APPROVED',ACTOR,1,150);
  sql.prepare('INSERT INTO payment_attempts(request_id,quote_id,quote_version,merchant_id,operation,state,remote_id,amount_minor,currency) VALUES(?,?,?,?,?,?,?,?,?)')
   .run('ciProofRequest','ciProofQuote',1,merchant,'create',state,remoteId,150,'USD');
- const db={withSession(mode){
-  assert.equal(mode,'first-primary');
-  return {prepare(q){return {bind(...args){
-   return {async first(){return sql.prepare(q).get(...args)??null},
-    async all(){return {results:sql.prepare(q).all(...args)}}};
-  }}};
- }};
+ const db={
+  withSession(mode){
+   assert.equal(mode,'first-primary');
+   return {
+    prepare(q){
+     return {
+      bind(...args){
+       return {
+        async first(){return sql.prepare(q).get(...args)??null;},
+        async all(){return {results:sql.prepare(q).all(...args)};}
+       };
+      }
+     };
+    }
+   };
+  }
+ };
  return {sql,db};
 }
 function req({path='/__private/paypal/order-proof',method='POST',body,headers={}}={}){
