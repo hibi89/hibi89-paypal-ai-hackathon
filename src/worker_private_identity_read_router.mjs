@@ -4,6 +4,7 @@
 // The host must inject separately approved IdP transport and verified trust.
 // No PayPal, Gemini, self-provisioning, quote POST, capture or payment mutation.
 import {createPrivateWorkerReadHandler} from './worker_private_read_entrypoint.mjs';
+import {createPrivateWorkerRecentAttemptsHandler} from './worker_private_recent_attempts.mjs';
 
 const headers={
  'content-type':'application/json; charset=utf-8',
@@ -33,15 +34,18 @@ export function createPrivateWorkerIdentityReadRouter({
  }catch{/* invalid environment */}
  if(!origin)fail();
  const read=createPrivateWorkerReadHandler({db,allowedOrigin:origin,now});
+ const recent=createPrivateWorkerRecentAttemptsHandler({db,allowedOrigin:origin,now});
  return Object.freeze({async fetch(request){
   if(!(request instanceof Request))return res(400,'INVALID_REQUEST');
   let url;
   try{url=new URL(request.url)}catch{return res(400,'INVALID_REQUEST')}
   if(url.origin!==origin)return res(403,'ORIGIN_NOT_ALLOWED');
-  // Expose exactly these four routes, with no generic public handler or
+  // Only explicit private status/list and OIDC lifecycle routes; no generic public handler or
   // synthetic users. A successful IdP callback has no payment authority.
   if(url.pathname==='/__private/attempt/status')
    return read.fetch(request);
+  if(url.pathname==='/__private/attempts')
+   return recent.fetch(request);
   if(url.pathname==='/api/auth/oidc/start')
    return request.method==='POST'
     ?pkceCoordinator.start(request)

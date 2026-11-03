@@ -136,6 +136,24 @@ async function main(){
  if(auth.headers['cache-control']!=='no-store, max-age=0'||
     auth.headers['access-control-allow-origin']!==undefined)
   fail('CORS_OR_CACHE_UNSAFE');
+ const recent=await request('/__private/attempts?limit=5',{
+  cookie:sessionCookie,'sec-fetch-site':'same-origin'
+ });
+ let listed;try{listed=JSON.parse(recent.body)}catch{fail('D1_RECENT_LIST_JSON_INVALID')}
+ if(recent.status!==200||!recent.encrypted||listed.count!==1||
+    listed.attempts?.[0]?.requestId!=='ciIdentityRequest'||
+    listed.source!=='D1_LOCAL_METADATA_ONLY'||
+    listed.verifiedPayPalGet!==false||listed.paymentAuthorized!==false||
+    listed.providerCalls!==0||recent.headers['access-control-allow-origin']!==undefined||
+    recent.headers['cache-control']!=='no-store, max-age=0')
+  fail('OWNER_SCOPED_WORKER_D1_RECENT_LIST_FAILED');
+ if((await request('/__private/attempts?limit=5')).status!==401)
+  fail('ANONYMOUS_RECENT_LIST_ALLOWED');
+ if((await request('/__private/attempts?limit=0',{cookie:sessionCookie})).status!==400)
+  fail('UNBOUNDED_RECENT_LIST_ALLOWED');
+ if((await request('/__private/attempts',{cookie:sessionCookie,
+  'sec-fetch-site':'cross-site'})).status!==403)
+  fail('CROSS_SITE_RECENT_LIST_ALLOWED');
  if((await request(path,{cookie:sessionCookie,'sec-fetch-site':'cross-site'})).status!==403)
   fail('CROSS_SITE_WORKER_READ_ALLOWED');
  if((await request(path,{cookie:sessionCookie},'POST')).status!==405)
@@ -159,7 +177,7 @@ async function main(){
   status:'ACTUAL_LOCAL_WORKERD_PKCE_RSA_D1_LOGIN_READ_REVOKE_PASS',
   realWorkerdHttps:true,localTls:true,realLocalD1:true,pinnedRS256:true,
   s256Pkce:true,duplicateCallbackBlocked:true,sessionRevoked:true,
-  unauthorizedPaymentRoutesBlocked:true,syntheticIdpOnly:true,
+  unauthorizedPaymentRoutesBlocked:true,ownerScopedRecentList:true,syntheticIdpOnly:true,
   actualProviderCalls:0,publicDeployment:false,remoteD1Verified:false,
   paymentAuthorized:false
  }));
