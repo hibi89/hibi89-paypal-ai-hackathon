@@ -111,7 +111,8 @@ export function createPrivateWorkerIdentityReadRouter({
   if(sandboxOrderProof&&url.pathname==='/__private/paypal/order-proof')
    return sandboxOrderProof.fetch(request);
   if(paymentClaim&&['/__private/paypal/create-claim',
-      '/__private/paypal/claim-recovery'].includes(url.pathname))
+      '/__private/paypal/claim-recovery',
+      '/__private/paypal/claim-audit'].includes(url.pathname))
    return paymentClaim.fetch(request);
   if(url.pathname==='/api/auth/oidc/start')
    return request.method==='POST'
