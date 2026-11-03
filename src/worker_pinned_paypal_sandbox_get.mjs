@@ -24,18 +24,30 @@ export function createPinnedPayPalSandboxGetTransport({
    if(typeof orderId!=='string'||!ORDER.test(orderId))
     throw error('SANDBOX_ORDER_ID_INVALID');
    const url=SANDBOX+'/v2/checkout/orders/'+encodeURIComponent(orderId);
-   let token;
-   try{token=await getAccessToken();}
-   catch{throw error('SANDBOX_GET_TOKEN_UNAVAILABLE_NO_RETRY');}
-   if(typeof token!=='string'||!TOKEN.test(token))
-    throw error('SANDBOX_GET_TOKEN_UNAVAILABLE_NO_RETRY');
+   // A single deadline covers token acquisition, GET and streaming response.
+   // Abort is cooperative; Promise.race also fails closed if a dependency
+   // ignores AbortSignal. No background retry or provider write is permitted.
    const controller=new AbortController();
-   const timeout=setTimeout(()=>controller.abort(),timeoutMs);
-   let response;
+   let timeout;
+   const expired=new Promise((_,reject)=>{
+    timeout=setTimeout(()=>{
+     controller.abort();
+     reject(error('SANDBOX_GET_TIMEOUT_NO_RETRY'));
+    },timeoutMs);
+   });
+   const bounded=fn=>Promise.race([Promise.resolve().then(fn),expired]);
    try{
-    response=await fetchImpl(url,{method:'GET',redirect:'error',
+    let token;
+    try{token=await bounded(()=>getAccessToken({signal:controller.signal}));}
+    catch(e){
+     if(controller.signal.aborted)throw error('SANDBOX_GET_TIMEOUT_NO_RETRY');
+     throw error('SANDBOX_GET_TOKEN_UNAVAILABLE_NO_RETRY');
+    }
+    if(typeof token!=='string'||!TOKEN.test(token))
+     throw error('SANDBOX_GET_TOKEN_UNAVAILABLE_NO_RETRY');
+    const response=await bounded(()=>fetchImpl(url,{method:'GET',redirect:'error',
      headers:{authorization:'Bearer '+token,accept:'application/json'},
-     signal:controller.signal});
+     signal:controller.signal}));
     if(!(response instanceof Response)||response.redirected===true||
        (response.url&&response.url!==url))
      throw error('SANDBOX_GET_REDIRECT_OR_SOURCE_UNTRUSTED');
@@ -52,18 +64,22 @@ export function createPinnedPayPalSandboxGetTransport({
     if(!response.body)throw error('SANDBOX_GET_RESPONSE_EMPTY');
     const reader=response.body.getReader();let total=0;const chunks=[];
     try{for(;;){
-     const {done,value}=await reader.read();if(done)break;
+     const {done,value}=await bounded(()=>reader.read());if(done)break;
      if(!(value instanceof Uint8Array)||(total+=value.byteLength)>MAX_BYTES)
       throw error('SANDBOX_GET_RESPONSE_TOO_LARGE');
      chunks.push(value);
-    }}finally{try{await reader.cancel()}catch{}try{reader.releaseLock()}catch{}}
+    }}finally{
+     // A hostile or broken stream may never resolve cancel(); do not await it.
+     try{const cancel=reader.cancel();if(cancel?.catch)cancel.catch(()=>{});}catch{}
+     try{reader.releaseLock()}catch{}
+    }
     const data=new Uint8Array(total);let offset=0;
     for(const chunk of chunks){data.set(chunk,offset);offset+=chunk.byteLength;}
     try{return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(data));}
     catch{throw error('SANDBOX_GET_INVALID_JSON');}
    }catch(e){
-    if(e?.code)throw e;
     if(controller.signal.aborted)throw error('SANDBOX_GET_TIMEOUT_NO_RETRY');
+    if(e?.code)throw e;
     throw error('SANDBOX_GET_NETWORK_UNAVAILABLE_NO_RETRY');
    }finally{clearTimeout(timeout);}
   }
