@@ -5,6 +5,7 @@ import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import {createWorkerPrivatePaymentClaimRoute} from '../src/worker_private_payment_claim_route.mjs';
 import {createWorkerPaymentClaimGate} from '../src/worker_payment_claim_gate.mjs';
+import {createPrivateWorkerIdentityReadRouter} from '../src/worker_private_identity_read_router.mjs';
 
 const ORIGIN='https://proofline-fixture.invalid';
 const MERCHANT='PAYPALMERCH13', OWNER='ciOwner', ISSUER='https://idp.invalid';
@@ -131,5 +132,71 @@ test('audit feed is bounded at last 50 events with hasMore marker',async()=>{
  assert.equal(body.events.length,50);
  assert.equal(body.hasMore,true);
  assert.ok(body.events.every(x=>x.eventType==='STATE_CHANGED'));
+ f.sql.close();
+});
+
+test('payment claim, recovery and audit reject simultaneous owner plus contract-role cookies',async()=>{
+ const f=fixture();
+ const ambiguous='__Host-proofline_session='+COOKIE+'; __Host-proofline_contract_role=attacker';
+ for(const path of ['/__private/paypal/create-claim',
+   '/__private/paypal/claim-recovery','/__private/paypal/claim-audit']){
+  const response=await f.handler.fetch(req(path,undefined,{cookie:ambiguous}));
+  assert.equal(response.status,401);
+  assert.equal((await response.json()).paymentAuthorized,false);
+ }
+ assert.equal(f.sql.prepare('SELECT COUNT(*) n FROM payment_attempts').get().n,0);
+ assert.equal(f.reads(),0);
+ f.sql.close();
+});
+
+test('actual private router dispatches owner D1 claim, recovery and audit only with opt-in',async()=>{
+ const f=fixture();
+ const authority={revoke:async()=>{throw Error('UNUSED')}};
+ const pkceCoordinator={start:async()=>new Response(null,{status:503}),
+  callback:async()=>new Response(null,{status:503})};
+ const basic={db:f.db,allowedOrigin:ORIGIN,authority,pkceCoordinator,
+  enabled:true,now:()=>T};
+ const dark=createPrivateWorkerIdentityReadRouter(basic);
+ for(const path of ['/__private/paypal/create-claim',
+   '/__private/paypal/claim-recovery','/__private/paypal/claim-audit']){
+  assert.equal((await dark.fetch(req(path))).status,404);
+ }
+ const host=createPrivateWorkerIdentityReadRouter({...basic,paymentClaimEnabled:true});
+ assert.equal((await host.fetch(req('/__private/paypal/create-claim'))).status,201);
+ const ledger=f.sql.prepare('SELECT COUNT(*) n FROM payment_attempts').get().n;
+ assert.equal(ledger,1);
+ await f.gate.persistRemoteOrder({...CLAIM,remoteId:'ORDER_001'});
+ await f.gate.markUnknown(CLAIM);
+ const recovery=await host.fetch(req('/__private/paypal/claim-recovery'));
+ assert.equal(recovery.status,200);
+ assert.equal((await recovery.json()).next,'REMOTE_ORDER_GET_RECONCILIATION_REQUIRED');
+ const result=await host.fetch(req('/__private/paypal/claim-audit'));
+ assert.equal(result.status,200);
+ const data=await result.json();
+ assert.deepEqual(data.events.map(x=>x.eventType),
+  ['CLAIM_CREATED','REMOTE_ID_BOUND','STATE_CHANGED']);
+ assert.equal(data.paymentAuthorized,false);
+ assert.ok(!JSON.stringify(data).includes('ORDER_001'));
+ assert.equal((await host.fetch(req('/__private/paypal/create-claim'))).status,409);
+ assert.equal(f.sql.prepare('SELECT COUNT(*) n FROM payment_attempts').get().n,1);
+ f.sql.close();
+});
+
+test('opted-in private router rejects role-cookie ambiguity and cross-owner audit',async()=>{
+ const f=fixture();
+ const host=createPrivateWorkerIdentityReadRouter({db:f.db,allowedOrigin:ORIGIN,
+  authority:{revoke:async()=>({revoked:false})},
+  pkceCoordinator:{start:async()=>new Response(null,{status:503}),
+   callback:async()=>new Response(null,{status:503})},
+  enabled:true,paymentClaimEnabled:true,now:()=>T});
+ const twoCookies='__Host-proofline_session='+COOKIE+'; __Host-proofline_contract_role=role';
+ for(const path of ['/__private/paypal/create-claim',
+  '/__private/paypal/claim-recovery','/__private/paypal/claim-audit']){
+  const bad=await host.fetch(req(path,undefined,{cookie:twoCookies}));
+  assert.equal(bad.status,401);
+ }
+ assert.equal((await host.fetch(req('/__private/paypal/claim-audit',
+   {requestId:'other',quoteId:'quote1',quoteVersion:1}))).status,409);
+ assert.equal(f.sql.prepare('SELECT COUNT(*) n FROM payment_attempts').get().n,0);
  f.sql.close();
 });
