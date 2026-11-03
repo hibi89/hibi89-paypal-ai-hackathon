@@ -29,8 +29,10 @@ function trustedHttps(raw,{callback=false,allowLocalCallback=false}={}){
  return url.href;
 }
 function validSecret(secret){
- return typeof secret==='string'&&secret.length>=16&&secret.length<=512&&
-   !/[\x00-\x1f\x7f]/.test(secret);
+ if(typeof secret!=='string'||secret.length<16||secret.length>512||
+    /[\x00-\x1f\x7f]/.test(secret))return false;
+ // Do not silently substitute U+FFFD for an invalid UTF-16 credential.
+ try{encodeURIComponent(secret);return true}catch{return false}
 }
 export function createWorkerOidcTokenTransport({
  tokenEndpoint,redirectUri,clientId,clientSecret,
@@ -43,7 +45,11 @@ export function createWorkerOidcTokenTransport({
     timeoutMs<1000||timeoutMs>10000)
   deny('WORKER_OIDC_TRANSPORT_CONFIG_REQUIRED');
  const enabled=networkApproved===true;
- const basic=btoa(encodeURIComponent(clientId)+':'+encodeURIComponent(clientSecret));
+ // RFC 6749 2.3.1: form-encode each credential as UTF-8 BEFORE Basic.
+ // encodeURIComponent is not form encoding: it leaves !'() unescaped
+ // and turns spaces into %20 rather than +.
+ const formEncode=value=>new URLSearchParams({value}).toString().slice(6);
+ const basic=btoa(formEncode(clientId)+':'+formEncode(clientSecret));
  return Object.freeze({
   async exchange(ticket){
    if(!enabled)deny('WORKER_OIDC_NETWORK_NOT_APPROVED');

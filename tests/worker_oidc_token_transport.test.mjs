@@ -38,6 +38,17 @@ test('strict pinned single POST, Basic secret, S256 verifier and no token persis
   redirect_uri:redirectUri,code_verifier:'v'.repeat(43)});
  assert.equal(t.autoRetry,false);assert.equal(t.paymentAuthorized,false);
 });
+test('RFC 6749 client_secret_basic form encodes special characters and UTF-8',async()=>{
+ const specialSecret="CI secret !'()+=é 2026";
+ let calls=0,header;
+ const t=make({clientSecret:specialSecret,fetchImpl:async(_url,init)=>{
+  calls++;header=init.headers.authorization;return success();
+ }});
+ assert.deepEqual(await t.exchange(ticket()),{idToken});
+ assert.equal(calls,1);
+ assert.equal(Buffer.from(header.slice(6),'base64').toString('utf8'),
+  'private-client:CI+secret+%21%27%28%29%2B%3D%C3%A9+2026');
+});
 test('reject browser-controlled endpoint/callback/client or malformed code before fetch',async()=>{
  let calls=0;
  const t=make({fetchImpl:async()=>{calls++;return success()}});
@@ -63,6 +74,7 @@ test('trust config rejects localhost, private IP, non-HTTPS, queries and missing
   {redirectUri:redirectUri+'?code=secret'},
   {redirectUri:'https://proofline.example.test/other'},
   {clientSecret:'short'}, {clientSecret:'bad\nheader'},
+  {clientSecret:'CI_BAD_SURROGATE_'+String.fromCharCode(0xD800)},
   {clientId:'bad client'}, {fetchImpl:null},{timeoutMs:0},
   {timeoutMs:30000}
  ])assert.throws(()=>createWorkerOidcTokenTransport({...base,...v}));
