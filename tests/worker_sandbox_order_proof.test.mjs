@@ -204,3 +204,20 @@ test('router keeps provider route dark by default and exposes only opted-in owne
  assert.deepEqual(f.calls,[ORDER]);
  f.sql.close();
 });
+
+test('provider response is rejected when D1 order binding or ledger state changes during GET',async()=>{
+ for(const mutation of [
+  "UPDATE payment_attempts SET remote_id='REPLACED_ORDER' WHERE operation='create'",
+  "UPDATE payment_attempts SET state='UNKNOWN' WHERE operation='create'",
+  "UPDATE quotes SET status='DRAFT' WHERE id='ciProofQuote'"
+ ]){
+  const f=fixture({afterGet:sql=>sql.exec(mutation)});
+  const response=await f.handler.fetch(req());
+  assert.equal(response.status,401);
+  const body=await response.json();
+  assert.equal(body.paymentAuthorized,false);
+  assert.equal(body.ledgerWrites,0);
+  assert.deepEqual(f.calls,[ORDER]);
+  f.sql.close();
+ }
+});
