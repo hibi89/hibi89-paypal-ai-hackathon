@@ -117,9 +117,28 @@ def main():
             assert any(path=="/__private/attempts/view.js" for _,path in network),"BROWSER_JS_MISSING"
             assert any(path=="/__private/attempts/view.css" for _,path in network),"BROWSER_CSS_MISSING"
             assert sum(path.startswith("/__private/attempts?limit=") for _,path in network)>=3,"BROWSER_D1_GET_MISSING"
-            # Unlike the attempts panel (GET-only), the owner quote form has
-            # two explicitly authorized same-origin D1 writes. Prove these
-            # through actual Chromium clicks against the same live Workerd.
+            # Owner audits are a deliberately clicked, session-scoped
+            # READ-ONLY POST; initial navigation and refresh must remain GET-only.
+            mark('BROWSER_D1_AUDIT_CLICK')
+            expect(page.locator('#audit-panel')).to_be_hidden()
+            row=page.locator('#rows tr').filter(has_text='ciIdentityRequest')
+            expect(row).to_have_count(1)
+            row.locator('button.audit-action').click()
+            expect(page.locator('#audit-panel')).to_be_visible()
+            expect(page.locator('#audit-status')).to_contain_text(
+                '2 internal D1 audit event(s)',timeout=8000)
+            expect(page.locator('#audit-events li')).to_have_count(2,timeout=8000)
+            expect(page.locator('#audit-events')).to_contain_text('CLAIM_CREATED')
+            expect(page.locator('#audit-events')).to_contain_text('REMOTE_ID_BOUND')
+            assert 'ORDER_FIXTURE_001' not in page.locator('#audit-panel').inner_text(), 'RAW_REMOTE_ORDER_LEAKED'
+            assert page.locator('#audit-older').is_hidden(), 'UNEXPECTED_AUDIT_CURSOR'
+            assert [p for m,p in network if m=='POST']==[
+                '/__private/paypal/claim-audit'
+            ],'AUDIT_VIEW_UNEXPECTED_NETWORK_POST'
+            assert not errors,'AUDIT_BROWSER_CONSOLE_ERROR'
+            assert not blocked,'AUDIT_BROWSER_EXTERNAL_REQUEST'
+            # Unlike the owner audit inspection, the quote workbench has
+            # two separately authorized same-origin local D1 writes.
             mark('QUOTE_UI_BROWSER_WRITE')
             quote_response=page.goto(origin+"/__private/quotes/view",wait_until="domcontentloaded")
             assert quote_response is not None and quote_response.status==200,"QUOTE_BROWSER_VIEW_UNAVAILABLE"
@@ -148,6 +167,7 @@ def main():
             assert saved_quote.locator(".approval").count()==0,"BROWSER_APPROVED_QUOTE_EDITABLE"
             post_paths=[path for method,path in network if method=="POST"]
             assert post_paths==[
+                "/__private/paypal/claim-audit",
                 "/__private/quotes",f"/__private/quotes/{quote_id}/approve"
             ],"BROWSER_UNEXPECTED_MUTATION_ENDPOINT"
             assert not errors,"QUOTE_CHROMIUM_CONSOLE_OR_SCRIPT_ERROR"
@@ -158,6 +178,7 @@ def main():
                 "realChromium":True,"localHttps":True,"renderedRows":2,
                 "anonymousBlocked":True,"browserRefreshReadOnly":True,
                 "browserQuoteD1CreateApprove":True,"quoteApiPosts":2,
+                "realLocalD1AuditButton":True,"auditEventsRead":2,
                 "browserQuoteD1CountAfterReload":4,
                 "scriptAndStylesLoaded":True,"pageErrors":0,"externalRequests":0,
                 "paymentPosts":0,"realIdpCalls":0,"providerCalls":0,
