@@ -56,7 +56,7 @@ function req({path='/__private/paypal/order-proof',method='POST',body,headers={}
    'x-proofline-intent':'sandbox-order-get-only',...headers},
   ...(method==='POST'?{body:JSON.stringify(b)}:{})});
 }
-function fixture({order=ORDER_DATA(),dbOptions,afterGet}={}){
+function fixture({order=ORDER_DATA(),dbOptions,afterGet,nowProvider=()=>T}={}){
  const {sql,db}=makeDb(dbOptions);
  const calls=[];
  const transport={mode:'PAYPAL_SANDBOX_READ_ONLY',networkEnabled:true,
@@ -64,7 +64,7 @@ function fixture({order=ORDER_DATA(),dbOptions,afterGet}={}){
    calls.push(id);if(afterGet)afterGet(sql);return order;
   }};
  const handler=createWorkerSandboxOrderProof({db,allowedOrigin:ORIGIN,
-  transport,expectedMerchantId:MERCHANT,enabled:true,now:()=>T});
+  transport,expectedMerchantId:MERCHANT,enabled:true,now:nowProvider});
  return {sql,db,handler,calls,transport};
 }
 test('disabled-by-default Worker transport and proof cannot contact a provider',async()=>{
@@ -238,5 +238,18 @@ test('non-approved remote orders require reconciliation and mismatched D1 curren
  const response=await f.handler.fetch(req());
  assert.equal(response.status,409);
  assert.deepEqual(f.calls,[]);
+ f.sql.close();
+});
+
+test('clock rollback during remote GET invalidates owner proof without ledger mutation',async()=>{
+ let clock=T;
+ const f=fixture({nowProvider:()=>clock,afterGet:()=>{clock=T-1000;}});
+ const response=await f.handler.fetch(req());
+ assert.equal(response.status,401);
+ const data=await response.json();
+ assert.equal(data.paymentAuthorized,false);
+ assert.equal(data.ledgerWrites,0);
+ assert.deepEqual(f.calls,[ORDER]);
+ assert.equal(f.sql.prepare('SELECT COUNT(*) n FROM payment_attempts').get().n,1);
  f.sql.close();
 });
