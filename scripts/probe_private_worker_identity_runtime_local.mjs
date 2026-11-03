@@ -646,10 +646,10 @@ async function main(){
   JSON.stringify({requestId:'ciIdentityRequest',quoteId:'ciIdentityQuote',quoteVersion:2}));
  if(mismatched.status!==409)
   fail('LOCAL_RECONCILE_WRONG_VERSION_ALLOWED');
- const approved=await request(reconcilePath,reconcileHeaders,'POST',reconcileBody);
- let confirmedOrder;try{confirmedOrder=JSON.parse(approved.body)}
+ const reconcileApproved=await request(reconcilePath,reconcileHeaders,'POST',reconcileBody);
+ let confirmedOrder;try{confirmedOrder=JSON.parse(reconcileApproved.body)}
  catch{fail('LOCAL_RECONCILE_JSON_INVALID')}
- if(approved.status!==200||!approved.encrypted||
+ if(reconcileApproved.status!==200||!reconcileApproved.encrypted||
     confirmedOrder.status!=='APPROVED_GET_RECONCILED_NO_CAPTURE'||
     confirmedOrder.ledgerState!=='APPROVED'||
     confirmedOrder.providerGetInvoked!==true||confirmedOrder.ledgerWrites!==1||
