@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createPinnedSandboxOAuthTokenSource,
  createPinnedSandboxGetWithOAuth,isPinnedSandboxOAuthTokenSource}
  from '../src/worker_pinned_paypal_sandbox_oauth.mjs';
-import {isPinnedPayPalSandboxGetTransport} from '../src/worker_pinned_paypal_sandbox_get.mjs';
+import {isPinnedPayPalSandboxGetTransport,createPinnedPayPalSandboxGetTransport} from '../src/worker_pinned_paypal_sandbox_get.mjs';
 const OAUTH='https://api-m.sandbox.paypal.com/v1/oauth2/token';
 const GET='https://api-m.sandbox.paypal.com/v2/checkout/orders/ORDER_001';
 const ID='test-client-id';
@@ -173,4 +173,55 @@ test('OAuth failure prevents downstream order GET in composed transport',async()
  await assert.rejects(transport.getOrder('ORDER_001'),{
   code:'SANDBOX_GET_TOKEN_UNAVAILABLE_NO_RETRY'});
  assert.deepEqual(seen,[[OAUTH,'POST']]);
+});
+
+test('GET 401 evicts only rejected cached token; next explicit call refreshes once',async()=>{
+ let oauth=0,gets=0;
+ const transport=createPinnedSandboxGetWithOAuth({enabled:true,clientId:ID,
+  clientSecret:SECRET,fetchImpl:async(url,opts)=>{
+   if(url===OAUTH){oauth++;return success({access_token:'token'+oauth+'sandbox'});}
+   assert.equal(url,GET);gets++;
+   if(gets===1){assert.equal(opts.headers.authorization,'Bearer token1sandbox');
+    return new Response(null,{status:401});}
+   assert.equal(opts.headers.authorization,'Bearer token2sandbox');
+   return new Response(JSON.stringify({id:'ORDER_001'}),{status:200,
+    headers:{'content-type':'application/json'}});
+  }});
+ await assert.rejects(transport.getOrder('ORDER_001'),{
+  code:'SANDBOX_GET_AUTH_REJECTED_NO_RETRY'});
+ assert.equal(oauth,1);assert.equal(gets,1); // NO automatic retry
+ assert.deepEqual(await transport.getOrder('ORDER_001'),{id:'ORDER_001'});
+ assert.deepEqual([oauth,gets],[2,2]);
+});
+
+test('GET 403 does not refresh OAuth token automatically or on subsequent request',async()=>{
+ let oauth=0,gets=0;
+ const transport=createPinnedSandboxGetWithOAuth({enabled:true,clientId:ID,
+  clientSecret:SECRET,fetchImpl:async(url,opts)=>{
+   if(url===OAUTH){oauth++;return success();}
+   assert.equal(opts.headers.authorization,'Bearer '+TOKEN);
+   gets++;return new Response(null,{status:403});
+  }});
+ for(let i=0;i<2;i++)await assert.rejects(transport.getOrder('ORDER_001'),{
+  code:'SANDBOX_GET_AUTH_REJECTED_NO_RETRY'});
+ assert.deepEqual([oauth,gets],[1,2]);
+});
+
+test('late rejection of stale token never evicts freshly rotated cached token',async()=>{
+ let oauth=0;
+ const source=make(async()=>{oauth++;return success({access_token:'token'+oauth+'sandbox'});});
+ const first=await source.getAccessToken();
+ assert.equal(first,'token1sandbox');
+ source.invalidateAccessToken(first);
+ const fresh=await source.getAccessToken();
+ assert.equal(fresh,'token2sandbox');
+ source.invalidateAccessToken(first); // delayed 401 for an earlier GET
+ assert.equal(await source.getAccessToken(),fresh);
+ assert.equal(oauth,2);
+});
+
+test('forged token invalidator is rejected at transport setup',()=>{
+ assert.throws(()=>createPinnedPayPalSandboxGetTransport({enabled:true,
+  fetchImpl:async()=>success(),getAccessToken:async()=>TOKEN,
+  invalidateAccessToken:true}),/SANDBOX_GET_TRANSPORT_EXPLICIT_SETUP_REQUIRED/);
 });
