@@ -60,6 +60,27 @@ const H='a'.repeat(64),S1='b'.repeat(64),S2='c'.repeat(64),A='d'.repeat(64);
 const claimRow=`('request_first','quote_local',1,'merchant_local','create','IN_FLIGHT',150,'USD')`;
 query("INSERT INTO quotes (id,owner_id,merchant_id,version,currency,status,approval_actor,approval_version,approval_amount_minor) VALUES ('quote_local','owner_local','merchant_local',1,'USD','APPROVED','owner_local',1,150)");
 query("INSERT INTO payment_attempts(request_id,quote_id,quote_version,merchant_id,operation,state,amount_minor,currency) VALUES "+claimRow);
+// Exercise actual local Wrangler/SQLite triggers from 0005/0006.
+// These are disposable fixtures only; no remote D1 or payment request.
+const initialAudit=query("SELECT event_type,after_state FROM payment_attempt_audit WHERE request_id='request_first'");
+if(!hasRow(initialAudit,v=>v.event_type==='CLAIM_CREATED'&&v.after_state==='IN_FLIGHT'))
+ fail('LOCAL_D1_INITIAL_APPEND_ONLY_AUDIT_MISSING');
+query("UPDATE payment_attempts SET state='UNKNOWN' WHERE request_id='request_first'");
+query("UPDATE payment_attempts SET state='IN_FLIGHT' WHERE request_id='request_first'",
+ {blocked:'PAYMENT_STATE_TRANSITION_FORBIDDEN'});
+query("UPDATE payment_attempts SET state='APPROVED' WHERE request_id='request_first'",
+ {blocked:'REMOTE_ORDER_REFERENCE_REQUIRED'});
+query("UPDATE payment_attempt_audit SET after_state='PAID' WHERE request_id='request_first'",
+ {blocked:'PAYMENT_AUDIT_APPEND_ONLY'});
+query("DELETE FROM payment_attempt_audit WHERE request_id='request_first'",
+ {blocked:'PAYMENT_AUDIT_APPEND_ONLY'});
+query("UPDATE payment_attempts SET amount_minor=999 WHERE request_id='request_first'",
+ {blocked:'PAYMENT_CLAIM_IDENTITY_IMMUTABLE'});
+const preserved=query("SELECT state,amount_minor,remote_id FROM payment_attempts WHERE request_id='request_first'");
+if(!hasRow(preserved,v=>v.state==='UNKNOWN'&&Number(v.amount_minor)===150&&v.remote_id===null))
+ fail('LOCAL_D1_MALICIOUS_TRANSITION_CHANGED_CLAIM');
+const audit=query("SELECT COUNT(*) AS n FROM payment_attempt_audit WHERE request_id='request_first'");
+if(!hasRow(audit,v=>Number(v.n)===2))fail('LOCAL_D1_AUDIT_COUNT_UNEXPECTED');
 query("UPDATE quotes SET version=2 WHERE id='quote_local'",{blocked:'CLAIMED_QUOTE_IMMUTABLE'});
 query("DELETE FROM quotes WHERE id='quote_local'",{blocked:'CLAIMED_QUOTE_IMMUTABLE'});
 query("INSERT INTO payment_attempts(request_id,quote_id,quote_version,merchant_id,operation,state,amount_minor,currency) VALUES ('request_second','quote_local',1,'merchant_local','create','IN_FLIGHT',150,'USD')",
@@ -85,8 +106,8 @@ if(!hasRow(final,v=>Number(v.quotes)===1&&Number(v.attempts)===1&&Number(v.sessi
  fail('LOCAL_D1_NEGATIVE_OPERATIONS_MUTATED_ROWS');
 console.log(JSON.stringify({
  status:'WRANGLER_LOCAL_D1_SECURITY_BEHAVIOR_PASS',checks,
- denied:'quote-change,quote-delete,duplicate-claim,assertion-replay,revision-forge,binding-delete',
- verified:'revocation-generation-increment-and-stale-session-rejection-condition',
+ denied:'payment-replay,approval-without-order,claim-rewrite,audit-update,audit-delete,quote-change,quote-delete,duplicate-claim,assertion-replay,revision-forge,binding-delete',
+ verified:'new-payment-audit-and-state-guards,revocation-generation-increment-and-stale-session-rejection-condition',
  realCloudflareD1Verified:false,providerCalls:0,paymentAuthorized:false,
  releaseAuthorized:false
 }));
