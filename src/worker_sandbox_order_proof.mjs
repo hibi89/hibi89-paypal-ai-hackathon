@@ -127,7 +127,13 @@ export function createWorkerSandboxOrderProof({
     .bind(args.quoteId,args.quoteVersion,principal.actorId,
      principal.merchantId,digest,now(),now()).first();
    if(!fresh||fresh.remote_id!==row.remote_id||
-      fresh.ledger_state!==row.ledger_state)
+      fresh.ledger_state!==row.ledger_state||
+      fresh.attempt_minor!==row.attempt_minor||
+      fresh.approval_amount_minor!==row.approval_amount_minor||
+      fresh.merchant_id!==row.merchant_id||
+      fresh.owner_id!==row.owner_id||
+      fresh.version!==row.version||
+      fresh.currency!==row.currency)
     throw Error('D1_CHANGED');
   }catch{return reply(401,{error:'OWNER_SESSION_OR_D1_CHANGED'})}
   return reply(200,{
