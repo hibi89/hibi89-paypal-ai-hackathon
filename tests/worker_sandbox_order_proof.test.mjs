@@ -208,7 +208,8 @@ test('router keeps provider route dark by default and exposes only opted-in owne
 test('provider response is rejected when D1 order binding or ledger state changes during GET',async()=>{
  for(const mutation of [
   "UPDATE payment_attempts SET remote_id='REPLACED_ORDER' WHERE operation='create'",
-  "UPDATE payment_attempts SET state='UNKNOWN' WHERE operation='create'"
+  "UPDATE payment_attempts SET state='UNKNOWN' WHERE operation='create'",
+  "UPDATE payment_attempts SET amount_minor=175 WHERE operation='create'"
  ]){
   const f=fixture({afterGet:sql=>sql.exec(mutation)});
   const response=await f.handler.fetch(req());
