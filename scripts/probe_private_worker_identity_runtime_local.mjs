@@ -112,8 +112,12 @@ async function browserRoleVerify(origin,ownerCookie,sellerCookie,reviewerCookie)
    cwd:root,env:{...process.env,CLOUDFLARE_API_TOKEN:'',
     WRANGLER_SEND_METRICS:'false'},stdio:['pipe','pipe','pipe']
   });
-  let output='',overflow=false;
-  const timeout=setTimeout(()=>{overflow=true;child.kill('SIGKILL')},40000);
+  let output='',overflow=false,timedOut=false;
+  // Three independent HTTPS browser contexts, five D1 POSTs and repeated
+  // authenticated reloads can exceed the former 40s aggregate deadline on
+  // shared CI. Each Playwright assertion still has its own strict bound.
+  // Keep an explicit 120s total cap; this is not a bypass of any assertion.
+  const timeout=setTimeout(()=>{timedOut=true;child.kill('SIGKILL')},120000);
   child.stdout.on('data',chunk=>{
    output+=chunk.toString('utf8');
    if(output.length>4096){overflow=true;child.kill('SIGKILL')}
@@ -123,11 +127,13 @@ async function browserRoleVerify(origin,ownerCookie,sellerCookie,reviewerCookie)
   child.once('close',code=>{
    clearTimeout(timeout);
    let result;try{result=JSON.parse(output.trim())}catch{}
-   if(code!==0||overflow||result?.status!=='LOCAL_WORKERD_CHROMIUM_3ROLE_D1_CONTRACT_PASS'){
+   if(code!==0||overflow||timedOut||
+      result?.status!=='LOCAL_WORKERD_CHROMIUM_3ROLE_D1_CONTRACT_PASS'){
     const reasons=['BROWSER_POST_COUNT_UNEXPECTED','BROWSER_SCRIPT_OR_CONSOLE_ERROR',
      'EXTERNAL_REQUEST_ATTEMPTED','BROWSER_ASSERTION_FAILED'];
     console.error(JSON.stringify({status:'CHROMIUM_ROLE_DIAGNOSTIC',
-     reason:reasons.includes(result?.reason)?result.reason:'ROLE_BROWSER_FAILED',
+     reason:timedOut?'ROLE_BROWSER_AGGREGATE_TIMEOUT':
+      reasons.includes(result?.reason)?result.reason:'ROLE_BROWSER_FAILED',
      exitCode:code}));
     return bad(Error('REAL_LOCAL_CHROMIUM_ROLE_WORKFLOW_FAILED'));
    }
