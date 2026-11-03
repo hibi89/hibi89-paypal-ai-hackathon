@@ -190,6 +190,8 @@ def main():
             post_paths=[path for method,path in network if method=="POST"]
             assert post_paths==[
                 "/__private/paypal/claim-audit",
+                "/__private/paypal/claim-audit",
+                "/__private/paypal/claim-audit",
                 "/__private/quotes",f"/__private/quotes/{quote_id}/approve"
             ],"BROWSER_UNEXPECTED_MUTATION_ENDPOINT"
             assert not errors,"QUOTE_CHROMIUM_CONSOLE_OR_SCRIPT_ERROR"
