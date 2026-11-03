@@ -60,7 +60,8 @@ async function main(){
   CI_PRIVATE_ORIGIN:origin,
   CI_PRIVATE_JWKS:JSON.stringify({keys:[publicJwk]}),
   CI_PRIVATE_SIGNING_JWK:JSON.stringify(privateKey.export({format:'jwk'})),
-  CI_PRIVATE_PEPPER:pepper.toString('base64')
+  CI_PRIVATE_PEPPER:pepper.toString('base64'),
+  CI_PRIVATE_OIDC_SECRET:randomBytes(32).toString('base64url')
  };
  writeFileSync(config,JSON.stringify({
   name:'proofline-internal-identity-workerd-ci',

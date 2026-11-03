@@ -4,6 +4,7 @@
 // a 0600 untracked temporary Wrangler config and never checked into git.
 import {createWorkerPrivateOidcAuthority} from '../src/worker_private_oidc_authority.mjs';
 import {createWorkerOidcPkceCoordinator} from '../src/worker_oidc_pkce_coordinator.mjs';
+import {createWorkerOidcTokenTransport} from '../src/worker_oidc_token_transport.mjs';
 import {createPrivateWorkerIdentityReadRouter} from '../src/worker_private_identity_read_router.mjs';
 
 const ISSUER='https://idp.workerd-fixture.invalid';
@@ -45,7 +46,8 @@ export default Object.freeze({
      typeof env?.CI_PRIVATE_ORIGIN!=='string'||
      typeof env?.CI_PRIVATE_SIGNING_JWK!=='string'||
      typeof env?.CI_PRIVATE_JWKS!=='string'||
-     typeof env?.CI_PRIVATE_PEPPER!=='string')return failResponse();
+     typeof env?.CI_PRIVATE_PEPPER!=='string'||
+     typeof env?.CI_PRIVATE_OIDC_SECRET!=='string')return failResponse();
   try{
    const pepper=Uint8Array.from(atob(env.CI_PRIVATE_PEPPER),c=>c.charCodeAt(0));
    const authority=createWorkerPrivateOidcAuthority({
@@ -55,12 +57,32 @@ export default Object.freeze({
    const pkce=createWorkerOidcPkceCoordinator({
     authority,allowedOrigin:env.CI_PRIVATE_ORIGIN,issuer:ISSUER,clientId:CLIENT,
     authorizationEndpoint:ISSUER+'/authorize',tokenEndpoint:ISSUER+'/token',
-    codeTransport:{async exchange(ticket){
-     if(ticket.code!==TOKEN_CODE||ticket.clientId!==CLIENT||
-        !/^[A-Za-z0-9_-]{43}$/.test(ticket.codeVerifier??''))
-      throw Error('CI_SYNTHETIC_CODE_REJECTED');
-     return {idToken:await issueSyntheticJwt(env,env.DB)};
-    }}
+    // Explicit enablement is safe ONLY because fetchImpl below is an in-process
+    // synthetic fixture: global fetch is never called and no network is used.
+    codeTransport:createWorkerOidcTokenTransport({
+     tokenEndpoint:ISSUER+'/token',
+     redirectUri:env.CI_PRIVATE_ORIGIN+'/api/auth/oidc/callback',
+     clientId:CLIENT,clientSecret:env.CI_PRIVATE_OIDC_SECRET,
+     networkApproved:true,allowLocalCallback:true,
+     fetchImpl:async(url,options)=>{
+      const body=new URLSearchParams(options.body);
+      const basic='Basic '+btoa(encodeURIComponent(CLIENT)+':'+
+       encodeURIComponent(env.CI_PRIVATE_OIDC_SECRET));
+      if(url!==ISSUER+'/token'||options.method!=='POST'||
+         options.redirect!=='error'||options.credentials!=='omit'||
+         options.headers.authorization!==basic||
+         body.get('grant_type')!=='authorization_code'||
+         body.get('code')!==TOKEN_CODE||
+         body.get('redirect_uri')!==env.CI_PRIVATE_ORIGIN+'/api/auth/oidc/callback'||
+         !/^[A-Za-z0-9_-]{43}$/.test(body.get('code_verifier')??''))
+       throw Error('CI_SYNTHETIC_TOKEN_TRANSPORT_REJECTED');
+      const signed=await issueSyntheticJwt(env,env.DB);
+      return new Response(JSON.stringify({token_type:'Bearer',id_token:signed,
+       access_token:'DISCARD_OFFLINE_FIXTURE_ACCESS_TOKEN'}),{
+       status:200,headers:{'content-type':'application/json'}
+      });
+     }
+    })
    });
    const router=createPrivateWorkerIdentityReadRouter({
     db:env.DB,allowedOrigin:env.CI_PRIVATE_ORIGIN,authority,
