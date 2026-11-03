@@ -7,13 +7,14 @@ import {join} from 'node:path';
 import {auditWorkerD1SchemaReadOnly} from '../src/worker_d1_schema_preflight.mjs';
 
 const migrationNames=['0001_payment_claims.sql','0002_worker_private_sessions.sql',
- '0003_worker_private_oidc.sql','0004_worker_private_binding_epoch.sql'];
+ '0003_worker_private_oidc.sql','0004_worker_private_binding_epoch.sql',
+ '0005_payment_attempt_audit.sql','0006_payment_state_integrity.sql'];
 const scripts=migrationNames.map(n=>readFileSync(
  new URL('../migrations/d1/'+n,import.meta.url),'utf8'));
 const quarantine=readFileSync(
  new URL('../scripts/restore_quarantine_private_sessions.sql',import.meta.url),'utf8');
 
-function fixture(level=4){
+function fixture(level=6){
  const dir=mkdtempSync(join(tmpdir(),'paypal-d1-schema-preflight-'));
  const path=join(dir,'fixture.sqlite'),writer=new DatabaseSync(path);
  for(let i=0;i<level;i++)writer.exec(scripts[i]);
@@ -38,7 +39,7 @@ const scoped=fn=>async()=>{
  try{await fn(f);}finally{f.close();}
 };
 
-test('four ordered D1 migrations pass read-only structural audit without authorizing launch',scoped(async f=>{
+test('six ordered D1 migrations pass read-only structural audit without authorizing launch',scoped(async f=>{
  const before=f.writer.prepare('SELECT count(*) n FROM worker_private_sessions').get().n;
  const report=await auditWorkerD1SchemaReadOnly({db:f.db});
  assert.equal(report.status,'OFFLINE_SCHEMA_CANDIDATE_ONLY');
@@ -54,6 +55,27 @@ test('four ordered D1 migrations pass read-only structural audit without authori
  assert.equal(f.writer.prepare('SELECT count(*) n FROM worker_private_sessions').get().n,before);
 }));
 
+test('missing audit migration or missing state-integrity migration cannot pass latest schema',async()=>{
+ for(const [level,missing] of [[4,'MISSING_TABLE:payment_attempt_audit'],
+  [5,'MISSING_TRIGGER:payment_attempt_state_monotonic']]){
+  const f=fixture(level);
+  try{
+   const report=await auditWorkerD1SchemaReadOnly({db:f.db});
+   assert.equal(report.status,'BLOCKED_OFFLINE_D1_SCHEMA');
+   assert.ok(report.issueCodes.includes(missing));
+   assert.equal(report.releaseAuthorized,false);
+  }finally{f.close();}
+ }
+});
+test('inert replacement of latest payment state trigger fails full SQL signature',scoped(async f=>{
+ f.writer.exec('DROP TRIGGER payment_attempt_state_monotonic');
+ f.writer.exec(`CREATE TRIGGER payment_attempt_state_monotonic
+  BEFORE UPDATE OF state ON payment_attempts WHEN 0
+  BEGIN SELECT RAISE(ABORT,'PAYMENT_STATE_TRANSITION_FORBIDDEN'); END`);
+ const report=await auditWorkerD1SchemaReadOnly({db:f.db});
+ assert.equal(report.status,'BLOCKED_OFFLINE_D1_SCHEMA');
+ assert.ok(report.issueCodes.includes('GUARD_SQL_DRIFT:payment_attempt_state_monotonic'));
+}));
 test('missing revision migration blocks release and lists exact missing columns',async()=>{
  const f=fixture(3);
  try{
@@ -178,10 +200,7 @@ test('revision trigger with inert WHEN 0 cannot spoof full migration guard',scop
 test('only ordered versioned migrations are discoverable by Wrangler default SQL glob',()=>{
  const migrationsDir=new URL('../migrations/d1/',import.meta.url);
  const discovered=readdirSync(migrationsDir).filter(x=>x.endsWith('.sql')).sort();
- // Only the original four are audited by this legacy read-only contract.
- // 0005/0006 are separate offline migration candidates, NOT remote-approved.
- assert.deepEqual(discovered,[...migrationNames,
-  '0005_payment_attempt_audit.sql','0006_payment_state_integrity.sql'].sort());
+ assert.deepEqual(discovered,[...migrationNames].sort());
  assert.ok(discovered.every(x=>/^000[1-9][0-9]*_[a-z0-9_]+\.sql$/.test(x)));
  assert.ok(existsSync(new URL('../scripts/restore_quarantine_private_sessions.sql',import.meta.url)));
  assert.equal(discovered.some(x=>x.includes('quarantine')),false);
