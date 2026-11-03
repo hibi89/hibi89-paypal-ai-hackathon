@@ -60,10 +60,10 @@ async function main(){
    PRIVATE_READ_ORIGIN:origin}
  }),{mode:0o600,flag:'wx'});
  const statements=[
-  "INSERT INTO quotes(id,owner_id,merchant_id,version,currency,status,approval_actor,approval_version,approval_amount_minor) VALUES('ciQuote','ciOwner','ciMerchant',1,'USD','APPROVED','ciOwner',1,250)",
-  "INSERT INTO payment_attempts(request_id,quote_id,quote_version,merchant_id,operation,state,amount_minor,currency) VALUES('ciRequest','ciQuote',1,'ciMerchant','create','IN_FLIGHT',250,'USD')",
-  "INSERT INTO worker_private_oidc_bindings(issuer,subject_hmac,actor_id,merchant_id,role,active) VALUES('https://idp.example.invalid','"+hash+"','ciOwner','ciMerchant','OWNER',1)",
-  "INSERT INTO worker_private_sessions(token_sha256,actor_id,merchant_id,role,issuer,issuer_verified_at_ms,expires_at_ms,binding_subject_hmac,binding_revision) VALUES('"+digest+"','ciOwner','ciMerchant','OWNER','https://idp.example.invalid',"+(now-1000)+","+(now+120000)+",'"+hash+"',1)"
+  "INSERT INTO quotes(id,owner_id,merchant_id,version,currency,status,approval_actor,approval_version,approval_amount_minor) VALUES('ciQuote','ciOwner','PAYPALMERCH13',1,'USD','APPROVED','ciOwner',1,250)",
+  "INSERT INTO payment_attempts(request_id,quote_id,quote_version,merchant_id,operation,state,amount_minor,currency) VALUES('ciRequest','ciQuote',1,'PAYPALMERCH13','create','IN_FLIGHT',250,'USD')",
+  "INSERT INTO worker_private_oidc_bindings(issuer,subject_hmac,actor_id,merchant_id,role,active) VALUES('https://idp.example.invalid','"+hash+"','ciOwner','PAYPALMERCH13','OWNER',1)",
+  "INSERT INTO worker_private_sessions(token_sha256,actor_id,merchant_id,role,issuer,issuer_verified_at_ms,expires_at_ms,binding_subject_hmac,binding_revision) VALUES('"+digest+"','ciOwner','PAYPALMERCH13','OWNER','https://idp.example.invalid',"+(now-1000)+","+(now+120000)+",'"+hash+"',1)"
  ];
  writeFileSync(sqlfile,statements.join(';\n')+';\n',{mode:0o600,flag:'wx'});
  seed();

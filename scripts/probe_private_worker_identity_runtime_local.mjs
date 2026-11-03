@@ -154,6 +154,7 @@ async function main(){
   CI_PRIVATE_IDENTITY_OPT_IN:'LOCAL_SYNTHETIC_NO_DEPLOY',
   CI_CONTRACTS_OPT_IN:'LOCAL_CONTRACT_CANDIDATE_ONLY',
   CI_CONTRACT_ROLE_SESSIONS_OPT_IN:'LOCAL_VERIFIED_ROLE_FIXTURE_ONLY',
+  CI_PRIVATE_CLAIM_OPT_IN:'LOCAL_CLAIM_NO_PROVIDER_ONLY',
   CI_PRIVATE_ORIGIN:origin,
   CI_PRIVATE_JWKS:JSON.stringify({keys:[publicJwk]}),
   CI_PRIVATE_SIGNING_JWK:JSON.stringify(privateKey.export({format:'jwk'})),
@@ -171,16 +172,16 @@ async function main(){
   vars
  }),{mode:0o600,flag:'wx'});
  const statements=[
-  "INSERT INTO quotes(id,owner_id,merchant_id,version,currency,status,approval_actor,approval_version,approval_amount_minor) VALUES('ciIdentityQuote','ciOwner','ciMerchant',1,'USD','APPROVED','ciOwner',1,250)",
-  "INSERT INTO payment_attempts(request_id,quote_id,quote_version,merchant_id,operation,state,amount_minor,currency) VALUES('ciIdentityRequest','ciIdentityQuote',1,'ciMerchant','create','IN_FLIGHT',250,'USD')",
-  "INSERT INTO worker_private_oidc_bindings(issuer,subject_hmac,actor_id,merchant_id,role,active) VALUES('"+issuer+"','"+bindingHash+"','ciOwner','ciMerchant','OWNER',1)"
+  "INSERT INTO quotes(id,owner_id,merchant_id,version,currency,status,approval_actor,approval_version,approval_amount_minor) VALUES('ciIdentityQuote','ciOwner','PAYPALMERCH13',1,'USD','APPROVED','ciOwner',1,250)",
+  "INSERT INTO payment_attempts(request_id,quote_id,quote_version,merchant_id,operation,state,amount_minor,currency) VALUES('ciIdentityRequest','ciIdentityQuote',1,'PAYPALMERCH13','create','IN_FLIGHT',250,'USD')",
+  "INSERT INTO worker_private_oidc_bindings(issuer,subject_hmac,actor_id,merchant_id,role,active) VALUES('"+issuer+"','"+bindingHash+"','ciOwner','PAYPALMERCH13','OWNER',1)"
  ];
  // Only CI has this candidate schema and the three preprovisioned role rows.
  // No public endpoint may register these actors or grant roles.
  statements.push(
-  "INSERT INTO worker_contract_memberships(actor_id,merchant_id,role) VALUES('ciOwner','ciMerchant','BUYER')",
-  "INSERT INTO worker_contract_memberships(actor_id,merchant_id,role) VALUES('ciSeller','ciMerchant','SELLER')",
-  "INSERT INTO worker_contract_memberships(actor_id,merchant_id,role) VALUES('ciReviewer','ciMerchant','REVIEWER')"
+  "INSERT INTO worker_contract_memberships(actor_id,merchant_id,role) VALUES('ciOwner','PAYPALMERCH13','BUYER')",
+  "INSERT INTO worker_contract_memberships(actor_id,merchant_id,role) VALUES('ciSeller','PAYPALMERCH13','SELLER')",
+  "INSERT INTO worker_contract_memberships(actor_id,merchant_id,role) VALUES('ciReviewer','PAYPALMERCH13','REVIEWER')"
  );
  // Test-only operator-provisioned role sessions. No real IdP exchange,
  // external login, public enrollment or role cookie logging.
@@ -191,7 +192,7 @@ async function main(){
    .update('proofline:worker-oidc:v1'+sep+issuer+sep+sub).digest('hex');
   statements.push(
    "INSERT INTO worker_contract_role_bindings(issuer,subject_hmac,actor_id,merchant_id,role) VALUES('"+
-    issuer+"','"+subjectHash+"','"+actor+"','ciMerchant','"+role+"')"
+    issuer+"','"+subjectHash+"','"+actor+"','PAYPALMERCH13','"+role+"')"
   );
   return {role};
  });
@@ -547,6 +548,69 @@ async function main(){
  if(darkProof.status!==404)fail('UNAPPROVED_SANDBOX_GET_ROUTE_ACTIVATED');
  if((await request('/api/paypal/capture',{cookie:sessionCookie,origin},'POST')).status!==404)
   fail('WORKER_PAYMENT_MUTATION_ROUTE_EXPOSED');
+
+ // CI-only real Workerd/SQLite: OIDC OWNER -> human-approved D1 quote ->
+ // authenticated first claim -> duplicate denial -> recovery/audit timeline.
+ // This proves no provider creates, captures or real PayPal authorization.
+ const claimPath='/__private/paypal/create-claim';
+ const claimBody=JSON.stringify({
+  requestId:'ciClaimFirst',quoteId:quoteCreated.quote.quoteId,quoteVersion:1
+ });
+ const claimHeaders={cookie:sessionCookie,origin,'sec-fetch-site':'same-origin',
+  'content-type':'application/json','x-proofline-intent':'first-claim-no-provider'};
+ if((await request(claimPath)).status!==405||
+    (await request(claimPath,claimHeaders,'GET')).status!==405||
+    (await request(claimPath,{...claimHeaders,origin:'https://evil.invalid'},
+     'POST',claimBody)).status!==403||
+    (await request(claimPath,{...claimHeaders,'sec-fetch-site':'cross-site'},
+     'POST',claimBody)).status!==403||
+    (await request(claimPath,{...claimHeaders,'x-proofline-intent':'capture'},
+     'POST',claimBody)).status!==403||
+    (await request(claimPath,{...claimHeaders,
+      cookie:sessionCookie+'; __Host-proofline_contract_role='+roleCookie('REVIEWER')},
+     'POST',claimBody)).status!==401)
+  fail('LOCAL_WORKERD_PAYMENT_CLAIM_BYPASS_ALLOWED');
+ const firstClaim=await request(claimPath,claimHeaders,'POST',claimBody);
+ let claim;try{claim=JSON.parse(firstClaim.body)}catch{fail('LOCAL_CLAIM_JSON_INVALID')}
+ if(firstClaim.status!==201||!firstClaim.encrypted||
+    claim.status!=='IN_FLIGHT'||claim.claimed!==true||
+    claim.remoteOrderCreated!==false||claim.paymentAuthorized!==false||
+    claim.providerCalls!==0||claim.captureAuthorized!==false)
+  fail('LOCAL_OWNER_WORKER_D1_FIRST_CLAIM_FAILED');
+ const repeatClaim=await request(claimPath,claimHeaders,'POST',claimBody);
+ let repeatClaimJson;try{repeatClaimJson=JSON.parse(repeatClaim.body)}
+ catch{fail('LOCAL_CLAIM_REPLAY_JSON_INVALID')}
+ if(repeatClaim.status!==409||repeatClaimJson.claimed!==false||
+    repeatClaimJson.providerCalls!==0)
+  fail('LOCAL_D1_DUPLICATE_CLAIM_NOT_BLOCKED');
+ const recoveryPath='/__private/paypal/claim-recovery';
+ const recovery=await request(recoveryPath,{
+  ...claimHeaders,'x-proofline-intent':'inspect-recovery-only'},'POST',claimBody);
+ let recoveryJson;try{recoveryJson=JSON.parse(recovery.body)}
+ catch{fail('LOCAL_CLAIM_RECOVERY_JSON_INVALID')}
+ if(recovery.status!==200||recoveryJson.status!=='IN_FLIGHT'||
+    recoveryJson.next!=='IN_FLIGHT_DO_NOT_RETRY'||
+    recoveryJson.remoteIdKnown!==false||
+    recoveryJson.providerCalls!==0)
+  fail('LOCAL_D1_RECOVERY_NOT_READ_ONLY');
+ const auditPath='/__private/paypal/claim-audit';
+ const audit=await request(auditPath,{
+  ...claimHeaders,'x-proofline-intent':'read-audit-only'},'POST',claimBody);
+ let auditJson;try{auditJson=JSON.parse(audit.body)}
+ catch{fail('LOCAL_CLAIM_AUDIT_JSON_INVALID')}
+ if(audit.status!==200||auditJson.status!=='AUDIT_READ_ONLY'||
+    auditJson.events?.length!==1||auditJson.events[0].eventType!=='CLAIM_CREATED'||
+    auditJson.events[0].toState!=='IN_FLIGHT'||
+    auditJson.events[0].remoteOrderKnown!==false||auditJson.hasMore!==false||
+    auditJson.providerCalls!==0||auditJson.paymentAuthorized!==false||
+    audit.body.includes('remote_id')||audit.body.includes('access_token'))
+  fail('LOCAL_D1_AUDIT_NOT_OWNER_SAFE');
+ console.log(JSON.stringify({status:'LOCAL_WORKERD_D1_OWNER_CLAIM_RECOVERY_AUDIT_PASS',
+  workerd:true,realLocalD1:true,ownerSession:true,firstClaim:true,
+  duplicateBlocked:true,recoveryReadOnly:true,auditRows:1,
+  crossOriginDenied:true,crossSiteDenied:true,roleMixDenied:true,
+  paymentPosts:0,providerCalls:0,realPaymentAuthorized:false,
+  remoteCloudflareVerified:false,productionDeployed:false}));
  if((await request('/api/auth/oidc/logout',{
   cookie:sessionCookie,origin:'https://evil.invalid','sec-fetch-site':'cross-site'
  },'POST')).status!==403)fail('CROSS_SITE_LOGOUT_ALLOWED');
@@ -558,6 +622,8 @@ async function main(){
   fail('WORKER_D1_REVOKE_FAILED');
  if((await request(path,{cookie:sessionCookie,'sec-fetch-site':'same-origin'})).status!==401)
   fail('REVOKED_COOKIE_REUSED');
+ if((await request(claimPath,claimHeaders,'POST',claimBody)).status!==401)
+  fail('REVOKED_OWNER_CLAIM_ALLOWED');
  if((await request('/__private/attempts/view',{cookie:sessionCookie})).status!==401)
   fail('REVOKED_PRIVATE_D1_DASHBOARD_COOKIE_REUSED');
  if((await request('/__private/quotes/view',{cookie:sessionCookie})).status!==401)
