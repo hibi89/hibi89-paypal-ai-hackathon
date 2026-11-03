@@ -128,3 +128,19 @@ test('UNKNOWN cannot downgrade already approved or paid ledger state',async()=>{
  assert.equal((await gate.inspectRecovery(input)).next,'PAYMENT_ATTESTATION_NOT_PROVIDED');
  sql.close();
 });
+
+test('remote order CAS requires matching quote owner on both update and verification read',async()=>{
+ const {sql,gate}=fixture();
+ await gate.claim(input);
+ await assert.rejects(gate.persistRemoteOrder({...input,ownerId:'other',remoteId:'ORDER_001'}),
+  {code:'REMOTE_ORDER_BINDING_UNKNOWN_RECONCILE_BEFORE_RETRY'});
+ await assert.rejects(gate.persistRemoteOrder({...input,ownerId:undefined,remoteId:'ORDER_001'}),
+  {code:'INVALID_REMOTE_ORDER_BINDING'});
+ await assert.rejects(gate.persistRemoteOrder({...input,merchantId:'UNRELATED1234',remoteId:'ORDER_001'}),
+  {code:'REMOTE_ORDER_BINDING_UNKNOWN_RECONCILE_BEFORE_RETRY'});
+ assert.equal(sql.prepare('SELECT remote_id FROM payment_attempts').get().remote_id,null);
+ const valid=await gate.persistRemoteOrder({...input,remoteId:'ORDER_001'});
+ assert.equal(valid.persisted,true);
+ assert.equal(sql.prepare('SELECT remote_id FROM payment_attempts').get().remote_id,'ORDER_001');
+ sql.close();
+});
