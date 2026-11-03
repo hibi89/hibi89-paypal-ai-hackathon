@@ -1,3 +1,15 @@
+## 2026-11-04 — P0 audit timeline cursor checkpoint (latest)
+1. **Goal/confirmed scope:** Proofline Part1 freelancer marketplace and five Part2 AI innovation skills remain intact. Extend private D1 audit view so older events can be accessed without opening payment authority.
+2. **Completed/decision:** `claim-audit` optional `beforeSequence` cursor, 50-event pagination, `nextBeforeSequence`, strict integer/schema validation, audit-row identity join on request/quote/version/merchant/operation. Chose bounded keyset seek over offset pagination (stable under concurrent append; no DB migration).
+3. **Test evidence:** Local Node v22.16 SQLite `node --experimental-sqlite --test tests/*.test.mjs` in isolated `/mnt/data/paypal_claim`: **47 PASS / 0 FAIL / 0 SKIP**, 3 new pagination and tenant-scope checks, `node --check` PASS, GitHub SHA-matched three files. Full repo CI/Workerd/Production not run or verified.
+4. **Status:** **81% estimated overall** (from 80%, +1 pp for tested pagination); RELEASE HOLD. Public site / real provider status unchanged and not verified.
+5. **Errors/stop-pivot/recovery:** Wrangler/Workerd absent locally and private repo not cloneable via unauthenticated network. Local Node Request/Response+SQLite focused alternative used; do not claim this validates Workerd/remote D1. Git history backs up all modified files. No force-push, no remote payment retry.
+6. **Repo/branch/SHA:** `hibi89/hibi89-paypal-ai-hackathon` / `lead/paypal`; source/test `8218aab5f869b7d30c128ccaf4da9ad8fd928954`; files: `src/worker_payment_claim_gate.mjs`, `src/worker_private_payment_claim_route.mjs`, `tests/worker_payment_audit_view.test.mjs`.
+7. **Production/deploy/env:** Node22.16.0 experimental SQLite, no deployment executed; Production URL/SHA, Cloudflare real D1, IdP, PayPal/Gemini and Devpost/YouTube not verified for this change.
+8. **Originals/backups/auth:** Existing migrations, user data, .env/tokens and PayPal integrations untouched; old GitHub commits are available for rollback. Private owner OIDC session + same-origin remains required. No new external data transmitted.
+9. **Next priority/completion:** Run true Workerd/D1 and full Windows/Linux CI; then inspect Production SHA, verify Part1/Part2 live functionality with separate owner consent for external providers/deploy and submission.
+10. **Timestamp/basis:** 2026-11-04 KST; local code/test content compared via Git blob SHA; docs committed after the tested feature commit.
+
 ## 2026-11-04 — P0 Payment private-router integrated checkpoint
 1. Goal: Preserve two-part Proofline product and payment approval gates; test full private router for D1 claim→recovery→audit and eliminate ambiguous multi-role cookie access.
 2. Completed: `src/worker_private_payment_claim_route.mjs` rejects `__Host-proofline_contract_role` on payment routes. `tests/worker_payment_audit_view.test.mjs` adds default-dark opt-in, real router dispatch, ownership and replay regressions. Chose minimal route-level fix over changing shared OIDC resolver (lower regression risk, no schema or credential changes).
