@@ -1,3 +1,10 @@
+## 2026-11-05 KST — Merged PR28 default-main LICENSE/source; whole-final 78→79 (+1pp) (LATEST)
+
+- **GitHub source publication VERIFIED:** [PR #28](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/28) merged at `28a370fd3b4a7573e90f895961051c59d7b233a1` after owner continuation. Public default `main`: 514/514 preview file blobs matched, MIT root LICENSE present, old main-only `docs/ROLE_COORDINATION.md` preserved. Old main `b8e7f791` in history.
+- **Fixed full-entry scoring 78→79/100 (+1pp):** `main` executable/LICENSE 7→8/8. Remaining 21; **release of real provider, hosted service, public video and Devpost still HOLD**.
+- **Prior verified source:** feature `3cc86e81` [Full #41889961142](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41889961142) Linux 1,169/1,169 PASS, Windows/Chromium SUCCESS, [Smoke #41889960963](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41889960963) SUCCESS. **No new exact merge SHA CI yet**; upcoming documentation/local draft generator patch needs independent new SHA verification.
+- **Official rule:** [Devpost](https://paypalaihackathon.devpost.com/rules) allows runnable localhost instructions without hosted Production. Official deadline **2026-11-13 05:00 KST**. Still must meaningfully use PayPal+AI, publish owner-approved under-180s YouTube and submit actual form.
+
 ## 2026-11-05 KST — Private D1 quote POST stream deadline CI 1,169 PASS; whole-final 78 unchanged (LATEST)
 
 - **Feature SHA** `3cc86e81d5d744a2ecd68db3d9b9b8879ef08c82`: `worker_private_quote_workflow.mjs` owner quote draft/revise/approve JSON body now has one absolute 2s read deadline, abort handling and nonblocking cancel on stalled stream; max 4096 bytes, original D1 quote CAS and no-payment contract preserved. Three new regressions for uncooperative stream, aborted revision and invalid timeouts.
