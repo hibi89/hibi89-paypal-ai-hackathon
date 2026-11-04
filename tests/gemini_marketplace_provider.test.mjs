@@ -105,3 +105,43 @@ test('caller cannot redirect Gemini requests through override object',async()=>{
  await provider({brief});
  assert.deepEqual(called,[GEMINI_P0_ENDPOINT]);
 });
+
+test('stalled Gemini skill request is bounded, consumes only one attempt, and aborts',async()=>{
+ let calls=0,signal;
+ const provider=createGeminiMarketplaceSkillProvider({...options,timeoutMs:60,
+  fetchImpl:async(_url,request)=>{calls++;signal=request.signal;return new Promise(()=>{});}
+ });
+ await assert.rejects(provider({brief}),{code:'AI_MARKETPLACE_NETWORK_UNKNOWN'});
+ assert.equal(calls,1);assert.equal(signal.aborted,true);
+});
+test('stalled streaming Gemini skill response fails closed without awaiting cancel',async()=>{
+ let calls=0,cancels=0;
+ const stream=new ReadableStream({
+  start(c){c.enqueue(new TextEncoder().encode('{"candidates":'))},
+  cancel(){cancels++;return new Promise(()=>{});}
+ });
+ const provider=createGeminiMarketplaceSkillProvider({...options,timeoutMs:60,
+  fetchImpl:async()=>{calls++;return new Response(stream,{
+   headers:{'content-type':'application/json'}});}
+ });
+ await assert.rejects(provider({brief}),{code:'AI_MARKETPLACE_INVALID_RESPONSE'});
+ assert.equal(calls,1);assert.equal(cancels,1);
+});
+test('untrusted MIME and oversized Gemini streamed JSON are rejected',async()=>{
+ let calls=0;
+ for(const response of [
+  new Response('{}',{headers:{'content-type':'text/html'}}),
+  new Response('x'.repeat(16400),{headers:{'content-type':'application/json'}}),
+  new Response('{}',{headers:{'content-type':'application/json','content-length':'16385'}})
+ ]){
+  const provider=createGeminiMarketplaceSkillProvider({...options,
+   fetchImpl:async()=>{calls++;return response;}});
+  await assert.rejects(provider({brief}),{code:'AI_MARKETPLACE_INVALID_RESPONSE'});
+ }
+ assert.equal(calls,3);
+});
+test('injected Gemini token response JSON cannot stall forever',async()=>{
+ const provider=createGeminiMarketplaceSkillProvider({...options,timeoutMs:60,
+  fetchImpl:async()=>({status:200,json:()=>new Promise(()=>{})})});
+ await assert.rejects(provider({brief}),{code:'AI_MARKETPLACE_INVALID_RESPONSE'});
+});
