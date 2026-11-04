@@ -77,6 +77,7 @@ def capture(output_dir, pace_ms):
     server, address = start_demo()
     video_file = None
     two_verticals_verified = False
+    five_skills_verified = []
     unsafe_requests = []
     post_paths = []
     try:
@@ -274,7 +275,68 @@ def capture(output_dir, pace_ms):
 
                 page.reload()
                 expect(page.locator("#contract-events")).to_contain_text("ACCEPTED")
-                caption("Technology is the evidence. The marketplace is the mechanism. More opportunity for people is the goal. OFFLINE SYNTHETIC.")
+
+                # PART 2: the five ACTUAL local innovation UI actions, not just
+                # a slide claiming an Agentic Lab exists. All actions remain
+                # fictional/deterministic and never invoke Gemini or PayPal.
+                page.goto(address + "/demo/innovation", wait_until="domcontentloaded")
+                expect(page.locator("h1")).to_contain_text("Five agentic commerce skills")
+                expect(page.locator("#activity")).to_contain_text("NOT_PAID")
+                caption("PART 2 / AI INNOVATION LAB | Five real browser workflows, OFFLINE synthetic policies; no provider or payment authorization.")
+                pause()
+
+                page.locator("#delegate").click()
+                expect(page.locator("#delegation-status")).to_contain_text("SYNTHETIC_CONSENT_CREATED")
+                five_skills_verified.append("delegate")
+                caption("DELEGATE & CONSENT | Time-limited fictional service authority; explicit scope, amount and revocation.")
+                pause()
+
+                page.locator("#a2a").click()
+                expect(page.locator("#a2a-output")).to_contain_text("SYNTHETIC_AGREEMENT")
+                expect(page.locator("#a2a-transcript li")).to_have_count(4)
+                expect(page.locator("#a2a-progress")).to_contain_text("paymentState NOT_PAID")
+                five_skills_verified.append("a2a")
+                caption("A2A NEGOTIATION | Separate buyer/seller roles exchange and agree; model calls simulated; NOT_PAID.")
+                pause()
+
+                page.locator("#category").select_option("gifts")
+                page.locator("#limit").fill("39")
+                page.locator("#delegate").click()
+                expect(page.locator("#delegation-status")).to_contain_text("SYNTHETIC_CONSENT_CREATED")
+                page.locator("#gift").click()
+                expect(page.locator("#gift-output")).to_contain_text("desk-light-b")
+                expect(page.locator("#gift-output")).to_contain_text("STATIC_FICTIONAL_ITEMS_NO_LIVE_INVENTORY")
+                five_skills_verified.append("gift")
+                caption("GIFT FINDER | Constrained fictional catalog selection; no inventory, order or payment.")
+                pause()
+
+                page.locator("#churn-reference").fill("demo-sub-maintenance-101")
+                page.locator("#churn-monthly").fill("25.00")
+                page.locator("#churn-months").fill("6")
+                page.locator("#churn-risk").select_option("HIGH")
+                page.locator("#churn-cap").select_option("2000")
+                page.locator("#churn").click()
+                expect(page.locator("#churn-output")).to_contain_text('"decisionStatus": "DISCOUNT_PROPOSAL"')
+                expect(page.locator("#churn-output")).to_contain_text('"paypalPlanChanged": false')
+                five_skills_verified.append("churn")
+                caption("CHURN SAVER | Suggested retention discount only. PayPal subscription is not modified.")
+                pause()
+
+                page.locator("#invoice-contract").fill("demo-contract-009")
+                page.locator("#invoice-amount").fill("293.75")
+                page.locator("#invoice-issue").select_option("QUALITY")
+                page.locator("#invoice-delivery").select_option("REVIEWED")
+                for evidence in ("contract", "delivery", "review"):
+                    page.locator("#invoice-evidence-" + evidence).check()
+                page.locator("#invoice").click()
+                expect(page.locator("#invoice-output")).to_contain_text("READY_FOR_HUMAN_REVIEW")
+                expect(page.locator("#invoice-output")).to_contain_text('"paypalInvoiceCreated": false')
+                five_skills_verified.append("invoice")
+                caption("INVOICE / DISPUTE COPILOT | Evidence-checked draft for human review; zero PayPal invoices created.")
+                pause()
+
+                assert five_skills_verified == ["delegate", "a2a", "gift", "churn", "invoice"], "FIVE_SKILLS_NOT_DEMONSTRATED"
+                caption("PROOFLINE | Part 1 freelancer marketplace + all five Part 2 skills verified in this OFFLINE video. RELEASE HOLD.")
                 pause()
                 assert not unsafe_requests, "EXTERNAL_REQUEST_BLOCKED"
                 assert not any("/orders" in x or "/capture" in x for x in post_paths), "PAYMENT_POST_FORBIDDEN"
@@ -299,8 +361,9 @@ def capture(output_dir, pace_ms):
         # it identifies this private, synthetic file for human editorial review.
         manifest = {
             "evidence_class": "OFFLINE_SYNTHETIC_BROWSER_CAPTURE_ONLY",
-            "storyboard_version": "OPPORTUNITY_FIRST_V2",
+            "storyboard_version": "TWO_PART_FIVE_SKILLS_V3",
             "demonstrated_categories": (["ai_work", "general_services"] if two_verticals_verified else []),
+            "demonstrated_skills": five_skills_verified,
             "video_filename": dest.name,
             "video_sha256": hashlib.sha256(dest.read_bytes()).hexdigest(),
             "video_bytes": dest.stat().st_size,
@@ -340,7 +403,7 @@ def capture(output_dir, pace_ms):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Private OFFLINE browser walkthrough recording; never publishes.")
     parser.add_argument("--output-dir", default=str(ROOT / "output" / "videos"))
-    parser.add_argument("--pace-ms", type=int, default=12000)
+    parser.add_argument("--pace-ms", type=int, default=6500)
     args = parser.parse_args()
     if not (200 <= args.pace_ms <= 18000):
         parser.error("pace must be 200–18000 milliseconds")

@@ -40,6 +40,13 @@ def verify(directory):
     if data.get("storyboard_version") == "OPPORTUNITY_FIRST_V2":
         if data.get("demonstrated_categories") != ["ai_work", "general_services"]:
             raise ValueError("TWO_CATEGORY_VIDEO_EVIDENCE_MISSING")
+    elif data.get("storyboard_version") == "TWO_PART_FIVE_SKILLS_V3":
+        if data.get("demonstrated_categories") != ["ai_work", "general_services"]:
+            raise ValueError("TWO_CATEGORY_VIDEO_EVIDENCE_MISSING")
+        if data.get("demonstrated_skills") != ["delegate", "a2a", "gift", "churn", "invoice"]:
+            raise ValueError("FIVE_SKILL_VIDEO_EVIDENCE_MISSING")
+    else:
+        raise ValueError("UNRECOGNIZED_VIDEO_STORYBOARD")
     if data.get("provider_calls") != 0 or data.get("payment_posts") != 0:
         raise ValueError("PROVIDER_ACTIVITY_CLAIM_FORBIDDEN")
     if data.get("publicly_uploaded") is not False or data.get("devpost_submitted") is not False:
