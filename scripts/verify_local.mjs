@@ -5,6 +5,7 @@ import {mkdtempSync,writeFileSync} from 'node:fs';
 import {join,resolve} from 'node:path';
 import {tmpdir} from 'node:os';
 import {fileURLToPath} from 'node:url';
+import {classifyLocalVerification} from '../src/local_verification_evidence.mjs';
 const root=resolve(fileURLToPath(new URL('..',import.meta.url)));
 const args=process.argv.slice(2);
 if(args.some(x=>!['--plan','--core'].includes(x))){
@@ -21,7 +22,8 @@ if(args.some(x=>!['--plan','--core'].includes(x))){
   {name:'NODE_REGRESSION',command:npm,argv:['test']},
   {name:'SYNTHETIC_MVP_E2E',command:npm,argv:['run','mvp:simulate']},
   {name:'REVIEWER_LOOPBACK',command:npm,argv:['run','preflight:reviewer'],skip:core?'CORE_MODE':null},
-  {name:'CHROMIUM_LOOPBACK',command:python,argv:['tests/browser_offline_e2e.py'],browser:true,skip:core?'CORE_MODE':null}
+  {name:'CHROMIUM_LOOPBACK',command:python,argv:['tests/browser_offline_e2e.py'],browser:true,skip:core?'CORE_MODE':null},
+  {name:'CHROMIUM_PART2',command:python,argv:['tests/browser_innovation_e2e.py'],browser:true,skip:core?'CORE_MODE':null}
  ];
  const plan=checks.map(({name,skip,browser})=>({name,run:!skip,optionalBrowser:Boolean(browser),reason:skip||null}));
  if(args.includes('--plan')){
@@ -70,14 +72,14 @@ if(args.some(x=>!['--plan','--core'].includes(x))){
     }
     execute(step);
   }
-  const failed=results.some(r=>r.status==='FAIL');
-  const report={status:failed?'VERIFY_LOCAL_FAIL':'VERIFY_LOCAL_PASS',
+  const assessment=classifyLocalVerification(results,{core});
+  const report={...assessment,
     source:'OWNER_LOCAL_OR_CI_ONLY',providerCalls:0,paymentPosts:0,
     privateDbWrites:0,githubPushes:0,elapsedMs:Date.now()-start,
     logDirectory:outdir,results};
   writeFileSync(join(outdir,'summary.json'),JSON.stringify(report,null,2)+'\n',
     {encoding:'utf8',mode:0o600});
   process.stdout.write(JSON.stringify(report)+'\n');
-  if(failed)process.exitCode=1;
+  if(report.status==='VERIFY_LOCAL_FAIL')process.exitCode=1;
  }
 }
