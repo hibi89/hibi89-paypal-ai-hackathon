@@ -175,6 +175,16 @@ def main():
             quote_id=quote.locator("h3").inner_text()
             assert re.fullmatch(r"q_[a-f0-9]{32}",quote_id),"BROWSER_QUOTE_ID_INVALID"
             expect(quote).to_contain_text("Status: PROPOSED")
+            # Real HTTPS -> workerd router -> authenticated D1 CAS revision.
+            mark('QUOTE_UI_BROWSER_REVISION')
+            revised_scope="Chromium-revised deliverables with final D1 evidence checklist"
+            quote.locator(".scope-revision textarea").fill(revised_scope)
+            quote.locator(".scope-revision button").click()
+            expect(page.locator("#status")).to_contain_text(
+                "Revised quote saved; human approval still required.",timeout=8000)
+            quote=page.locator("article.quote").filter(has_text=revised_scope)
+            expect(quote).to_have_count(1,timeout=8000)
+            expect(quote).to_contain_text("Status: PROPOSED · Version 2")
             quote.locator(".approval input[type=number]").fill("26375")
             quote.locator(".approval input[type=checkbox]").check()
             quote.locator(".approval button").click()
@@ -183,16 +193,18 @@ def main():
             expect(quote).to_contain_text("Human approved: USD 263.75",timeout=8000)
             page.reload(wait_until="domcontentloaded")
             expect(page.locator("#status")).to_contain_text("Showing 4 D1 owner quotes",timeout=8000)
-            saved_quote=page.locator("article.quote").filter(has_text=scope_text)
+            saved_quote=page.locator("article.quote").filter(has_text=revised_scope)
             expect(saved_quote).to_have_count(1)
             expect(saved_quote).to_contain_text("Human approved: USD 263.75")
             assert saved_quote.locator(".approval").count()==0,"BROWSER_APPROVED_QUOTE_EDITABLE"
+            assert saved_quote.locator(".scope-revision").count()==0,"BROWSER_APPROVED_SCOPE_EDITABLE"
             post_paths=[path for method,path in network if method=="POST"]
             assert post_paths==[
                 "/__private/paypal/claim-audit",
                 "/__private/paypal/claim-audit",
                 "/__private/paypal/claim-audit",
-                "/__private/quotes",f"/__private/quotes/{quote_id}/approve"
+                "/__private/quotes",f"/__private/quotes/{quote_id}/revise",
+                f"/__private/quotes/{quote_id}/approve"
             ],"BROWSER_UNEXPECTED_MUTATION_ENDPOINT"
             assert not errors,"QUOTE_CHROMIUM_CONSOLE_OR_SCRIPT_ERROR"
             assert not blocked,"QUOTE_BROWSER_EXTERNAL_REQUEST_ATTEMPTED"
@@ -201,7 +213,8 @@ def main():
             print(json.dumps({"status":"REAL_LOCAL_WORKERD_CHROMIUM_OWNER_D1_VIEW_PASS",
                 "realChromium":True,"localHttps":True,"renderedRows":2,
                 "anonymousBlocked":True,"browserRefreshReadOnly":True,
-                "browserQuoteD1CreateApprove":True,"quoteApiPosts":2,
+                "browserQuoteD1CreateApprove":True,"browserQuoteD1Revision":True,
+                "quoteApiPosts":3,
                 "realLocalD1AuditButton":True,"auditEventsRead":55,
                 "auditOlderPageLoaded":True,"auditPagesVerified":3,
                 "browserQuoteD1CountAfterReload":4,

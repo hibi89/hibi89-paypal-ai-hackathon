@@ -177,3 +177,11 @@ test('claimed PayPal attempt makes existing quote immutable to revision',async()
   assert.equal(f.db.prepare('SELECT version FROM quotes').get().version,1);
  }finally{f.db.close()}
 });
+
+test('real Worker private router includes owner-only D1 quote revision and blocks unrelated paths',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const content=readFileSync(new URL('../src/worker_private_identity_read_router.mjs',import.meta.url),'utf8');
+ assert.ok(content.includes('(?:approve|revise)'));
+ assert.ok(content.includes('return quotes.fetch(request)'));
+ assert.ok(!content.includes('router.fetch(request,untrustedOwnerClaims)'));
+});

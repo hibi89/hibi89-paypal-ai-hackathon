@@ -104,7 +104,7 @@ export function createPrivateWorkerIdentityReadRouter({
       '/__private/attempts/view.js'].includes(url.pathname))
    return dashboard.fetch(request);
   if(url.pathname==='/__private/quotes'||
-     /^\/__private\/quotes\/[A-Za-z0-9_-]{1,128}\/approve$/.test(url.pathname))
+     /^\/__private\/quotes\/[A-Za-z0-9_-]{1,128}\/(?:approve|revise)$/.test(url.pathname))
    return quotes.fetch(request);
   if(['/__private/quotes/view','/__private/quotes/view.css',
       '/__private/quotes/view.js'].includes(url.pathname))
