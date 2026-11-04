@@ -15,7 +15,7 @@ const reply=(status,data)=>new Response(JSON.stringify({...data,
  paymentAuthorized:false,paymentPosts:0,ledgerWrites:0,
  remoteCloudflareVerified:false,provenance:'INJECTED_SANDBOX_GET_NOT_EXTERNAL_ATTESTATION'}),
  {status,headers:HEADERS});
-async function bodyOf(request){
+async function bodyOf(request,bodyReadTimeoutMs){
  const type=request.headers.get('content-type')??'';
  if(!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(type))
   throw Error('BAD_TYPE');
@@ -23,13 +23,30 @@ async function bodyOf(request){
  if(contentLen!==null&&(!/^\d{1,5}$/.test(contentLen)||Number(contentLen)>1024))
   throw Error('BODY_TOO_LARGE');
  if(!request.body)throw Error('BODY_REQUIRED');
+ // A fixed deadline covers the whole upload. Slow trickle cannot reset it.
+ // Never wait for a hostile stream's cancel() to resolve.
  let count=0;const parts=[],reader=request.body.getReader();
+ let timer,onAbort;
+ const timeout=new Promise((_,reject)=>{
+  timer=setTimeout(()=>reject(Error('BODY_READ_TIMEOUT')),bodyReadTimeoutMs);
+ });
+ const aborted=new Promise((_,reject)=>{
+  onAbort=()=>reject(Error('BODY_ABORTED'));
+  request.signal.addEventListener('abort',onAbort,{once:true});
+  if(request.signal.aborted)onAbort();
+ });
  try{while(true){
-  const {value,done}=await reader.read();if(done)break;
-  if(!(value instanceof Uint8Array)||(count+=value.length)>1024)
+  const {value,done}=await Promise.race([reader.read(),timeout,aborted]);
+  if(done)break;
+  if(!(value instanceof Uint8Array)||(count+=value.byteLength)>1024)
    throw Error('BODY_TOO_LARGE');
   parts.push(value);
- }}finally{try{await reader.cancel()}catch{}try{reader.releaseLock()}catch{}}
+ }}finally{
+  clearTimeout(timer);
+  request.signal.removeEventListener('abort',onAbort);
+  try{const cancel=reader.cancel();cancel?.catch?.(()=>{});}catch{}
+  try{reader.releaseLock()}catch{}
+ }
  const bytes=new Uint8Array(count);let at=0;
  for(const part of parts){bytes.set(part,at);at+=part.length}
  const v=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
@@ -73,7 +90,8 @@ function verified(order,row){
  return order.status;
 }
 export function createWorkerSandboxOrderProof({
- db,allowedOrigin,transport,expectedMerchantId,enabled=false,now=Date.now
+ db,allowedOrigin,transport,expectedMerchantId,enabled=false,now=Date.now,
+ bodyReadTimeoutMs=2000
 }={}){
  let origin;
  try{const u=new URL(allowedOrigin);
@@ -83,7 +101,9 @@ export function createWorkerSandboxOrderProof({
    typeof db?.withSession!=='function'||
    transport?.mode!=='PAYPAL_SANDBOX_READ_ONLY'||
    transport?.networkEnabled!==true||transport?.paymentPostsEnabled!==false||
-   typeof transport.getOrder!=='function'||typeof now!=='function')
+   typeof transport.getOrder!=='function'||typeof now!=='function'||
+   !Number.isSafeInteger(bodyReadTimeoutMs)||bodyReadTimeoutMs<100||
+   bodyReadTimeoutMs>5000)
   throw Error('SANDBOX_GET_EXPLICIT_PRIVATE_DEPENDENCIES_REQUIRED');
  const resolve=createWorkerPrivateSessionResolver({db,now});
  return Object.freeze({async fetch(request){
@@ -97,7 +117,8 @@ export function createWorkerSandboxOrderProof({
     request.headers.get('x-proofline-intent')!=='sandbox-order-get-only')
    return reply(403,{error:'EXPLICIT_SAME_ORIGIN_INTENT_REQUIRED'});
   let args;
-  try{args=await bodyOf(request)}catch{return reply(400,{error:'INVALID_BODY'})}
+  try{args=await bodyOf(request,bodyReadTimeoutMs)}
+  catch{return reply(400,{error:'INVALID_BODY'})}
   let principal,digest,row,time,dbp;
   try{
    principal=await resolve(request);
