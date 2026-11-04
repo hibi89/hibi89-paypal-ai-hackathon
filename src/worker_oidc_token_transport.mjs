@@ -63,15 +63,26 @@ export function createWorkerOidcTokenTransport({
     grant_type:'authorization_code',code:ticket.code,
     redirect_uri:callback,code_verifier:ticket.codeVerifier
    });
+   // The SAME absolute clock covers fetch, response headers and every body chunk.
+   // Some third-party fetch/ReadableStream implementations ignore abort/cancel.
+   const controller=new AbortController();let timer;
+   const deadline=new Promise((_,reject)=>{
+    timer=setTimeout(()=>{
+     controller.abort();
+     reject(new WorkerOidcTokenTransportError('WORKER_OIDC_EXCHANGE_FAILED'));
+    },timeoutMs);
+   });
+   const bounded=fn=>Promise.race([Promise.resolve().then(fn),deadline]);
+   try{
    let response;
    try{
-    response=await fetchImpl(endpoint,{
+    response=await bounded(()=>fetchImpl(endpoint,{
      method:'POST',redirect:'error',cache:'no-store',
      credentials:'omit',referrerPolicy:'no-referrer',
      headers:{'content-type':'application/x-www-form-urlencoded',
        accept:'application/json',authorization:'Basic '+basic},
-     body:body.toString(),signal:AbortSignal.timeout(timeoutMs)
-    });
+     body:body.toString(),signal:controller.signal
+    }));
    }catch{deny('WORKER_OIDC_EXCHANGE_FAILED')}
    if(!(response instanceof Response)||response.status!==200||
       !/^application\/json(?:\s*;|$)/i.test(response.headers.get('content-type')??''))
@@ -87,17 +98,18 @@ export function createWorkerOidcTokenTransport({
     let length=0;const chunks=[];
     try{
      while(true){
-      const {done,value}=await reader.read();
+      const {done,value}=await bounded(()=>reader.read());
       if(done)break;
       if(!(value instanceof Uint8Array))deny('WORKER_OIDC_RESPONSE_REJECTED');
       length+=value.byteLength;
       if(length>MAX_BYTES)deny('WORKER_OIDC_RESPONSE_REJECTED');
       chunks.push(value);
      }
-    }catch(error){
-     try{await reader.cancel()}catch{}
-     throw error;
-    }finally{try{reader.releaseLock()}catch{}}
+    }finally{
+     // Broken streams can ignore cancel forever. Never await cancellation.
+     try{const cancelled=reader.cancel();cancelled?.catch?.(()=>{});}catch{}
+     try{reader.releaseLock()}catch{}
+    }
     const bytes=new Uint8Array(length);
     let offset=0;
     for(const part of chunks){bytes.set(part,offset);offset+=part.byteLength;}
@@ -112,6 +124,7 @@ export function createWorkerOidcTokenTransport({
    // Never retain access/refresh tokens from a provider response.
    // Signature, issuer, audience, nonce and bindings are checked by D1 authority.
    return Object.freeze({idToken:tokenResponse.id_token});
+   }finally{clearTimeout(timer);}
   },
   mode:'EXPLICIT_ONLY_WORKER_OIDC_TOKEN_EXCHANGE',
   networkEnabled:enabled,autoRetry:false,paymentAuthorized:false

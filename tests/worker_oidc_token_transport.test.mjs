@@ -138,3 +138,24 @@ test('loopback HTTPS callback requires an explicit isolated CI exception',async(
   });
  assert.equal(called,1);
 });
+
+test('OIDC token fetch has absolute deadline even when injected fetch ignores abort',async()=>{
+ let calls=0,signal;
+ const t=make({timeoutMs:1000,fetchImpl:async(_url,opts)=>{
+  calls++;signal=opts.signal;return new Promise(()=>{});
+ }});
+ await assert.rejects(()=>t.exchange(ticket()),{code:'WORKER_OIDC_EXCHANGE_FAILED'});
+ assert.equal(calls,1);assert.equal(signal.aborted,true);
+});
+test('OIDC body streaming uses same deadline and never awaits a stalled cancel',async()=>{
+ let calls=0,cancels=0;
+ const stream=new ReadableStream({
+  start(c){c.enqueue(new TextEncoder().encode('{"token_type":"Bearer",'));},
+  cancel(){cancels++;return new Promise(()=>{});}
+ });
+ const t=make({timeoutMs:1000,fetchImpl:async()=>{
+  calls++;return new Response(stream,{headers:{'content-type':'application/json'}});
+ }});
+ await assert.rejects(()=>t.exchange(ticket()),{code:'WORKER_OIDC_RESPONSE_REJECTED'});
+ assert.equal(calls,1);assert.equal(cancels,1);
+});
