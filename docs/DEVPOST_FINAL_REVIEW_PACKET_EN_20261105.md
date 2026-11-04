@@ -61,6 +61,14 @@ The same green status can mean different things: a synthetic browser test, a loc
 
 Seek an explicitly authorized judge-safe real-provider walkthrough, authenticated opt-in users, a live seller/merchant verification process, secure production hosting if later needed, and transparent fee and dispute policy. Those are future work, not current features. Owner approval is still needed for public release, an actual under-three-minute YouTube video, and the Devpost form.
 
+## Tools and how used
+
+- **PayPal Sandbox OAuth 2.0 / Orders v2** — Implemented a consent-gated sandbox-only OAuth/Orders, buyer-approval, Capture and provider-GET adapter; the 2026-10-28 private result is historical owner-reported evidence, not independently reproduced in CI, and the default browser performs no PayPal calls.
+- **Gemini API** — Implemented a gated skills-classification adapter and an optional private A2A pilot; historical private model use is owner-reported, not independently reproduced in CI, and the default browser uses deterministic OFFLINE_MOCK agents with no Gemini calls.
+- **Node.js and SQLite** — Runs the localhost marketplace, quote and contract state machines, local audit events, scoped consent and owner-entered gift catalog persistence without production data.
+- **Playwright and Chromium** — Exercises the Part 1 and Part 2 local browser journeys and records a private synthetic walkthrough with hash and independently measured encoded-media duration.
+- **GitHub Actions** — Runs Linux/Windows regression and Chromium checks; passing CI verifies the stated offline scope, not external provider availability or a real PayPal payment.
+
 ## Built with
 PayPal Sandbox Orders v2 and OAuth (private owner-operated workflow), Gemini API (private owner-operated workflow), Node.js, SQLite, JavaScript, HTML/CSS, Playwright, Chromium and GitHub Actions. The development branch contains an MIT LICENSE; the default branch release is **not yet authorized**.
 
