@@ -21,7 +21,8 @@ function fixture(){
  const wrapper={withSession(mode){
   assert.equal(mode,'first-primary');
   return {prepare(sql){
-   if(sql.startsWith('INSERT INTO quotes ')||sql.startsWith('UPDATE quotes SET status='))beforeWrite(sql);
+   if(sql.startsWith('INSERT INTO quotes ')||sql.startsWith('UPDATE quotes SET status=')||
+      sql.startsWith('UPDATE quotes SET version='))beforeWrite(sql);
    return {bind(...params){
     const st=db.prepare(sql);
     return {async first(){return st.get(...params)},
@@ -37,7 +38,8 @@ function request(path,method='GET',body,options={}){
  const headers={cookie:'__Host-proofline_session='+TOKEN,
   'sec-fetch-site':'same-origin',origin:ORIGIN,
   ...(method==='POST'?{'content-type':'application/json',
-   'x-proofline-intent':path.endsWith('/approve')?'quote-approve':'quote-draft'}:{}),
+   'x-proofline-intent':path.endsWith('/approve')?'quote-approve':
+    path.endsWith('/revise')?'quote-revise':'quote-draft'}:{}),
   ...options};
  return new Request(ORIGIN+path,{method,headers,...(body===undefined?{}:{body:JSON.stringify(body)})});
 }
@@ -119,4 +121,59 @@ test('pre-existing D1 approved quotes without a scope remain readable and immuta
  assert.equal((await f.handler.fetch(request('/__private/quotes/legacyQuote/approve','POST',
   {amountMinor:300,expectedVersion:1}))).status,409);
  f.db.close();
+});
+
+test('owner D1 draft revision is versioned, idempotent conflict-safe and still requires human approval',async()=>{
+ const f=fixture();
+ try{
+  const q=(await (await f.handler.fetch(request('/__private/quotes','POST',draft))).json()).quote;
+  const path='/__private/quotes/'+q.quoteId+'/revise';
+  const content='Additional verified scope: responsive interface plus evidence dashboard';
+  const res=await f.handler.fetch(request(path,'POST',{expectedVersion:1,scopeText:content}));
+  assert.equal(res.status,200);const b=await res.json();
+  assert.equal(b.revised,true);assert.equal(b.humanApprovalRequired,true);
+  assert.equal(b.paymentAuthorized,false);assert.equal(b.providerCalls,0);
+  assert.equal(b.quote.status,'PROPOSED');assert.equal(b.quote.version,2);
+  assert.equal(b.quote.scopeText,content);assert.equal(b.quote.approvedAmountMinor,null);
+  assert.equal((await f.handler.fetch(request(path,'POST',{expectedVersion:1,scopeText:content}))).status,409);
+  assert.equal((await f.handler.fetch(request('/__private/quotes/'+q.quoteId+'/approve','POST',
+    {expectedVersion:1,amountMinor:1500}))).status,409);
+  assert.equal((await f.handler.fetch(request('/__private/quotes/'+q.quoteId+'/approve','POST',
+    {expectedVersion:2,amountMinor:1500}))).status,200);
+  assert.equal((await f.handler.fetch(request(path,'POST',{expectedVersion:2,scopeText:content}))).status,409);
+  assert.equal(f.db.prepare('SELECT version,status FROM quotes').get().status,'APPROVED');
+  assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM payment_attempts').get().n,0);
+ }finally{f.db.close()}
+});
+test('D1 revision requires same-origin and trusted intent and survives midflight revocation',async()=>{
+ const f=fixture();
+ try{
+  const q=(await (await f.handler.fetch(request('/__private/quotes','POST',draft))).json()).quote;
+  const path='/__private/quotes/'+q.quoteId+'/revise';
+  const good={expectedVersion:1,scopeText:'Edited service acceptance scope for a verified owner only'};
+  assert.equal((await f.handler.fetch(request(path,'GET'))).status,405);
+  assert.equal((await f.handler.fetch(request(path,'POST',good,{origin:'https://evil.example'}))).status,403);
+  assert.equal((await f.handler.fetch(request(path,'POST',good,{'x-proofline-intent':'quote-approve'}))).status,403);
+  for(const wrong of [{...good,expectedVersion:0},{...good,scopeText:'short'},
+    {...good,scopeText:'Invalid'+String.fromCharCode(10)+'scope edit'},
+    {...good,ownerId:'untrusted'}])
+   assert.equal((await f.handler.fetch(request(path,'POST',wrong))).status,400);
+  assert.equal((await f.handler.fetch(request('/__private/quotes/different/revise','POST',good))).status,404);
+  f.setBeforeWrite(()=>f.db.prepare('UPDATE worker_private_oidc_bindings SET active=0 WHERE issuer=?').run(ISS));
+  assert.equal((await f.handler.fetch(request(path,'POST',good))).status,503);
+  assert.equal(f.db.prepare('SELECT version FROM quotes').get().version,1);
+  assert.equal((await f.handler.fetch(request(path,'POST',good))).status,401);
+ }finally{f.db.close()}
+});
+test('claimed PayPal attempt makes existing quote immutable to revision',async()=>{
+ const f=fixture();
+ try{
+  const q=(await (await f.handler.fetch(request('/__private/quotes','POST',draft))).json()).quote;
+  f.db.prepare("INSERT INTO payment_attempts(request_id,quote_id,quote_version,merchant_id,operation,state,amount_minor,currency) VALUES('attempt1',?,1,'merchant-1','create','UNKNOWN',1500,'USD')").run(q.quoteId);
+  const res=await f.handler.fetch(request('/__private/quotes/'+q.quoteId+'/revise','POST',
+    {expectedVersion:1,scopeText:'No revisions after a PayPal claim has been made'});
+  assert.equal(res.status,409);
+  assert.equal((await res.json()).error,'QUOTE_REVISION_CONFLICT');
+  assert.equal(f.db.prepare('SELECT version FROM quotes').get().version,1);
+ }finally{f.db.close()}
 });

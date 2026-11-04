@@ -10,6 +10,7 @@ const reply=(status,obj,extra={})=>new Response(JSON.stringify({...obj,
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ID=/^[A-Za-z0-9_-]{1,128}$/;
 const APPROVE=/^\/__private\/quotes\/([A-Za-z0-9_-]{1,128})\/approve$/;
+const REVISE=/^\/__private\/quotes\/([A-Za-z0-9_-]{1,128})\/revise$/;
 const FRESH=`SELECT 1 FROM worker_private_sessions s
  JOIN worker_private_oidc_bindings b ON b.issuer=s.issuer AND b.subject_hmac=s.binding_subject_hmac
  WHERE s.token_sha256=? AND s.revoked_at_ms IS NULL AND s.expires_at_ms>? AND
@@ -27,6 +28,11 @@ const INS=`INSERT INTO quotes (id,owner_id,merchant_id,version,currency,status,s
 const UPD=`UPDATE quotes SET status='APPROVED',approval_actor=owner_id,
  approval_version=version,approval_amount_minor=?
  WHERE id=? AND owner_id=? AND merchant_id=? AND version=? AND status='PROPOSED'
+ AND EXISTS (${FRESH})`;
+// One SQL CAS: existing quoted payments are immutable, no D1 migration needed.
+const REV=`UPDATE quotes SET version=version+1,scope_text=?,suggestion_source='HUMAN_DRAFT_NO_AI'
+ WHERE id=? AND owner_id=? AND merchant_id=? AND version=? AND status='PROPOSED'
+ AND NOT EXISTS (SELECT 1 FROM payment_attempts a WHERE a.quote_id=quotes.id)
  AND EXISTS (${FRESH})`;
 const LIST=`SELECT id,version,currency,status,scope_text,suggestion_source,
  approval_version,approval_amount_minor FROM quotes
@@ -81,19 +87,22 @@ export function createWorkerPrivateQuoteWorkflow({db,allowedOrigin,now=Date.now}
   if(!(request instanceof Request))return reply(400,{error:'INVALID_REQUEST'});
   let url;try{url=new URL(request.url)}catch{return reply(400,{error:'INVALID_REQUEST'})}
   if(url.origin!==origin)return reply(403,{error:'ORIGIN_NOT_ALLOWED'});
-  const approval=APPROVE.exec(url.pathname),collection=url.pathname==='/__private/quotes';
-  if(!collection&&!approval||url.hash)return reply(404,{error:'NOT_FOUND'});
+  const approval=APPROVE.exec(url.pathname),revision=REVISE.exec(url.pathname),
+   collection=url.pathname==='/__private/quotes';
+  if((!collection&&!approval&&!revision)||url.hash)return reply(404,{error:'NOT_FOUND'});
   const listing=collection&&request.method==='GET',draft=collection&&request.method==='POST',
-   approving=!!approval&&request.method==='POST';
-  if(!listing&&!draft&&!approving)return reply(405,{error:'METHOD_NOT_ALLOWED'},
+   approving=!!approval&&request.method==='POST',
+   revising=!!revision&&request.method==='POST';
+  if(!listing&&!draft&&!approving&&!revising)return reply(405,{error:'METHOD_NOT_ALLOWED'},
    {allow:collection?'GET, POST':'POST'});
   const site=request.headers.get('sec-fetch-site');
   if(site&&!['same-origin','none'].includes(site))return reply(403,{error:'CROSS_SITE_BLOCKED'});
   const from=request.headers.get('origin');
   if(from&&from!==origin)return reply(403,{error:'ORIGIN_NOT_ALLOWED'});
-  if(draft||approving){
+  if(draft||approving||revising){
    if(from!==origin||!['same-origin','none'].includes(site)||
-      request.headers.get('x-proofline-intent')!==(draft?'quote-draft':'quote-approve'))
+      request.headers.get('x-proofline-intent')!==(draft?'quote-draft':
+        approving?'quote-approve':'quote-revise'))
     return reply(403,{error:'WRITE_INTENT_REQUIRED'});
   }
   let limit=10;
@@ -136,6 +145,24 @@ export function createWorkerPrivateQuoteWorkflow({db,allowedOrigin,now=Date.now}
     const item=mapQuote(await dbp.prepare(ONE).bind(id,actor,merchant).first());
     if(item.scopeText!==scope)return reply(409,{error:'QUOTE_IDEMPOTENCY_CONFLICT'});
     result=reply(written?201:200,{quote:item,created:written===1,idempotentReplay:written===0});
+   }else if(revising){
+    if(Object.keys(data).sort().join(',')!=='expectedVersion,scopeText'||
+       !Number.isSafeInteger(data.expectedVersion)||data.expectedVersion<1||
+       data.expectedVersion>=Number.MAX_SAFE_INTEGER||
+       typeof data.scopeText!=='string'||data.scopeText.trim().length<12||
+       data.scopeText.length>600||/[\\x00-\\x1f\\x7f]/.test(data.scopeText))
+      return reply(400,{error:'INVALID_REVISION'});
+    const scope=data.scopeText.trim();
+    const written=changes(await dbp.prepare(REV).bind(scope,revision[1],
+      actor,merchant,data.expectedVersion,await hashPrivateSessionCookie(request),
+      t,t,actor,merchant).run());
+    const row=await dbp.prepare(ONE).bind(revision[1],actor,merchant).first();
+    if(!row)return reply(404,{error:'QUOTE_NOT_FOUND'});
+    if(written!==1)return reply(409,{error:'QUOTE_REVISION_CONFLICT'});
+    const item=mapQuote(row);
+    if(item.version!==data.expectedVersion+1||item.status!=='PROPOSED'||
+       item.scopeText!==scope)throw Error('REVISION_PROOF_INVALID');
+    result=reply(200,{quote:item,revised:true,humanApprovalRequired:true});
    }else{
     if(Object.keys(data).sort().join(',')!=='amountMinor,expectedVersion'||
        !Number.isSafeInteger(data.amountMinor)||data.amountMinor<100||

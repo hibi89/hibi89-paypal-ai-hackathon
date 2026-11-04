@@ -25,7 +25,7 @@ label{display:block;font-weight:700;margin-bottom:.5rem}textarea{width:100%;min-
 button{background:#2554c9;color:white;border:none;border-radius:.45rem;padding:.65rem 1rem;font-weight:700;cursor:pointer;margin-top:.5rem}
 button:disabled{opacity:.45;cursor:not-allowed}button:focus-visible,a:focus-visible,textarea:focus-visible,input:focus-visible{outline:3px solid #619ff4;outline-offset:2px}
 .bar{display:flex;align-items:center;justify-content:space-between}.quote{padding:1rem 0;border-top:1px solid #e3e8f2;overflow-wrap:anywhere}
-.scope{white-space:pre-wrap}.amount{width:10rem;padding:.55rem;border:1px solid #91a4bc;border-radius:.4rem}
+.scope{white-space:pre-wrap}.scope-edit{width:100%;min-height:80px;border:1px solid #91a4bc;border-radius:.4rem;padding:.6rem;font:inherit}.amount{width:10rem;padding:.55rem;border:1px solid #91a4bc;border-radius:.4rem}
 .approval{display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:center;margin-top:1rem}
 footer{text-align:center;font-size:.8rem;color:#50607a;padding:2rem}
 @media(max-width:560px){header{align-items:flex-start;flex-direction:column}.bar{flex-wrap:wrap}}`;
@@ -53,6 +53,25 @@ async function refresh(){
    if(q.status==='APPROVED'){
     card.append(node('p','Human approved: USD '+(q.approvedAmountMinor/100).toFixed(2)+' · No payment executed'));
    }else{
+    const reviseForm=document.createElement('form');reviseForm.className='scope-revision';
+    const reviseLabel=node('label','Revise scope (saves a new version; human approval required)');
+    const reviseText=document.createElement('textarea');reviseText.className='scope-edit';
+    reviseText.minLength=12;reviseText.maxLength=600;reviseText.required=true;
+    reviseText.value=q.scopeText??'';reviseLabel.append(reviseText);
+    const reviseButton=node('button','Save revised scope');reviseButton.type='submit';
+    reviseForm.append(reviseLabel,reviseButton);
+    reviseForm.addEventListener('submit',async e=>{
+     e.preventDefault();
+     const scopeText=reviseText.value.trim();
+     if(scopeText.length<12||scopeText.length>600||/[\\x00-\\x1f\\x7f]/.test(scopeText))return;
+     reviseButton.disabled=true;
+     try{await api('/__private/quotes/'+encodeURIComponent(q.quoteId)+'/revise',{
+      method:'POST',headers:{'content-type':'application/json','x-proofline-intent':'quote-revise'},
+      body:JSON.stringify({expectedVersion:q.version,scopeText})
+     });await refresh();message('Revised quote saved; human approval still required. No PayPal action.')}
+     catch(err){message('Revision not confirmed: '+err.message);reviseButton.disabled=false}
+    });
+    card.append(reviseForm);
     const form=document.createElement('form');form.className='approval';
     const label=node('label','Amount (USD cents, 100–1,000,000)');
     const amount=document.createElement('input');amount.className='amount';
