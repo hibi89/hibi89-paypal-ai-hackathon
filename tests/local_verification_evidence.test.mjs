@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {classifyLocalVerification} from '../src/local_verification_evidence.mjs';
+import {classifyLocalVerification,localVerificationExitCode} from '../src/local_verification_evidence.mjs';
 const base=['GIT_HEAD','NODE_VERSION','MASTER_PROGRESS','NODE_REGRESSION',
  'SYNTHETIC_MVP_E2E','REVIEWER_LOOPBACK','CHROMIUM_LOOPBACK','CHROMIUM_PART2'];
 const rows=()=>base.map(name=>({name,status:'PASS'}));
@@ -39,4 +39,12 @@ test('missing mandatory test cannot silently pass',()=>{
  const list=rows().filter(r=>r.name!=='NODE_REGRESSION');
  assert.equal(classifyLocalVerification(list).status,'VERIFY_LOCAL_FAIL');
  assert.throws(()=>classifyLocalVerification([{name:'X',status:'PENDING'}]),/INVALID_LOCAL_VERIFICATION_RESULTS/);
+});
+
+test('exit 2 blocks full-review automation when a browser test is skipped',()=>{
+ assert.equal(localVerificationExitCode('VERIFY_LOCAL_TWO_PART_PASS'),0);
+ assert.equal(localVerificationExitCode('VERIFY_LOCAL_CORE_PASS'),0);
+ assert.equal(localVerificationExitCode('VERIFY_LOCAL_PARTIAL'),2);
+ assert.equal(localVerificationExitCode('VERIFY_LOCAL_FAIL'),1);
+ assert.throws(()=>localVerificationExitCode('UNKNOWN'),/UNRECOGNIZED_LOCAL_VERIFICATION_STATUS/);
 });

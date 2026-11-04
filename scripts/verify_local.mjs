@@ -5,7 +5,7 @@ import {mkdtempSync,writeFileSync} from 'node:fs';
 import {join,resolve} from 'node:path';
 import {tmpdir} from 'node:os';
 import {fileURLToPath} from 'node:url';
-import {classifyLocalVerification} from '../src/local_verification_evidence.mjs';
+import {classifyLocalVerification,localVerificationExitCode} from '../src/local_verification_evidence.mjs';
 const root=resolve(fileURLToPath(new URL('..',import.meta.url)));
 const args=process.argv.slice(2);
 if(args.some(x=>!['--plan','--core'].includes(x))){
@@ -80,6 +80,8 @@ if(args.some(x=>!['--plan','--core'].includes(x))){
   writeFileSync(join(outdir,'summary.json'),JSON.stringify(report,null,2)+'\n',
     {encoding:'utf8',mode:0o600});
   process.stdout.write(JSON.stringify(report)+'\n');
-  if(report.status==='VERIFY_LOCAL_FAIL')process.exitCode=1;
+  // An unavailable Chromium stack must not accidentally green-light a judge
+  // acceptance pipeline that only inspects the process exit code.
+  process.exitCode=localVerificationExitCode(report.status);
  }
 }

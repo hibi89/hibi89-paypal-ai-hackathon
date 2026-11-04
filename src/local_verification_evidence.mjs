@@ -22,3 +22,13 @@ export function classifyLocalVerification(results,{core=false}={}){
     browserNames.map(k=>[k,byName.get(k)??'NOT_RUN']))),
    submissionEligible:false,productionVerified:false,realProviderVerified:false});
 }
+
+export function localVerificationExitCode(status){
+ switch(status){
+  case 'VERIFY_LOCAL_TWO_PART_PASS':
+  case 'VERIFY_LOCAL_CORE_PASS': return 0;
+  case 'VERIFY_LOCAL_PARTIAL': return 2;
+  case 'VERIFY_LOCAL_FAIL': return 1;
+  default: throw new TypeError('UNRECOGNIZED_LOCAL_VERIFICATION_STATUS');
+ }
+}
