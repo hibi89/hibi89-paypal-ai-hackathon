@@ -1,3 +1,20 @@
+## 2026-11-05 01:34 KST — VERIFIED whole-entry 72→73 (+1pp): local Devpost form draft, not submission
+
+**Exact tested code** `9a152b0e9935d65003988b5156316ad215329616` [Actions #41868041612](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41868041612) SUCCESS: Linux **1,153/1,153 Node PASS**, Windows first-run SUCCESS, full two-part Chromium judge 8/8 PASS, plus [MVP smoke #41868041620](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41868041620) SUCCESS. New `scripts/build_devpost_form_fields.mjs` converts the checked-in concise unpublished English entry into gitignored `output/submission/devpost_form_draft.json`, with exact title/tagline/narrative/reviewer instructions; no platform upload, automatic release or payment authority. Four added tests reject missing/tampered labels and publication claims. The form and historical provider language remain for owner inspection only.
+
+| Fixed final-acceptance area | Weight | At 72 | Now 73 | Still missing |
+| --- | ---: | ---: | ---: | --- |
+| Part1 marketplace / quote / contract | 22 | 21 | 21 | Real merchant/customer payment-backed service |
+| Part2 five agentic innovations | 23 | 21 | 21 | Independently attested live AI integration |
+| Real PayPal Sandbox + AI provider evidence | 20 | 8 | 8 | Owner-approved provider integration, judge-safe evidence |
+| Reviewer access / optional D1/IdP | 15 | 10 | 10 | Authenticated real-provider reviewer access; hosted URL optional |
+| Public source, default root LICENSE and guide | 8 | 7 | 7 | Owner-approved default-main release |
+| Approved public YouTube <180s | 7 | 4 | 4 | Owner review/publication; prior CI's 141.40s file was private synthetic |
+| English Devpost form / submission receipt | 5 | **1** | **2** | Owner-approved text, public video URL, submitted form and receipt |
+| **Whole final entry (internal evidence-weighted)** | **100** | **72** | **73** | **RELEASE HOLD** |
+
+**Provenance:** This +1pp is only *verified local form readiness*, not independent PayPal/Gemini verification, final video publication, Devpost platform submission, or contest eligibility. Official rules independently confirmed on 2026-11-05 require a functional PayPal+AI application, publicly visible root open-source license, genuine working demo, <3m public YouTube and completed English form. Stage-One eligibility is at risk while only synthetic browser integration is judge-accessible. Original data, main and credentials unchanged.
+
 ## 2026-11-05 KST — VERIFIED full-entry 71→72 (+1pp), immutable external-video evidence boundary
 
 Latest **verified** media feature SHA `fff15c28a9d4ad6d0ae4e4964c4ccbd5a16377cb`: [GitHub Actions #41862397878](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41862397878) completed SUCCESS (Linux Node **1,149 PASS**, Windows **SUCCESS**, real one-command two-part Chromium 8/8 **PASS**). Actual CI default-speed private synthetic video covered AI Work, Global Services, all five Part2 skills **and the owner-entered local Gift catalog**, with independent **141.40-second ffprobe media duration** and integrity PASS. No media was published or retained as a production asset; this is not the owner's personally watched final film. Earlier media SHA aa9e09b Windows failure on missing ffprobe was resolved by existing Playwright FFmpeg fallback; do not treat failed SHA as success.
