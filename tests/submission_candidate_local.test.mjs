@@ -64,10 +64,14 @@ test('owner packet never claims official submission or provider verification',()
  assert.equal(packet.externalSubmissionEligible,false);
  assert.equal(packet.publicVideoUrl,'NOT_PROVIDED');
  assert.equal(packet.devpostReceipt,'NOT_SUBMITTED');
- assert.equal(packet.mainBranchRelease,'NOT_APPROVED');
+ assert.equal(packet.mainBranchRelease,'PUBLIC_MAIN_SOURCE_LICENSE_RECORDED_NOT_LIVE_RECHECKED');
+ assert.equal(packet.mainBranchReleaseVerifiedLive,false);
  assert.equal(packet.finalEnglishCopy,'OWNER_REVIEW_COPY_VALIDATED_NOT_PUBLISHED');
  const md=readFileSync(new URL('../output/submission/submission_candidate.md',import.meta.url),'utf8');
  assert.match(md,/PRIVATE SUBMISSION CANDIDATE \(NOT SUBMITTED\)/);
+ assert.match(md,/tree\/main/);
+ assert.doesNotMatch(md,/Main branch release: OWNER APPROVAL REQUIRED/);
+ assert.match(md,/NOT a live lookup/);
  assert.match(md,/owner-reported historical test, not the synthetic video/);
  assert.match(md,/OWNER TO ADD AFTER APPROVED PUBLIC YOUTUBE UPLOAD/);
  assert.match(md,/Final concise English copy \(UNPUBLISHED \/ OWNER REVIEW\)/);

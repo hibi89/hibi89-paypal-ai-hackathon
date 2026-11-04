@@ -145,6 +145,16 @@ export function prepareSubmissionCandidate({root=ROOT}={}){
   ];
   const finalCopyReady=finalCopy.length>=5000&&finalCopy.length<=18000&&
     requiredCopy.every(term=>finalCopy.includes(term));
+  // A local provenance checkpoint only: no GitHub API call or live deploy check.
+  // Published main/LICENSE was separately checked by the owner on 2026-11-05.
+  // Removing either checkpoint marker must fail closed, not revive a stale claim.
+  const mainReleaseRecord=files['README.md'].includes('PR #28')&&
+    files['README.md'].includes('**MERGED**')&&
+    finalCopy.includes('merged PR #28')&&
+    files.LICENSE.startsWith('MIT License\n');
+  const mainReleaseStatus=mainReleaseRecord?
+    'PUBLIC_MAIN_SOURCE_LICENSE_RECORDED_NOT_LIVE_RECHECKED':
+    'MAIN_SOURCE_RELEASE_PROVENANCE_UNVERIFIED';
   requireValue(copy.includes('DRAFT — NOT PUBLISHED'),'DEVPOST_COPY_DRAFT_GUARD_MISSING');
   // Keep owner review unready if the fresh English copy was removed or corrupted.
   const copyAndVideoReviewReady=ownerReviewReady&&finalCopyReady;
@@ -165,18 +175,20 @@ export function prepareSubmissionCandidate({root=ROOT}={}){
     authorizedToPublish:false,
     publicVideoUrl:'NOT_PROVIDED',
     devpostReceipt:'NOT_SUBMITTED',
-    mainBranchRelease:'NOT_APPROVED',
+    mainBranchRelease:mainReleaseStatus,
+    mainBranchReleaseVerifiedLive:false,
     externalSubmissionEligible:false,
     externalGates:assessment.externalGates,
     note:'This packet is local, synthetic and unpublished. ffprobe checks WebM duration only when available; hash or media length does not verify providers, publication approval or Devpost submission.'
   };
   const md='# PROOFLINE — PRIVATE SUBMISSION CANDIDATE (NOT SUBMITTED)\n\n'+
     '**No public YouTube link or Devpost receipt exists in this report. Do not publish without owner review and approval.**\n\n'+
-    '- Source: https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/lead/paypal\n'+
+    '- Source: https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/main\n'+
     '- Local video: '+(video.filename||'NOT RECORDED ON THIS MACHINE')+'\n'+
     '- Private WebM integrity: '+video.status+'\n'+
     '- Public video URL: NOT PROVIDED\n- Devpost receipt: NOT SUBMITTED\n'+
-    '- Main branch release: OWNER APPROVAL REQUIRED\n'+
+    '- Main branch source/license release: '+mainReleaseStatus+
+      ' (PR #28, previously verified 2026-11-05; NOT a live lookup)\n'+
     '- Real Gemini / PayPal Sandbox: owner-reported historical test, not the synthetic video\n\n'+
     '## Final concise English copy (UNPUBLISHED / OWNER REVIEW)\n\n'+
     (finalCopyReady?finalCopy:'FINAL_ENGLISH_COPY_MISSING_OR_INVALID')+
