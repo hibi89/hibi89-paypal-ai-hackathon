@@ -1,8 +1,8 @@
 """Real Chromium E2E of Part 2, no real AI or payment providers."""
-import hashlib,json,queue,re,shutil,subprocess,threading,time
+import hashlib,json,os,queue,re,shutil,subprocess,threading,time
 from pathlib import Path
 from playwright.sync_api import sync_playwright,expect
-root=Path(__file__).resolve().parents[1]
+root=Path(os.environ.get("PROOFLINE_REVIEWER_ROOT") or Path(__file__).resolve().parents[1])
 process=subprocess.Popen(["node","--experimental-sqlite","scripts/run_demo.mjs"],cwd=root,
  stdout=subprocess.PIPE,stderr=subprocess.STDOUT,encoding="utf-8",text=True,bufsize=1)
 lines=queue.Queue()
@@ -24,6 +24,15 @@ try:
   browser=p.chromium.launch(executable_path=binary,headless=True,args=["--no-sandbox","--disable-dev-shm-usage"])
   try:
    page=browser.new_page()
+   external_requests=[]
+   def deny_external_in_zip(route):
+    url=route.request.url
+    if url==address or url.startswith(address+"/") or url.startswith(("data:","blob:")):
+     return route.continue_()
+    external_requests.append(url.partition(":")[0])
+    return route.abort()
+   if os.environ.get("PROOFLINE_REVIEWER_LOCAL_ONLY")=="1":
+    page.route("**/*",deny_external_in_zip)
    requests=[]
    errors=[]
    page.on("request",lambda r:requests.append((r.method,r.url)))
@@ -304,6 +313,7 @@ try:
    assert sum(method=="POST" for method,_ in requests)==before_compare
    assert not errors,errors
    assert not any("paypal.com" in url or "generativelanguage.googleapis.com" in url for _,url in requests)
+   assert not external_requests,"REVIEWER_ZIP_PART2_BROWSER_EXTERNAL_REQUEST_BLOCKED"
    print("CHROMIUM_INNOVATION_PART2_E2E_PASS: five skills, human approved price, explicit 15m persisted review and GET-only reload")
   finally:browser.close()
 finally:
