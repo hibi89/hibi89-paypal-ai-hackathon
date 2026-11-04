@@ -278,3 +278,86 @@ test('capture transport rejects untrusted pre-POST flag before any network',asyn
   );
   assert.equal(calls.length,0);
 });
+
+
+test('Sandbox payment transport bounds an uncooperative Orders CREATE fetch without retry',async()=>{
+ const calls=[];
+ const transport=createSandboxTransport({clientId:'OFFLINE_ID',clientSecret:'OFFLINE_SECRET',
+  timeoutMs:50,async fetchImpl(url,options){
+   calls.push({url,method:options.method});
+   if(url.endsWith('/v1/oauth2/token'))
+    return {status:200,json:async()=>({access_token:'TEST_TOKEN',token_type:'Bearer'})};
+   if(url.endsWith('/v2/checkout/orders'))return new Promise(()=>{});
+   throw Error('UNEXPECTED_ROUTE');
+  }});
+ await assert.rejects(transport.createOrderOnce(q,claim('create')),
+  {code:'SANDBOX_POST_OUTCOME_UNKNOWN'});
+ assert.equal(calls.filter(x=>x.method==='POST'&&x.url.endsWith('/v2/checkout/orders')).length,1);
+});
+
+test('stalled native PayPal CREATE response body never retries payment POST',async()=>{
+ let posts=0;
+ const transport=createSandboxTransport({clientId:'OFFLINE_ID',clientSecret:'OFFLINE_SECRET',
+  timeoutMs:50,async fetchImpl(url,options){
+   if(url.endsWith('/v1/oauth2/token'))
+    return {status:200,json:async()=>({access_token:'TEST_TOKEN',token_type:'Bearer'})};
+   if(options.method==='POST'&&url.endsWith('/v2/checkout/orders')){
+    posts++;
+    return new Response(new ReadableStream({
+     pull(){return new Promise(()=>{})},
+     cancel(){return new Promise(()=>{})}
+    }),{status:201,headers:{'content-type':'application/json'}});
+   }
+   throw Error('UNEXPECTED_ROUTE');
+  }});
+ await assert.rejects(transport.createOrderOnce(q,claim('create')),
+  {code:'SANDBOX_POST_OUTCOME_UNKNOWN'});
+ assert.equal(posts,1);
+});
+
+test('Sandbox GET rejects wrong native MIME and oversized bodies before payment proof',async()=>{
+ const correct={id:'ORDER0001',intent:'CAPTURE',status:'APPROVED',
+  purchase_units:[{reference_id:q.id,payee:{merchant_id:q.merchantId},
+   amount:{currency_code:'USD',value:'15.00'}}]};
+ for(const kind of ['mime','length','stream']){
+  let gets=0;
+  const transport=createSandboxTransport({clientId:'OFFLINE_ID',clientSecret:'OFFLINE_SECRET',
+   timeoutMs:500,async fetchImpl(url){
+    if(url.endsWith('/v1/oauth2/token'))
+     return {status:200,json:async()=>({access_token:'TEST_TOKEN',token_type:'Bearer'})};
+    gets++;
+    if(kind==='mime')return new Response(JSON.stringify(correct),
+     {status:200,headers:{'content-type':'text/html'}});
+    if(kind==='length')return new Response(JSON.stringify(correct),
+     {status:200,headers:{'content-type':'application/json','content-length':'70000'}});
+    return new Response(JSON.stringify({...correct,pad:'x'.repeat(70_000)}),
+     {status:200,headers:{'content-type':'application/json'}});
+   }});
+  await assert.rejects(transport.getOrder(q,'ORDER0001'),
+   {code:'SANDBOX_MALFORMED_JSON'});
+  assert.equal(gets,1);
+ }
+});
+
+test('Sandbox GET parses valid bounded native JSON and rejects invalid timeout settings',async()=>{
+ for(const timeoutMs of [0,24,10001,'50',NaN]){
+  assert.throws(()=>createSandboxTransport({
+   clientId:'OFFLINE_ID',clientSecret:'OFFLINE_SECRET',
+   timeoutMs,fetchImpl:async()=>{}
+  }),{code:'SANDBOX_TRANSPORT_CONFIG_INVALID'});
+ }
+ const correct={id:'ORDER0001',intent:'CAPTURE',status:'APPROVED',
+  purchase_units:[{reference_id:q.id,payee:{merchant_id:q.merchantId},
+   amount:{currency_code:'USD',value:'15.00'}}]};
+ const transport=createSandboxTransport({clientId:'OFFLINE_ID',clientSecret:'OFFLINE_SECRET',
+  timeoutMs:500,async fetchImpl(url){
+   if(url.endsWith('/v1/oauth2/token'))
+    return new Response(JSON.stringify({access_token:'TEST_TOKEN',token_type:'Bearer'}),
+     {status:200,headers:{'content-type':'application/json'}});
+   return new Response(JSON.stringify(correct),{
+    status:200,headers:{'content-type':'application/json; charset=utf-8'}});
+  }});
+ const verified=await transport.getOrder(q,'ORDER0001');
+ assert.equal(verified.id,'ORDER0001');
+ assert.equal(verified.purchase_units[0].payee.merchant_id,q.merchantId);
+});
