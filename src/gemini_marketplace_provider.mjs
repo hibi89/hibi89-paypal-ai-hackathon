@@ -71,10 +71,10 @@ export function createGeminiMarketplaceSkillProvider({apiKey,fetchImpl,
       if(response instanceof Response){
         if(response.redirected||(response.url&&response.url!==GEMINI_P0_ENDPOINT))
           throw Error('UNTRUSTED_SOURCE');
-        if(!/^application\\/json(?:\\s*;.*)?$/i.test(response.headers.get('content-type')??''))
+        if(!/^application\/json(?:\s*;.*)?$/i.test(response.headers.get('content-type')??''))
           throw Error('INVALID_MIME');
         const length=response.headers.get('content-length');
-        if(length!==null&&(!/^\\d+$/.test(length)||Number(length)>16384))
+        if(length!==null&&(!/^\d+$/.test(length)||Number(length)>16384))
           throw Error('BODY_TOO_LARGE');
         if(!response.body)throw Error('BODY_MISSING');
         const reader=response.body.getReader(),pieces=[];let n=0;
