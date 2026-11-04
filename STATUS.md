@@ -1,3 +1,9 @@
+## 2026-11-05 KST — Quote/Gemini exact-task digest implemented; CI QUEUED, FINAL 75% UNCHANGED (LATEST)
+
+- Feature SHA `ce5075ec33ba72baf895d2cf5147726789f1eefb` implements owner-private, **SHA-256 brief digest binding** on new Sandbox quotes. Read-only owner receipt now accepts new matched digests, refuses mismatch/malformed, preserves legacy NULL receipts with explicit `LEGACY_NOT_CROSS_BOUND`; retains exact existing PayPal quote/payment caps and all old data. No prompt text or real credentials added.
+- [Full CI #41878069980](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41878069980) **QUEUED** and [smoke #41878070425](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41878070425) **QUEUED** at this checkpoint; do NOT claim PASS, +1pp, real provider attestation or completion.
+- **Last verified 75/100, this turn +0 VERIFIED, target +1 not yet met; remaining 25.** Hard release gates remain. Feature staged into DRAFT PR28 only; `main` untouched. Previous verified #41875958950 / #41875959099 for older feature `2ecd83d7` SUCCESS; not evidence for new source. See first 10-point HANDOFF record.
+
 ## 2026-11-05 KST — FINAL 74→75, portable offline reviewer ZIP independently executable (LATEST)
 
 - **New reviewer delivery capability:** `scripts/pack_offline_reviewer.py` builds an ignored, non-overwriting **private** ZIP of the runtime import closure, two-part static browser assets, MIT LICENSE, minimal Node package and SHA-256 file manifest. `--check` verifies without retaining archive. Extract anywhere then run `npm run demo` with Node 22.5+; no git/npm install, provider credentials, external uploads or PayPal/Gemini call.
