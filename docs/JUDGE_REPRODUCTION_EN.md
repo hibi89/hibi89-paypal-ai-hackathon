@@ -14,9 +14,9 @@ Proofline presents **one local synthetic marketplace**, with two selected servic
 
 **Automated evidence:** `tests/browser_general_services_e2e.py` reproduces the entire Global Services browser sequence on a fresh local server. `tests/browser_offline_e2e.py` covers AI Work, full delivery/review state changes and responsive Global Services mobile UI. Both run in GitHub Actions without any payment POST.
 
-**Video evidence:** The current `TWO_PART_FIVE_SKILLS_V3` synthetic recorder exercises both Part 1 service categories and **all five Part 2 browser skills**; a private CI recording was independently `ffprobe`-measured at **133.68 seconds** in [run 41839120665](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41839120665). This runner recording was ephemeral, not a public video or owner-approved final entry. The prior `OPPORTUNITY_FIRST_V2` recording was Part 1-centric only.
+**Video evidence (current):** The `TWO_PART_FIVE_SKILLS_V3` synthetic recorder exercises both Part1 categories, all five Part2 browser skills and the owner-entered local Gift catalog. Exact-source [CI #41862397878](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41862397878) independently measured the encoded, private, synthetic WebM at **141.40 seconds** and passed Windows/Linux; CI footage is ephemeral, **not** the owner's final reviewed file, a public YouTube video or independent PayPal/Gemini proof.
 
-**Submission caveat:** the public repository's older default `main` branch is not the runnable `lead/paypal` build. A draft [PR #16](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/16) adds the missing default-branch MIT license and judge directions, but requires explicit owner release approval before merge. Do not claim the default branch is ready or that Devpost has accepted a submission.
+**Submission caveat (current):** The public repository's default `main` is still not the runnable `lead/paypal` build and lacks a visible root license. Current source and main-only role documentation are staged in [open DRAFT PR #28](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/28) without merging or release approval. The earlier isolated PR #16 is a historical draft, **not** the current full-source release candidate. The actual Devpost entry is **NOT SUBMITTED**; approval and public YouTube URL are still required.
 
 ## Optional owner-supplied local Gift-finder catalog (non-provider)
 
@@ -40,7 +40,7 @@ Actual exact-source test: [#41856162809](https://github.com/hibi89/hibi89-paypal
 
 ## Current verified scope
 
-- Root [MIT LICENSE](../LICENSE) is present and approved; `package.json` says `MIT`.
+- Root [MIT LICENSE](../LICENSE) exists in `lead/paypal` and `package.json` says `MIT`; **no owner approval for default-main release** has been granted.
 - `lead/paypal` holds the current working source. The `main` branch is **not** asserted to be equivalent to the current lead.
 - GitHub Actions verifies `npm test`, the 18-day dashboard and an actual Chromium **localhost** UI journey. The CI logs contain the exact SHA/results; they do **not** prove third-party API integration, production authentication or Devpost submission.
 - This demo uses SQLite and a loopback Node server. No npm package installation or developer credentials are needed to run the offline demo.
