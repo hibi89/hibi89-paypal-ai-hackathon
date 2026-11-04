@@ -253,3 +253,65 @@ test('clock rollback during remote GET invalidates owner proof without ledger mu
  assert.equal(f.sql.prepare('SELECT COUNT(*) n FROM payment_attempts').get().n,1);
  f.sql.close();
 });
+
+test('stalled owner proof body is bounded, never calls provider or reads D1',async()=>{
+ const f=fixture();
+ const hanging=new ReadableStream({
+  pull(){return new Promise(()=>{})},
+  cancel(){return new Promise(()=>{})} // adversarial uncooperative stream
+ });
+ const reqBody=new Request(ORIGIN+'/__private/paypal/order-proof',{
+  method:'POST',duplex:'half',body:hanging,
+  headers:{origin:ORIGIN,'sec-fetch-site':'same-origin',
+   cookie:'__Host-proofline_session='+COOKIE,
+   'content-type':'application/json',
+   'x-proofline-intent':'sandbox-order-get-only'}
+ });
+ const handler=createWorkerSandboxOrderProof({
+  db:f.db,allowedOrigin:ORIGIN,transport:f.transport,
+  expectedMerchantId:MERCHANT,enabled:true,now:()=>T,
+  bodyReadTimeoutMs:125
+ });
+ const started=Date.now();
+ const res=await handler.fetch(reqBody);
+ assert.equal(res.status,400);
+ assert.equal((await res.json()).paymentAuthorized,false);
+ assert.ok(Date.now()-started<1500,'stalled stream was not bounded');
+ assert.deepEqual(f.calls,[]);
+ assert.equal(f.sql.prepare('SELECT COUNT(*) n FROM payment_attempts').get().n,1);
+ f.sql.close();
+});
+test('owner proof request aborted mid-stream cannot reach PayPal or D1',async()=>{
+ const f=fixture();
+ const abort=new AbortController();
+ const hanging=new ReadableStream({pull(){return new Promise(()=>{})}});
+ const request=new Request(ORIGIN+'/__private/paypal/order-proof',{
+  method:'POST',duplex:'half',body:hanging,signal:abort.signal,
+  headers:{origin:ORIGIN,'sec-fetch-site':'same-origin',
+   cookie:'__Host-proofline_session='+COOKIE,
+   'content-type':'application/json',
+   'x-proofline-intent':'sandbox-order-get-only'}
+ });
+ const handler=createWorkerSandboxOrderProof({
+  db:f.db,allowedOrigin:ORIGIN,transport:f.transport,
+  expectedMerchantId:MERCHANT,enabled:true,now:()=>T,
+  bodyReadTimeoutMs:1500
+ });
+ const pending=handler.fetch(request);
+ abort.abort();
+ const res=await pending;
+ assert.equal(res.status,400);
+ assert.deepEqual(f.calls,[]);
+ f.sql.close();
+});
+test('proof GET-only input deadline rejects invalid timeouts before transport',async()=>{
+ const f=fixture();
+ for(const bodyReadTimeoutMs of [0,99,5001,Infinity,NaN,1.5]){
+  assert.throws(()=>createWorkerSandboxOrderProof({
+   db:f.db,allowedOrigin:ORIGIN,transport:f.transport,
+   expectedMerchantId:MERCHANT,enabled:true,now:()=>T,bodyReadTimeoutMs
+  }),/SANDBOX_GET_EXPLICIT_PRIVATE_DEPENDENCIES_REQUIRED/);
+ }
+ assert.deepEqual(f.calls,[]);
+ f.sql.close();
+});
