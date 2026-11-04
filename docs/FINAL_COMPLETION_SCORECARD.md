@@ -1,3 +1,20 @@
+## 2026-11-05 KST — VERIFIED default-main source/LICENSE release; FINAL 78→79 (+1pp)
+
+[PR #28](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/28) **MERGED** at `28a370fd3b4a7573e90f895961051c59d7b233a1` after prior default `b8e7f791`; **514/514** preview file blobs matched released `main`, with MIT root LICENSE and preexisting role doc preserved. GitHub release is actual, not simulated provider or a live hosted system. Exact prior feature `3cc86e81` Full CI [#41889961142](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41889961142) 1,169 Node PASS, Windows/browser SUCCESS; new merge SHA had **no separate Actions run** at verification.
+
+| Fixed final area | Weight | Before | Now | Outstanding |
+| --- | ---: | ---: | ---: | --- |
+| Part1 marketplace | 22 | 21 | 21 | Authenticated real users/payment |
+| Part2 five skills | 23 | 21 | 21 | Independently verified real AI |
+| PayPal Sandbox + AI evidence | 20 | 8 | 8 | Authorized real provider confirmation |
+| Authenticated reviewer | 15 | 14 | 14 | External authenticated use (Devpost permits complete local run) |
+| Default-main source and root license | 8 | **7** | **8** | Completed |
+| Approved public YouTube | 7 | 4 | 4 | Owner-approved public under-180s film |
+| English Devpost | 5 | 3 | 3 | Approved submission/receipt |
+| **TOTAL** | **100** | **78** | **79** | **21 remaining, external RELEASE HOLD** |
+
+**Scoring boundary:** +1pp only for real public default-branch source/LICENSE release. Main merge does not validate remote PayPal/Gemini, payment, Cloudflare Production, user login, public film or Devpost. Following source/draft correction commit CI is separate.
+
 ## 2026-11-05 KST — D1 authenticated quote upload DoS repaired, verified; final remains 78/100
 
 **Exact feature SHA** `3cc86e81d5d744a2ecd68db3d9b9b8879ef08c82`: [Full CI #41889961142](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41889961142) COMPLETED SUCCESS Linux Node **1,169/1,169**, Windows first-run SUCCESS, two-part Chromium and reviewer 8/8 PASS. [Smoke #41889960963](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41889960963) SUCCESS. Fixed authenticated quote draft/revise/approve upload hanging on stalled stream and uncooperative cancel via 2s absolute deadline, abort and three negative tests. No real provider or external deployment verified.

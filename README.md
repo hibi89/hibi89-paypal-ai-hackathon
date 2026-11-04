@@ -9,7 +9,7 @@
 ```bash
 git clone https://github.com/hibi89/hibi89-paypal-ai-hackathon.git
 cd hibi89-paypal-ai-hackathon
-git switch lead/paypal
+git switch main
 npm run demo
 ```
 
@@ -27,7 +27,7 @@ Open the printed `http://127.0.0.1:PORT` URL. Select **AI Work** and click **Exp
 
 **Verified local judge path (current, 2026-11-05):** [Exact-source GitHub Actions #41868041612](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41868041612) passed Linux **1,153/1,153 Node tests**, Windows first-run and real local Part1/Part2 Chromium; the one-command `npm run verify:local` completed **8/8 PASS**. For full local browser verification, Python Playwright and Chrome/Chromium are needed; absent browser tooling is a partial result, not a pass. The latest independent private synthetic V3 video duration was **141.40 seconds** (encoded WebM, [exact-source CI #41862397878](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41862397878)), but this ephemeral CI capture is **not** an owner-reviewed public YouTube video. The offline browser **does not make real PayPal or Gemini calls**. The unpublished English Devpost input is available locally with `npm run submission:fields:local` (or `-- --check` to avoid a file write). See the [English reviewer guide](docs/JUDGE_REPRODUCTION_EN.md), [branch MIT license](LICENSE) and [unpublished owner-review entry](docs/DEVPOST_FINAL_REVIEW_PACKET_EN_20261105.md).
 
-**Release status (2026-11-05):** Latest runnable source plus the MIT root license is staged in [open DRAFT PR #28](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/28), **not merged**; the default `main` branch is still an older, non-runnable baseline without a root license. No owner approval for merging, external provider calls, public YouTube, live hosting or Devpost submission has been granted. **RELEASE HOLD.**
+**Source release status (2026-11-05):** [PR #28](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/28) was **MERGED** to public default `main` at [`28a370fd`](https://github.com/hibi89/hibi89-paypal-ai-hackathon/commit/28a370fd3b4a7573e90f895961051c59d7b233a1). The 514/514 release-preview blobs exactly matched the merged main tree; root MIT `LICENSE` and main-only `docs/ROLE_COORDINATION.md` remain. Earlier source [CI #41889961142](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41889961142) passed 1,169 Node tests and full offline browser workflows at feature `3cc86e81`; **no independent main merge-SHA CI** was present at first verification. `lead/paypal` remains the dev branch. This is **source release only**; real PayPal/Gemini, Production, public YouTube and Devpost remain **RELEASE HOLD**.
 
 ---
 
