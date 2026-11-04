@@ -27,6 +27,8 @@ jobs:
         run: |
           npm run judge:evidence
           node --input-type=module -e "import {readFileSync} from 'node:fs'; const r=JSON.parse(readFileSync('output/submission/judge_evidence_report.json')); if(r.status!=='JUDGE_SAFE_OFFLINE_EVIDENCE_READY_NOT_SUBMITTED'||r.verifiedFromThisCommand.actualProviderCalls!==0||r.verifiedFromThisCommand.actualPaymentCaptured!==false||r.releases.publicationAuthorized!==false||r.evidence.length!==5||r.evidence[2].status!=='VERIFIED_DETERMINISTIC_OFFLINE_NO_PROVIDER'||r.evidence[3].status!=='OWNER_REPORTED_NOT_INDEPENDENTLY_ATTESTED'||r.verifiedFromThisCommand.part2FiveSkillsExecuted!==5||r.verifiedFromThisCommand.part2RealProviderCalls!==0)process.exit(2)"
+      - name: Portable offline reviewer ZIP is extractable and boots both parts (no upload)
+        run: python3 tests/portable_reviewer_bundle_test.py
       - name: Install free browser test tooling
         run: |
           python3 -m venv .browser-venv
@@ -122,6 +124,8 @@ jobs:
         run: node --experimental-sqlite --test tests/worker_private_d1_recovery.test.mjs
       - name: Offline read-only Worker D1 schema preflight regressions
         run: node --experimental-sqlite --test tests/worker_d1_schema_preflight.test.mjs
+      - name: Windows portable offline reviewer ZIP and actual loopback smoke
+        run: python tests/portable_reviewer_bundle_test.py
       - name: Historical owner evidence safety regressions
         run: python tests/video_owner_evidence_test.py
       - name: Full owner workflow from clean machine (no accounts or providers)
