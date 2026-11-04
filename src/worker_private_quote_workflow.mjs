@@ -150,7 +150,7 @@ export function createWorkerPrivateQuoteWorkflow({db,allowedOrigin,now=Date.now}
        !Number.isSafeInteger(data.expectedVersion)||data.expectedVersion<1||
        data.expectedVersion>=Number.MAX_SAFE_INTEGER||
        typeof data.scopeText!=='string'||data.scopeText.trim().length<12||
-       data.scopeText.length>600||/[\\x00-\\x1f\\x7f]/.test(data.scopeText))
+       data.scopeText.length>600||/[\x00-\x1f\x7f]/.test(data.scopeText))
       return reply(400,{error:'INVALID_REVISION'});
     const scope=data.scopeText.trim();
     const written=changes(await dbp.prepare(REV).bind(scope,revision[1],
