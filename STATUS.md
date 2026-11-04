@@ -1,3 +1,10 @@
+## 2026-11-05 KST — Current complete lead staged in draft main-release preview, still HOLD (LATEST)
+
+- Verified PR #28 preview SHA 2ffc206f309558742cf04f3b8dfde76ce80fe956; exactly 507/507 lead files byte-equal, original main-only docs/ROLE_COORDINATION.md preserved. Draft PR remains clean, NOT MERGED, main is b8e7f7914084166b24a1eacf97e262c5d855d17b. This closes a stale release-preview gap, not official publishing.
+- Latest feature fff15c28a9d4ad6d0ae4e4964c4ccbd5a16377cb CI #41862397878, #41862397740 QUEUED at check. Windows ffprobe fallback and new current Gift footage have not yet passed exact-source CI; previous aa9e09b Windows failed after successful video recording due to missing ffprobe.
+- Fixed provisional final submission score remains 71/100 (no +1pp), remaining 29, RELEASE HOLD. No provider calls, main merge, public video, Devpost, real deployment or owner-private data changes.
+- Next inspect actual fff15c28 CI and full-speed video, then owner approval-gated PR28/main, live PayPal/Gemini attestation, video and final submission. HANDOFF above provides ten-part details.
+
 ## 2026-11-05 KST — Final video safety and filmed owner-Gift path, source CI queued (LATEST)
 
 - New source: fff15c28a9d4ad6d0ae4e4964c4ccbd5a16377cb. Actual WebM length must independently measure <180 seconds; no ffprobe on Windows triggers fallback to existing Playwright FFmpeg. Recorder now actually imports a locally supplied two-item Gift catalog, selects a capped premium item, and records manifest evidence.
