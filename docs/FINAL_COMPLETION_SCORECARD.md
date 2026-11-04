@@ -1,3 +1,20 @@
+## 2026-11-05 KST — Real Sandbox GET-proof HTTP stream DoS hardening verified; score stays 78
+
+**Actual tested feature SHA** `bf72fc735f1a0ed79d3d79a014131254a56811fb`. [Full CI #41887728536](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41887728536) **SUCCESS** Linux 1,166/1,166 Node PASS, Windows SUCCESS, both offline Chromium parts and reviewer 8/8 PASS. [Smoke #41887728580](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41887728580) SUCCESS. Sandbox proof request reader now has fixed absolute 2s deadline, abort handling, nonblocking cancel, invalid input no provider calls. The route is off by default and not externally tested. Verified security defect correction, NOT new verified provider/hosted/release evidence.
+
+| Fixed final rubric | Weight | Previously | Now | Remaining condition |
+| --- | ---: | ---: | ---: | --- |
+| Part1 marketplace/quote/contract | 22 | 21 | 21 | Authenticated real merchant/customer payment |
+| Part2 five AI innovation skills | 23 | 21 | 21 | Independently verified real AI |
+| Real PayPal Sandbox + AI provider evidence | 20 | 8 | 8 | Owner-authorized current provider evidence |
+| Reviewer access and evidence correctness | 15 | 14 | 14 | Authenticated hosted access |
+| Default branch root LICENSE/public source | 8 | 7 | 7 | Owner-approved merge |
+| Approved YouTube video <180s | 7 | 4 | 4 | Approved public upload |
+| English Devpost submission receipt | 5 | 3 | 3 | Authorized actual form submission |
+| **Total evidence-weighted whole final** | **100** | **78** | **78** | **22 remain, RELEASE HOLD** |
+
+**Scoring constraint:** +0pp in this turn is intentional. No objective evidence newly satisfies any of the 22 currently missing independent release/provider gates. Do not relabel synthetic tests as PayPal/Gemini live proof merely to meet a desired per-turn score.
+
 ## 2026-11-05 KST — VERIFIED whole-final 77→78 (+1pp), proof-bound human review UI
 
 Feature `c46da7103010b6bc5659572943c6fa65b312700c`: [full CI #41885993472](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41885993472) **SUCCESS** 1,163/1,163 Node tests, Windows first-run SUCCESS, Chromium ZIP two-part 2/2 PASS and complete judge 8/8; [smoke #41885993553](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41885993553) SUCCESS. Real new behavior: legacy, cross-task mismatch and missing/contradictory private quote+AI hashes no longer masquerade as eligible evidence for a human GET-only scope review. Owner UI explicitly distinguishes `LOCAL SHA-256 TASK MATCH`, `LEGACY TASK LINK UNVERIFIED` and mismatches; no remote/network change.
