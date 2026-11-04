@@ -289,7 +289,7 @@ test('quote mutation during delayed human price consent blocks approval',withFix
    const quote=await f.ledger.get(id);
    if(!quote)return quote;
    reads++;
-   return reads>=3?{...quote,scope:'sha256:'+'0'.repeat(64)}:quote;
+   return reads>=2?{...quote,scope:'sha256:'+'0'.repeat(64)}:quote;
  }};
  const s=f.create(guarded);
  await s.classify();
