@@ -16,6 +16,7 @@ function makeFixture(dir){
     storyboard_version:'TWO_PART_FIVE_SKILLS_V3',
     demonstrated_categories:['ai_work','general_services'],
     demonstrated_skills:['delegate','a2a','gift','churn','invoice'],
+    owner_catalog_demonstrated:true,
     video_filename:filename,video_sha256:hash,video_bytes:video.byteLength,
     wall_clock_elapsed_seconds:14.5,provider_calls:0,payment_posts:0,
     media_duration_independently_probed:false,publicly_uploaded:false,
@@ -48,6 +49,8 @@ test('video candidate rejects tampering and fabricated publication claims',()=>{
   assert.throws(()=>verifyPrivateSyntheticVideo(root),/UNAUTHORIZED_PUBLICATION_CLAIM/);
   writeFileSync(manifest,JSON.stringify({...metadata,storyboard_version:'OPPORTUNITY_FIRST_V2'}));
   assert.throws(()=>verifyPrivateSyntheticVideo(root),/FINAL_TWO_PART_STORYBOARD_REQUIRED/);
+  writeFileSync(manifest,JSON.stringify({...metadata,owner_catalog_demonstrated:false}));
+  assert.throws(()=>verifyPrivateSyntheticVideo(root),/OWNER_INPUT_CATALOG_FOOTAGE_MISSING/);
   writeFileSync(manifest,JSON.stringify({...metadata,demonstrated_skills:['delegate','a2a']}));
   assert.throws(()=>verifyPrivateSyntheticVideo(root),/FINAL_FIVE_SKILLS_VIDEO_REQUIRED/);
   writeFileSync(manifest,JSON.stringify(metadata));

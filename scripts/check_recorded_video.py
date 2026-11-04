@@ -45,6 +45,8 @@ def verify(directory):
             raise ValueError("TWO_CATEGORY_VIDEO_EVIDENCE_MISSING")
         if data.get("demonstrated_skills") != ["delegate", "a2a", "gift", "churn", "invoice"]:
             raise ValueError("FIVE_SKILL_VIDEO_EVIDENCE_MISSING")
+        if data.get("owner_catalog_demonstrated") is not True:
+            raise ValueError("OWNER_INPUT_CATALOG_FOOTAGE_MISSING")
     else:
         raise ValueError("UNRECOGNIZED_VIDEO_STORYBOARD")
     if data.get("provider_calls") != 0 or data.get("payment_posts") != 0:

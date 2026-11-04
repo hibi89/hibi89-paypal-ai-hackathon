@@ -78,6 +78,7 @@ def capture(output_dir, pace_ms):
     video_file = None
     two_verticals_verified = False
     five_skills_verified = []
+    owner_catalog_demonstrated = False
     unsafe_requests = []
     post_paths = []
     try:
@@ -310,6 +311,35 @@ def capture(output_dir, pace_ms):
                 caption("GIFT FINDER | Constrained fictional catalog selection; no inventory, order or payment.")
                 pause()
 
+                # New capability in the current code: owner-entered typed local
+                # products are persisted and actually matched by the Gift Agent.
+                # Never describe these as verified seller stock or a purchase.
+                page.locator("#local-catalog-panel summary").click()
+                page.locator("#gift-catalog-json").fill(
+                    '[{"id":"owner-premium-light","category":"lighting","style":"PREMIUM","priceMinor":3500},'
+                    '{"id":"owner-practical-light","category":"lighting","style":"PRACTICAL","priceMinor":2900}]'
+                )
+                page.locator("#gift-catalog-save").click()
+                expect(page.locator("#gift-catalog-status")).to_contain_text(
+                    "OWNER SUPPLIED LOCAL CATALOG", timeout=8000
+                )
+                page.locator("#limit").fill("40")
+                page.locator("#delegate").click()
+                expect(page.locator("#delegation-status")).to_contain_text("SYNTHETIC_CONSENT_CREATED")
+                page.locator("#gift-category").select_option("lighting")
+                page.locator("#gift-style").select_option("PREMIUM")
+                page.locator("#gift-priority").select_option("MATCH_STYLE")
+                page.locator("#gift-max-price").fill("40.00")
+                page.locator("#gift").click()
+                expect(page.locator("#gift-output")).to_contain_text("owner-premium-light")
+                expect(page.locator("#gift-output")).to_contain_text(
+                    "OWNER_SUPPLIED_LOCAL_NOT_VENDOR_VERIFIED"
+                )
+                expect(page.locator("#gift-output")).to_contain_text('"paymentAuthorized": false')
+                owner_catalog_demonstrated = True
+                caption("REAL LOCAL INPUT | Two owner-entered gift items ranked under a $40 limit. Vendor stock NOT verified; checkout DISABLED.")
+                pause()
+
                 page.locator("#churn-reference").fill("demo-sub-maintenance-101")
                 page.locator("#churn-monthly").fill("25.00")
                 page.locator("#churn-months").fill("6")
@@ -364,6 +394,7 @@ def capture(output_dir, pace_ms):
             "storyboard_version": "TWO_PART_FIVE_SKILLS_V3",
             "demonstrated_categories": (["ai_work", "general_services"] if two_verticals_verified else []),
             "demonstrated_skills": five_skills_verified,
+            "owner_catalog_demonstrated": owner_catalog_demonstrated,
             "video_filename": dest.name,
             "video_sha256": hashlib.sha256(dest.read_bytes()).hexdigest(),
             "video_bytes": dest.stat().st_size,

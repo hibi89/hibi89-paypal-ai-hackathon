@@ -55,6 +55,7 @@ export function verifyPrivateSyntheticVideo(dir,{probeDuration=probePrivateWebmD
   requireValue(JSON.stringify(manifest.demonstrated_skills)===
     JSON.stringify(['delegate','a2a','gift','churn','invoice']),
     'FINAL_FIVE_SKILLS_VIDEO_REQUIRED');
+  requireValue(manifest.owner_catalog_demonstrated===true,'OWNER_INPUT_CATALOG_FOOTAGE_MISSING');
   requireValue(basename(filename)===filename,'UNSAFE_VIDEO_FILENAME');
   requireValue(manifest.evidence_class==='OFFLINE_SYNTHETIC_BROWSER_CAPTURE_ONLY','PROVIDER_PROOF_FALSE_CLAIM');
   requireValue(manifest.provider_calls===0&&manifest.payment_posts===0,'PROVIDER_ACTION_CLAIM_FORBIDDEN');
