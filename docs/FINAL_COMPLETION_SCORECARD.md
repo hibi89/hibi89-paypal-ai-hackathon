@@ -1,3 +1,20 @@
+## 2026-11-05 KST — D1 authenticated quote upload DoS repaired, verified; final remains 78/100
+
+**Exact feature SHA** `3cc86e81d5d744a2ecd68db3d9b9b8879ef08c82`: [Full CI #41889961142](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41889961142) COMPLETED SUCCESS Linux Node **1,169/1,169**, Windows first-run SUCCESS, two-part Chromium and reviewer 8/8 PASS. [Smoke #41889960963](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41889960963) SUCCESS. Fixed authenticated quote draft/revise/approve upload hanging on stalled stream and uncooperative cancel via 2s absolute deadline, abort and three negative tests. No real provider or external deployment verified.
+
+| Fixed final rubric | Weight | Before | Now | Missing |
+| --- | ---: | ---: | ---: | --- |
+| Part1 marketplace | 22 | 21 | 21 | Actual merchant/customer proof |
+| Part2 five agentic skills | 23 | 21 | 21 | Actual independent model proof |
+| Actual PayPal Sandbox + AI | 20 | 8 | 8 | Owner-authorized real provider evidence |
+| Authenticated reviewer access | 15 | 14 | 14 | Externally hosted authenticated use |
+| Default main root LICENSE/source | 8 | 7 | 7 | Approved Draft PR #28 merge |
+| Approved public YouTube <180s | 7 | 4 | 4 | Owner-approved video release |
+| English Devpost receipt | 5 | 3 | 3 | Authorized actual submission |
+| **Total whole-final** | **100** | **78** | **78** | **22 remain; RELEASE HOLD** |
+
+**Score rule:** +0pp verified, no invented 1pp. This work reduces an actual private quote service availability risk but does not complete any still-unverified external release condition. Main remains untouched; release preview draft only.
+
 ## 2026-11-05 KST — Real Sandbox GET-proof HTTP stream DoS hardening verified; score stays 78
 
 **Actual tested feature SHA** `bf72fc735f1a0ed79d3d79a014131254a56811fb`. [Full CI #41887728536](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41887728536) **SUCCESS** Linux 1,166/1,166 Node PASS, Windows SUCCESS, both offline Chromium parts and reviewer 8/8 PASS. [Smoke #41887728580](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41887728580) SUCCESS. Sandbox proof request reader now has fixed absolute 2s deadline, abort handling, nonblocking cancel, invalid input no provider calls. The route is off by default and not externally tested. Verified security defect correction, NOT new verified provider/hosted/release evidence.
