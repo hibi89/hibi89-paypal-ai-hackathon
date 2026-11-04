@@ -1,3 +1,20 @@
+## 2026-11-05 KST — VERIFIED final-entry 74→75 (+1pp): portable full two-part reviewer ZIP
+
+**Feature SHA** `2ecd83d70377582693e63eea82a6f7fad2af259c`: [full CI #41875958950](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41875958950) SUCCESS (Linux Node **1,154/1,154 PASS**, Windows first-run SUCCESS, Linux/Windows **2/2 ZIP extract + actual local HTTP tests each**, full two-part Chromium and 8/8 one-command judge SUCCESS); [MVP smoke #41875959099](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41875959099) SUCCESS. ZIP packaging is bounded, hashed, ignores existing ZIP rather than overwriting, includes actual Node entrypoint and five-skill static assets, and **does not upload**. It can be built locally and extracted without a Git checkout or npm install. This is **reviewer environment accessibility**, not default-main publication, external PayPal/Gemini verification or public distribution.
+
+| Fixed final-acceptance area | Weight | At 74 | Now at 75 | Still missing |
+| --- | ---: | ---: | ---: | --- |
+| Part1 marketplace / quote / contract | 22 | 21 | 21 | Real merchant/customer payment-backed service |
+| Part2 five agentic innovations | 23 | 21 | 21 | Independently attested live AI integration |
+| Real PayPal Sandbox + AI provider evidence | 20 | 8 | 8 | Owner-approved provider integration, judge-safe evidence |
+| Reviewer access / optional D1/IdP | 15 | **10** | **11** | Authenticated real-provider reviewer access, hosted URL optional; distribution not yet public |
+| Public source, default root LICENSE and guide | 8 | 7 | 7 | Owner-approved default-main release |
+| Approved public YouTube <180s | 7 | 4 | 4 | Owner review/publication, private CI footage not a public video |
+| English Devpost form / submission receipt | 5 | 3 | 3 | Owner approval, public video URL, actual submitted form and receipt |
+| **Whole final entry (internal evidence-weighted)** | **100** | **74** | **75** | **RELEASE HOLD** |
+
+**Scope:** This 1pp measures a new fully cross-platform verified offline distribution pathway rather than extra synthetic test volume. No public ZIP or signed binary, actual payment, live AI, external user identity, deployed service, YouTube video, or Devpost receipt verified. The remaining 25 points require substantive proof and protected release steps.
+
 ## 2026-11-05 KST — VERIFIED final-entry 73→74 (+1pp): tool-use disclosure for official Devpost fields
 
 **Exact feature SHA** `67d37e905e7e7c2ad8e89fc1d1a38a7da45584b7`: [CI #41874256116](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41874256116) **SUCCESS** (Linux Node **1,154 PASS / 0 FAIL / 0 SKIP**, Windows SUCCESS, real Chromium both product parts and 8/8 one-command reviewer SUCCESS); [smoke #41874256049](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41874256049) **SUCCESS**. First attempt `89ee0e6d` failed 2 new/old negative tests; fixed in exact verified SHA. Separate official [Devpost What to Submit](https://paypalaihackathon.devpost.com/) explicitly requests model/AI service names and explanations. New local unpublished copy plus `toolsUsed` five-item structured explanations and `builtWithTags` eight-tag output are validated to refuse false live-provider statements. These are **not** submitted or independent PayPal/Gemini proof.
