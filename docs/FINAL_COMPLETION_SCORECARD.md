@@ -1,5 +1,27 @@
 # PayPal Hackathon — FINAL product completion evidence scorecard (2026-11-04 KST)
 
+## 2026-11-05 ~00:05 KST — Whole-contest completion 69→70 (+1pp, fixed provisional rubric)
+
+**Distinct actual Part 2 functionality:** Gift-finder was limited to 4 hard-coded fictional catalog entries. On the existing loopback owner-only Part 2 dashboard, the user can now **explicitly import 2–8 locally supplied, strictly typed product identifiers/prices** (no customer details, URL or external inventory), save a revisioned SQLite catalog, and rank those products under a separately granted, single-use, amount-capped gift mandate. Old default fixed catalog is preserved until an explicit import. Restarted local SQLite retains catalog revision, and stale revisions/reused request keys cannot silently overwrite the user's records. This is a **real user-input matching workflow in an offline prototype**, not a real merchant inventory feed, AI model or PayPal purchase.
+
+| Contest submission acceptance scope | Fixed weight | Before | After | Still incomplete |
+| --- | ---: | ---: | ---: | --- |
+| Part1 marketplace, quote, three-role contract | 22 | 21 | 21 | Actual customer/payment-backed service, remote production |
+| Part2 five agentic commerce skills | 23 | **19** | **20** | Actual Gemini A2A browser integration, live provider attestation |
+| Real PayPal Sandbox + actual AI provider evidence | 20 | 8 | 8 | Independent, owner-authorized real-provider verification |
+| Hosted auth/D1/reviewer access | 15 | 10 | 10 | Owner identity, remote Cloudflare, production acceptance |
+| Public source/default license/English reproducibility | 8 | 7 | 7 | Default `main` LICENSE PR #16 not merged |
+| Final owner-reviewed public YouTube under 3m | 7 | 3 | 3 | Real final reviewed/published clip |
+| Devpost English submission/receipt | 5 | 1 | 1 | Final submission not made |
+| **Provisional whole-contest completion** | **100** | **69** | **70** | **+1pp for Part2 user-supplied catalog feature; RELEASE HOLD** |
+
+**Exact reproducibility:** code SHA `204a21573e049be4d59fca4ec6215d20e61d835b`, [GitHub Actions #41853415775](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41853415775) **SUCCESS**: Linux Node **1,145 PASS, 0 FAIL, 0 SKIP** including three new owner-catalog tests; Windows **SUCCESS**; actual Part2 Chromium opened the import disclosure, submitted owner-supplied sample item JSON, obtained a **versioned saved local catalog**, delegated USD 40 synthetic cap, selected owner premium light, verified supplier provenance **not attested**, and reloaded persisted catalog with zero GET-induced POSTs. Part1 Chromium and combined local reviewer 8/8 **PASS**. [MVP smoke #41853415791](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41853415791) **SUCCESS**. Isolated Wrangler remote-like D1 job and full-speed video job **SKIPPED** on this SHA.
+
+- **Change files:** `src/owner_local_gift_catalog.mjs` (strict schema/ranking), `src/innovation_lab.mjs` (local SQLite version, idempotent import, private owner API and existing gift mandate), `web/innovation_dashboard.html` and `web/innovation_dashboard.js` (manual import action), `tests/owner_local_gift_catalog.test.mjs`, `tests/browser_innovation_e2e.py`. Production/remote D1 migrations not modified; all five original Part2 modules, Part1, payment contracts unchanged.
+- **Fail-closed design:** rejects PII or additional item keys, duplicate/invalid SKU, untrusted categories/prices, catalog replay conflicts, over-budget gift selections and unauthorized reviewer import. Buying/checkout remains disabled, no Gemini/PayPal or vendor inventory requests are sent. Data resides in disposable local demo SQLite, never synced remotely. A real user SKU does not prove stock, merchant authority or PayPal entitlement.
+- **Scoring limitation:** 70/100 is an **internal evidence-weighted estimate**, not official judge score, objective product completion or live production certification. Remaining 30 points still include critical real provider, release, public video and submission gates; cannot be fabricated by more offline tests. This milestone does NOT count as genuine Gemini A2A integration.
+- **Next high-value gate:** independently attest owner-authorized real PayPal+Gemini eligibility and functional reviewer reproduction; decide explicit owner approval of main/LICENSE, owner-review final under-180s video and publish Devpost by official **Nov 13, 2026 05:00 KST**. No unapproved payment, external API, public upload or merge. **RELEASE HOLD**.
+
 ## 2026-11-04 ~23:46 KST — Final whole-product 68 → 69 (+1pp; same provisional 100-point rubric)
 
 **Material final-product feature:** Part1 previously required the buyer to manually copy an approved quote ID/version into the *separate* D1 contract screen, disconnecting the quote and contract experience. Now the verified BUYER screen reads the **currently approved quote list directly from the existing authenticated owner's D1**, lets the buyer select one, fills and locks that quote ID/version for the form, and continues with the existing server-authoritative contract creation. Seller submits; reviewer rejects/accepts; buyer rereads the accepted state. Role membership and approved amount are still revalidated in the existing backend, no client-side quote or amount can grant payment authority. No remote D1, real PayPal/Gemini, new cost, new migration or external user data involved.

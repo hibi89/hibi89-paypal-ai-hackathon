@@ -18,6 +18,18 @@ Proofline presents **one local synthetic marketplace**, with two selected servic
 
 **Submission caveat:** the public repository's older default `main` branch is not the runnable `lead/paypal` build. A draft [PR #16](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/16) adds the missing default-branch MIT license and judge directions, but requires explicit owner release approval before merge. Do not claim the default branch is ready or that Devpost has accepted a submission.
 
+## Optional owner-supplied local Gift-finder catalog (non-provider)
+
+In `npm run demo`, open `/demo/innovation` and expand **Optional: owner-supplied local product catalog** under Gift-finder. Paste 2–8 JSON objects containing **only** `id`, `category` (`lighting`, `mug`, `stationery`), `style` (`PRACTICAL` or `PREMIUM`) and integer `priceMinor` (USD cents). Example:
+
+```json
+[{"id":"local-light-a","category":"lighting","style":"PREMIUM","priceMinor":3500},{"id":"local-light-b","category":"lighting","style":"PRACTICAL","priceMinor":2900}]
+```
+
+Click **Save owner-supplied local catalog** to save to a disposable local SQLite catalog. Then issue a fresh **gifts** mandate with a USD cap (e.g. $40), select lighting/PREMIUM/MATCH_STYLE, and click **Run Gift Agent**. Verify the selected item is `local-light-a`, `catalogSource=OWNER_SUPPLIED_LOCAL_NOT_VENDOR_VERIFIED`, `catalogRevision=1`, `providerInventoryVerified=false`, `checkout=DISABLED` and `paymentAuthorized=false`. Reload to verify local revision state remains; GET must not re-import or buy anything. Invalid item keys, extra PII, duplicate IDs, stale revisions and expired/reused gift mandates fail closed. This optional local import is **not real vendor inventory, live Gemini inference or PayPal checkout**; it is self-reported data in a disposable demo that is deleted on process exit. Never paste genuine customer identities, payment secrets or third-party licensed data.
+
+Exact SHA `204a21573e049be4d59fca4ec6215d20e61d835b` [CI #41853415775](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41853415775): 1,145 Node PASS, Windows PASS and real Part2 Chromium catalog-import journey PASS; historical provider proof still separate.
+
 ## Current verified scope
 
 - Root [MIT LICENSE](../LICENSE) is present and approved; `package.json` says `MIT`.
