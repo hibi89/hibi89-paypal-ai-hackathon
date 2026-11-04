@@ -89,6 +89,11 @@ export function createGeminiA2ARoleAgents({
  // A private, per-negotiation circuit with no retries or shared mutable credentials.
  let attempts=0,verifiedTokens=0,blocked=false,busy=false;
  const roleCounts={seller:0,buyer:0};
+ // This factory represents ONE negotiation. Bind successful messages and role
+ // limits to its state so a stale turn or fork cannot spend another API request.
+ const acceptedHistory=[];
+ const roleLimits={seller:null,buyer:null};
+ let negotiationEnded=false;
  async function call(role,view){
   if(blocked)throwCode('GEMINI_A2A_CIRCUIT_OPEN');
   const history=validateAgentView(view,role);
@@ -97,8 +102,18 @@ export function createGeminiA2ARoleAgents({
   if(attempts>=maxRequests||roleCounts[role]>=maxRoleRequests||
      verifiedTokens>=maxTotalTokens)
    throwCode('GEMINI_A2A_BUDGET_EXHAUSTED');
+  // Reject replays, missing turns, context forks and privilege/limit changes
+  // before quota reservation or provider transport. No response is cached:
+  // callers must not turn an A2A result into repeatable payment authority.
+  const expectedRole=acceptedHistory.length%2===0?'seller':'buyer';
+  if(negotiationEnded||view.turn!==acceptedHistory.length+1||
+     role!==expectedRole||
+     (roleLimits[role]!==null&&roleLimits[role]!==view.ownLimitMinor)||
+     acceptedHistory.some((m,i)=>JSON.stringify(m)!==JSON.stringify(view.history[i])))
+   throwCode('GEMINI_A2A_STALE_OR_FORKED_TURN');
   // Preclaim BEFORE any transport await: failed/ambiguous calls also consume quota.
   attempts++;roleCounts[role]++;busy=true;
+  roleLimits[role]=view.ownLimitMinor;
   const abortController=new AbortController();
   let timer,removeAbort;
   try{
@@ -185,6 +200,16 @@ export function createGeminiA2ARoleAgents({
    const final=normalizedResponse(parsed);
    verifiedTokens+=final.tokens;
    if(verifiedTokens>maxTotalTokens)throwCode('GEMINI_A2A_BUDGET_EXCEEDED');
+   const previous=acceptedHistory.at(-1)??null;
+   if((view.turn===1&&final.output.action!=='OFFER')||
+      (view.turn>1&&final.output.action==='OFFER')||
+      (final.output.action==='ACCEPT'&&
+       (previous?.role===role||previous?.amountMinor!==final.output.amountMinor||
+        previous.action==='REJECT')))
+    throwCode('GEMINI_A2A_INVALID_TURN_TRANSITION');
+   acceptedHistory.push(Object.freeze({role,...final.output}));
+   if(final.output.action==='ACCEPT'||final.output.action==='REJECT')
+    negotiationEnded=true;
    return final.output;
   }catch(e){
    // Never expose network body, API key, rejected model text or remote error.
