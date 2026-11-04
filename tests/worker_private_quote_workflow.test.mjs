@@ -160,7 +160,7 @@ test('D1 revision requires same-origin and trusted intent and survives midflight
    assert.equal((await f.handler.fetch(request(path,'POST',wrong))).status,400);
   assert.equal((await f.handler.fetch(request('/__private/quotes/different/revise','POST',good))).status,404);
   f.setBeforeWrite(()=>f.db.prepare('UPDATE worker_private_oidc_bindings SET active=0 WHERE issuer=?').run(ISS));
-  assert.equal((await f.handler.fetch(request(path,'POST',good))).status,503);
+  assert.equal((await f.handler.fetch(request(path,'POST',good))).status,409);
   assert.equal(f.db.prepare('SELECT version FROM quotes').get().version,1);
   assert.equal((await f.handler.fetch(request(path,'POST',good))).status,401);
  }finally{f.db.close()}
