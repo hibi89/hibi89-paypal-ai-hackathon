@@ -1,3 +1,16 @@
+## 2026-11-05 KST — Main CI green for bounded OIDC transport; whole-final 79% (LATEST)
+
+1. **Goal/stack:** Finish Proofline PayPal+AI two-part source (Part1 marketplace and five Part2 skills), Node/SQLite, opt-in D1/OIDC and safe Sandbox/Gemini with separate owner approval.
+2. **Work/decision:** Timeout safety defect in OIDC token POST fixed using single deadline across fetch+response body and nonblocking cancel; no change to PKCE or payment authorization. Feature in main and lead, no external provider calls.
+3. **Exact tests:** `lead/paypal` `597884b9` Full [#41896216977](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41896216977) SUCCESS, Smoke #41896216772 SUCCESS; `main` `52c50103` [#41896902842](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41896902842) **COMPLETED SUCCESS** Linux **1,171/1,171 PASS, 0 FAIL, 0 SKIP**, Windows SUCCESS, fresh extracted two-part Chromium and judge 8/8 PASS. D1 opt-in and full-speed media SKIPPED. Timeout regressions 973/974 PASS.
+4. **Progress/stage:** Fixed whole-final **79/100**, **+0pp** this turn; 21 points remain externally gated. This is a verified robustness improvement, NOT independent PayPal/Gemini/Production verification or final submission. RELEASE HOLD.
+5. **Errors/stop-pivot:** Old OIDC fetch/body could wait forever on uncooperative stream; fixed and tested. No test failure or retry required. Git clone DNS previously unavailable; authenticated GitHub Git-object writes and Actions used.
+6. **Repo/branches/rollback:** `hibi89/hibi89-paypal-ai-hackathon`; feature lead `597884b9` (parent `65174e7d`), feature main `52c50103` (parent `1a2ae357`). Before docs sync lead HEAD `da5605c5`, main HEAD `f1da43ed`; 513/513 common blob identity and preserved main-only `docs/ROLE_COORDINATION.md`. Revert via normal commit, never force push. GitHub identity `hibi89` confirmed.
+7. **Runtime/Production:** Local `npm test`, `npm run demo`, `npm run verify:local`, automated Windows/Linux Actions; no Cloudflare IdP/Production or Vercel (N/A). Default public source MIT licensed.
+8. **Originals/security:** Existing Part1+Part2, original DB/migrations, private SQLite, secrets, OAuth/Capture limits and roles preserved. New test uses injected fake fetch; actual external provider/payment/YouTube/Devpost calls 0.
+9. **Next work/approval:** Actual increase requires newly verified live PayPal/Gemini evidence, approved reviewer deployment if used, owner-reviewed public YouTube under 180s, and authorized Devpost receipt. No retry of historical Capture or new API calls on a generic continuation. Deadline **2026-11-13 05:00 KST**.
+10. **KST date/scope:** 2026-11-05 KST checkpoint; source-tested main `52c50103`, lead `597884b9`, 1,171 Node plus browser proof. Docs-only HEAD that follows not runtime tested separately; real provider and public publication NOT VERIFIED.
+
 ## 2026-11-05 KST — OIDC token stream timeout security repair, final 79% unchanged (LATEST)
 
 1. **Goal/stack/confirmed scope:** Complete Proofline Part1 freelancer marketplace + Part2 five innovation skills with safe real PayPal Sandbox/Gemini evidence, judge access, source LICENSE, public YouTube and Devpost. Node 22.5+, SQLite, optional Cloudflare D1/OIDC; feature use only with separately approved real credentials.
