@@ -3,7 +3,7 @@ import os, queue, re, shutil, subprocess, threading, time, tempfile
 from pathlib import Path
 from playwright.sync_api import sync_playwright, expect
 
-root=Path(__file__).resolve().parents[1]
+root=Path(os.environ.get("PROOFLINE_REVIEWER_ROOT") or Path(__file__).resolve().parents[1])
 fd, reviewer_path=tempfile.mkstemp(prefix="paypal-review-fixture-")
 os.close(fd)
 os.unlink(reviewer_path)
@@ -45,6 +45,15 @@ try:
             args=["--no-sandbox","--disable-dev-shm-usage"])
         try:
             page=browser.new_page()
+            external_requests=[]
+            def deny_external_in_zip(route):
+                url=route.request.url
+                if url==address or url.startswith(address+"/") or url.startswith(("data:","blob:")):
+                    return route.continue_()
+                external_requests.append(url.partition(":")[0])
+                return route.abort()
+            if os.environ.get("PROOFLINE_REVIEWER_LOCAL_ONLY")=="1":
+                page.route("**/*",deny_external_in_zip)
             requests=[]
             page.on("request",lambda r:requests.append((r.method,r.url)))
             page.goto(address)
@@ -305,6 +314,8 @@ try:
             # Mobile viewport and the second owner-approved category must remain
             # independently clickable, without changing shared payment authority.
             mobile=browser.new_page(viewport={"width":390,"height":844},device_scale_factor=1)
+            if os.environ.get("PROOFLINE_REVIEWER_LOCAL_ONLY")=="1":
+                mobile.route("**/*",deny_external_in_zip)
             try:
                 mobile_requests=[]
                 mobile.on("request",lambda req: mobile_requests.append((req.method,req.url)))
@@ -341,6 +352,7 @@ try:
                     for method,url in mobile_requests)
             finally:
                 mobile.close()
+            assert not external_requests,"REVIEWER_ZIP_PART1_BROWSER_EXTERNAL_REQUEST_BLOCKED"
             print("CHROMIUM_BROWSER_E2E_PASS: two-vertical-mobile+marketplace+quote+contract+subscription+integration, no provider/payment POST")
         finally:
             browser.close()
