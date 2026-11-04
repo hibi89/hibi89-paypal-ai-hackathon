@@ -70,3 +70,33 @@ test('CLI exits blocked (2) without exposing credentials, even if names are popu
  }
  assert.equal(JSON.parse(p.stdout).ai.generation,'NOT_TESTED');
 });
+
+test('PayPal first-party pilot credentials never establish third-party marketplace merchant authority',()=>{
+ for(const env of [{},full]){
+  const r=inspectP0ProviderReadiness(env);
+  const m=r.paypal.merchantAuthority;
+  assert.equal(m.directFirstParty,'NOT_VERIFIED');
+  assert.equal(m.platformThirdParty,'NOT_VERIFIED');
+  assert.equal(m.appMerchantOwnership,'NOT_VERIFIED');
+  assert.equal(m.sellerAccountOwnership,'NOT_VERIFIED');
+  assert.equal(m.requiresDistinctPlatformPermission,true);
+  assert.equal(m.localVariablesEstablishAuthorization,false);
+  assert.equal(r.canCallPayPal,false);
+  assert.equal(r.approvalGranted,false);
+  assert.ok(r.blockers.includes('PAYPAL_PLATFORM_THIRD_PARTY_MERCHANT_AUTHORIZATION_NOT_VERIFIED'));
+  assert.ok(r.blockers.includes('PAYPAL_APP_MERCHANT_OWNERSHIP_PROOF_REQUIRED'));
+ }
+});
+test('owner-only presence check never turns a synthetic seller into an authorized platform payee',()=>{
+ const report=inspectP0ProviderReadiness({
+  ...full,
+  PAYPAL_MERCHANT_ID:'SYNTHETIC_USER_SUPPLIED',
+  PAYPAL_PLATFORM_APPROVED:'true',
+  PAYPAL_BUSINESS_VERIFIED:'true',
+  OWNER_AUTHORIZED:'true'
+ });
+ assert.equal(report.paypal.merchantAuthority.platformThirdParty,'NOT_VERIFIED');
+ assert.equal(report.paypal.merchantAuthority.sellerAccountOwnership,'NOT_VERIFIED');
+ assert.equal(report.canCallPayPal,false);
+ assert.equal(JSON.stringify(report).includes('SYNTHETIC_USER_SUPPLIED'),false);
+});

@@ -10,11 +10,13 @@ const quoteScopeInput=document.getElementById('scope');
 
 let marketplaceBusy=false;
 let matchEpoch=0;
+let activeRecommendation=null;
 function selectedCategory(){
   return marketplaceVertical?.value||'ai_work';
 }
 function invalidateMatch(message){
   ++matchEpoch;
+  activeRecommendation=null;
   marketplaceOutput.textContent='Choose Explore matching specialists to compare fictional providers.';
   marketplaceSelection.textContent=message;
 }
@@ -46,6 +48,9 @@ function createProfileCard(profile,requestedSkills,matchedBrief,matchedVertical)
   const identity=make('div','profile-identity');
   identity.append(make('div','profile-name',profile.displayName),
     make('div','profile-label','Fictional sample · no verified reviews'));
+  const tierName={professional:'Professional',rising:'Rising Talent',
+    newcomer:'Newcomer'}[profile.tier]||'Illustrative candidate';
+  identity.append(make('span','profile-tier',tierName+' · demo archetype'));
   top.append(avatar,identity);
   card.append(top);
 
@@ -82,9 +87,66 @@ function createProfileCard(profile,requestedSkills,matchedBrief,matchedVertical)
         return;
       }
       quoteScopeInput.value=prepared;
+      // Choosing prepares only local text; a second deliberate click persists a
+      // candidate AFTER the user has generated the exact offline quote draft.
+      const epoch=matchEpoch;
+      const sessionId=activeRecommendation?.body?.sessionId;
+      const setRound=activeRecommendation?.viewRound;
       marketplaceSelection.textContent='Scope prepared locally for '+profile.displayName+
-        '. No quote submitted, candidate binding, human approval or payment. '+
-        'Click Generate OFFLINE MOCK draft below, then approve its exact version separately.';
+        '. No quote submitted. Click Generate OFFLINE MOCK draft below, then '+
+        'Confirm candidate here; human approval and payment remain separate.';
+      const confirm=make('button','profile-action','Confirm candidate for drafted quote');
+      confirm.type='button';
+      confirm.id='marketplace-confirm-'+profile.id;
+      confirm.addEventListener('click',async()=>{
+        if(marketplaceBusy||epoch!==matchEpoch||
+           marketplaceBrief.value!==matchedBrief||selectedCategory()!==matchedVertical||
+           quoteScopeInput.value!==prepared||activeRecommendation?.body?.sessionId!==sessionId){
+          marketplaceSelection.textContent='Selection changed. Re-match and prepare a new draft.';
+          return;
+        }
+        marketplaceBusy=true;confirm.disabled=true;
+        try{
+          const sessionResponse=await fetch('/demo/session',{credentials:'same-origin',cache:'no-store'});
+          if(!sessionResponse.ok)throw new Error('SESSION_NOT_READY');
+          const session=await sessionResponse.json();
+          if(session.mode!=='OFFLINE_MOCK'||session.role!=='owner'||
+             !/^[A-Za-z0-9_-]{1,64}$/.test(session.quoteId))
+            throw new Error('OWNER_SESSION_REQUIRED');
+          const quoteResponse=await fetch('/api/quotes/'+session.quoteId,
+            {credentials:'same-origin',cache:'no-store'});
+          const quoteData=await quoteResponse.json();
+          if(!quoteResponse.ok)throw new Error(quoteData.error||'QUOTE_READ_FAILED');
+          const quote=quoteData.quote;
+          if(quote?.scope!==prepared||quote?.status!=='PROPOSED'||quote.version<2)
+            throw new Error('GENERATE_MATCHING_DRAFT_FIRST');
+          if(epoch!==matchEpoch||quoteScopeInput.value!==prepared)
+            throw new Error('SELECTION_CHANGED');
+          const response=await fetch('/api/demo/marketplace/selection',{
+            method:'POST',credentials:'same-origin',cache:'no-store',
+            headers:{'content-type':'application/json','x-csrf-token':session.csrfToken},
+            body:JSON.stringify({quoteId:session.quoteId,expectedQuoteVersion:quote.version,
+              sessionId,round:setRound,profileId:profile.id})
+          });
+          const body=await response.json();
+          if(!response.ok)throw new Error(body.error||'CANDIDATE_BINDING_FAILED');
+          const proofResponse=await fetch('/api/demo/marketplace/selection?quoteId='+
+            encodeURIComponent(session.quoteId),{credentials:'same-origin',cache:'no-store'});
+          const proof=await proofResponse.json();
+          if(!proofResponse.ok||proof.status!=='BOUND'||proof.profileId!==profile.id||
+             proof.quoteVersion!==quote.version)
+            throw new Error('CANDIDATE_BINDING_PROOF_MISMATCH');
+          marketplaceSelection.textContent='Saved on server: '+profile.displayName+
+            ' / quote version '+quote.version+'. Approval and payment NOT authorized. '+
+            'Approve terms and create the contract separately.';
+          document.getElementById('refresh')?.click?.(); // existing read-only GET
+        }catch(e){
+          marketplaceSelection.textContent='Candidate NOT confirmed: '+(e?.message||'REQUEST_FAILED')+
+            '. No approval or payment executed.';
+          marketplaceSelection.append(confirm); // allow safe retry after draft
+        }finally{marketplaceBusy=false;confirm.disabled=false;}
+      });
+      marketplaceSelection.append(confirm);
       document.getElementById('draft-panel')?.scrollIntoView?.({behavior:'smooth',block:'start'});
       quoteScopeInput.focus?.({preventScroll:true});
     });
@@ -93,6 +155,94 @@ function createProfileCard(profile,requestedSkills,matchedBrief,matchedVertical)
     card.append(make('p','profile-gap','Not fully eligible for this example.'));
   }
   return card;
+}
+// The server is the source of truth: browser reloads and repeated clicks
+// never refund the two additional recommendation rounds.
+function renderRecommendationSet(body,brief,vertical,viewRound=body.round){
+  const set=body.history?.find(entry=>entry.round===viewRound);
+  if(!set)return;
+  activeRecommendation={body,brief,vertical,viewRound};
+  marketplaceOutput.replaceChildren();
+  const summary=make('p','match-summary',
+    'OFFLINE SYNTHETIC · '+(vertical==='ai_work'?'AI Work':'Global Services')+
+    ' · Required skills: '+(body.requestedSkills.join(', ')||'none identified; clarify request')+
+    ' · Reference price: DATA_INSUFFICIENT · PayPal: NOT_CONNECTED');
+  marketplaceOutput.append(summary);
+  const tierNote=make('p','recommendation-explainer',
+    'Three different opportunity paths. Career tiers are fictional examples, NOT verified credentials or price claims.');
+  marketplaceOutput.append(tierNote);
+  const grid=make('div','profile-grid');
+  for(const profile of set.profiles)
+    grid.append(createProfileCard(profile,body.requestedSkills,brief,vertical));
+  marketplaceOutput.append(grid);
+  const controls=make('div','recommendation-controls');
+  controls.append(make('p','recommendation-count',
+    'Viewing set '+viewRound+' of '+body.maxRounds+
+    ' · '+(body.round*3)+' candidates discovered · '+body.remainingRefreshes+' more sets available'));
+  const next=make('button','recommendation-next',
+    body.remainingRefreshes===0?'All 9 candidates shown':'Show 3 other specialists ('+body.remainingRefreshes+' left)');
+  next.type='button';
+  next.id='marketplace-next-recommendations';
+  next.disabled=body.remainingRefreshes===0||marketplaceBusy;
+  next.addEventListener('click',()=>advanceRecommendations());
+  controls.append(next);
+  const records=make('div','recommendation-history');
+  records.setAttribute('role','group');
+  records.setAttribute('aria-label','Previously recommended sets');
+  for(const entry of body.history){
+    const button=make('button','recommendation-history-button',
+      'Set '+entry.round+' · 3 profiles');
+    button.type='button';
+    button.id='marketplace-history-round-'+entry.round;
+    button.setAttribute('aria-pressed',String(entry.round===viewRound));
+    button.addEventListener('click',()=>renderRecommendationSet(body,brief,vertical,entry.round));
+    records.append(button);
+  }
+  controls.append(records);
+  marketplaceOutput.append(controls);
+  if(!set.profiles.some(p=>p.eligible))
+    marketplaceSelection.textContent='No fully eligible synthetic candidate in this set. Check skill gaps before choosing.';
+}
+async function advanceRecommendations(){
+  const previous=activeRecommendation;
+  if(marketplaceBusy||!previous||previous.body.remainingRefreshes===0)return;
+  if(previous.brief!==marketplaceBrief.value||
+     previous.vertical!==selectedCategory())return;
+  marketplaceBusy=true;
+  const epoch=matchEpoch;
+  try{
+    const sessionResponse=await fetch('/demo/session',{credentials:'same-origin',cache:'no-store'});
+    if(!sessionResponse.ok)throw new Error('SESSION_NOT_READY');
+    const session=await sessionResponse.json();
+    if(session.mode!=='OFFLINE_MOCK'||session.role!=='owner')throw new Error('OWNER_SESSION_REQUIRED');
+    const result=await fetch('/api/demo/marketplace/next',{
+      method:'POST',credentials:'same-origin',cache:'no-store',
+      headers:{'content-type':'application/json','x-csrf-token':session.csrfToken},
+      body:JSON.stringify({sessionId:previous.body.sessionId,
+        expectedRound:previous.body.round})
+    });
+    // Stale concurrent tab or double request: restore server history instead
+    // of silently consuming another round.
+    const response=result.status===409
+      ? await fetch('/api/demo/marketplace/history?sessionId='+
+          encodeURIComponent(previous.body.sessionId),
+          {credentials:'same-origin',cache:'no-store'})
+      : result;
+    const body=await response.json();
+    if(!response.ok)throw new Error(body.error||'REFRESH_FAILED');
+    if(epoch!==matchEpoch||previous.brief!==marketplaceBrief.value||
+       previous.vertical!==selectedCategory())return;
+    renderRecommendationSet(body,previous.brief,previous.vertical);
+    marketplaceSelection.textContent='Recommendation history preserved. No quote, seller enrollment or payment changed.';
+  }catch(e){
+    if(epoch===matchEpoch)
+      marketplaceSelection.textContent='Cannot show another set: '+(e?.message||'REQUEST_FAILED');
+  }finally{
+    marketplaceBusy=false;
+    if(epoch===matchEpoch&&activeRecommendation)
+      renderRecommendationSet(activeRecommendation.body,
+        activeRecommendation.brief,activeRecommendation.vertical);
+  }
 }
 marketplaceForm.addEventListener('submit',async event=>{
   event.preventDefault();
@@ -119,18 +269,7 @@ marketplaceForm.addEventListener('submit',async event=>{
     // No innerHTML: model and server text always goes through textContent.
     if(epoch!==matchEpoch || marketplaceBrief.value!==matchedBrief ||
        selectedCategory()!==selectedVertical)return;
-    marketplaceOutput.replaceChildren();
-    const summary=make('p','match-summary',
-      'OFFLINE SYNTHETIC · '+(selectedVertical==='ai_work'?'AI Work':'Global Services')+
-      ' · Required skills: '+(body.requestedSkills.join(', ')||'none identified; clarify request')+
-      ' · Reference price: DATA_INSUFFICIENT · PayPal: NOT_CONNECTED');
-    const grid=make('div','profile-grid');
-    for(const profile of body.profiles){
-      grid.append(createProfileCard(profile,body.requestedSkills,matchedBrief,selectedVertical));
-    }
-    marketplaceOutput.append(summary,grid);
-    if(!body.profiles.some(p=>p.eligible))
-      marketplaceSelection.textContent='No fully eligible synthetic candidate; clarify the skills and match again.';
+    renderRecommendationSet(body,matchedBrief,selectedVertical);
   }catch(e){
     if(epoch!==matchEpoch)return;
     marketplaceOutput.textContent='Cannot match: '+(e?.message||'REQUEST_FAILED');
@@ -138,5 +277,12 @@ marketplaceForm.addEventListener('submit',async event=>{
   }finally{
     marketplaceBusy=false;
     marketplaceButton.disabled=false;
+    // The initial submit rendered while busy: enable the refresh control
+    // only after the request finishes, without losing the current history.
+    if(activeRecommendation&&
+       activeRecommendation.brief===marketplaceBrief.value&&
+       activeRecommendation.vertical===selectedCategory())
+      renderRecommendationSet(activeRecommendation.body,
+        activeRecommendation.brief,activeRecommendation.vertical);
   }
 });

@@ -13,7 +13,8 @@ test('local verification plan is offline only and avoids owner API and payment c
  assert.equal(r.privateDbWrites,0);
  assert.deepEqual(r.steps.filter(x=>x.run).map(x=>x.name),[
   'GIT_HEAD','NODE_VERSION','MASTER_PROGRESS','NODE_REGRESSION',
-  'SYNTHETIC_MVP_E2E','REVIEWER_LOOPBACK','CHROMIUM_LOOPBACK']);
+  'SYNTHETIC_MVP_E2E','REVIEWER_LOOPBACK','CHROMIUM_LOOPBACK',
+  'CHROMIUM_PART2']);
  assert.ok(!JSON.stringify(r).includes('mvp:quick'));
 });
 test('core plan skips optional browser without skipping core regression and mock MVP',()=>{
@@ -22,6 +23,7 @@ test('core plan skips optional browser without skipping core regression and mock
  const r=JSON.parse(p.stdout);
  assert.equal(r.steps.find(x=>x.name==='NODE_REGRESSION').run,true);
  assert.equal(r.steps.find(x=>x.name==='CHROMIUM_LOOPBACK').reason,'CORE_MODE');
+ assert.equal(r.steps.find(x=>x.name==='CHROMIUM_PART2').reason,'CORE_MODE');
 });
 test('unknown verify flags cannot trigger external side effects or tests',()=>{
  const p=spawnSync(process.execPath,[fileURLToPath(script),'--execute'],{encoding:'utf8',timeout:5000});

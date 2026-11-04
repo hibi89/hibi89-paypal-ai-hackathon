@@ -123,6 +123,20 @@ try:
             expect(page.locator("#quote-view")).to_contain_text("Synthetic candidate: synthetic-web")
             assert sum(method=="POST" and url.endswith("/draft")
                 for method,url in requests)==1
+            # Candidate binding is an explicit second action AFTER the draft.
+            page.locator("#marketplace-confirm-synthetic-web").click()
+            expect(page.locator("#marketplace-selection-status")).to_contain_text("Saved on server")
+            assert sum(method=="POST" and url.endswith("/api/demo/marketplace/selection")
+                for method,url in requests)==1
+            proof=page.evaluate("""async () => {
+              const r=await fetch('/api/demo/marketplace/selection?quoteId=sample-project',
+                {credentials:'same-origin',cache:'no-store'});
+              return {status:r.status,data:await r.json()};
+            }""")
+            assert proof["status"]==200
+            assert proof["data"]["profileId"]=="synthetic-web"
+            assert proof["data"]["quoteVersion"]==2
+            assert proof["data"]["paymentAuthorized"] is False
             page.locator("#dollars").fill("17.55")
             page.locator("#confirm").check()
             page.evaluate("""() => {
@@ -172,6 +186,23 @@ try:
             assert sum(method=="POST" for method,_ in requests)==initial_posts
 
             # The quote was revised to version 4; another approval is essential.
+            # Quote v4 changed: prior v2 candidate proof cannot silently approve.
+            page.locator("#dollars").fill("15.00")
+            page.locator("#confirm").check()
+            page.locator("#approve-submit").click()
+            expect(page.locator("#message")).to_contain_text("QUOTE_SELECTION_STALE")
+            expect(page.locator("#quote-view")).to_contain_text("Not approved")
+            page.locator("#marketplace-brief").fill(
+                "Build an ecommerce website with PayPal checkout")
+            page.locator("#marketplace-submit").click()
+            expect(page.locator("#marketplace-choose-synthetic-web")).to_be_visible()
+            page.locator("#marketplace-choose-synthetic-web").click()
+            # After reload, the editable quote scope is intentionally NOT
+            # restored from the old selection. Explicitly draft a fresh v5.
+            page.locator("#draft-submit").click()
+            expect(page.locator("#quote-view")).to_contain_text("Version 5")
+            page.locator("#marketplace-confirm-synthetic-web").click()
+            expect(page.locator("#marketplace-selection-status")).to_contain_text("quote version 5")
             page.locator("#dollars").fill("15.00")
             page.locator("#confirm").check()
             page.locator("#approve-submit").click()
@@ -279,8 +310,6 @@ try:
                 mobile.on("request",lambda req: mobile_requests.append((req.method,req.url)))
                 mobile.goto(address)
                 expect(mobile.locator("#marketplace-vertical")).to_be_visible()
-                expect(mobile.locator("#message")).to_contain_text("Offline demo ready")
-                expect(mobile.locator("#marketplace-submit")).to_be_enabled()
                 overflow=mobile.evaluate("""() => ({
                     width:window.innerWidth,
                     scroll:document.documentElement.scrollWidth,

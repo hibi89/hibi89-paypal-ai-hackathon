@@ -1,6 +1,7 @@
 // PPL-002 Day2: local Node/SQLite durable offline ledger. PayPal outbound calls DISABLED.
 // Node >=22 with --experimental-sqlite. Not a Cloudflare D1 adapter, not an auth provider.
 import { DatabaseSync } from 'node:sqlite';
+import {createHash} from 'node:crypto';
 import { createContractMilestoneStore } from './contract_milestones.mjs';
 import { approvedAmount, requestKey, reconcileCapture } from './payment_contract.mjs';
 import { QuoteApiError } from './quote_api.mjs';
@@ -69,7 +70,11 @@ const convertAttempt = row => row && ({
   createdAt:row.created_at, observedAt:row.observed_at,
 });
 
-export function createSqliteLedger({ filename } = {}) {
+export function createSqliteLedger({filename,
+  enforceLocalMemberWrites=false, allowLocalOwnerDelivery=false} = {}) {
+  if(typeof enforceLocalMemberWrites!=='boolean'||
+     typeof allowLocalOwnerDelivery!=='boolean')
+    throw new TypeError('INVALID_LOCAL_WRITE_POLICY');
   // Must explicitly select a disk file; ephemeral DB is not valid safety evidence.
   reject(!filename || typeof filename !== 'string' || filename === ':memory:' ||
     filename.startsWith('file::memory:') || filename.includes('?mode=memory'),
@@ -120,7 +125,121 @@ export function createSqliteLedger({ filename } = {}) {
     catch { throw new QuoteApiError('HUMAN_APPROVAL_REQUIRED',409); }
     return {quote,cents};
   }
-  const contractStore = createContractMilestoneStore({db,transaction,lockedApprovedQuote,reject});
+  // Re-read the trusted *persisted* membership only while the database write
+  // lock is held. The API precheck alone cannot guarantee this across awaits.
+  // Disabled by default to preserve legacy standalone ledger and owner-pilot flows.
+  function assertLocalWriteLocked(actorId,merchantId,role,expectedMembershipRevision){
+    if(!enforceLocalMemberWrites)return;
+    const row=stmt(`SELECT merchant_id,role,active,revision FROM marketplace_actor_memberships
+      WHERE actor_id=?`).get(actorId);
+    reject(!row||row.active!==1||row.merchant_id!==merchantId||row.role!==role,
+      'LOCAL_WRITE_ROLE_REVOKED',403);
+    // The authorization grant can become stale through a revoke→reactivate
+    // cycle. Compare its original immutable revision under BEGIN IMMEDIATE.
+    if(expectedMembershipRevision!==undefined)
+      reject(!Number.isSafeInteger(expectedMembershipRevision)||
+        expectedMembershipRevision<1||row.revision!==expectedMembershipRevision,
+        'LOCAL_WRITE_ROLE_VERSION_CHANGED',403);
+  }
+  // Synthetic unified budget tables; never overwrite the older separate DB.
+  db.exec(`CREATE TABLE IF NOT EXISTS local_agent_limits(
+    owner TEXT NOT NULL,merchant TEXT NOT NULL,
+    cap INTEGER NOT NULL CHECK(cap BETWEEN 100 AND 100000000),
+    PRIMARY KEY(owner,merchant))`);
+  db.exec(`CREATE TABLE IF NOT EXISTS local_agent_reservations(
+    owner TEXT NOT NULL,merchant TEXT NOT NULL,
+    quote TEXT NOT NULL REFERENCES quotes(id) ON DELETE RESTRICT,
+    version INTEGER NOT NULL CHECK(version>=1),
+    amount INTEGER NOT NULL CHECK(amount BETWEEN 100 AND 100000000),
+    PRIMARY KEY(owner,merchant,quote,version),
+    FOREIGN KEY(owner,merchant) REFERENCES local_agent_limits(owner,merchant))`);
+  const positiveBudget=x=>Number.isSafeInteger(x)&&x>=100&&x<=100000000;
+  function budgetStatus(owner,merchant){
+    reject(!idOk(owner)||!idOk(merchant),'INVALID_OWNER');
+    const cap=stmt('SELECT cap FROM local_agent_limits WHERE owner=? AND merchant=?').get(owner,merchant)?.cap??null;
+    const used=stmt('SELECT COALESCE(SUM(amount),0) AS n FROM local_agent_reservations WHERE owner=? AND merchant=?').get(owner,merchant).n;
+    return {configured:cap!==null,limitMinor:cap,reservedMinor:used};
+  }
+  function budgetRole(owner,merchant,revision){
+    reject(!enforceLocalMemberWrites,'ATOMIC_LOCAL_BUDGET_MODE_REQUIRED',403);
+    reject(!Number.isSafeInteger(revision)||revision<1,'TRUSTED_MEMBERSHIP_REVISION_REQUIRED',403);
+    assertLocalWriteLocked(owner,merchant,'buyer',revision);
+  }
+  const contractStore = createContractMilestoneStore({db,transaction,
+    lockedApprovedQuote,reject,assertLocalWriteLocked,
+    enforceLocalMemberWrites,allowLocalOwnerDelivery});
+  // P0: Store candidate binding in the SAME file and BEGIN IMMEDIATE domain
+  // as the quote/approval/contract. Historical unselected quotes remain valid.
+  db.exec(`CREATE TABLE IF NOT EXISTS quote_candidate_bindings (
+    quote_id TEXT PRIMARY KEY REFERENCES quotes(id) ON DELETE RESTRICT,
+    owner_id TEXT NOT NULL, merchant_id TEXT NOT NULL,
+    quote_version INTEGER NOT NULL CHECK(quote_version>=1),
+    recommendation_id TEXT NOT NULL, set_round INTEGER NOT NULL CHECK(set_round BETWEEN 1 AND 3),
+    profile_id TEXT NOT NULL, skills_json TEXT NOT NULL,
+    scope_digest TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`);
+  db.exec(`CREATE TABLE IF NOT EXISTS contract_candidate_evidence (
+    contract_id TEXT PRIMARY KEY REFERENCES contracts(id) ON DELETE RESTRICT,
+    quote_id TEXT NOT NULL REFERENCES quotes(id) ON DELETE RESTRICT,
+    quote_version INTEGER NOT NULL, owner_id TEXT NOT NULL, merchant_id TEXT NOT NULL,
+    recommendation_id TEXT NOT NULL, set_round INTEGER NOT NULL,
+    profile_id TEXT NOT NULL, skills_json TEXT NOT NULL,
+    scope_digest TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`);
+  // Runs inside the existing contract INSERT transaction; rollback of any
+  // contract insert also rolls back this candidate evidence snapshot.
+  db.exec(`CREATE TRIGGER IF NOT EXISTS trg_contract_candidate_snapshot
+    AFTER INSERT ON contracts BEGIN
+      INSERT INTO contract_candidate_evidence
+        (contract_id,quote_id,quote_version,owner_id,merchant_id,recommendation_id,
+         set_round,profile_id,skills_json,scope_digest)
+      SELECT NEW.id,b.quote_id,b.quote_version,b.owner_id,b.merchant_id,
+             b.recommendation_id,b.set_round,b.profile_id,b.skills_json,b.scope_digest
+      FROM quote_candidate_bindings b
+      WHERE b.quote_id=NEW.quote_id AND b.quote_version=NEW.quote_version
+        AND b.owner_id=NEW.owner_id AND b.merchant_id=NEW.merchant_id;
+    END`);
+  for(const event of ['UPDATE','DELETE'])db.exec(
+    `CREATE TRIGGER IF NOT EXISTS trg_candidate_evidence_no_${event.toLowerCase()}
+     BEFORE ${event} ON contract_candidate_evidence
+     BEGIN SELECT RAISE(ABORT,'IMMUTABLE_CANDIDATE_EVIDENCE'); END`);
+  // Durable, local-only preprovisioned membership and contract assignment.
+  // Membership is not a browser registration, provider account or entitlement.
+  db.exec(`CREATE TABLE IF NOT EXISTS marketplace_actor_memberships (
+    actor_id TEXT PRIMARY KEY, merchant_id TEXT NOT NULL,
+    role TEXT NOT NULL CHECK(role IN ('buyer','seller','reviewer','merchant_operator')),
+    seller_profile_id TEXT,
+    active INTEGER NOT NULL CHECK(active IN (0,1)),
+    revision INTEGER NOT NULL DEFAULT 1 CHECK(revision>0),
+    CHECK((role='seller' AND seller_profile_id IS NOT NULL) OR
+          (role<>'seller' AND seller_profile_id IS NULL))
+  )`);
+  db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_local_seller_profile_tenant
+     ON marketplace_actor_memberships(merchant_id,seller_profile_id)`);
+  db.exec(`CREATE TABLE IF NOT EXISTS marketplace_contract_sellers (
+    contract_id TEXT PRIMARY KEY REFERENCES contracts(id) ON DELETE RESTRICT,
+    merchant_id TEXT NOT NULL, seller_profile_id TEXT NOT NULL
+  )`);
+  const memberRow=actorId=>stmt('SELECT * FROM marketplace_actor_memberships WHERE actor_id=?').get(actorId);
+  const candidateRow = id => stmt('SELECT * FROM quote_candidate_bindings WHERE quote_id=?').get(id);
+  const digest = scope => createHash('sha256').update(scope).digest('hex');
+  function lockedCandidateGuard(quote){
+    const row=candidateRow(quote.id);
+    if(!row)return; // Keep established non-marketplace quote API intact.
+    reject(row.owner_id!==quote.ownerId||row.merchant_id!==quote.merchantId||
+      row.quote_version!==quote.version,'QUOTE_SELECTION_STALE',409);
+    reject(typeof quote.scope!=='string'||row.scope_digest!==digest(quote.scope),
+      'QUOTE_SCOPE_CANDIDATE_MISMATCH',409);
+  }
+  const candidatePublic=(row,quote)=>row?{
+    quoteId:row.quote_id,quoteVersion:row.quote_version,
+    sessionId:row.recommendation_id,round:row.set_round,
+    profileId:row.profile_id,requiredSkills:JSON.parse(row.skills_json),
+    status:quote.version===row.quote_version &&
+      typeof quote.scope==='string'&&digest(quote.scope)===row.scope_digest
+      ?'BOUND':'STALE_QUOTE_VERSION',
+    approvalAuthorized:false,paymentAuthorized:false
+  }:null;
 
   // Defense in depth: the private PayPal transport verifies its GET results,
   // but the persistent ledger must reject incomplete/foreign proof independently.
@@ -139,8 +258,275 @@ export function createSqliteLedger({ filename } = {}) {
   }
 
   const api = {
+    // No PayPal/Gemini provider calls; locked authorization + budget data.
+    configureLocalBudget({owner,merchant,cap,expectedMembershipRevision}={}){
+      reject(!idOk(owner)||!idOk(merchant)||!positiveBudget(cap),'INVALID_LIMIT');
+      return transaction(()=>{
+        budgetRole(owner,merchant,expectedMembershipRevision);
+        if(budgetStatus(owner,merchant).reservedMinor>cap)return {ok:false,reason:'BELOW_RESERVED'};
+        stmt(`INSERT INTO local_agent_limits(owner,merchant,cap) VALUES(?,?,?)
+          ON CONFLICT(owner,merchant) DO UPDATE SET cap=excluded.cap`).run(owner,merchant,cap);
+        return {ok:true};
+      });
+    },
+    reserveLocalBudget({owner,merchant,quote,version,amount,expectedMembershipRevision}={}){
+      reject(!idOk(owner)||!idOk(merchant)||!idOk(quote)||
+        !Number.isSafeInteger(version)||version<1||!positiveBudget(amount),
+        'INVALID_RESERVATION');
+      return transaction(()=>{
+        budgetRole(owner,merchant,expectedMembershipRevision);
+        const row=getRow(quote);
+        reject(!row||row.owner_id!==owner||row.merchant_id!==merchant,'QUOTE_NOT_FOUND',404);
+        reject(row.version!==version||row.status!=='APPROVED'||row.currency!=='USD'||
+          row.approval_actor!==owner||row.approval_version!==version||
+          row.approval_amount_minor!==amount||row.rejection_reason!==null,
+          'BUDGET_QUOTE_CHANGED',409);
+        const old=stmt(`SELECT amount FROM local_agent_reservations
+          WHERE owner=? AND merchant=? AND quote=? AND version=?`)
+          .get(owner,merchant,quote,version);
+        if(old)return {ok:old.amount===amount,reason:'ALREADY_RESERVED'};
+        const s=budgetStatus(owner,merchant);
+        if(!s.configured)return {ok:false,reason:'NO_LIMIT'};
+        if(amount>s.limitMinor-s.reservedMinor)return {ok:false,reason:'BUDGET_EXCEEDED'};
+        stmt(`INSERT INTO local_agent_reservations(owner,merchant,quote,version,amount)
+          VALUES(?,?,?,?,?)`).run(owner,merchant,quote,version,amount);
+        return {ok:true,remainingMinor:s.limitMinor-s.reservedMinor-amount};
+      });
+    },
+    getLocalBudgetStatus(owner,merchant){return budgetStatus(owner,merchant)},
+    getLocalBudgetReservation(owner,merchant,quote,version){
+      reject(!idOk(owner)||!idOk(merchant)||!idOk(quote)||
+        !Number.isSafeInteger(version)||version<1,'INVALID_RESERVATION');
+      return stmt(`SELECT amount FROM local_agent_reservations
+        WHERE owner=? AND merchant=? AND quote=? AND version=?`)
+        .get(owner,merchant,quote,version)?.amount??null;
+    },
+    listLocalBudgetHistory(owner,merchant){
+      reject(!idOk(owner)||!idOk(merchant),'INVALID_OWNER');
+      return stmt(`SELECT quote,version,amount FROM local_agent_reservations
+        WHERE owner=? AND merchant=? ORDER BY rowid DESC LIMIT 100`)
+        .all(owner,merchant).map(x=>({quoteId:x.quote,quoteVersion:x.version,amountMinor:x.amount}));
+    },
     ...contractStore,
     async get(id) { return convertQuote(getRow(id)); },
+    // Trusted-host-only operations. NEVER expose provisioning or membership
+    // writes to a public HTTP route without an independent administrator gate.
+    async provisionLocalMember({actorId,merchantId,role,sellerProfileId=null}={}){
+      reject(!idOk(actorId)||!idOk(merchantId)||
+        !['buyer','seller','reviewer','merchant_operator'].includes(role)||
+        (role==='seller'?!idOk(sellerProfileId):sellerProfileId!==null),
+        'INVALID_LOCAL_MEMBER');
+      return transaction(()=>{
+        const current=memberRow(actorId);
+        if(current){
+          reject(current.merchant_id!==merchantId||current.role!==role||
+            current.seller_profile_id!==sellerProfileId,
+            'LOCAL_MEMBERSHIP_CONFLICT',409);
+          return {created:false,actorId}; // never silently reactivate revoked actors
+        }
+        stmt(`INSERT INTO marketplace_actor_memberships
+          (actor_id,merchant_id,role,seller_profile_id,active) VALUES(?,?,?,?,1)`)
+          .run(actorId,merchantId,role,sellerProfileId);
+        return {created:true,actorId};
+      });
+    },
+    async setLocalMemberActive({actorId,expectedRevision,active}={}){
+      reject(!idOk(actorId)||!Number.isSafeInteger(expectedRevision)||
+        expectedRevision<1||typeof active!=='boolean','INVALID_MEMBER_REVISION');
+      return transaction(()=>{
+        const done=stmt(`UPDATE marketplace_actor_memberships
+          SET active=?,revision=revision+1 WHERE actor_id=? AND revision=?`)
+          .run(Number(active),actorId,expectedRevision);
+        reject(done.changes!==1,'STALE_OR_UNKNOWN_MEMBERSHIP',409);
+        return {actorId,active,revision:expectedRevision+1};
+      });
+    },
+    async getLocalMember(actorId){
+      if(!idOk(actorId))return null;
+      const row=memberRow(actorId);
+      if(!row)return null;
+      return {actorId:row.actor_id,merchantId:row.merchant_id,role:row.role,
+        ...(row.role==='seller'?{sellerProfileId:row.seller_profile_id}:{}),
+        active:row.active===1,revision:row.revision};
+    },
+    async assignLocalContractSeller({contractId,merchantId,sellerProfileId}={}){
+      reject(!idOk(contractId)||!idOk(merchantId)||!idOk(sellerProfileId),
+        'INVALID_CONTRACT_SELLER_ASSIGNMENT');
+      return transaction(()=>{
+        const c=stmt('SELECT merchant_id FROM contracts WHERE id=?').get(contractId);
+        reject(!c||c.merchant_id!==merchantId,'CONTRACT_NOT_FOUND',404);
+        const prior=stmt('SELECT * FROM marketplace_contract_sellers WHERE contract_id=?')
+          .get(contractId);
+        if(prior){
+          reject(prior.merchant_id!==merchantId||
+            prior.seller_profile_id!==sellerProfileId,
+            'CONTRACT_SELLER_ALREADY_ASSIGNED',409);
+        }else{
+          // A seller role membership must exist in this merchant tenant.
+          reject(!stmt(`SELECT 1 FROM marketplace_actor_memberships
+             WHERE merchant_id=? AND role='seller' AND seller_profile_id=?
+               AND active=1 LIMIT 1`).get(merchantId,sellerProfileId),
+             'ACTIVE_SELLER_MEMBERSHIP_REQUIRED',409);
+          stmt(`INSERT INTO marketplace_contract_sellers
+             (contract_id,merchant_id,seller_profile_id) VALUES(?,?,?)`)
+             .run(contractId,merchantId,sellerProfileId);
+        }
+        return {contractId,merchantId,sellerProfileId};
+      });
+    },
+    // Opt-in synthetic marketplace delivery workflow. Role/assignment, grant
+    // and CAS state are ALL checked under the same BEGIN IMMEDIATE SQLite lock.
+    // This does not grant access to PayPal or change legacy owner-delivery APIs.
+    async transitionMarketplaceMilestone({contractId,milestoneId,actorId,merchantId,
+      expectedVersion,expectedState,nextState,eventId,detail=null}={}){
+      reject(!idOk(contractId)||!idOk(milestoneId)||!idOk(actorId)||
+        !idOk(merchantId)||!idOk(eventId),
+        'INVALID_MARKETPLACE_WORKFLOW_ID');
+      reject(!Number.isSafeInteger(expectedVersion)||expectedVersion<1,
+        'CONTRACT_VERSION_REQUIRED');
+      const submit=nextState==='SUBMITTED'&&
+        ['PENDING','REJECTED'].includes(expectedState);
+      const review=expectedState==='SUBMITTED'&&
+        ['ACCEPTED','REJECTED'].includes(nextState);
+      reject(!submit&&!review,'INVALID_MILESTONE_TRANSITION',409);
+      reject(detail!==null&&(typeof detail!=='string'||detail.length>1000),
+        'INVALID_EVENT_DETAIL');
+      reject((submit||nextState==='REJECTED')&&
+        (typeof detail!=='string'||detail.trim().length<8),
+        submit?'DELIVERY_NOTE_REQUIRED':'REJECTION_REASON_REQUIRED');
+      return transaction(()=>{
+        const context=stmt(`SELECT c.id,c.merchant_id,c.reviewer_id,c.owner_id,c.version,
+          c.state,c.quote_id,m.role,m.merchant_id AS actor_tenant,
+          m.seller_profile_id,m.active,
+          s.seller_profile_id AS assigned_profile
+          FROM contracts c
+          LEFT JOIN marketplace_actor_memberships m ON m.actor_id=?
+          LEFT JOIN marketplace_contract_sellers s ON s.contract_id=c.id
+          WHERE c.id=?`).get(actorId,contractId);
+        reject(!context||context.merchant_id!==merchantId||
+          context.actor_tenant!==merchantId||context.active!==1,
+          'MARKETPLACE_CONTRACT_NOT_FOUND',404);
+        reject(context.state!=='ACTIVE','CONTRACT_NOT_ACTIVE',409);
+        const assignedSeller=context.role==='seller'&&submit&&
+          context.seller_profile_id!==null&&
+          context.seller_profile_id===context.assigned_profile;
+        const assignedReviewer=context.role==='reviewer'&&review&&
+          context.reviewer_id===actorId;
+        reject(!assignedSeller&&!assignedReviewer,'MARKETPLACE_WORKFLOW_ROLE_FORBIDDEN',403);
+        reject(context.version!==expectedVersion,'STALE_CONTRACT_VERSION',409);
+        const milestone=stmt(`SELECT state FROM contract_milestones
+          WHERE id=? AND contract_id=?`).get(milestoneId,contractId);
+        reject(!milestone,'MILESTONE_NOT_FOUND',404);
+        reject(milestone.state!==expectedState,'STALE_MILESTONE_STATE',409);
+        reject(!!stmt('SELECT 1 FROM contract_events WHERE event_id=?').get(eventId),
+          'DUPLICATE_EVENT_ID',409);
+        const changed=stmt(`UPDATE contracts SET version=version+1
+          WHERE id=? AND version=?`).run(contractId,expectedVersion);
+        reject(changed.changes!==1,'CONTRACT_CAS_CONFLICT',409);
+        const updated=stmt(`UPDATE contract_milestones
+          SET state=?,delivery_note=CASE WHEN ?='SUBMITTED' THEN ? ELSE delivery_note END,
+          updated_at=CURRENT_TIMESTAMP
+          WHERE id=? AND contract_id=? AND state=?`)
+          .run(nextState,nextState,detail,milestoneId,contractId,expectedState);
+        reject(updated.changes!==1,'MILESTONE_CAS_CONFLICT',409);
+        stmt(`INSERT INTO contract_events
+          (event_id,contract_id,milestone_id,actor_id,event_type,from_state,to_state,
+          contract_version,detail) VALUES(?,?,?,?,?,?,?,?,?)`)
+          .run(eventId,contractId,milestoneId,actorId,nextState,expectedState,
+            nextState,expectedVersion+1,detail);
+        return Object.freeze({contractId,milestoneId,version:expectedVersion+1,
+          fromState:expectedState,state:nextState,eventId,actorId,
+          paymentAuthorized:false,paymentState:'NOT_AUTHORIZED_BY_WORKFLOW'});
+      });
+    },
+    // Resource metadata for server-side policy; no client-supplied owner/tenant.
+    async getQuoteAuthorityResource(quoteId){
+      if(!idOk(quoteId))return null;
+      const q=getRow(quoteId);
+      return q?{quoteId:q.id,ownerId:q.owner_id,merchantId:q.merchant_id}:null;
+    },
+    async getContractAuthorityResource(contractId){
+      if(!idOk(contractId))return null;
+      const c=stmt(`SELECT c.id,c.quote_id,c.owner_id,c.merchant_id,
+        c.reviewer_id,c.state,s.seller_profile_id
+        FROM contracts c LEFT JOIN marketplace_contract_sellers s
+          ON s.contract_id=c.id AND s.merchant_id=c.merchant_id
+        WHERE c.id=?`).get(contractId);
+      if(!c)return null;
+      return {contractId:c.id,quoteId:c.quote_id,ownerId:c.owner_id,
+        merchantId:c.merchant_id,reviewerId:c.reviewer_id,
+        sellerProfileId:c.seller_profile_id,contractState:c.state};
+    },
+    async getMarketplaceCandidate({quoteId,ownerId,merchantId}={}){
+      if(!idOk(quoteId)||!dbSafeText(ownerId)||!dbSafeText(merchantId))return null;
+      const quote=convertQuote(getRow(quoteId));
+      if(!quote||quote.ownerId!==ownerId||quote.merchantId!==merchantId)return null;
+      return candidatePublic(candidateRow(quoteId),quote);
+    },
+    async bindMarketplaceCandidate({quoteId,ownerId,merchantId,expectedQuoteVersion,
+      sessionId,round,profileId,requiredSkills,scopeDigest,
+      expectedMembershipRevision}={}){
+      reject(!idOk(quoteId)||!dbSafeText(ownerId)||!dbSafeText(merchantId)||
+        typeof sessionId!=='string'||!/^[a-f0-9]{32}$/.test(sessionId)||
+        !idOk(profileId)||!/^synthetic-[a-z]+$/.test(profileId)||
+        !Number.isSafeInteger(expectedQuoteVersion)||expectedQuoteVersion<1||
+        !Number.isInteger(round)||round<1||round>3||
+        !Array.isArray(requiredSkills)||requiredSkills.length>6||
+        !requiredSkills.every(s=>typeof s==='string'&&/^[a-z]{2,32}$/.test(s))||
+        typeof scopeDigest!=='string'||!/^[a-f0-9]{64}$/.test(scopeDigest),
+        'INVALID_CANDIDATE_BINDING');
+      transaction(()=>{
+        const quote=authorized(quoteId,ownerId,merchantId);
+        assertLocalWriteLocked(ownerId,quote.merchantId,'buyer',expectedMembershipRevision);
+        reject(quote.status!=='PROPOSED'||quote.version!==expectedQuoteVersion,
+          'STALE_OR_APPROVED_QUOTE',409);
+        reject(typeof quote.scope!=='string'||digest(quote.scope)!==scopeDigest,
+          'QUOTE_SCOPE_CANDIDATE_MISMATCH',409);
+        reject(!!stmt('SELECT 1 FROM contracts WHERE quote_id=?').get(quoteId),
+          'CONTRACT_EXISTS',409);
+        reject(!!stmt('SELECT 1 FROM payment_attempts WHERE quote_id=?').get(quoteId),
+          'PAYMENT_ATTEMPT_EXISTS',409);
+        const prior=candidateRow(quoteId),skills=JSON.stringify(requiredSkills);
+        if(prior){
+          reject(prior.owner_id!==ownerId||prior.merchant_id!==merchantId,
+            'QUOTE_SELECTION_CONFLICT',409);
+          if(prior.quote_version===expectedQuoteVersion){
+            reject(prior.recommendation_id!==sessionId||prior.set_round!==round||
+              prior.profile_id!==profileId||prior.skills_json!==skills||
+              prior.scope_digest!==scopeDigest,'QUOTE_SELECTION_ALREADY_BOUND',409);
+          }else{
+            reject(prior.quote_version>expectedQuoteVersion,'QUOTE_SELECTION_ALREADY_BOUND',409);
+            stmt(`UPDATE quote_candidate_bindings SET quote_version=?,recommendation_id=?,
+               set_round=?,profile_id=?,skills_json=?,scope_digest=?,created_at=CURRENT_TIMESTAMP
+               WHERE quote_id=? AND owner_id=? AND merchant_id=?`)
+              .run(expectedQuoteVersion,sessionId,round,profileId,skills,scopeDigest,
+                quoteId,ownerId,merchantId);
+          }
+        }else{
+          stmt(`INSERT INTO quote_candidate_bindings
+             (quote_id,owner_id,merchant_id,quote_version,recommendation_id,set_round,
+              profile_id,skills_json,scope_digest) VALUES(?,?,?,?,?,?,?,?,?)`)
+            .run(quoteId,ownerId,merchantId,expectedQuoteVersion,sessionId,
+              round,profileId,skills,scopeDigest);
+        }
+      });
+      return api.getMarketplaceCandidate({quoteId,ownerId,merchantId});
+    },
+    async assertMarketplaceCandidate({quoteId,ownerId,merchantId,expectedQuoteVersion}={}){
+      const quote=authorized(quoteId,ownerId,merchantId);
+      reject(quote.version!==expectedQuoteVersion,'STALE_QUOTE_VERSION',409);
+      lockedCandidateGuard(quote);
+    },
+    async getContractCandidate({contractId,actorId,merchantId}={}){
+      await contractStore.getContract({contractId,actorId,merchantId});
+      const row=stmt('SELECT * FROM contract_candidate_evidence WHERE contract_id=?').get(contractId);
+      return row?{
+        contractId,quoteId:row.quote_id,quoteVersion:row.quote_version,
+        profileId:row.profile_id,sessionId:row.recommendation_id,round:row.set_round,
+        requiredSkills:JSON.parse(row.skills_json),source:'LOCAL_SYNTHETIC_SNAPSHOT',
+        approvalAuthorized:false,paymentAuthorized:false
+      }:null;
+    },
     async insertQuote({id,ownerId,merchantId,version=1,currency='USD',
       aiSuggestedMinor=null,status='PROPOSED'}={}) {
       reject(!idOk(id) || !dbSafeText(ownerId) || !dbSafeText(merchantId) ||
@@ -159,15 +545,17 @@ export function createSqliteLedger({ filename } = {}) {
       }
       return api.get(id);
     },
-    async approve({ id, expectedVersion, actorId, amountMinor }) {
+    async approve({ id, expectedVersion, actorId, amountMinor,expectedMembershipRevision }) {
       reject(!Number.isSafeInteger(expectedVersion) || expectedVersion < 1,'QUOTE_VERSION_REQUIRED');
       reject(!Number.isSafeInteger(amountMinor) || amountMinor < 100 ||
         amountMinor > 1000000,'INVALID_APPROVED_AMOUNT');
       return transaction(() => {
         const row = getRow(id);
         reject(!row || row.owner_id !== actorId,'QUOTE_NOT_FOUND',404);
+        assertLocalWriteLocked(actorId,row.merchant_id,'buyer',expectedMembershipRevision);
         reject(row.version !== expectedVersion,'STALE_QUOTE_VERSION',409);
         reject(row.status !== 'PROPOSED','QUOTE_ALREADY_APPROVED',409);
+        lockedCandidateGuard(convertQuote(row));
         reject(row.rejection_reason!=null,'QUOTE_REJECTED',409);
         reject(!!stmt('SELECT 1 FROM ai_draft_attempts WHERE quote_id=? AND quote_version=? AND state=\'RESERVED\'').get(id,expectedVersion),
           'AI_DRAFT_IN_FLIGHT',409);
@@ -179,13 +567,14 @@ export function createSqliteLedger({ filename } = {}) {
         return convertQuote(getRow(id));
       });
     },
-    async reject({id,expectedVersion,actorId,reason}) {
+    async reject({id,expectedVersion,actorId,reason,expectedMembershipRevision}) {
       reject(!Number.isSafeInteger(expectedVersion)||expectedVersion<1,'QUOTE_VERSION_REQUIRED');
       reject(typeof reason!=='string'||reason.trim().length<3||reason.trim().length>500,
         'INVALID_REJECTION_REASON');
       return transaction(()=>{
         const row=getRow(id);
         reject(!row||row.owner_id!==actorId,'QUOTE_NOT_FOUND',404);
+        assertLocalWriteLocked(actorId,row.merchant_id,'buyer',expectedMembershipRevision);
         reject(row.version!==expectedVersion,'STALE_QUOTE_VERSION',409);
         reject(row.status!=='PROPOSED'||row.rejection_reason!=null,'QUOTE_NOT_REJECTABLE',409);
         reject(!!stmt('SELECT 1 FROM ai_draft_attempts WHERE quote_id=? AND quote_version=? AND state=\'RESERVED\'').get(id,expectedVersion),
@@ -200,7 +589,7 @@ export function createSqliteLedger({ filename } = {}) {
     // Version compare-and-set; any approved snapshot is invalidated by a revised scope.
     // Never allow editing once ANY remote payment attempt has been claimed.
     async revise({ id, actorId, expectedVersion, scope, suggestedMinor,
-      suggestionSource }) {
+      suggestionSource,expectedMembershipRevision }) {
       reject(!Number.isSafeInteger(expectedVersion) || expectedVersion < 1,
         'QUOTE_VERSION_REQUIRED');
       reject(typeof scope !== 'string' || scope.length < 8 || scope.length > 500,
@@ -212,6 +601,7 @@ export function createSqliteLedger({ filename } = {}) {
       return transaction(() => {
         const row = getRow(id);
         reject(!row || row.owner_id !== actorId, 'QUOTE_NOT_FOUND', 404);
+        assertLocalWriteLocked(actorId,row.merchant_id,'buyer',expectedMembershipRevision);
         reject(row.version !== expectedVersion, 'STALE_QUOTE_VERSION', 409);
         reject(row.version >= Number.MAX_SAFE_INTEGER, 'QUOTE_VERSION_EXHAUSTED', 409);
         reject(!!stmt('SELECT 1 FROM contracts WHERE quote_id=? LIMIT 1').get(id),
@@ -241,12 +631,13 @@ export function createSqliteLedger({ filename } = {}) {
     },
     // Atomically reserve a single potential third-party AI call, before provider HTTP.
     // A crashed or timed-out reservation is NOT automatically retryable.
-    async claimAiDraft({id,actorId,expectedVersion}={}) {
+    async claimAiDraft({id,actorId,expectedVersion,expectedMembershipRevision}={}) {
       reject(!Number.isSafeInteger(expectedVersion)||expectedVersion<1,
         'QUOTE_VERSION_REQUIRED');
       return transaction(()=>{
         const row=getRow(id);
         reject(!row || row.owner_id!==actorId,'QUOTE_NOT_FOUND',404);
+        assertLocalWriteLocked(actorId,row.merchant_id,'buyer',expectedMembershipRevision);
         reject(row.version!==expectedVersion,'STALE_QUOTE_VERSION',409);
         reject(row.status!=='PROPOSED','AI_DRAFT_REQUIRES_PROPOSAL',409);
         reject(!!stmt('SELECT 1 FROM contracts WHERE quote_id=? LIMIT 1').get(id),
@@ -286,10 +677,11 @@ export function createSqliteLedger({ filename } = {}) {
     },
     // Atomically occupies each quote/version/merchant operation once, forever.
     // A duplicate NEVER reissues provider POST; it must reconcile via PayPal GET.
-    async claimOperation({quoteId,actorId,merchantId,operation}) {
+    async claimOperation({quoteId,actorId,merchantId,operation,expectedMembershipRevision}) {
       reject(!['create','capture'].includes(operation),'INVALID_ACTION');
       return transaction(() => {
         const {quote,cents} = lockedApprovedQuote(quoteId,actorId,merchantId);
+        assertLocalWriteLocked(actorId,quote.merchantId,'buyer',expectedMembershipRevision);
         const rid=requestKey(quote,operation);
         const prior=attemptRow(rid);
         if (prior) {

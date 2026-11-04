@@ -45,3 +45,23 @@ export function createAgentBudgetStore(filename){
  }
  return {configure,reserve,existing,status,history,close:()=>db.close()};
 }
+
+
+// Explicit opt-in adapter, same SQLite as quote and persisted membership.
+export function createLedgerAgentBudgetStore(ledger){
+ const methods=['configureLocalBudget','reserveLocalBudget','getLocalBudgetStatus',
+   'getLocalBudgetReservation','listLocalBudgetHistory'];
+ if(!ledger||methods.some(k=>typeof ledger[k]!=='function'))
+   throw new TypeError('SAME_LEDGER_BUDGET_REQUIRED');
+ return Object.freeze({
+  atomicRoleRevisionReservation:true,
+  configure:(owner,merchant,cap,expectedMembershipRevision)=>
+    ledger.configureLocalBudget({owner,merchant,cap,expectedMembershipRevision}),
+  reserve:({owner,merchant,quote,version,amount,expectedMembershipRevision})=>
+    ledger.reserveLocalBudget({owner,merchant,quote,version,amount,expectedMembershipRevision}),
+  status:(owner,merchant)=>ledger.getLocalBudgetStatus(owner,merchant),
+  existing:(owner,merchant,quote,version)=>ledger.getLocalBudgetReservation(owner,merchant,quote,version),
+  history:(owner,merchant)=>ledger.listLocalBudgetHistory(owner,merchant),
+  close:()=>{}
+ });
+}

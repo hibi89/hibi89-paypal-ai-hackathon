@@ -1,0 +1,312 @@
+"""Real Chromium E2E of Part 2, no real AI or payment providers."""
+import hashlib,json,queue,re,shutil,subprocess,threading,time
+from pathlib import Path
+from playwright.sync_api import sync_playwright,expect
+root=Path(__file__).resolve().parents[1]
+process=subprocess.Popen(["node","--experimental-sqlite","scripts/run_demo.mjs"],cwd=root,
+ stdout=subprocess.PIPE,stderr=subprocess.STDOUT,encoding="utf-8",text=True,bufsize=1)
+lines=queue.Queue()
+threading.Thread(target=lambda:[lines.put(v) for v in process.stdout],daemon=True).start()
+try:
+ address=None
+ deadline=time.monotonic()+20
+ while time.monotonic()<deadline and not address:
+  try:line=lines.get(timeout=0.5)
+  except queue.Empty:
+   if process.poll() is not None:raise AssertionError("SERVER_EXITED")
+   continue
+  match=re.search(r"http://127\.0\.0\.1:\d+",line)
+  if match:address=match.group(0)
+ assert address,"SERVER_NOT_READY"
+ binary=shutil.which("google-chrome") or shutil.which("google-chrome-stable") or shutil.which("chromium")
+ assert binary,"CHROMIUM_REQUIRED"
+ with sync_playwright() as p:
+  browser=p.chromium.launch(executable_path=binary,headless=True,args=["--no-sandbox","--disable-dev-shm-usage"])
+  try:
+   page=browser.new_page()
+   requests=[]
+   errors=[]
+   page.on("request",lambda r:requests.append((r.method,r.url)))
+   page.on("pageerror",lambda e:errors.append(str(e)))
+   page.goto(address+"/demo/innovation")
+   expect(page.locator("h1")).to_contain_text("Five agentic commerce skills")
+   expect(page.locator("#activity")).to_contain_text("NOT_PAID")
+   assert not any(method=="POST" for method,_ in requests)
+   # Explicit, read-only *private* CLI output preview in the same A2A dashboard.
+   # Local File API only, not a Gemini proof, not a PayPal/AI network action.
+   page.locator("#owner-a2a-private-panel summary").click()
+   private_messages=[{"role":"seller","action":"OFFER","amountMinor":29000},
+     {"role":"buyer","action":"ACCEPT","amountMinor":29000}]
+   private_hash=hashlib.sha256(json.dumps(private_messages,separators=(",",":")).encode()).hexdigest()
+   proof={
+    "status":"PRIVATE_A2A_OFFLINE_CONTRACT_ONLY",
+    "mode":"OWNER_LOCAL_ONLY_NO_PUBLIC_ROUTE",
+    "model":"gemini-3.5-flash-lite",
+    "accountFreeTierVerifiedByThisRun":False,
+    "productionAuthVerified":False,
+    "realGeminiVerifiedByThisRun":False,
+    "paypalConnected":False,"paymentState":"NOT_PAID","autoRetry":False,
+    "negotiationStatus":"AGREED_OFFLINE_CONTRACT",
+    "reason":"BOTH_ROLE_POLICIES_SATISFIED",
+    "transcriptSha256":private_hash,
+    "messages":private_messages,"syntheticBudgetMinor":30000,
+    "claimedRequests":2,"measuredTokens":90,"reservedTokens":5120,
+    "auditState":[{"role":role,"turn":i+1,"state":"DONE",
+      "promptHash":"0"*64,"outputHash":"1"*64}
+      for i,role in enumerate(("seller","buyer"))],
+    "provenance":"LOCAL_INJECTED_TRANSPORT_NO_EXTERNAL_ATTESTATION",
+    "livePaymentAuthorized":False
+   }
+   private_picker=page.locator("#owner-a2a-private-file")
+   posts_before_private=sum(method=="POST" for method,_ in requests)
+   private_picker.set_input_files({"name":"owner-private-a2a.json",
+     "mimeType":"application/json","buffer":json.dumps(proof).encode()})
+   expect(page.locator("#owner-a2a-private-status")).to_contain_text("HASH SELF-CONSISTENT")
+   expect(page.locator("#owner-a2a-private-status")).to_contain_text("REAL GEMINI NOT INDEPENDENTLY ATTESTED")
+   expect(page.locator("#owner-a2a-private-status")).to_contain_text("NOT PAID")
+   expect(page.locator("#owner-a2a-private-transcript li")).to_have_count(2)
+   assert sum(method=="POST" for method,_ in requests)==posts_before_private
+   forged={**proof,"messages":[{**private_messages[0],"amountMinor":30000},private_messages[1]]}
+   private_picker.set_input_files({"name":"altered.json","mimeType":"application/json",
+     "buffer":json.dumps(forged).encode()})
+   expect(page.locator("#owner-a2a-private-status")).to_contain_text("PRIVATE_A2A_REPORT_REJECTED")
+   expect(page.locator("#owner-a2a-private-transcript li")).to_have_count(0)
+   suspicious={**proof,"customerEmail":"NEVER_RENDER_SECRET"}
+   private_picker.set_input_files({"name":"untrusted.json","mimeType":"application/json",
+     "buffer":json.dumps(suspicious).encode()})
+   expect(page.locator("#owner-a2a-private-status")).to_contain_text("PRIVATE_A2A_REPORT_REJECTED")
+   assert "NEVER_RENDER_SECRET" not in page.locator("body").inner_text()
+   assert sum(method=="POST" for method,_ in requests)==posts_before_private
+   # Part1/Part2 read-only comparison cannot approve or create anything.
+   page.locator("#crosspart-compare").click()
+   expect(page.locator("#crosspart-match")).to_contain_text("NEEDS_HUMAN_QUOTE_APPROVAL")
+   expect(page.locator("#crosspart-payment")).to_contain_text("NOT_CAPTURED")
+   assert not any(method=="POST" for method,_ in requests)
+   page.locator("#delegate").click()
+   expect(page.locator("#delegation-status")).to_contain_text("SYNTHETIC_CONSENT_CREATED")
+   page.locator("#a2a").click()
+   expect(page.locator("#a2a-output")).to_contain_text("SYNTHETIC_AGREEMENT")
+   expect(page.locator("#a2a-transcript li")).to_have_count(4)
+   expect(page.locator("#a2a-progress")).to_contain_text("paymentState NOT_PAID")
+   expect(page.locator("#a2a-progress")).to_contain_text("hash ")
+   expect(page.locator("#a2a-output")).to_contain_text("NOT_PAID")
+   before_compare=sum(method=="POST" for method,_ in requests)
+   page.locator("#crosspart-compare").click()
+   expect(page.locator("#crosspart-part2")).to_contain_text("Offline agreement $299.00")
+   expect(page.locator("#crosspart-match")).to_contain_text("NEEDS_HUMAN_QUOTE_APPROVAL")
+   assert sum(method=="POST" for method,_ in requests)==before_compare
+   # Real user-facing feature: browse recorded A2A evidence from SQLite,
+   # with no fresh negotiation POST or PayPal provider request.
+   expect(page.locator("#a2a-history option")).to_have_count(1)
+   assert page.locator("#show-a2a-history").is_enabled()
+   count_before_history=sum(method=="POST" for method,_ in requests)
+   page.locator("#show-a2a-history").click()
+   expect(page.locator("#a2a-history-status")).to_contain_text("No network POST was sent")
+   expect(page.locator("#a2a-progress")).to_contain_text("SAVED SQLITE HISTORY / READ ONLY")
+   expect(page.locator("#a2a-transcript li")).to_have_count(4)
+   assert sum(method=="POST" for method,_ in requests)==count_before_history
+   page.locator("#a2a").click()
+   expect(page.locator("#message")).to_contain_text("DELEGATION_ALREADY_SPENT")
+   page.locator("#category").select_option("gifts")
+   page.locator("#limit").fill("39")
+   page.locator("#delegate").click()
+   expect(page.locator("#delegation-status")).to_contain_text("SYNTHETIC_CONSENT_CREATED")
+   page.locator("#gift").click()
+   expect(page.locator("#gift-output")).to_contain_text("desk-light-b")
+   expect(page.locator("#gift-output")).to_contain_text('"catalogSource": "STATIC_FICTIONAL_ITEMS_NO_LIVE_INVENTORY"')
+   expect(page.locator("#gift-output")).to_contain_text("DISABLED")
+   # A fresh mandate can prefer a higher-priced PREMIUM fictional light.
+   page.locator("#limit").fill("50")
+   page.locator("#delegate").click()
+   expect(page.locator("#delegation-status")).to_contain_text("SYNTHETIC_CONSENT_CREATED")
+   page.locator("#gift-style").select_option("PREMIUM")
+   page.locator("#gift-priority").select_option("MATCH_STYLE")
+   page.locator("#gift-max-price").fill("50.00")
+   page.locator("#gift").click()
+   expect(page.locator("#gift-output")).to_contain_text('"id": "desk-light-a"')
+   expect(page.locator("#gift-output")).to_contain_text('"reservedMinor": 4300')
+   expect(page.locator("#gift-output")).to_contain_text('"paymentAuthorized": false')
+   # A max-price below the cheapest fictional mug yields no selection.
+   page.locator("#limit").fill("15")
+   page.locator("#delegate").click()
+   page.locator("#gift-category").select_option("mug")
+   page.locator("#gift-max-price").fill("15.00")
+   page.locator("#gift").click()
+   expect(page.locator("#gift-output")).to_contain_text("NO_ELIGIBLE_GIFT")
+   expect(page.locator("#gift-output")).to_contain_text('"reservedMinor": 0')
+   # New real local-data feature: an owner explicitly supplies typed product
+   # data, which the server persists and matches under a fresh gift mandate.
+   # No vendor inventory, Gemini transport or PayPal activity is asserted.
+   page.locator("#local-catalog-panel summary").click()
+   page.locator("#gift-catalog-json").fill('[{"id":"owner-premium-light","category":"lighting","style":"PREMIUM","priceMinor":3500},{"id":"owner-practical-light","category":"lighting","style":"PRACTICAL","priceMinor":2900}]')
+   page.locator("#gift-catalog-save").click()
+   expect(page.locator("#gift-catalog-status")).to_contain_text("OWNER SUPPLIED LOCAL CATALOG",timeout=8000)
+   page.locator("#limit").fill("40")
+   page.locator("#delegate").click()
+   expect(page.locator("#delegation-status")).to_contain_text("SYNTHETIC_CONSENT_CREATED")
+   page.locator("#gift-category").select_option("lighting")
+   page.locator("#gift-style").select_option("PREMIUM")
+   page.locator("#gift-priority").select_option("MATCH_STYLE")
+   page.locator("#gift-max-price").fill("40.00")
+   page.locator("#gift").click()
+   expect(page.locator("#gift-output")).to_contain_text("owner-premium-light")
+   expect(page.locator("#gift-output")).to_contain_text("OWNER_SUPPLIED_LOCAL_NOT_VENDOR_VERIFIED")
+   expect(page.locator("#gift-output")).to_contain_text('"catalogRevision": 1')
+   expect(page.locator("#gift-output")).to_contain_text('"paymentAuthorized": false')
+   before_catalog_reload=sum(method=="POST" for method,_ in requests)
+   page.reload()
+   expect(page.locator("#gift-catalog-status")).to_contain_text("revision 1",timeout=8000)
+   assert sum(method=="POST" for method,_ in requests)==before_catalog_reload
+   # A fresh, still-unused service mandate is revocable from the actual browser.
+   page.locator("#category").select_option("services")
+   page.locator("#limit").fill("300")
+   page.locator("#delegate").click()
+   expect(page.locator("#delegation-status")).to_contain_text("SYNTHETIC_CONSENT_CREATED")
+   expect(page.locator("#mandate-state")).to_contain_text("ACTIVE / UNUSED")
+   assert page.locator("#revoke-mandate").is_enabled()
+   with page.expect_response(lambda r:r.url.endswith("/api/demo/innovation/revoke") and r.request.method=="POST") as revoked:
+    page.locator("#revoke-mandate").click()
+   assert revoked.value.status==200
+   expect(page.locator("#mandate-state")).to_contain_text("REVOKED")
+   expect(page.locator("#activity")).to_contain_text("DELEGATION_REVOKED")
+   assert page.locator("#revoke-mandate").is_disabled()
+   # A late prior operation must not overwrite confirmed revocation status.
+   expect(page.locator("#message")).to_contain_text("Mandate revoked locally")
+   expect(page.locator("#a2a")).to_be_enabled()
+   a2a_before=sum(method=="POST" and url.endswith("/api/demo/innovation/a2a") for method,url in requests)
+   page.locator("#a2a").click()
+   expect(page.locator("#message")).to_contain_text("CONFIGURE_SERVICES_MANDATE_FIRST")
+   assert sum(method=="POST" and url.endswith("/api/demo/innovation/a2a") for method,url in requests)==a2a_before
+   expect(page.locator("#pending-status")).to_contain_text("No pending A2A attempts")
+   # Input-driven price policy: exact cents, capped retention, no PayPal update.
+   page.locator("#churn-reference").fill("demo-sub-maintenance-101")
+   page.locator("#churn-monthly").fill("25.00")
+   page.locator("#churn-months").fill("6")
+   page.locator("#churn-risk").select_option("HIGH")
+   page.locator("#churn-cap").select_option("2000")
+   page.locator("#churn").click()
+   expect(page.locator("#churn-output")).to_contain_text('"decisionStatus": "DISCOUNT_PROPOSAL"')
+   expect(page.locator("#churn-output")).to_contain_text('"monthlyDiscountMinor": 500')
+   expect(page.locator("#churn-output")).to_contain_text('"proposedMinor": 2000')
+   expect(page.locator("#churn-output")).to_contain_text('"termSavingsMinor": 3000')
+   expect(page.locator("#churn-output")).to_contain_text('"paypalPlanChanged": false')
+   page.locator("#churn-cap").select_option("0")
+   page.locator("#churn").click()
+   expect(page.locator("#churn-output")).to_contain_text('"decisionStatus": "PAUSE_REVIEW"')
+   expect(page.locator("#churn-output")).to_contain_text('"termSavingsMinor": 0')
+   page.locator("#churn-risk").select_option("LOW")
+   page.locator("#churn").click()
+   expect(page.locator("#churn-output")).to_contain_text('"decisionStatus": "NO_DISCOUNT_RECOMMENDED"')
+   expect(page.locator("#activity")).to_contain_text("churn")
+   # An input-driven fictional invoice, not a fixed unverified amount.
+   page.locator("#invoice-contract").fill("demo-contract-009")
+   page.locator("#invoice-amount").fill("293.75")
+   page.locator("#invoice-issue").select_option("QUALITY")
+   page.locator("#invoice-delivery").select_option("REVIEWED")
+   page.locator("#invoice").click()
+   expect(page.locator("#invoice-output")).to_contain_text('"reviewState": "MISSING_EVIDENCE"')
+   expect(page.locator("#invoice-output")).to_contain_text('"totalMinor": 29375')
+   for evidence in ["contract","delivery","review"]:
+    page.locator("#invoice-evidence-"+evidence).check()
+   page.locator("#invoice").click()
+   expect(page.locator("#invoice-output")).to_contain_text('"reviewState": "READY_FOR_HUMAN_REVIEW"')
+   expect(page.locator("#invoice-output")).to_contain_text('"paypalInvoiceCreated": false')
+   page.locator("#invoice-issue").select_option("NON_DELIVERY")
+   page.locator("#invoice").click()
+   expect(page.locator("#invoice-output")).to_contain_text('"reviewState": "CONFLICT_REQUIRES_HUMAN_REVIEW"')
+   expect(page.locator("#activity")).to_contain_text("invoice")
+   posts=sum(method=="POST" for method,_ in requests)
+   page.reload()
+   expect(page.locator("#activity")).to_contain_text("invoice")
+   # After a full browser reload, stored A2A transcripts still reopen via GET.
+   expect(page.locator("#a2a-history option")).to_have_count(1)
+   page.locator("#show-a2a-history").click()
+   expect(page.locator("#a2a-transcript li")).to_have_count(4)
+   expect(page.locator("#a2a-output")).to_contain_text("SYNTHETIC_AGREEMENT")
+   expect(page.locator("#a2a-history-status")).to_contain_text("No network POST was sent")
+   assert sum(method=="POST" for method,_ in requests)==posts
+   page.locator("#refresh").click()
+   expect(page.locator("#message")).to_contain_text("Read-only audit completed locally")
+   assert sum(method=="POST" for method,_ in requests)==posts
+   page.locator('nav a[href="/demo"]').click()
+   expect(page.locator("#marketplace-panel")).to_be_visible()
+   # Real Part1 user journey: find candidate, draft, confirm, approve USD295.
+   page.locator("#marketplace-submit").click()
+   expect(page.locator("#marketplace-choose-synthetic-web")).to_be_visible()
+   page.locator("#marketplace-choose-synthetic-web").click()
+   page.locator("#draft-submit").click()
+   expect(page.locator("#quote-view")).to_contain_text("Version 2")
+   page.locator("#marketplace-confirm-synthetic-web").click()
+   expect(page.locator("#marketplace-selection-status")).to_contain_text("Saved on server")
+   page.locator("#dollars").fill("295.00")
+   page.locator("#confirm").check()
+   page.locator("#approve-submit").click()
+   expect(page.locator("#quote-view")).to_contain_text("APPROVED")
+   page.locator('nav a[href="/demo/innovation"]').click()
+   expect(page.locator("#a2a-history option")).to_have_count(1)
+   before_compare=sum(method=="POST" for method,_ in requests)
+   page.locator("#crosspart-compare").click()
+   expect(page.locator("#crosspart-part1")).to_contain_text("Approved $295.00")
+   expect(page.locator("#crosspart-part2")).to_contain_text("Offline agreement $299.00")
+   expect(page.locator("#crosspart-match")).to_contain_text("AMOUNT_MISMATCH_NO_SETTLEMENT")
+   expect(page.locator("#crosspart-associate")).to_be_disabled()
+   assert sum(method=="POST" for method,_ in requests)==before_compare
+   # Make a NEW explicit human-approved quote of the agreed USD299 amount.
+   page.locator('nav a[href="/demo"]').click()
+   page.locator("#marketplace-submit").click()
+   expect(page.locator("#marketplace-choose-synthetic-web")).to_be_visible()
+   page.locator("#marketplace-choose-synthetic-web").click()
+   page.locator("#draft-submit").click()
+   expect(page.locator("#quote-view")).to_contain_text("Version 3")
+   page.locator("#marketplace-confirm-synthetic-web").click()
+   expect(page.locator("#marketplace-selection-status")).to_contain_text("Saved on server")
+   page.locator("#dollars").fill("299.00")
+   page.locator("#confirm").check()
+   page.locator("#approve-submit").click()
+   expect(page.locator("#quote-view")).to_contain_text("Approved: $299.00")
+   page.locator('nav a[href="/demo/innovation"]').click()
+   expect(page.locator("#a2a-history option")).to_have_count(1)
+   before_compare=sum(method=="POST" for method,_ in requests)
+   page.locator("#crosspart-compare").click()
+   expect(page.locator("#crosspart-match")).to_contain_text("AMOUNTS_MATCH_FOR_OFFLINE_REVIEW_ONLY")
+   expect(page.locator("#crosspart-part1")).to_contain_text("Approved $299.00")
+   expect(page.locator("#crosspart-payment")).to_contain_text("NOT_AUTHORIZED / NOT_CAPTURED")
+   assert sum(method=="POST" for method,_ in requests)==before_compare
+   # Separate explicit action to persist the server-authorized 15-minute
+   # synthetic quote/A2A association; price match by itself never writes.
+   expect(page.locator("#crosspart-associate")).to_be_enabled()
+   page.locator("#crosspart-associate").click()
+   expect(page.locator("#crosspart-association")).to_contain_text("SAVED SYNTHETIC REVIEW")
+   assert sum(method=="POST" and url.endswith("/api/demo/cross-part/review")
+              for method,url in requests)==1
+   prior=sum(method=="POST" for method,_ in requests)
+   page.locator("#crosspart-inspect").click()
+   expect(page.locator("#crosspart-association")).to_contain_text("VERIFIED SAVED REVIEW")
+   assert sum(method=="POST" for method,_ in requests)==prior
+   page.reload()
+   expect(page.locator("#a2a-history option")).to_have_count(1)
+   before_compare=sum(method=="POST" for method,_ in requests)
+   page.locator("#crosspart-compare").click()
+   expect(page.locator("#crosspart-match")).to_contain_text("AMOUNTS_MATCH_FOR_OFFLINE_REVIEW_ONLY")
+   assert sum(method=="POST" for method,_ in requests)==before_compare
+   page.locator("#crosspart-inspect").click()
+   expect(page.locator("#crosspart-association")).to_contain_text("VERIFIED SAVED REVIEW")
+   assert sum(method=="POST" for method,_ in requests)==before_compare
+   # Buyer explicitly withdraws the saved synthetic review; this never pays.
+   expect(page.locator("#crosspart-revoke")).to_be_enabled()
+   page.locator("#crosspart-revoke").click()
+   expect(page.locator("#crosspart-association")).to_contain_text("WITHDRAWN")
+   assert sum(method=="DELETE" and url.endswith("/api/demo/cross-part/review")
+              for method,url in requests)==1
+   page.reload()
+   page.locator("#crosspart-inspect").click()
+   expect(page.locator("#crosspart-association")).to_contain_text("NO VALID SAVED REVIEW")
+   assert sum(method=="POST" for method,_ in requests)==before_compare
+   assert not errors,errors
+   assert not any("paypal.com" in url or "generativelanguage.googleapis.com" in url for _,url in requests)
+   print("CHROMIUM_INNOVATION_PART2_E2E_PASS: five skills, human approved price, explicit 15m persisted review and GET-only reload")
+  finally:browser.close()
+finally:
+ process.terminate()
+ try:process.wait(timeout=6)
+ except subprocess.TimeoutExpired:process.kill();process.wait(timeout=5)

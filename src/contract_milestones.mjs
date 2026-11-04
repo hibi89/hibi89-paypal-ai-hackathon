@@ -49,7 +49,9 @@ const transitionPolicy = {
 };
 
 // Reuses the parent ledger's BEGIN IMMEDIATE transaction to keep quotes/payment/contract atomic.
-export function createContractMilestoneStore({db,transaction,lockedApprovedQuote,reject}) {
+export function createContractMilestoneStore({db,transaction,lockedApprovedQuote,reject,
+  assertLocalWriteLocked=()=>{},enforceLocalMemberWrites=false,
+  allowLocalOwnerDelivery=false}) {
   for (const sql of statements) db.exec(sql);
   const q = sql => db.prepare(sql);
   const contractRow = id => q('SELECT * FROM contracts WHERE id=?').get(id);
@@ -78,7 +80,8 @@ export function createContractMilestoneStore({db,transaction,lockedApprovedQuote
     };
   }
   return {
-    async createContract({id,quoteId,actorId,merchantId,reviewerId,expectedVersion,milestones,eventId}) {
+    async createContract({id,quoteId,actorId,merchantId,reviewerId,expectedVersion,milestones,eventId,
+      expectedMembershipRevision}) {
       reject(!validId(id)||!validId(quoteId)||!validId(eventId)||
         !validPrincipal(actorId)||!validPrincipal(merchantId)||
         !validPrincipal(reviewerId)||actorId===reviewerId,
@@ -97,6 +100,8 @@ export function createContractMilestoneStore({db,transaction,lockedApprovedQuote
       });
       return transaction(()=>{
         const {quote,cents}=lockedApprovedQuote(quoteId,actorId,merchantId);
+        assertLocalWriteLocked(actorId,merchantId,'buyer',expectedMembershipRevision);
+        assertLocalWriteLocked(reviewerId,merchantId,'reviewer');
         reject(quote.version!==expectedVersion,'STALE_QUOTE_VERSION',409);
         reject(sum!==cents,'CONTRACT_AMOUNT_MISMATCH',409);
         reject(!!q('SELECT 1 FROM contracts WHERE quote_id=? OR id=?').get(quoteId,id),
@@ -117,7 +122,8 @@ export function createContractMilestoneStore({db,transaction,lockedApprovedQuote
       });
     },
     async transitionMilestone({contractId,milestoneId,actorId,merchantId,
-      expectedVersion,expectedState,nextState,eventId,detail=null}) {
+      expectedVersion,expectedState,nextState,eventId,detail=null,
+      expectedMembershipRevision}) {
       reject(!validId(contractId)||!validId(milestoneId)||!validId(eventId),
         'INVALID_EVENT_ID');
       reject(!Number.isSafeInteger(expectedVersion)||expectedVersion<1,
@@ -134,6 +140,12 @@ export function createContractMilestoneStore({db,transaction,lockedApprovedQuote
         'REJECTION_REASON_REQUIRED');
       return transaction(()=>{
         const c=authorized(contractId,actorId,merchantId);
+        if(role==='reviewer')assertLocalWriteLocked(actorId,merchantId,'reviewer',expectedMembershipRevision);
+        else{
+          reject(enforceLocalMemberWrites&&!allowLocalOwnerDelivery,
+            'LOCAL_OWNER_DELIVERY_DISABLED',403);
+          assertLocalWriteLocked(actorId,merchantId,'buyer',expectedMembershipRevision);
+        }
         reject(c.version!==expectedVersion,'STALE_CONTRACT_VERSION',409);
         reject((role==='owner'&&actorId!==c.owner_id)||
           (role==='reviewer'&&actorId!==c.reviewer_id),

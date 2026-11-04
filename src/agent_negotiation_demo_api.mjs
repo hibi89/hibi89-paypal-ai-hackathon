@@ -1,7 +1,10 @@
 // Offline, read-only proposal endpoint. Does not authorize payments or call AI/PayPal.
 import {negotiateBoundedPrice} from './agent_negotiation_policy.mjs';
 import {reply,parseSmallJson,QuoteApiError} from './quote_api.mjs';
-export function createNegotiationDemoApi({resolveSession,repository,registry}={}){
+import {authorizePersistedLocalAction} from './marketplace_identity_policy.mjs';
+export function createNegotiationDemoApi({resolveSession,repository,registry,identityPolicy}={}){
+ if(identityPolicy!==undefined&&typeof repository?.getQuoteAuthorityResource!=='function')
+  throw new TypeError('PERSISTED_NEGOTIATION_RESOURCE_REQUIRED');
  if(typeof resolveSession!=='function'||typeof repository?.get!=='function'||typeof registry?.issue!=='function')throw new TypeError('TRUSTED_DEPENDENCIES_REQUIRED');
  return async function(request){
   try{
@@ -17,6 +20,12 @@ export function createNegotiationDemoApi({resolveSession,repository,registry}={}
    if(typeof data.quoteId!=='string'||!/^[a-zA-Z0-9_-]{1,64}$/.test(data.quoteId))return reply({error:'INVALID_QUOTE_ID'},400);
    const quote=await repository.get(data.quoteId);
    if(!quote||quote.ownerId!==session.actorId||quote.merchantId!==session.merchantId)return reply({error:'QUOTE_NOT_FOUND'},404);
+   if(identityPolicy){
+    const scope=await repository.getQuoteAuthorityResource(data.quoteId);
+    if(!scope)return reply({error:'QUOTE_NOT_FOUND'},404);
+    await authorizePersistedLocalAction({policy:identityPolicy,request,session,
+      action:'negotiation.propose',resource:scope});
+   }
    if(quote.status!=='PROPOSED'||quote.version!==data.expectedVersion||quote.rejection)return reply({error:'QUOTE_NOT_NEGOTIABLE'},409);
    const result=negotiateBoundedPrice({buyerMaxMinor:data.buyerMaxMinor,sellerMinMinor:data.sellerMinMinor,openingMinor:data.openingMinor,currency:quote.currency});
    const proposal={quoteId:quote.id,quoteVersion:quote.version,source:'OFFLINE_POLICY',...result};

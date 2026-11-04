@@ -128,7 +128,7 @@ test('offline local demo remains AI-disabled and PayPal write-disabled',async()=
   assert.equal(body.mode,'OFFLINE_SYNTHETIC_NO_AI');
   assert.equal(body.skillSource,'OFFLINE_REGEX');
   assert.equal(body.paypal.status,'NOT_CONNECTED');
-  assert.equal((await fetch(app.url+'/api/quotes/sample-project/payment')).status,503);
+  assert.equal((await fetch(app.url+'/api/quotes/sample-project/payment')).status,200);
   assert.equal((await fetch(app.url+'/api/demo/marketplace/ai')).status,404);
  }finally{await app.close();}
 });

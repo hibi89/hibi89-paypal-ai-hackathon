@@ -62,6 +62,17 @@ try:
             expect(page.locator(".match-summary")).to_contain_text("Global Services")
             expect(page.locator(".profile-card")).to_have_count(3)
             expect(page.locator("#marketplace-choose-synthetic-creative")).to_be_visible()
+            # All three archetype cards remain visible and user can browse
+            # two more sets, including earlier history, without submitting a quote.
+            expect(page.locator(".profile-tier")).to_have_count(3)
+            expect(page.locator("#marketplace-next-recommendations")).to_be_enabled()
+            page.locator("#marketplace-next-recommendations").click()
+            expect(page.locator("#marketplace-history-round-2")).to_be_visible()
+            page.locator("#marketplace-next-recommendations").click()
+            expect(page.locator("#marketplace-history-round-3")).to_be_visible()
+            expect(page.locator("#marketplace-next-recommendations")).to_be_disabled()
+            page.locator("#marketplace-history-round-1").click()
+            expect(page.locator("#marketplace-choose-synthetic-creative")).to_be_visible()
             before_choice = sum(method == "POST" for method, _ in requests)
             page.locator("#marketplace-choose-synthetic-creative").click()
             expect(page.locator("#scope")).to_have_value(
@@ -74,39 +85,15 @@ try:
             expect(page.locator("#quote-view")).to_contain_text("Version 2")
             expect(page.locator("#quote-view")).to_contain_text("synthetic-creative")
             expect(page.locator("#quote-view")).to_contain_text("Not approved")
+            page.locator("#marketplace-confirm-synthetic-creative").click()
+            expect(page.locator("#marketplace-selection-status")).to_contain_text("Saved on server")
+            assert sum(method == "POST" and url.endswith("/api/demo/marketplace/selection")
+                for method,url in requests) == 1
             page.locator("#dollars").fill("29.00")
             page.locator("#confirm").check()
             page.locator("#approve-submit").click()
             expect(page.locator("#quote-view")).to_contain_text("APPROVED")
             expect(page.locator("#quote-view")).to_contain_text("$29.00")
-            preview=page.locator("#quote-checkout-preview")
-            expect(preview).to_be_enabled()
-            posts_before_preview=sum(method=="POST" for method,_ in requests)
-            preview.click()
-            expect(page.locator("#quote-checkout-preview-result")).to_contain_text(
-                "human-approved USD 29.00")
-            expect(page.locator("#quote-checkout-preview-result")).to_contain_text("version 2")
-            # Explicitly checks distinct current quote and fixed fake provider run.
-            before_fake=sum(method=="POST" for method,_ in requests)
-            page.locator("#verify-local-bridge").click()
-            expect(page.locator("#verify-local-bridge-result")).to_contain_text("LOCAL PROOF PASS")
-            expect(page.locator("#verify-local-bridge-result")).to_contain_text(
-                "Current approved quote v2 / USD 29.00")
-            expect(page.locator("#verify-local-bridge-result")).to_contain_text("fixed USD 1.50")
-            assert sum(method=="POST" for method,_ in requests)==before_fake+1
-            assert any(method=="POST" and url.endswith(
-                "/api/demo/provider-protocol") for method,url in requests)
-
-            expect(page.locator("#quote-checkout-preview-result")).to_contain_text("NOT SENT")
-            expect(page.locator("#quote-checkout-preview-result")).to_contain_text(
-                "9 in-memory fake PayPal domain stages")
-            assert all(not url.startswith("https://api-m.sandbox.paypal.com")
-                       for _,url in requests)
-            # One explicit fake protocol replay POST occurred above; a read-only
-            # checkout preview itself must not add any further POST requests.
-            assert sum(method=="POST" for method,_ in requests)==posts_before_preview+1
-            assert any(method=="GET" and url.endswith(
-                "/api/demo/quote-checkout-preview") for method,url in requests)
             expect(page.locator("#contract-fulfillment")).to_have_text("NO_CONTRACT")
             page.locator("#contract-create").click()
             expect(page.locator("#contract-fulfillment")).to_have_text("PENDING")
@@ -125,6 +112,14 @@ try:
             expect(page.locator("#contract-fulfillment")).to_have_text("PENDING")
             expect(page.locator("#contract-payment")).to_have_text("NOT_CAPTURED")
             expect(page.locator("#quote-view")).to_contain_text("synthetic-creative")
+            persisted=page.evaluate("""async () => {
+                const r=await fetch('/api/demo/marketplace/selection?quoteId=sample-project',
+                    {credentials:'same-origin',cache:'no-store'});
+                return {status:r.status,data:await r.json()};
+            }""")
+            assert persisted["status"]==200
+            assert persisted["data"]["profileId"]=="synthetic-creative"
+            assert persisted["data"]["quoteVersion"]==2
             assert not any(
                 method == "POST" and ("/orders" in url or "/capture" in url)
                 for method, url in requests

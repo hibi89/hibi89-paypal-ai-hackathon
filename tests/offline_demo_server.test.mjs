@@ -49,7 +49,18 @@ test('actual loopback HTTP draft → approved version, read-only refresh, fail-c
     assert.equal(order.status,503);
     assert.equal(order.body.error,'PAYMENT_GATE_NOT_READY');
     const payment=await fetch(route+'/payment');
-    assert.equal(payment.status,503);
+    assert.equal(payment.status,200);
+    assert.equal(payment.headers.get('cache-control'),'private, no-store');
+    const snapshot=(await payment.json()).payment;
+    assert.equal(snapshot.source,'LOCAL_SQLITE_ONLY_NO_PROVIDER_REQUEST');
+    assert.equal(snapshot.paymentState,'NO_PAYMENT_ATTEMPT');
+    assert.equal(snapshot.humanApprovedAmountMinor,5000);
+    assert.equal(snapshot.providerCalls,0);
+    assert.equal(snapshot.livePaymentVerifiedThisRead,false);
+    assert.equal(snapshot.paymentAuthorizedByRead,false);
+    assert.equal(snapshot.createOrCaptureEnabled,false);
+    assert.equal((await (await fetch(route+'/payment')).json()).payment.paymentState,
+      'NO_PAYMENT_ATTEMPT');
   } finally {await app.close();}
 });
 test('loopback demo rejects forged Host header and invalid origin',async()=>{
@@ -153,7 +164,7 @@ test('D14 real HTTP writes are throttled before JSON handling; GET remains avail
     assert.deepEqual(await limited.json(), {error:'LOCAL_RATE_LIMITED'});
     assert.ok(Number(limited.headers.get('retry-after')) >= 1);
     assert.equal((await fetch(app.url + '/demo/session')).status, 200);
-    assert.equal((await fetch(app.url + '/api/quotes/sample-project/payment')).status, 503);
+    assert.equal((await fetch(app.url + '/api/quotes/sample-project/payment')).status, 200);
   } finally { await app.close(); }
 });
 
@@ -188,7 +199,11 @@ test('actual loopback PayPal return/cancel URLs never mark paid, mutate quote or
   }
   assert.deepEqual(await (await fetch(quote)).json(),before);
   const payment=await fetch(quote+'/payment');
-  assert.equal(payment.status,503);
+  assert.equal(payment.status,200);
+  const read=(await payment.json()).payment;
+  assert.equal(read.paymentState,'QUOTE_NOT_APPROVED');
+  assert.equal(read.providerCalls,0);
+  assert.equal(read.livePaymentVerifiedThisRead,false);
   assert.equal((await (await fetch(app.url+'/api/demo/integration')).json()).paymentState!=='PAID',true);
   const invalidMethod=await fetch(app.url+'/checkout/paypal/return',{method:'POST'});
   assert.equal(invalidMethod.status,405);

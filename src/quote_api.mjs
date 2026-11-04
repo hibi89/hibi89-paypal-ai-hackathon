@@ -2,6 +2,7 @@
 // Legacy Gemini PRICE experiments are opt-in only; contest AI matches skills instead.
 import {createHash} from 'node:crypto';
 import { approvedAmount, ContractError } from './payment_contract.mjs';
+import {projectLocalPaymentStatus} from './local_payment_status.mjs';
 
 export class QuoteApiError extends Error {
   constructor(code, status = 400) {
@@ -133,11 +134,19 @@ function route(path) {
 // resolveSession is a TRUSTED server-side session verifier; never read actorId
 // or csrfToken from arbitrary browser headers/body. No insecure fallback.
 export function createQuoteApi({ repository, resolveSession, draftProvider,
-  authorizeExternalAi, allowAiPricingExperiment=false } = {}) {
+  authorizeExternalAi, allowAiPricingExperiment=false,
+  assertSelectionBeforeApprove, identityPolicy } = {}) {
   if (!repository || typeof repository.get !== 'function' ||
       typeof repository.approve !== 'function' ||
       typeof resolveSession !== 'function')
     throw new TypeError('TRUSTED_SESSION_AND_REPOSITORY_REQUIRED');
+  if(identityPolicy!==undefined&&(
+      typeof identityPolicy.issueProof!=='function'||
+      typeof identityPolicy.authorize!=='function'||
+      typeof repository.getQuoteAuthorityResource!=='function'))
+    throw new TypeError('TRUSTED_QUOTE_ROLE_POLICY_REQUIRED');
+  if(assertSelectionBeforeApprove!==undefined && typeof assertSelectionBeforeApprove!=='function')
+    throw new TypeError('INVALID_SELECTION_APPROVAL_GUARD');
   if (draftProvider !== undefined &&
       (typeof draftProvider !== 'function' || typeof repository.revise !== 'function'))
     throw new TypeError('DRAFT_PROVIDER_AND_REVISION_REPOSITORY_REQUIRED');
@@ -176,9 +185,34 @@ export function createQuoteApi({ repository, resolveSession, draftProvider,
       // 404 for foreign actors prevents quote-id enumeration.
       fail(!quote || quote.ownerId !== session.actorId, 'QUOTE_NOT_FOUND', 404);
       validateQuote(quote);
+      let expectedMembershipRevision;
+      if(identityPolicy){
+        const grant=await identityPolicy.authorize(
+          await identityPolicy.issueProof(request),{
+            action:({approve:'quote.approve',reject:'quote.reject',
+              draft:'quote.draft'}[r.resource]||'quote.read'),
+            resource:await repository.getQuoteAuthorityResource(r.id)
+          });
+        fail(grant.actorId!==session.actorId||grant.merchantId!==session.merchantId,
+          'TRUSTED_IDENTITY_MISMATCH',403);
+        // A static role fixture without a persisted revision must never
+        // silently turn the protected REST route into an ABA-unsafe writer.
+        fail(!Number.isSafeInteger(grant.membershipRevision)||
+          grant.membershipRevision<1,'TRUSTED_MEMBERSHIP_REVISION_REQUIRED',403);
+        expectedMembershipRevision=grant.membershipRevision;
+      }
       if (r.resource === 'quote') return reply({ quote });
-      if (r.resource === 'payment')
-        return reply({ error: 'PERSISTENT_PAYMENT_LEDGER_NOT_READY' }, 503);
+      if (r.resource === 'payment') {
+        // No external GET, OAuth or provider call is permitted on browser refresh.
+        // Memory-only legacy endpoints remain blocked. Only persisted ledgers
+        // with a trusted merchant session expose sanitized local attempt states.
+        if(typeof repository.listAttempts!=='function')
+          return reply({error:'PERSISTENT_PAYMENT_LEDGER_NOT_READY'},503);
+        fail(!session.merchantId||session.merchantId!==quote.merchantId,
+          'QUOTE_NOT_FOUND',404);
+        const attempts=await repository.listAttempts(quote.id);
+        return reply({payment:projectLocalPaymentStatus({quote,attempts})});
+      }
       if (r.resource === 'orders') {
         fail(quote.status !== 'APPROVED', 'HUMAN_APPROVAL_REQUIRED', 409);
         try { approvedAmount(quote); }
@@ -230,7 +264,7 @@ export function createQuoteApi({ repository, resolveSession, draftProvider,
         }
         // Durable one-shot CAS/finite budget, performed before any third-party call.
         const claimArgs={id:r.id,actorId:session.actorId,
-          expectedVersion:data.expectedVersion};
+          expectedVersion:data.expectedVersion,expectedMembershipRevision};
         if(externalAI)await repository.claimAiDraft(claimArgs);
         try{
           // A durable claim can await SQLite. Revocation after that claim must
@@ -246,7 +280,7 @@ export function createQuoteApi({ repository, resolveSession, draftProvider,
           const revised=await repository.revise({
             id:r.id,actorId:session.actorId,expectedVersion:data.expectedVersion,
             scope:data.scope,suggestedMinor:proposal.suggestedMinor,
-            suggestionSource:proposal.source,
+            suggestionSource:proposal.source,expectedMembershipRevision,
           });
           return reply({quote:revised,provider:expectedSource,
             warning:externalAI?'AI estimate only; human approval required before payment':
@@ -268,7 +302,8 @@ export function createQuoteApi({ repository, resolveSession, draftProvider,
           data.reason.trim().length > 500 || /[\u0000-\u0008\u000b-\u001f]/.test(data.reason),
         'INVALID_REJECTION_REASON');
         return reply({quote:await repository.reject({id:r.id,actorId:session.actorId,
-          expectedVersion:data.expectedVersion,reason:data.reason.trim()})});
+          expectedVersion:data.expectedVersion,reason:data.reason.trim(),
+          expectedMembershipRevision})});
       }
       fail(data.confirmed !== true, 'EXPLICIT_CONFIRMATION_REQUIRED');
       fail(!Number.isSafeInteger(data.expectedVersion) || data.expectedVersion < 1,
@@ -276,9 +311,13 @@ export function createQuoteApi({ repository, resolveSession, draftProvider,
       fail(!Number.isSafeInteger(data.amountMinor) ||
         data.amountMinor < 100 || data.amountMinor > 1000000,
       'INVALID_APPROVED_AMOUNT');
+      if(assertSelectionBeforeApprove)await assertSelectionBeforeApprove({
+        id:r.id,actorId:session.actorId,merchantId:session.merchantId,
+        expectedVersion:data.expectedVersion
+      });
       const approved = await repository.approve({
         id: r.id, expectedVersion: data.expectedVersion, actorId: session.actorId,
-        amountMinor: data.amountMinor,
+        amountMinor: data.amountMinor,expectedMembershipRevision,
       });
       return reply({ quote: approved });
     } catch (error) {

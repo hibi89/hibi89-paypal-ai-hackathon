@@ -67,7 +67,7 @@ test('HTTP GET evidence view scopes owner and never marks paid',async()=>{
     assert.equal((await fetch(url,{headers:{cookie:demo.testReviewerCookie}})).status,404);
     assert.equal((await fetch(url,{method:'POST'})).status,405);
     assert.equal((await fetch(demo.url+'/demo/evidence.js')).status,200);
-    assert.equal((await fetch(demo.url+'/api/quotes/sample-project/payment')).status,503);
+    assert.equal((await fetch(demo.url+'/api/quotes/sample-project/payment')).status,200);
   }finally{await demo.close();}
 });
 

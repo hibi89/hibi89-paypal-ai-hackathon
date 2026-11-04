@@ -1,8 +1,6 @@
-# Proofline — opportunity-first judging video storyboard
+# Proofline — two-part, five-skill judging video storyboard
 
-**Status (2026-10-30 KST):** [Draft PR #28](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/28) candidate `771ba6f4fb61b86af1530df51b2acda8fac9013b` had a private synthetic dual-category CI recording independently verified as **165.84 seconds (<180)** by [Actions #41073098696](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41073098696), **3/3 jobs PASS**. The owner-PC final source-matched, visually/privacy-reviewed video is **NOT verified**, not publicly uploaded to YouTube and not submitted on Devpost. The 2026-10-28 actual PayPal Sandbox/Gemini activity remains **separately owner-reported historical evidence**; the CI video is fake-provider only.
-
-**Video proof boundary (release-gate literal):** Final owner-approved submission recording **NOT filmed** as part of this GitHub CI or independently reviewed on the owner's original PC at this exact SHA. **OWNER-OBSERVED** refers only to the separate historical 2026-10-28 Gemini/PayPal Sandbox report; neither this storyboard nor the CI generates or uploads fresh third-party proof. This is a draft, not a YouTube video.
+**Status:** Two-part V3 recorder now exercises both marketplace categories and all five innovation skills. The owner's final reviewed version was NOT filmed or released; the private CI V3 recording is separately verified but not published. OWNER-OBSERVED external provider evidence is historical only. Owner review draft. The video recording script now traverses both service categories. No new owner-PC video, public video upload, or Devpost submission is claimed by this document.
 
 **Key message:** AI should help people access their first freelance opportunities, not simply automate existing work.
 
@@ -18,9 +16,14 @@
 | 5. Historical evidence | Three clearly attributed cards: owner-observed Gemini, owner-observed PayPal Sandbox, provenance limits | Historical owner-local provider evidence is NOT current browser provider calls |
 | 6. Delivery | Create synthetic contract; owner submits; separate demo reviewer rejects; owner revises; reviewer accepts | Clear work verification and separate human decisions |
 | 7. Records | Show local SQLite audit, review evidence, quote/payment status | Current synthetic browser never creates or captures a PayPal order |
-| 8. Closing | Opportunity-first caption | Technology is the evidence; marketplace is the mechanism; opportunity is the goal |
+| 8. Delegate & Consent | Open the real Part 2 browser route, create fictional scoped delegation | Explicit role, amount, expiry, no payment |
+| 9. A2A negotiation | Click to generate four-turn deterministic buyer/seller transcript | Offline negotiation != real Gemini API or payment |
+| 10. Gift-finder | Configure bounded gift mandate, select fictional catalog item | Static catalog and no PayPal order |
+| 11. Churn saver | Compute a fictional subscription retention proposal | Real PayPal plan is unchanged |
+| 12. Invoice / dispute copilot | Supply contract, delivery and review evidence for human assessment | No invoice is sent to PayPal |
+| 13. Closing | Both parts visible, release hold and provenance explicit | Product architecture and five local skills are demonstrated, not externally deployed |
 
-**Time rule:** The local recording script enforces an elapsed-time ceiling below 178 seconds; real encoded media duration and readability require owner review. The evidence-map scene uses no more than 4.5 seconds at normal speed. The Global Services segment is deliberately short (up to 5.5 seconds) to preserve the three-minute target. Actual scene timestamps must be measured from the new completed video rather than asserted from this table.
+**Time rule:** Default caption pace is 6.5 seconds to make space for the five actual innovation interactions. The recorder enforces elapsed-time below 178 seconds; **independent encoded WebM duration is a separate acceptance test** and reviewer readability needs human assessment. The evidence-map and Global Services scenes are capped at 4.5/5.5 seconds. Video target 165 seconds, hard limit strictly under 180 seconds. Do not claim duration until ffprobe succeeds on the exact generated file.
 
 ## Disclosure and scope
 
@@ -33,20 +36,14 @@
 
 ## Owner recording and gate
 
-On the original owner's computer, inspect uncommitted files first and use the **unmerged PR28** review source. Never reset the private SQLite or old videos; if the branch already exists locally, use `git switch release/paypal-main-qa-preview-20261030` then `git pull --ff-only` instead of recreating the tracking branch:
+From `lead/paypal` on the owner computer:
 
 ```powershell
-git status --short
-git fetch origin
-git switch --track origin/release/paypal-main-qa-preview-20261030
-git rev-parse HEAD
-npm run owner:final:local
-# Owner may explicitly opt in to one missing/stale private recording:
-# npm run owner:final:local -- --record-if-missing
+git pull --ff-only
+npm run video:record:owner
+npm run submission:candidate:local
 ```
 
-The optional recording path may install pinned free browser tools. Review and approve any download before using it. Check the exact source SHA and resulting private manifest/video; no real provider calls, uploads or Devpost submission are authorized.
+Review the latest ignored `output/videos/paypal-synthetic-review-*.webm`, its `.manifest.json`, and the local candidate. The new video manifest records `storyboard_version=TWO_PART_FIVE_SKILLS_V3`, `demonstrated_categories=[ai_work,general_services]` and `demonstrated_skills=[delegate,a2a,gift,churn,invoice]` only after the automated browser scene assertions succeed. This records synthetic browser actions, not AI/PayPal provider proof. This does **not** independently attest to PayPal or Gemini or certify a final public submission.
 
-Review the latest ignored `output/videos/paypal-synthetic-review-*.webm`, its `.manifest.json`, and the local candidate. The new video manifest records `storyboard_version=OPPORTUNITY_FIRST_V3_FAKE_API_TRACE` and `demonstrated_categories=[ai_work,general_services]` after the automated browser scene assertions succeed. This does **not** independently attest to PayPal or Gemini or certify a final public submission.
-
-**Owner-PC final video with latest QA changes: not yet recorded or approved. Public YouTube link and Devpost receipt: not yet provided.**
+**Final video: not yet recorded and reviewed with the new two-category storyboard. Public YouTube link and Devpost receipt: not yet provided.**

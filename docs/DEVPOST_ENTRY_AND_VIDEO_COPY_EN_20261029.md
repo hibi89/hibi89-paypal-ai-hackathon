@@ -2,8 +2,7 @@
 
 # PayPal AI Hackathon — Devpost entry and video copy (owner review draft)
 
-Status: **DRAFT — NOT PUBLISHED / NOT SUBMITTED**.
-**Final review caution (2026-10-30):** Submission draft source is owner-review-only [Draft PR #28](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/28) / `release/paypal-main-qa-preview-20261030@771ba6f4fb61b86af1530df51b2acda8fac9013b`. Latest exact-SHA [Actions #41073098696](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41073098696) **3/3 SUCCESS**, **643/643 Node**, Chromium AI Work+Global Services/mobile, Windows safe owner workflow and private synthetic WebM **165.84s**. This is NOT a released default `main`, verified owner-approved public video, Devpost receipt or independent live PayPal/Gemini browser integration. Before publication replace preview branch links with the exact owner-approved published source SHA. Historic 2026-10-28 real provider flow remains owner-reported/private; do not imply it ran in synthetic browser or CI.
+Status: **DRAFT — NOT PUBLISHED / NOT SUBMITTED**. The 2026-10-29 synthetic review WebM was locally created and owner viewed it; the upgraded evidence-first candidate is not yet owner-reviewed, public or submitted.
 Do not infer that the synthetic browser demo is a real-provider session. No private IDs, tokens, SQLite database, buyer details or account credentials belong in this package.
 
 ## Devpost project fields — ready to edit
@@ -14,7 +13,7 @@ Do not infer that the synthetic browser demo is a real-provider session. No priv
 
 **Project website:** Not deployed; the judge reproducibility route is the public source branch below.
 
-**Open-source repository (CURRENT UNMERGED MAIN-RELEASE PREVIEW; REPLACE WITH OWNER-APPROVED PUBLIC MAIN SHA BEFORE SUBMISSION):** https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/release/paypal-main-qa-preview-20261030
+**Open-source repository:** https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/lead/paypal
 
 **Video URL:** [OWNER TO ADD AFTER APPROVED PUBLIC YOUTUBE UPLOAD]
 
@@ -47,6 +46,8 @@ The runnable local, **synthetic** marketplace lets a customer describe a project
 A separate **owner-operated private Sandbox proof run on October 28, 2026** used Gemini to classify skills and PayPal Sandbox Orders to create an order, obtain a distinct test-buyer approval, perform a consented capture and confirm the result with provider GET. The owner reported a USD 1.50 virtual test amount and saved local evidence. That one-shot terminal run is **not** the browser demo, has not been independently replayed in CI and does not represent live charges or production availability.
 
 The default browser app makes **zero Gemini or PayPal API requests**, never creates/captures payments and deliberately labels its output `OFFLINE_MOCK`. Historic owner-reported provider results appear separately with their attribution.
+
+**Part 2 — Agentic Innovation Lab** is a separate, functional *offline deterministic* browser dashboard with all five required skills: (1) A2A buyer/seller offer–counter–accept, backed by saved SQLite transcript and immutable hash; (2) Delegate & Consent with amount, scope, expiry and revocation; (3) Gift-finder with the original fictional catalog and an optional explicitly imported owner-supplied local SKU/price list (not independently verified inventory); (4) Subscription Churn Saver producing a retention proposal without changing any PayPal plan; and (5) Invoice / Dispute Copilot checking contract, delivery and review evidence without issuing a PayPal invoice. All actions show explicit simulated/non-paid status. An optional separately consent-gated Gemini A2A adapter exists, but the **default judge browser does not call the real model**. The local browser can now read a separately owner-selected private A2A CLI JSON report **without uploading it or calling Gemini**, with a SHA-256 consistency check and prominent unverified-provider disclosure; no actual provider account was verified by this viewer. An A2A agreement never authorizes or captures a PayPal payment.
 
 The judge-facing browser also has an explicit four-source **Evidence Map**: (A) reproducible synthetic browser, (B) genuine orchestration code tested with injected fake Gemini/PayPal transports, (C) the owner's historically reported October 28 provider run, and (D) unreleased public contest deliverables. Only class B is re-executed by `npm run judge:evidence`; neither the map nor that command independently authenticates the historical provider result.
 
@@ -84,7 +85,7 @@ PayPal Sandbox REST API (OAuth and Orders v2, owner-operated test); Gemini API (
 ```bash
 git clone https://github.com/hibi89/hibi89-paypal-ai-hackathon.git
 cd hibi89-paypal-ai-hackathon
-git switch release/paypal-main-qa-preview-20261030  # QA preview only; final release ref needs owner approval
+git switch lead/paypal
 node --version  # Node 22.5+
 npm run preflight:reviewer
 npm run demo
@@ -94,8 +95,9 @@ Open the printed `http://127.0.0.1:PORT` address on that computer. This runs **l
 
 ## Evidence-first final video procedure (owner review required)
 
-The extended recorder retains the tested synthetic client, matching, approval,
-delivery and audit scenes. It inserts **three readable full-screen cards**
+The current V3 two-part recorder traverses AI Work, Global Services, the human-approved
+contract/reviewer workflow, and then **clicks all five Part 2 innovation skills**
+and checks the resulting browser states. It also inserts **three full-screen cards**
 identifying (1) owner-reported Gemini classification, (2) owner-reported USD 1.50
 PayPal Sandbox buyer approval / capture / historical provider GET, and
 (3) the source distinction from the synthetic browser. On the original owner's
@@ -104,7 +106,11 @@ the original private SQLite record is internally consistent, it shows
 **LOCAL SAVED RESULT MATCHED — NOT FRESH PROVIDER GET**; without that private
 record (including CI), it states **OWNER REPORT ONLY — NOT VERIFIED ON THIS
 MACHINE**. It never copies private identifiers or replays external calls.
-The owner must visually check the new 2:30–2:45 candidate, confirm that source
+On 2026-11-04, GitHub's default-speed V3 CI verified a **133.68-second**
+encoded private synthetic WebM with `ffprobe` at source SHA `7f03f3e5`
+([run](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41839120665)).
+This artifact was ephemeral CI output, **not** the owner's final reviewed video.
+The owner must visually check the newly recorded candidate and confirm that source
 labels match the actual private receipt, and separately approve any public upload.
 
 This local-record check is NOT independent remote provider attestation. Showing
@@ -113,9 +119,9 @@ authorized by this recording command. No new Sandbox payment should be made.
 
 ## Judge video — English caption/narration guide for the CURRENT dual-category recording
 
-**Status (current engineering baseline):** [Actions #41073098696](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41073098696) at candidate `771ba6f4fb61b86af1530df51b2acda8fac9013b` passed **643/643 Node** plus actual Chromium two-category synthetic localhost/browser flows, Windows safe review and independently probed WebM **165.84 seconds**. The CI footage is ephemeral and does not contain authenticated provider activity or publication approval. Owner must inspect a new private source-matched recording, check English captions/privacy and approve any separate public upload. Only then provide a real public YouTube URL. [Draft PR #28](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/28) remains unmerged.
+**Status:** Editorial draft for a future owner-reviewed video. The CI recorded and independently measured a **148.72-second** private synthetic WebM at commit `0061d278` ([Actions proof](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40876399546)); the encoded file was ephemeral in CI. **No owner-PC final version, publicly approved YouTube link or Devpost receipt exists.** Actual scene timestamps must be checked against the owner's final recording, not assumed from this guide.
 
-The current automated screen sequence is: **opening → AI Work matches → Global Services matches → AI Work quote approval → historical Gemini/PayPal provenance cards → contract/delivery/reviewer rejection and acceptance → SQLite audit → historical disclosure → closing**. This sequence is not the earlier quote-first storyboard.
+The current V3 automated screen sequence is: **opening → AI Work matches → Global Services matches → quote approval → historical Gemini/PayPal provenance cards → contract/delivery/reviewer actions → SQLite audit → Delegate & Consent → A2A → Gift-finder → Churn Saver → Invoice/Dispute Copilot → closing**. Every Part 2 action is offline synthetic. The owner's separately reviewed/public video is still outstanding. This sequence is not the earlier quote-first storyboard.
 
 | On-screen sequence | Suggested English caption or voice-over (edit to fit final footage) |
 | --- | --- |
