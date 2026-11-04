@@ -9,6 +9,7 @@ import {boundServerSessionFromStoredProof} from './pilot_checkout_session_store.
 const BASE = 'https://api-m.sandbox.paypal.com';
 // Bound every OAuth, order and capture request. POST timeout is UNKNOWN, never retried.
 const REQUEST_TIMEOUT_MS = 10_000;
+const MAX_RESPONSE_BYTES = 64 * 1024;
 const ORDER_ID = /^[a-zA-Z0-9_-]{1,64}$/;
 export class SandboxTransportError extends Error {
   constructor(code) { super(code); this.name='SandboxTransportError'; this.code=code; }
@@ -70,10 +71,12 @@ function verifiedOrder(quote, data, id) {
 export function createSandboxTransport(options={}) {
   reject(Object.hasOwn(options,'baseUrl') || Object.hasOwn(options,'environment'),
     'LIVE_ENVIRONMENT_OVERRIDE_FORBIDDEN');
-  const {clientId,clientSecret,fetchImpl}=options;
+  const {clientId,clientSecret,fetchImpl,timeoutMs=REQUEST_TIMEOUT_MS}=options;
   reject(!safeText(clientId)||!safeText(clientSecret)||
     typeof fetchImpl!=='function',
   'PRIVATE_CREDENTIALS_AND_EXPLICIT_TRANSPORT_REQUIRED');
+  reject(!Number.isSafeInteger(timeoutMs)||timeoutMs<25||timeoutMs>REQUEST_TIMEOUT_MS,
+    'SANDBOX_TRANSPORT_CONFIG_INVALID');
   async function fetchJson(path,{method='GET',token,body,requestId}={}) {
     reject(!path.startsWith('/') || path.startsWith('//') ||
       path.includes('://') || path.includes('..') ||
@@ -82,34 +85,91 @@ export function createSandboxTransport(options={}) {
     'UNAPPROVED_SANDBOX_PATH');
     const url=BASE+path;
     const headers={'accept':'application/json'};
-    if (token) headers.authorization='Bearer '+token;
-    if (requestId) headers['PayPal-Request-Id']=paypalRequestHeaderId(requestId);
-    if (method==='POST') headers['content-type']=path.includes('/oauth2/')
+    if(token) headers.authorization='Bearer '+token;
+    if(requestId) headers['PayPal-Request-Id']=paypalRequestHeaderId(requestId);
+    if(method==='POST') headers['content-type']=path.includes('/oauth2/')
       ? 'application/x-www-form-urlencoded':'application/json';
-    if (path==='/v1/oauth2/token')
+    if(path==='/v1/oauth2/token')
       headers.authorization='Basic '+Buffer.from(clientId+':'+clientSecret).toString('base64');
-    // Even HTTP 5xx or unreadable success bodies can follow a committed POST.
-    // Never signal that a retry is safe; durable caller must GET-first.
-    const paymentPost=method==='POST' && path.startsWith('/v2/checkout/orders');
-    let response;
+    // An Orders POST might have committed before a timeout or malformed body.
+    // All such outcomes are UNKNOWN; retry must be controlled by GET recovery.
+    const paymentPost=method==='POST'&&path.startsWith('/v2/checkout/orders');
+    const networkError=paymentPost?'SANDBOX_POST_OUTCOME_UNKNOWN':
+      method==='POST'?'SANDBOX_OAUTH_NETWORK_ERROR':'SANDBOX_GET_NETWORK_ERROR';
+    const bodyError=paymentPost?'SANDBOX_POST_OUTCOME_UNKNOWN':'SANDBOX_MALFORMED_JSON';
+    const controller=new AbortController();
+    let timer;
+    // One absolute deadline spans fetch headers AND the entire response body.
+    // Promise.race guards injected transports and streams that ignore abort.
+    const deadline=new Promise((_,rejectDeadline)=>{
+      timer=setTimeout(()=>{
+        controller.abort();
+        rejectDeadline(new SandboxTransportError(networkError));
+      },timeoutMs);
+    });
+    const bounded=fn=>Promise.race([Promise.resolve().then(fn),deadline]);
     try {
-      response=await fetchImpl(url,{
-        method, headers, redirect:'error',
-        signal:AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-        ...(method==='POST'?{body:body??'{}'}:{}),
-      });
-    }catch {
-      throw new SandboxTransportError(paymentPost?
-        'SANDBOX_POST_OUTCOME_UNKNOWN':
-        method==='POST'?'SANDBOX_OAUTH_NETWORK_ERROR':'SANDBOX_GET_NETWORK_ERROR');
+      let response;
+      try {
+        response=await bounded(()=>fetchImpl(url,{
+          method,headers,redirect:'error',signal:controller.signal,
+          ...(method==='POST'?{body:body??'{}'}:{}),
+        }));
+      }catch{
+        throw new SandboxTransportError(networkError);
+      }
+      if(!response||typeof response.status!=='number'||
+          response.status<200||response.status>=300)
+        throw new SandboxTransportError(paymentPost?
+          'SANDBOX_POST_OUTCOME_UNKNOWN':'SANDBOX_HTTP_FAILURE');
+      try {
+        if(response instanceof Response){
+          // Real native response: fail closed on redirect, MIME or oversized JSON.
+          if(response.url&&response.url!==url)
+            throw new Error('UNEXPECTED_RESPONSE_ORIGIN');
+          if(!/^application\/json(?:\s*;|$)/i.test(
+             response.headers.get('content-type')??''))
+            throw new Error('UNEXPECTED_RESPONSE_MIME');
+          const advertised=response.headers.get('content-length');
+          if(advertised!==null&&(!/^\d{1,7}$/.test(advertised)||
+              Number(advertised)>MAX_RESPONSE_BYTES))
+            throw new Error('OVERSIZED_RESPONSE');
+          if(!response.body)throw new Error('MISSING_RESPONSE_BODY');
+          const reader=response.body.getReader();
+          const chunks=[];let length=0;
+          try{
+            while(true){
+              const {done,value}=await bounded(()=>reader.read());
+              if(done)break;
+              if(!(value instanceof Uint8Array))throw new Error('INVALID_RESPONSE_CHUNK');
+              length+=value.byteLength;
+              if(length>MAX_RESPONSE_BYTES)throw new Error('OVERSIZED_RESPONSE');
+              chunks.push(value);
+            }
+          }finally{
+            // Hostile cancel() can hang. Never await it or expose its error.
+            try{reader.cancel()?.catch?.(()=>{});}catch{}
+            try{reader.releaseLock()}catch{}
+          }
+          const bytes=new Uint8Array(length);
+          let offset=0;
+          for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
+          return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
+        }
+        // Existing injected object fixtures remain supported, but are bounded.
+        if(typeof response.json!=='function')throw new Error('MISSING_JSON_READER');
+        const data=await bounded(()=>response.json());
+        const encoded=JSON.stringify(data);
+        if(typeof encoded!=='string'||
+            Buffer.byteLength(encoded,'utf8')>MAX_RESPONSE_BYTES)
+          throw new Error('OVERSIZED_RESPONSE');
+        return data;
+      }catch{
+        throw new SandboxTransportError(bodyError);
+      }
+    }finally{
+      clearTimeout(timer);
     }
-    if(!response || typeof response.status!=='number' ||
-        response.status<200 || response.status>=300)
-      throw new SandboxTransportError(paymentPost?
-        'SANDBOX_POST_OUTCOME_UNKNOWN':'SANDBOX_HTTP_FAILURE');
-    try { return await response.json(); }
-    catch { throw new SandboxTransportError(paymentPost?
-      'SANDBOX_POST_OUTCOME_UNKNOWN':'SANDBOX_MALFORMED_JSON'); }
   }
   async function accessToken() {
     const data=await fetchJson('/v1/oauth2/token',{
