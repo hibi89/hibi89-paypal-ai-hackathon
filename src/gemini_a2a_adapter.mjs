@@ -200,6 +200,13 @@ export function createGeminiA2ARoleAgents({
    const final=normalizedResponse(parsed);
    verifiedTokens+=final.tokens;
    if(verifiedTokens>maxTotalTokens)throwCode('GEMINI_A2A_BUDGET_EXCEEDED');
+   // The private adapter is also callable without runBoundedA2A. Enforce the
+   // delegated role's own ceiling/floor before emitting or recording a model
+   // proposal; protocol-level validation remains an independent safeguard.
+   if(final.output.action!=='REJECT'&&
+      ((role==='seller'&&final.output.amountMinor<view.ownLimitMinor)||
+       (role==='buyer'&&final.output.amountMinor>view.ownLimitMinor)))
+    throwCode('GEMINI_A2A_ROLE_LIMIT_VIOLATION');
    const previous=acceptedHistory.at(-1)??null;
    if((view.turn===1&&final.output.action!=='OFFER')||
       (view.turn>1&&final.output.action==='OFFER')||

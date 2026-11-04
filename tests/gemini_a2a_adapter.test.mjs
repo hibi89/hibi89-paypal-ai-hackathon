@@ -232,3 +232,28 @@ test('model cannot accept before any opposing offer even with valid JSON',async(
  await assert.rejects(()=>adapter.sellerAgent(sellerView),
   e=>e.code==='GEMINI_A2A_CIRCUIT_OPEN');
 });
+
+test('private Gemini role budgets are enforced even outside the orchestrator',async()=>{
+ let sellerCalls=0;
+ const seller=setup(async()=>{sellerCalls++;return body('OFFER',26999,20);});
+ await assert.rejects(()=>seller.sellerAgent(sellerView),
+  e=>e.code==='GEMINI_A2A_ROLE_LIMIT_VIOLATION');
+ assert.equal(seller.status().circuitOpen,true);
+ await assert.rejects(()=>seller.sellerAgent(sellerView),
+  e=>e.code==='GEMINI_A2A_CIRCUIT_OPEN');
+ assert.equal(sellerCalls,1);
+
+ let buyerCalls=0;
+ const buyer=setup(async()=>{
+  buyerCalls++;
+  return buyerCalls===1?body('OFFER',29000,20):body('COUNTER',30001,20);
+ });
+ await buyer.sellerAgent(sellerView);
+ await assert.rejects(()=>buyer.buyerAgent(buyerView),
+  e=>e.code==='GEMINI_A2A_ROLE_LIMIT_VIOLATION');
+ assert.equal(buyer.status().circuitOpen,true);
+ assert.equal(buyer.status().requestsAttempted,2);
+ await assert.rejects(()=>buyer.buyerAgent(buyerView),
+  e=>e.code==='GEMINI_A2A_CIRCUIT_OPEN');
+ assert.equal(buyerCalls,2);
+});
