@@ -5,6 +5,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {DatabaseSync} from 'node:sqlite';
+import {createHash} from 'node:crypto';
 import {createSqliteLedger} from '../src/sqlite_ledger.mjs';
 import {createMarketplaceAiBudgetStore} from '../src/marketplace_ai_budget.mjs';
 import {createPilotCheckoutSessionStore} from '../src/pilot_checkout_session_store.mjs';
@@ -17,9 +18,10 @@ const fixture=fn=>async t=>{
   try{await fn(directory,t)}
   finally{rmSync(directory,{recursive:true,force:true})}
 };
-async function seed(directory,{paid=true,ai=true}={}){
+async function seed(directory,{paid=true,ai=true,bound=true}={}){
  const ledger=createSqliteLedger({filename:join(directory,'checkout.sqlite')});
- await ledger.insertQuote({id:ID,ownerId:ACTOR,merchantId:MERCHANT});
+ await ledger.insertQuote({id:ID,ownerId:ACTOR,merchantId:MERCHANT,
+  ...(bound?{scopeDigest:createHash('sha256').update(brief).digest('hex')}:{})});
  await ledger.approve({id:ID,actorId:ACTOR,expectedVersion:1,amountMinor:150});
  const quote=await ledger.get(ID);
  const session=createPilotCheckoutSessionStore({
@@ -73,6 +75,9 @@ test('matching local SQLite records produce sanitized receipt without remote rec
  assert.equal(r.currency,'USD');
  assert.equal(r.amountMinor,150);
  assert.deepEqual(r.classifiedSkills,['web','payments','qa']);
+ assert.equal(r.quoteAiBriefBinding,'BOUND_LOCAL_HASH_MATCH');
+ assert.equal(r.sameBriefProvenByLocalHashes,true);
+ assert.equal(r.freshProviderAttested,false);
  assert.equal(r.providerGetPerformedNow,false);
  assert.equal(r.productionOrLivePaymentProof,false);
  assert.equal(r.freshRemotePaymentProof,false);
@@ -126,4 +131,39 @@ fixture(async directory=>{
  assert.equal(JSON.parse(result.stdout).status,'NO_LOCAL_ATTEMPT');
  assert.ok(!result.stdout.includes('SENTINEL_DO_NOT_PRINT'));
  assert.ok(!result.stderr.includes('SENTINEL_DO_NOT_PRINT'));
+}));
+
+test('legacy receipt stays readable but never claims quote-to-AI brief binding',fixture(async directory=>{
+ await seed(directory,{bound:false});
+ const before=readdirSync(directory).sort();
+ const r=inspectOwnerMvpReceipt({directory});
+ assert.equal(r.status,'LOCAL_PROVIDER_RESULT_RECORDED_NOT_FRESH_GET');
+ assert.equal(r.quoteAiBriefBinding,'LEGACY_NOT_CROSS_BOUND');
+ assert.equal(r.sameBriefProvenByLocalHashes,false);
+ assert.equal(r.freshRemotePaymentProof,false);
+ assert.deepEqual(readdirSync(directory).sort(),before);
+}));
+test('mismatched quote brief digest fails private receipt closed without repeat GET',fixture(async directory=>{
+ await seed(directory);
+ const db=new DatabaseSync(join(directory,'checkout.sqlite'));
+ db.prepare('UPDATE quotes SET scope_text=? WHERE id=?')
+   .run('sha256:'+'0'.repeat(64),ID);
+ db.close();
+ const before=readdirSync(directory).sort();
+ const r=inspectOwnerMvpReceipt({directory});
+ assert.equal(r.status,'LOCAL_EVIDENCE_REVIEW_REQUIRED');
+ assert.equal(r.quoteAiBriefBinding,'BOUND_LOCAL_HASH_MISMATCH');
+ assert.equal(r.sameBriefProvenByLocalHashes,false);
+ assert.equal(r.amountMinor,null);
+ assert.equal(r.providerGetPerformedNow,false);
+ assert.deepEqual(readdirSync(directory).sort(),before);
+}));
+test('invalid hash cannot create a quote or take provider permission',fixture(async directory=>{
+ const ledger=createSqliteLedger({filename:join(directory,'checkout.sqlite')});
+ try{
+  await assert.rejects(ledger.insertQuote({
+   id:ID,ownerId:ACTOR,merchantId:MERCHANT,scopeDigest:'FORGED'
+  }),{code:'INVALID_QUOTE_BRIEF_DIGEST'});
+  assert.equal(await ledger.get(ID),null);
+ }finally{ledger.close()}
 }));

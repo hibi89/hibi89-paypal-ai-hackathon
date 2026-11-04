@@ -84,6 +84,8 @@ test('bounded one-process MVP: Gemini skills -> explicit quote -> Sandbox buyer 
  const s=f.create();
  const match=await s.classify();
  assert.deepEqual(match.skills,['web','payments','qa']);
+ assert.equal((await f.ledger.get('operator_mvp_01')).scope,
+  'sha256:'+(await import('node:crypto')).createHash('sha256').update(MVP_BRIEF).digest('hex'));
  assert.equal(match.priceSource,'HUMAN_FIXED_SYNTHETIC_AMOUNT_NOT_AI');
  assert.equal(match.selectedSyntheticProfile,'synthetic-web');
  assert.equal(match.selectedProfileEligible,false);

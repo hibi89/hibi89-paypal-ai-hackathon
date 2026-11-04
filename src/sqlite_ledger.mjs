@@ -528,16 +528,21 @@ export function createSqliteLedger({filename,
       }:null;
     },
     async insertQuote({id,ownerId,merchantId,version=1,currency='USD',
-      aiSuggestedMinor=null,status='PROPOSED'}={}) {
+      aiSuggestedMinor=null,status='PROPOSED',scopeDigest=null}={}) {
       reject(!idOk(id) || !dbSafeText(ownerId) || !dbSafeText(merchantId) ||
         !Number.isSafeInteger(version) || version < 1 || status !== 'PROPOSED',
       'INVALID_NEW_QUOTE');
       reject(currency !== 'USD', 'UNSUPPORTED_CURRENCY');
+      // Owner-private immutable brief fingerprint only; other callers pass NULL.
+      reject(scopeDigest!==null&&
+        (typeof scopeDigest!=='string'||!/^[a-f0-9]{64}$/.test(scopeDigest)),
+        'INVALID_QUOTE_BRIEF_DIGEST');
       reject(aiSuggestedMinor !== null && (!Number.isSafeInteger(aiSuggestedMinor) ||
         aiSuggestedMinor < 0), 'INVALID_AI_SUGGESTION');
       try {
-        stmt('INSERT INTO quotes(id,owner_id,merchant_id,version,currency,status,ai_suggested_minor)' +
-          ' VALUES(?,?,?,?,?,?,?)').run(id,ownerId,merchantId,version,currency,status,aiSuggestedMinor);
+        stmt('INSERT INTO quotes(id,owner_id,merchant_id,version,currency,status,ai_suggested_minor,scope_text)' +
+          ' VALUES(?,?,?,?,?,?,?,?)').run(id,ownerId,merchantId,version,currency,status,
+            aiSuggestedMinor,scopeDigest===null?null:'sha256:'+scopeDigest);
       } catch (err) {
         if (String(err.message).includes('UNIQUE constraint'))
           throw new QuoteApiError('DUPLICATE_QUOTE_ID',409);
