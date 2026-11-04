@@ -8,6 +8,10 @@ const ROOT=resolve(fileURLToPath(new URL('../',import.meta.url)));
 const DRAFT=new URL('../docs/DEVPOST_FINAL_REVIEW_PACKET_EN_20261105.md',import.meta.url);
 const FIELDS=['Inspiration','What it does','What uses PayPal and AI',
  'How we built it','Challenges','Accomplishments','What we learned',"What's next"];
+const TOOL_NAMES=Object.freeze(['PayPal Sandbox OAuth 2.0 / Orders v2',
+ 'Gemini API','Node.js and SQLite','Playwright and Chromium','GitHub Actions']);
+const BUILT_WITH_TAGS=Object.freeze(['PayPal Sandbox','Gemini API','Node.js','SQLite',
+ 'JavaScript','Playwright','Chromium','GitHub Actions']);
 const fail=code=>{throw Error(code)};
 export function buildDevpostFormFields(source){
  if(typeof source!=='string'||source.length<4500||source.length>20000||
@@ -43,6 +47,22 @@ export function buildDevpostFormFields(source){
  if(!builtWith||builtWith.length<70||!demo||
     !demo.includes('git switch lead/paypal')||!demo.includes('npm run demo'))
   fail('REPRODUCIBLE_LOCAL_REVIEWER_ROUTE_REQUIRED');
+ const toolsText=blocks.get('Tools and how used');
+ const lines=typeof toolsText==='string'?toolsText.split(/\r?\n/).filter(Boolean):[];
+ if(lines.length!==TOOL_NAMES.length)fail('OFFICIAL_TOOL_USE_DISCLOSURE_REQUIRED');
+ const toolsUsed=lines.map((line,index)=>{
+  const m=/^- \*\*([^*\n]{3,80})\*\* — (.{50,1000})$/.exec(line);
+  if(!m||m[1]!==TOOL_NAMES[index])fail('OFFICIAL_TOOL_USE_DISCLOSURE_REQUIRED');
+  return Object.freeze({name:m[1],howUsed:m[2]});
+ });
+ for(const item of toolsUsed.slice(0,2)){
+  if(!item.howUsed.includes('owner-reported')||
+     !item.howUsed.includes('not independently reproduced in CI')||
+     !item.howUsed.includes('default browser'))
+   fail('PROVIDER_USE_PROVENANCE_REQUIRED');
+ }
+ if(!BUILT_WITH_TAGS.every(tag=>builtWith.includes(tag)))
+  fail('BUILT_WITH_TOOL_TAGS_MISSING');
  const sourceAndDemo=blocks.get('Source and demo');
  if(!sourceAndDemo?.includes('https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/lead/paypal')||
     !sourceAndDemo.includes('draft PR #28')||
@@ -56,6 +76,7 @@ export function buildDevpostFormFields(source){
   state:'OWNER_REVIEW_REQUIRED_NOT_SUBMITTED',
   projectTitle:title,tagline,
   descriptionMarkdown,
+  toolsUsed:Object.freeze(toolsUsed),builtWithTags:BUILT_WITH_TAGS,
   sourceRepositoryUrl:'https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/lead/paypal',
   hostedDemoUrl:null,publicYouTubeUrl:null,devpostReceiptUrl:null,
   reviewerInstructions:demo,
@@ -87,6 +108,8 @@ if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
     sourceRepositoryUrl:fields.sourceRepositoryUrl,
     publicYouTubeUrl:fields.publicYouTubeUrl,devpostReceiptUrl:fields.devpostReceiptUrl,
     ownerAuthorizedPublication:false,devpostSubmitted:false,
+    toolDescriptionsReady:fields.toolsUsed.length===TOOL_NAMES.length,
+    builtWithTagCount:fields.builtWithTags.length,
     output:args.includes('--check')?'VALIDATED_NO_WRITE':'output/submission/devpost_form_draft.json'}));
  }catch(error){
   console.error('LOCAL_DEVPOST_DRAFT_FAILED '+error.message);

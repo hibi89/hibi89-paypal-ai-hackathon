@@ -28,6 +28,10 @@ test('real English draft extracts full editable Devpost fields while remaining u
  assert.match(r.descriptionMarkdown,/not independently reproduced in CI/i);
  assert.match(r.reviewerInstructions,/git switch lead\/paypal/);
  assert.match(r.reviewerInstructions,/npm run demo/);
+ assert.equal(r.toolsUsed.length,5);
+ assert.equal(r.builtWithTags.length,8);
+ assert.ok(r.toolsUsed[0].howUsed.includes('owner-reported'));
+ assert.ok(r.toolsUsed[1].howUsed.includes('not independently reproduced in CI'));
 });
 test('cannot transform tampered or prematurely published copy into an owner-ready packet',()=>{
  for(const altered of [
@@ -65,4 +69,20 @@ test('cli refuses unknown flags, and no-output check mode succeeds',()=>{
  assert.equal(result.output,'VALIDATED_NO_WRITE');
  assert.equal(result.publicYouTubeUrl,null);
  assert.equal(result.devpostSubmitted,false);
+});
+
+test('mandatory Devpost tools/how-used field is structured and cannot claim live provider proof',()=>{
+ const built=buildDevpostFormFields(draft);
+ assert.deepEqual(built.toolsUsed.map(tool=>tool.name),[
+  'PayPal Sandbox OAuth 2.0 / Orders v2','Gemini API',
+  'Node.js and SQLite','Playwright and Chromium','GitHub Actions']);
+ assert.ok(built.builtWithTags.includes('Gemini API'));
+ for(const bad of [
+  draft.replace('## Tools and how used','## Tools not provided'),
+  draft.replace('- **Gemini API** —','- **Unapproved Model** —'),
+  draft.replace('historical private model use is owner-reported, not independently reproduced in CI',
+    'historical private model use is independently verified in CI'),
+  draft.replace('default browser uses deterministic OFFLINE_MOCK agents with no Gemini calls',
+    'default browser performs real Gemini calls'),
+ ])assert.throws(()=>buildDevpostFormFields(bad));
 });
