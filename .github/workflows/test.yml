@@ -1,0 +1,250 @@
+name: Offline payment-contract tests
+on:
+  push:
+    branches: [lead/paypal]
+  pull_request:
+    branches: [main, lead/paypal]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate entire 18-day progress dashboard
+        run: python3 render_master_progress.py --check
+      - name: Offline Node regression tests
+        run: npm test
+      - name: Read-only local MVP restart preflight (no credentials or provider calls)
+        run: npm run mvp:status
+      - name: One-command full marketplace to payment mock MVP (no provider calls)
+        run: npm run mvp:simulate
+      - name: Generate both-part judge evidence with no provider network
+        run: |
+          npm run judge:evidence
+          node --input-type=module -e "import {readFileSync} from 'node:fs'; const r=JSON.parse(readFileSync('output/submission/judge_evidence_report.json')); if(r.status!=='JUDGE_SAFE_OFFLINE_EVIDENCE_READY_NOT_SUBMITTED'||r.verifiedFromThisCommand.actualProviderCalls!==0||r.verifiedFromThisCommand.actualPaymentCaptured!==false||r.releases.publicationAuthorized!==false||r.evidence.length!==5||r.evidence[2].status!=='VERIFIED_DETERMINISTIC_OFFLINE_NO_PROVIDER'||r.evidence[3].status!=='OWNER_REPORTED_NOT_INDEPENDENTLY_ATTESTED'||r.verifiedFromThisCommand.part2FiveSkillsExecuted!==5||r.verifiedFromThisCommand.part2RealProviderCalls!==0)process.exit(2)"
+      - name: Portable offline reviewer ZIP is extractable and boots both parts (no upload)
+        run: python3 tests/portable_reviewer_bundle_test.py
+      - name: Install free browser test tooling
+        run: |
+          python3 -m venv .browser-venv
+          .browser-venv/bin/pip install --disable-pip-version-check playwright==1.56.0
+          .browser-venv/bin/python -m playwright install ffmpeg
+      - name: Fresh reviewer ZIP full Chromium Part1 + five Part2 skills (no internet)
+        run: .browser-venv/bin/python tests/browser_portable_zip_e2e.py
+      - name: Actual Chromium offline UI journey
+        run: .browser-venv/bin/python tests/browser_offline_e2e.py
+      - name: Synthetic seller browser contract role journey (opt-in only)
+        run: .browser-venv/bin/python tests/browser_seller_workflow_e2e.py
+      - name: Global Services Chromium quote and contract journey
+        run: .browser-venv/bin/python tests/browser_general_services_e2e.py
+      - name: Chromium real local budget form and quote approval journey
+        run: .browser-venv/bin/python tests/browser_budget_e2e.py
+      - name: Part 2 real Chromium agentic innovation scenario
+        run: .browser-venv/bin/python tests/browser_innovation_e2e.py
+      - name: Private signed-session buyer seller reviewer Chromium click-through (offline)
+        run: .browser-venv/bin/python tests/browser_private_marketplace_e2e.py
+      - name: Validate independent localhost-only CONNECT tunnel contract
+        run: .browser-venv/bin/python tests/test_local_loopback_connect_proxy.py
+      - name: Real Chromium TLS socket for signed private marketplace via strictly local proxy
+        run: .browser-venv/bin/python tests/browser_private_marketplace_real_tls_e2e.py
+      # Reproduce the same entire journey a reviewer runs on a fresh checkout,
+      # rather than merely running its component tests in isolation.
+      # No real Gemini/PayPal, payment POST, external deployment or artifact upload.
+      - name: Full judge one-command reproduction (Part1 + five Part2 skills, no providers)
+        shell: bash
+        run: |
+          export PATH="$PWD/.browser-venv/bin:$PATH"
+          npm run verify:local | tee "$RUNNER_TEMP/paypal-one-command.log"
+          node --input-type=module <<'NODE'
+          import {readFileSync} from 'node:fs';
+          const raw=readFileSync(process.env.RUNNER_TEMP+'/paypal-one-command.log','utf8').trim();
+          const r=JSON.parse(raw.split(/\r?\n/).at(-1));
+          const required=['GIT_HEAD','NODE_VERSION','MASTER_PROGRESS',
+            'NODE_REGRESSION','SYNTHETIC_MVP_E2E','REVIEWER_LOOPBACK',
+            'CHROMIUM_LOOPBACK','CHROMIUM_PART2'];
+          const actual=r.results?.map(x=>x.name);
+          const ok=r.status==='VERIFY_LOCAL_TWO_PART_PASS'&&
+            r.twoPartBrowserVerified===true&&
+            r.source==='OWNER_LOCAL_OR_CI_ONLY'&&
+            r.providerCalls===0&&r.paymentPosts===0&&
+            r.submissionEligible===false&&r.realProviderVerified===false&&
+            r.productionVerified===false&&
+            actual?.length===required.length&&
+            required.every((name,i)=>actual[i]===name&&r.results[i].status==='PASS');
+          if(!ok)throw Error('JUDGE_TWO_PART_ONE_COMMAND_PROOF_INCOMPLETE');
+          console.log('JUDGE_ONE_COMMAND_TWO_PART_PASS SHA='+process.env.GITHUB_SHA+
+            ' STEPS='+required.length+' PROVIDER_CALLS=0 PAYMENT_POSTS=0 RELEASE_HOLD');
+          NODE
+      - name: Check recorder Python syntax and proof provenance regression
+        run: |
+          python3 -m py_compile scripts/record_judge_demo.py scripts/video_owner_evidence.py
+          python3 tests/video_owner_evidence_test.py
+      - name: Record offline synthetic reviewer footage (ephemeral, no upload)
+        env:
+          VIDEO_PYTHON_BIN: .browser-venv/bin/python
+        run: npm run video:record:offline -- --pace-ms 200
+      - name: Validate private synthetic WebM hash and release flags
+        run: python3 scripts/check_recorded_video.py
+      - name: Build private submission candidate and assert not published
+        run: |
+          npm run submission:candidate:local
+          node --input-type=module -e "import {readFileSync} from 'node:fs'; const x=JSON.parse(readFileSync('output/submission/submission_candidate_status.json')); if(!x.ownerReviewReady||x.externalSubmissionEligible||x.authorizedToPublish)process.exit(2)"
+  owner-video-windows:
+    name: Windows first-run offline video recording
+    runs-on: windows-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Windows public-source secret scan regression
+        run: node --experimental-sqlite --test tests/public_secret_scan.test.mjs
+      - name: Offline Worker D1 first-primary and claim regressions
+        run: node --experimental-sqlite --test tests/worker_d1_payment_boundary.test.mjs
+      - name: Offline Worker D1 hashed sessions and read-only HTTP
+        run: node --experimental-sqlite --test tests/worker_private_read_entrypoint.test.mjs
+      - name: Offline pinned OIDC Worker sessions, replay and revocation
+        run: node --experimental-sqlite --test tests/worker_private_oidc_authority.test.mjs
+      - name: Windows owner-only Cloudflare D1 plan and fail-closed identity tests
+        run: node --experimental-sqlite --test tests/owner_cloudflare_d1_isolated.test.mjs
+      - name: Windows read-only Worker activation fail-closed tests
+        run: node --experimental-sqlite --test tests/worker_private_read_runtime.test.mjs
+      - name: Windows OIDC PKCE coordinator security and D1 session regression
+        run: node --experimental-sqlite --test tests/worker_oidc_pkce_coordinator.test.mjs
+      - name: Worker OAuth token transport pinned POST, fail-closed and no network contract
+        run: node --test tests/worker_oidc_token_transport.test.mjs
+      - name: Offline Worker binding revocation and migration backup-restore
+        run: node --experimental-sqlite --test tests/worker_private_d1_recovery.test.mjs
+      - name: Offline read-only Worker D1 schema preflight regressions
+        run: node --experimental-sqlite --test tests/worker_d1_schema_preflight.test.mjs
+      - name: Windows portable offline reviewer ZIP and actual loopback smoke
+        run: python tests/portable_reviewer_bundle_test.py
+      - name: Historical owner evidence safety regressions
+        run: python tests/video_owner_evidence_test.py
+      - name: Full owner workflow from clean machine (no accounts or providers)
+        run: npm run video:record:owner -- --pace-ms 200
+      - name: Build owner draft packet and assert video present / release blocked
+        run: |
+          npm run submission:candidate:local
+          node --input-type=module -e "import {readFileSync} from 'node:fs'; const x=JSON.parse(readFileSync('output/submission/submission_candidate_status.json')); if(!x.ownerReviewReady||x.externalSubmissionEligible||x.authorizedToPublish)process.exit(2)"
+
+  d1-local-wrangler:
+    name: Isolated Wrangler D1 engine compatibility (LOCAL ONLY)
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[d1-local]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    permissions:
+      contents: read
+    env:
+      WRANGLER_SEND_METRICS: 'false'
+      CLOUDFLARE_API_TOKEN: ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Compile real owner Worker as isolated Wrangler dry-run (no deploy or credentials)
+        run: node scripts/check_owner_worker_bundle_dryrun.mjs --check
+      - name: Confirm no operator restore SQL in migrations
+        shell: bash
+        run: |
+          test "$(find migrations/d1 -maxdepth 1 -type f -name '*.sql' | wc -l)" -eq 6
+          ! find migrations/d1 -maxdepth 1 -type f -name '*quarantine*.sql' | grep -q .
+          test -f scripts/restore_quarantine_private_sessions.sql
+      - name: Create disposable untracked local-only D1 binding config
+        run: |
+          node --input-type=module -e "import {writeFileSync} from 'node:fs';writeFileSync('.wrangler-d1-local-ci.json',JSON.stringify({name:'paypal-d1-local-compatibility-only',compatibility_date:'2026-10-01',d1_databases:[{binding:'DB',database_name:'paypal-d1-local-only',database_id:'00000000-0000-4000-8000-000000000001',migrations_dir:'migrations/d1'}]},null,2))"
+          mkdir -p "$RUNNER_TEMP/paypal-d1-local-only"
+      - name: Apply all six reviewed offline migrations using real Wrangler D1 local engine, never remote
+        run: |
+          npx --yes wrangler@4.156.0 d1 migrations apply DB --local --config .wrangler-d1-local-ci.json --persist-to "$RUNNER_TEMP/paypal-d1-local-only"
+      - name: Query actual local D1 schema and migration ledger
+        run: |
+          npx --yes wrangler@4.156.0 d1 execute DB --local --config .wrangler-d1-local-ci.json --persist-to "$RUNNER_TEMP/paypal-d1-local-only" --command "SELECT (SELECT COUNT(*) FROM d1_migrations) AS applied, (SELECT COUNT(*) FROM sqlite_master WHERE type='trigger') AS guards, (SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='worker_private_oidc_bindings') AS bindings" --json > "$RUNNER_TEMP/paypal-d1-query.json"
+          node --input-type=module -e "import {readFileSync} from 'node:fs';const doc=JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/paypal-d1-query.json','utf8'));const match=v=>!!v&&typeof v==='object'&&(Number(v.applied)===6&&Number(v.guards)===15&&Number(v.bindings)===1||Object.values(v).some(match));if(!match(doc)){console.error('D1_LOCAL_SCHEMA_UNEXPECTED');process.exit(2)}console.log('D1_LOCAL_ENGINE_MIGRATIONS_6_TRIGGERS_15_PASS')"
+      - name: Enforce actual local D1 quote, replay and OIDC revocation guards
+        run: node scripts/check_wrangler_d1_local_behaviors.mjs
+      - name: Verify owner operator config finds migrations in actual Wrangler local engine
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import {writeFileSync,mkdirSync} from 'node:fs';
+          import {join} from 'node:path';
+          import {writeIsolatedD1Config} from './scripts/owner_cloudflare_d1_isolated.mjs';
+          const config=writeIsolatedD1Config(process.cwd(),
+            'proofline-d1-isolated-0123456789abcdef',
+            '00000000-0000-4000-8000-000000000002');
+          writeFileSync(join(process.env.RUNNER_TEMP,'isolated-owner-config-path'),config);
+          mkdirSync(join(process.env.RUNNER_TEMP,'owner-d1-config-check'),{recursive:true});
+          NODE
+          config="$(cat "$RUNNER_TEMP/isolated-owner-config-path")"
+          trap 'rm -f "$config"' EXIT
+          npx --yes wrangler@4.156.0 d1 migrations apply DB --local --config "$config" --persist-to "$RUNNER_TEMP/owner-d1-config-check"
+          npx --yes wrangler@4.156.0 d1 execute DB --local --config "$config" --persist-to "$RUNNER_TEMP/owner-d1-config-check" --command "SELECT COUNT(*) AS applied FROM d1_migrations" --json > "$RUNNER_TEMP/owner-d1-config-query.json"
+          node --input-type=module -e "import {readFileSync} from 'node:fs';const d=JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/owner-d1-config-query.json'));const ok=x=>x&&typeof x==='object'&&(Number(x.applied)===6||Object.values(x).some(ok));if(!ok(d))process.exit(2);console.log('OWNER_CONFIG_REAL_WRANGLER_LOCAL_6_MIGRATIONS_PASS')"
+      - name: Actual local workerd HTTPS + D1 authenticated read (never remote)
+        run: node scripts/probe_private_worker_runtime_local.mjs
+      - name: Install pinned Chromium controller for real local private D1 view test
+        run: |
+          python3 -m venv .browser-venv
+          .browser-venv/bin/pip install --disable-pip-version-check playwright==1.56.0
+          python3 -m py_compile tests/browser_private_d1_workerd_e2e.py tests/browser_contract_roles_workerd_e2e.py
+          command -v google-chrome || command -v google-chrome-stable || command -v chromium
+      - name: Apply separately staged contract role candidate ONLY to disposable local D1
+        run: |
+          npx --yes wrangler@4.156.0 d1 execute DB --local --config .wrangler-d1-local-ci.json --persist-to "$RUNNER_TEMP/paypal-d1-local-only" --file migrations/d1_candidate/0005_contract_role_milestones.sql
+          npx --yes wrangler@4.156.0 d1 execute DB --local --config .wrangler-d1-local-ci.json --persist-to "$RUNNER_TEMP/paypal-d1-local-only" --file migrations/d1_candidate/0006_contract_role_sessions.sql
+          echo 'D1_CONTRACT_ROLE_CANDIDATES_0005_0006_LOCAL_ONLY_NO_REMOTE_MIGRATION'
+      - name: Actual local workerd S256 PKCE + RSA D1 session + HTTPS read + Chromium owner dashboard + revoke
+        run: |
+          node --check scripts/probe_private_worker_identity_runtime_local.mjs
+          node scripts/probe_private_worker_identity_runtime_local.mjs
+      - name: Confirm disposable database integrity and no external activation
+        run: |
+          npx --yes wrangler@4.156.0 d1 execute DB --local --config .wrangler-d1-local-ci.json --persist-to "$RUNNER_TEMP/paypal-d1-local-only" --command "PRAGMA quick_check" --json > "$RUNNER_TEMP/paypal-d1-integrity.json"
+          node --input-type=module -e "import {readFileSync} from 'node:fs';const doc=JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/paypal-d1-integrity.json','utf8'));const ok=v=>!!v&&typeof v==='object'&&(v.quick_check==='ok'||Object.values(v).some(ok));if(!ok(doc)){console.error('D1_LOCAL_INTEGRITY_FAIL');process.exit(2)}console.log('D1_LOCAL_INTEGRITY_PASS_REMOTE_D1_UNVERIFIED_RELEASE_HOLD')"
+
+  full-length-video:
+    name: Default-speed synthetic video under 3 minutes
+    if: github.event_name == 'pull_request' || contains(github.event.head_commit.message, '[video-full]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install isolated video tools
+        run: |
+          python3 -m venv .video-venv
+          .video-venv/bin/pip install --disable-pip-version-check playwright==1.56.0
+          .video-venv/bin/python -m playwright install ffmpeg
+      - name: Install free ffprobe metadata verifier
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Record default-speed silent English-captioned synthetic video (private only)
+        env:
+          VIDEO_PYTHON_BIN: .video-venv/bin/python
+        run: npm run video:record:offline
+      - name: Verify WebM file + independent ffprobe media duration below three minutes
+        run: |
+          python3 scripts/check_recorded_video.py
+          python3 -c 'import json,glob; p=sorted(glob.glob("output/videos/*.manifest.json"))[-1]; d=json.load(open(p)); assert d["historical_owner_receipt_checked_locally"] is False; assert d["historical_owner_receipt_source"]=="OWNER_REPORTED_2026_10_28_NOT_VERIFIED_ON_THIS_DEVICE"; print("NO_PRIVATE_CI_PROVIDER_PROOF_CLAIM_PASS")'
+          if ! command -v ffprobe >/dev/null 2>&1; then
+            echo "FFPROBE_UNAVAILABLE; no true media duration verified" >&2
+            exit 2
+          fi
+          video=$(find output/videos -maxdepth 1 -type f -name 'paypal-synthetic-review-*.webm' -print -quit)
+          if [ -z "$video" ]; then echo "RECORDING_MISSING" >&2; exit 2; fi
+          duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$video")
+          python3 -c 'import sys; d=float(sys.argv[1]); assert 100 < d < 180, "VIDEO_DURATION_INVALID"; print(f"PRIVATE_MEDIA_DURATION_VERIFIED_SECONDS={d:.2f}")' "$duration"

@@ -1,0 +1,25 @@
+# PayPal P0 — authenticated buyer return read-only inquiry (2026-10-27 KST)
+
+## 1. Goal and original architecture comparison
+Owner program: MVP, compare original global AI Work Marketplace blueprint, fill working gaps, security/stability/compatibility. Existing `src/paypal_buyer_return_boundary.mjs` is intentionally offline-only and never treats PayPal callback query values as proof. Separate `src/owner_pilot_checkout_coordinator.mjs` supports a branded SQLite Checkout proof, owner-approved Sandbox Order and Capture operations and provider GET reconciliation, but there was no connecting internal buyer-return inquiry. Selected **separate internal adapter**, not a public HTTP route or weakening offline identity protections.
+
+## 2. Implementation
+New `src/owner_buyer_return_inquiry.mjs`, factory `createOwnerBuyerReturnInquiry({coordinator,resolveTrustedCheckout,publicOrigin})`, exposes `handle({request,serverSessionHandle})`. This is an internal host-oriented contract: real host must independently authenticate the session handle, which is NOT read from callback query/cookie/header. Fixed HTTPS public origin comes from trusted deployment config, never Host or X-Forwarded headers.
+Allowed only GET `/checkout/paypal/return` and `/checkout/paypal/cancel` on exact configured origin. Request query tokens/PayerID/status, headers/cookies/body do not enter the trusted lookup. Authenticated resolver supplies owner/merchant/quote and privately branded session proof. Existing owner coordinator revalidates proof and uses **GET-only** `refreshOwnerOrder`. Reports observed state from backend PayPal GET, not browser callback. No Order POST, Capture POST or approval takes place in callback handler. Explicit separate owner Capture action remains mandatory, with fresh GET and durable first claim. Cache-control no-store; no secrets/order IDs in returned response. Public route intentionally NOT mounted; productionAuthImplemented false.
+
+## 3. Tests and evidence
+`tests/owner_buyer_return_inquiry.test.mjs`: eight integration tests using real local SQLite ledger + stored branded session + actual coordinating logic with injected fake PayPal transport. Rejects untrusted principal, callback token/headers/cookies, method/origin mismatch, revoked checkout proof, merchant-mismatch GET; observes pending and approved order without capture; Cancel never changes state; separate owner-approved Capture then GET yields simulated paid status without any additional callback POST.
+Feature commit `377fc1f3` CI [#40500675288](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40500675288) FAILED: 397/398 Node pass because test helper defaulted `undefined` input to its valid default session; corrected test input to explicit null at `6b04e818` [#40500776390](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40500776390) SUCCESS. Final test enhancement `34b02617a0b4befebbafb0a9eac71ee720e31a9a` [#40500884158](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40500884158) **SUCCESS**: 398/398 Node tests, zero failures, Chromium localhost browser journey PASS and 18-day progress validation PASS.
+
+## 4. Security / limitations
+Authenticated callback handler is **internal** and uses an injected trusted server resolver; it does not provide production identity, cookies, TLS termination, public session storage, callback hosting, PayPal Business seller ↔ REST app verification, personal Sandbox buyer, or a real PayPal network proof. The existing localhost synthetic callback remains unchanged and not production safe. The browser return can never approve quote, authorize Capture, change money or be trusted as payment proof. Paid evidence is solely verified PayPal GET on the separate authorized payment path. Fake PayPal tests do NOT count as actual capture.
+
+## 5. Change status, owner blockers and next
+DONE: authenticatable GET-only callback inquiry code + eight SQLite/provider-fixture regressions, browser regression unchanged, source scope preserved.
+PARTIAL: actual authenticated HTTPS host, durable real authenticated session resolver, merchant app ownership, real AI model UI.
+BLOCKED: new explicit owner authorization for one capped USD Sandbox order, separate buyer approval, Capture and final authoritative provider GET. No external financial calls executed in this change.
+NOT DONE: public deployment, real PayPal / Gemini integration evidence, 3-minute actual YouTube video, English Devpost receipt, full SOVIA/DBVORA service integration. Full product % still unverified.
+Next: obtain scoped HTTPS trusted server/session and vendor app link, then separate authorized genuine Sandbox E2E without automatic ambiguous POST retry. The official entry deadline from repository is 2026-11-13 05:00 KST.
+
+## 6. Source, rollback, ownership and deployment
+Repo `hibi89/hibi89-paypal-ai-hackathon`, branch `lead/paypal` only; previous HEAD `9b253c334c9f534da58feebb2ed1cc379051a7ed`; tested code `34b02617a0b4befebbafb0a9eac71ee720e31a9a`. Source files above. Original Git history remains for rollback. No changes to `main`, no deployment, no new cost, no credentials uploaded or secrets shared.

@@ -1,0 +1,72 @@
+> **현재 적용 지시(2026-10-24 사용자 승인):** [작업 순서 최적화](../../WORK_ORDER_FLEX_POLICY_20261024.md). `ㄱ` 다음은 단순 일자 순서가 아니라 의존성 충족·마감 위험·검증 가능한 **다음 최우선 READY 작업**. 완료 후 또 선행 가능. PayPal Sandbox/무료 AI 접근 막힘은 차단으로 고정하고 fail-closed 유지. 기존 일별 계획/완료율/예비시간·마감은 변경 금지. 수행/계획 날짜, 테스트·원격 SHA, 선행 과제 %를 별도로 기록.
+
+# PayPal 총괄 단일 작업 — 2026-10-24 KST
+
+**사용자 `ㄱ` = 여기의 다음 실제 작업을 총괄이 직접 코딩·테스트·검수한다. 다른 worker chat/feature 전환 없음.** 개발 브랜치 `lead/paypal`.
+
+## PPL-001 인수·독립 검수 — OFFLINE_ACCEPTED, LIVE_GATE_BLOCKED
+- 원본 `feature/quote-payment@876d7d1b5935b91e6baddea36abdb8e50602c4fb`의 기술문서·계약 가드·합성 테스트를 원본 blob 그대로 `lead/paypal`에 이관.
+- **직접** Node v22.16.0 `node --test tests/payment_contract.test.mjs` 실행 결과 `11 PASS / 0 FAIL / 0 SKIP`; `git hash-object`로 source `4cd04345a15791f1773217d57755aac405bfa13a` 및 tests `75802e7b22091fd3b28bd7dc32a20ff184ccc24b` 원본과 일치 확인.
+- 이는 **합성 pure guard만 통과**. PayPal Sandbox 실제 OAuth→Orders create/approve/capture/GET·구매자 브라우저·무료 AI/Cloudflare 계정은 `NOT_TESTED/BLOCKED_BY_ACCESS`, Gate1 미통과. CI는 해당 신규 커밋 GitHub Actions 결과 확인 시에만 PASS 판정.
+
+## NEXT: PPL-002 — 결제 MVP 직접 구현
+1. 승인된 견적/version/amount/currency/owner → PayPal Sandbox 주문 생성·approve/GET·capture 및 마지막 GET을 분리한 서버 API·상태 저장 골격 구현(실 키 없는 mock transport부터).
+2. 조회 GET/F5에서 절대 부작용 없도록, 명시적 POST + 서버측 검증. 중복 클릭·동시성·UNKNOWN 응답·금액/캡처 ID 불일치·Live 호스트 차단·멱등/영속 저장 불변조건을 테스트. DB UNIQUE/원자 캡처 점유 실제 구현 전 안전 완료 주장 금지.
+3. `npm test`/CI 및 실제 URL/브라우저/외부 API 여부를 별도 검증해 이 문서·STATUS/HANDOFF/상위 보고 갱신.
+4. 계정·사용자 승인된 안전한 환경이 있을 때만 실제 PayPal Sandbox와 무료 AI 호출 수행. 비밀·실 고객 자료는 Public GitHub나 채팅 금지.
+
+## 이후 단독 실행
+PPL-003 계약/납품·마일스톤 → PPL-004 구독/웹훅 → PPL-005 통합·배포·보안·심사 → PPL-006 공개 LICENSE·영문 영상/Devpost 제출. 내부 11/11, 공식 11/13 05:00 KST. 범위 축소/유료/Live는 별도 승인.
+
+### 2026-10-24 GitHub CI 근거
+- 코드 이관 커밋 `226c896f1c6f53c82d6372a55be8f86a1877c7a2` Actions run [40061487185](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40061487185): **completed/success**; Node 22 + `npm test` 단계 `success`. 실 API/브라우저/배포 검증이 아니라 순수 계약 회귀 테스트만 PASS.
+
+## 2026-10-24 KST — 날짜별 가용성 관문(작업 전 필독)
+- 일별 시간 정본: [DAILY_CAPACITY_PLAN_20261024.md](../../DAILY_CAPACITY_PLAN_20261024.md), 82h 예상 / 164h 지연 포함 확보(10/25~11/11). **이는 3개 해커톤 병행 기준 '안전한 완성 보증'이 아니라 HIGH RISK 계획**.
+- 현재 NEXT `PPL-002`는 10/25~10/30 구간에 나뉘며, 매 `ㄱ`에 그날의 **작은 완료 기준과 시간 여유/이월**부터 대조한다. 10/27 Sandbox/무료 AI 접근 불가라면 게이트 차단을 유지하고 오프라인 작업만 구분한다.
+- 현재 정보로 날짜별 실제 투입 가능 시간을 알 수 없으니 가용 시간을 임의로 단정하지 않는다. 일일 확보시간이 부족하면 그날 완료를 보증하지 않는다. 다만 차단된 업무나 의존성이 없는 후속 과제를 건너뛰어 실행 가능한 READY 업무로 이동할 수 있으며, 기존 미완료·이월·위험/대안/다음 검증을 원장에 남긴다.
+
+## Stage Two 오해 방지 및 제출 후 조건부 감독
+- PayPal에는 공식 '본선 진출→추가 개발' 전환 지시가 없으며 Stage One 통과 시 기존 제출물의 Stage Two 심사를 받는다. [심사 대응표](../../POST_SUBMISSION_JUDGING_PLAN_20261024.md) 기본 8h / 안전 16h, 제출·작동 데모 완료 후만 적용.
+- 현재 PPL-002 개발 우선순위·11/11 제출 목표·82h/164h 작업표 유지. 제출 후에는 사용 가능 데모/무상 접근·제출본 동결, 심사 기간 대응만; Sandbox/AI/브라우저 성공 미검증은 그대로 기록.
+
+## 2026-10-24 KST — DAY1_OFFLINE_ACCEPTED / CURRENT NEXT DAY2
+- **Day1 10/25 scheduled block executed early by user ㄱ:** `src/quote_api.mjs`, `tests/quote_api.test.mjs`, [API technical contract](../../technical/PPL_002_DAY1_API_CONTRACT.md). Human approval POST and no-side-effect GET implemented. Existing 11 + new 23 synthetic tests, GitHub Actions [40063789450](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40063789450) success on code SHA `9fa2084e27995ec7d77e5907c2390246f13f4150`.
+- **Safety:** quote repo only volatile test fixture; all payment POST blocked, real Sandbox/OAuth/AI/Browser/Production/Devpost still untested. No cross-process durable idempotency claimed. Day1 4h expected / 8h reserve are planned estimates, NOT measured actual.
+- **NOW NEXT: Day2 (10/26 slot), 5h expected / 9h reserved:** design+implement durable SQLite or D1 storage, UNIQUE key and transactional CAS for single-claim operations; persist approved snapshot and payment attempt state; concurrency/restart tests; don't enable PayPal transport before proof. Keep real auth/region/API prerequisites transparent.
+
+## 2026-10-24 KST — 일차별 100% 진행률·남은 시간 필수 기록 규칙
+- [일일 진척/잔여시간 정책](../../DAILY_PROGRESS_REPORTING.md) / [검증 근거 JSON 원장](../../../data/paypal_daily_progress.json). **앞으로 매 실제 작업 종료 보고에 '그날 X%/100%, 남은 예상 Y시간, 남은 안전 확보 Z시간, 실측 여부, 완료·미완료·이월' 필수**. 분모는 당일 인수 기준만; 프로젝트 전체와 다름.
+- 1일차(10/25 작업을 10/24 조기 실행) **100%/100%, 잔여 예상 0시간·안전 잔여 0시간** (오프라인 quote API 부분 범위만). 2일차(10/26 계획) **0%/100%, 잔여 예상 5시간·안전 잔여 9시간** (현재 NOT_STARTED). 실제 경과시간 NOT_MEASURED.
+- 퍼센트는 근거 확인된 항목의 가중치 합계로 계산한다. 예상보다 오래 걸려도 시간을 쓴 것만으로 완료% 상승하지 않는다. 새 회귀 검증 테스트를 추가했다. PayPal 실 Sandbox·AI·Production·Devpost 제출 미검증 유지.
+
+## 2026-10-24 KST — PPL-D02 오프라인 영속 DB 완료/다음 외부 API 게이트
+- **2일차 진행률 100% / 100%**, 남은 예상 **0시간**, 남은 안전 확보 **0시간** (해당 일차 로컬 SQLite 범위에 한정). 새 [Node SQLite 레저](../../technical/PPL_002_DAY2_SQLITE_LEDGER.md) `src/sqlite_ledger.mjs`, 19개 테스트; 영속 파일, 승인 CAS/UNIQUE, 결제 시도 단일 점유, `UNKNOWN` 복구와 두 커넥션/재시작 합성 검증.
+- 최초 코드 커밋 `99a2a8b` CI run 40064603053 **실패**, SQL INSERT placeholder 수정 커밋 `0c07306bb9633183358f0a1c86a8a3d28653d15e`의 [GitHub Actions 40064652611](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40064652611) **completed/success** (Node22 `npm test` 단계 성공; 소스 test() 56건). 실패 이력 숨기지 않음.
+- **다음 3일차 PPL-D03 진행률 0% / 100%, 남은 예상 작업 3시간·안전 확보 8시간.** Sandbox Business/Personal·무료 AI 계정 접근 `BLOCKED_BY_ACCESS`, 외부 계정 승인 대기시간 UNKNOWN, 3/8시간은 계정 접근 후 예상 인력 작업시간.
+- **주의:** Node 로컬 SQLite만 확인, D1/Production 이식·실 PayPal/AI·브라우저/E2E·Devpost **NOT_TESTED**. 서버 신원 검증 및 PayPal GET 출처 증빙은 아직 외부 게이트. `POST /orders`는 여전히 503; 실금전 요청 없음. Day2 실측 소요시간 `NOT_MEASURED`, 계획 5h/9h를 실제 작업시간으로 주장하지 않음.
+- [일일 100% 진행률 정본](../../../data/paypal_daily_progress.json), 18일 원예산 82h/164h 계획은 실측 없이 자동 감산하지 않음.
+
+**CURRENT TASK OVERRIDE:** PPL-D02 OFFLINE_ACCEPTED, `PPL-D03` is the active next day; no rerunning already completed DB effort. Real Sandbox + free AI access gate, 3h expected/8h safety excluding external approval wait (UNKNOWN). If BLOCKED_BY_ACCESS, record the blocker and do not advance to real-payments claims.
+
+## 2026-10-24 KST — 사용자 승인 선행진도: PPL-D04/D05 오프라인 개발 및 CI 검증
+- **D03 (10/27): 0%/100%, 남은 예상 3시간/안전 8시간**, 실 Sandbox Business/Personal·무료 AI 계정 접근 `BLOCKED_BY_ACCESS`, 외부 대기시간 UNKNOWN. 이 날이 선행 진도에 의해 완료 처리되는 일 없음.
+- **D04 (10/28 선행): 80%/100%, 남은 예상 2시간/안전 4시간**. `src/quote_draft.mjs` 모의(실제 AI 아님) 견적/수정 시 version+1/기존 승인 무효화; `npm run demo` loopback-only UI + HTTP 통합 테스트. **실 무료 AI 추론 20%는 차단**. [상세](../../technical/PPL_004_005_ADVANCE_WORK_20261024.md).
+- **D05 (10/29 선행): 75%/100%, 남은 예상 2.5시간/안전 5시간**. Sandbox-only OAuth/Orders create/GET/capture 전송 어댑터, Live URL 차단, PayPal-Request-Id 및 UNKNOWN/no blind retry 합성 검증. **실 서버 원장↔전송·PayPal 실제 주문/캡처 검증 미완료 25%**.
+- CI: mock 견적 코드 `ee0427e8` [40065041558](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40065041558) 성공; loopback 첫 [40065142461](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40065142461) 실패→Host 테스트 수정 `3765bf20` [40065235436](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40065235436) 성공; Sandbox 전송 `7e1b7ee8` [40065398597](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40065398597) **82 PASS / 0 FAIL** GitHub runner 실로그 직접 확인.
+- 모든 일차 진행률은 [검증 기준 JSON 원장](../../../data/paypal_daily_progress.json)에 분리. 실제 투입시간 **NOT_MEASURED**, 작업 시간을 예산과 동일시 금지. 사용자 승인 없는 실결제·Live·유료·공개 호스팅 없음.
+- **CURRENT NEXT:** PPL-D05의 미완료 원장↔transport 통합/GET 조회 후 UNKNOWN 복구. PPL-D03 실제 Sandbox/AI 게이트는 계속 별도 차단. 하루별 완료 기준을 지운 채 100%로 올리지 말 것.
+
+## 2026-10-24 KST — PPL-D05 결제 원장↔Sandbox mock 전송 통합 완료
+- **5일차 100%/100%**, 해당 일차 남은 예상 **0시간**, 남은 안전 확보 **0시간** — 원장 선점 → 모의 Sandbox POST 1회 → GET 비교 → 수동 승인 mock → 캡처 1회 → 조회 증거 PAID/UNKNOWN 복구 등 **오프라인 통합 테스트만 완료**. [상세](../../technical/PPL_D05_LEDGER_TRANSPORT_RECONCILIATION.md).
+- Source: `src/sqlite_ledger.mjs`/`src/paypal_sandbox_transport.mjs`/`src/payment_orchestrator.mjs`, tests `tests/payment_orchestrator.test.mjs` (+12 cases). 사전 소스 SHA `13cfdf7`, 통합 SHA `bfd7f64`; [GitHub Actions 40065874692](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40065874692) **95/95 tests PASS** (CI runner 로그 직접 확인).
+- **3일차 0%** (실 PayPal Sandbox·무료 AI 계정 접근 없음, 예상 3h/안전 8h+외부대기 UNKNOWN); **4일차 80%** (실 무료 AI 20% 차단, 예상 2h/안전 4h).
+- **현재 NEXT 6일차 0%/100%**, 남은 예상 **5시간** / 안전 확보 **9시간**. 오프라인 화면 사용자 흐름/새로고침/동시 클릭/권한 차단/로컬 UI 연동 검증. 실 PayPal 거래, 실제 AI API, 생산 배포, 운영 인증/Devpost 출품은 **NOT_TESTED**; 결제 HTTP POST **503 fail-closed** 유지.
+- 전체 프로젝트 완료율과 일별 100% 혼동 금지. 실측 작업 경과시간 `NOT_MEASURED`, 실제 Sandbox/외부 승인 기다림 시간 미계측/미확정. [검증 원장](../../../data/paypal_daily_progress.json) 최신화.
+
+## 2026-10-24 KST — PayPal D06 실제 Chromium 로컬 UI 검증 완료
+- **D06 100%/100%, 잔여 예상 0h/안전 확보 0h**. `web/demo_client.js` 버튼 1회 요청 잠금, 화폐 금액 안전 파싱, F5/GET만 조회; 로컬 UI 진짜 Chromium 브라우저에서 견적→승인→F5→수정·승인 무효화→결제 요청 차단 확인. [검증 설명](../../technical/PPL_D06_BROWSER_E2E_20261024.md).
+- [GitHub Actions 40066792213](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40066792213) **Node tests 102/102 PASS + Chromium browser E2E PASS** (runner 로그에서 성공 직접 확인). 첫 VM 테스트 실패 40066459542는 40066534103에서 수정, 최종 소스/브라우저 커밋 04c57a4.
+- **현재 NEXT D07 0%/100%, 남은 예상 4시간/안전 8시간:** 계약·마일스톤 DB, 결제 상태와 납품/검수 상태 독립, 변경 이력. **D03 0%/100%, 잔여 3h/안전 8h 외부 API 접근 차단; D04 80%/100%, 잔여 2h/안전 4h 실제 AI 미검증** 유지.
+- 브라우저 성공은 127.0.0.1 `OFFLINE_MOCK` 데모만; 운영 로그인/호스팅/실 PayPal 주문·결제/실 AI/Devpost **NOT_TESTED**. 주문 POST 503 유지, Live/유료/개인정보 전송 없음. 실제 경과시간 `NOT_MEASURED`.
+- [증거별 일일 진도 원장](../../../data/paypal_daily_progress.json) 최신화. 완료율은 각 일차 범위 100%이며 PayPal 전체 완성률 아님.

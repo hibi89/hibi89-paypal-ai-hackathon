@@ -1,0 +1,41 @@
+{
+  "name": "paypal-freelancer-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-sqlite --test tests/*.test.mjs",
+    "demo": "node --experimental-sqlite scripts/run_demo.mjs",
+    "preflight:hosting": "node scripts/check_hosting_preflight.mjs",
+    "preflight:owner:worker": "node scripts/check_owner_worker_bundle_dryrun.mjs --check",
+    "preflight:p0": "node scripts/check_p0_provider_readiness.mjs",
+    "preflight:submission": "node scripts/check_submission_evidence.mjs",
+    "preflight:reviewer": "node --experimental-sqlite scripts/check_reviewer_repro.mjs",
+    "pilot:gemini": "node --experimental-sqlite scripts/run_owner_gemini_pilot.mjs",
+    "mvp:operator": "node --experimental-sqlite scripts/run_owner_mvp_operator.mjs",
+    "mvp:callback": "node --experimental-sqlite scripts/run_owner_mvp_callback.mjs",
+    "mvp:simulate": "node --experimental-sqlite scripts/run_mvp_mock_smoke.mjs",
+    "judge:evidence": "node --experimental-sqlite scripts/build_judge_evidence_report.mjs",
+    "mvp:status": "node --experimental-sqlite scripts/check_owner_mvp_local_status.mjs",
+    "mvp:quick": "node --experimental-sqlite scripts/run_owner_mvp_operator.mjs --quick-tunnel",
+    "mvp:receipt": "node --experimental-sqlite scripts/print_owner_mvp_receipt.mjs",
+    "verify:local": "node scripts/verify_local.mjs",
+    "mvp:fast": "node --experimental-sqlite scripts/run_owner_mvp_operator.mjs --quick-tunnel --fast-operator",
+    "mvp:review": "node --experimental-sqlite scripts/run_owner_mvp_review.mjs",
+    "video:record:offline": "node scripts/run_record_demo.mjs",
+    "video:record:owner": "node scripts/prepare_and_record_video.mjs",
+    "submission:candidate:local": "node scripts/prepare_submission_candidate.mjs",
+    "test:journey": "node --experimental-sqlite --test tests/complete_marketplace_journey.test.mjs",
+    "pilot:gemini:a2a": "node --experimental-sqlite scripts/run_owner_gemini_a2a_pilot.mjs",
+    "proof:crosspart": "node --experimental-sqlite scripts/check_cross_part_proof.mjs",
+    "proof:injected-a2a": "node --experimental-sqlite scripts/check_injected_a2a_cross_part.mjs",
+    "pilot:gemini:part2": "node --experimental-sqlite scripts/run_owner_private_gemini_innovation.mjs",
+    "mvp:two-part:evidence": "node --experimental-sqlite scripts/check_owner_two_part_evidence.mjs",
+    "mvp:reconcile:get": "node --experimental-sqlite scripts/reconcile_existing_sandbox_get_only.mjs",
+    "submission:fields:local": "node scripts/build_devpost_form_fields.mjs"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "license": "MIT"
+}

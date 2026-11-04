@@ -1,0 +1,137 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Proofline — Agentic Innovation Lab</title><style>
+:root{font:15px/1.5 system-ui,sans-serif;color:#152747;background:#f4f7fc}*{box-sizing:border-box}
+body{max-width:1170px;margin:auto;padding:26px}header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+a{color:#2052a2}nav{display:flex;gap:15px;flex-wrap:wrap}nav a{text-decoration:none;font-weight:700}
+.hero{margin:32px 0 18px}h1{font-size:clamp(2rem,5vw,3rem);letter-spacing:-.05em;line-height:1.15}
+p{color:#566987}.warning{background:#fff5df;border:1px solid #e4c992;border-radius:13px;padding:17px;color:#6b4c18}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px}
+.card{background:white;border:1px solid #dde4f0;border-radius:18px;padding:22px;min-width:0}
+.wide{grid-column:span 2}.badge{font-size:.73rem;font-weight:750;color:#396bb6;text-transform:uppercase;letter-spacing:.07em}
+h2{font-size:1.25rem;margin:10px 0}label{display:block;font-weight:700;margin-top:10px}
+input,select,textarea{padding:11px;width:100%;border:1px solid #c2d0e4;border-radius:9px;font:inherit}
+fieldset{border:1px solid #c2d0e4;border-radius:9px;padding:12px;margin-top:14px}fieldset legend{font-weight:700}fieldset label{font-weight:400}fieldset input[type=checkbox]{width:auto;margin-right:9px}
+#churn-pause{width:auto;margin-right:8px}
+button{cursor:pointer;padding:11px 16px;margin:13px 5px 0 0;border:0;border-radius:10px;background:#2857b1;color:white;font:inherit;font-weight:700}
+button:disabled{opacity:.5;cursor:not-allowed}
+#mandate-state{font-size:.85rem;color:#415a7f;overflow-wrap:anywhere}
+#mandate-tools{margin-top:17px;padding-top:16px;border-top:1px solid #dce4ef}
+.crosspart-evidence{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
+.crosspart-evidence p{background:#f6f9fe;border:1px solid #dce6f2;border-radius:10px;padding:12px;font-size:.86rem;overflow-wrap:anywhere;margin:0}
+#crosspart-result{font-weight:700}
+@media(max-width:680px){.crosspart-evidence{grid-template-columns:1fr}}
+#revoke-mandate{background:#8a3d46}
+#revoke-mandate:hover:not(:disabled){background:#712b36}
+#a2a-progress,#pending-status{font-size:.85rem;color:#405a7d;overflow-wrap:anywhere}
+#a2a-transcript{list-style:none;padding:0;display:grid;gap:8px}
+#a2a-transcript li{border:1px solid #d9e3ef;border-radius:9px;padding:10px 12px;background:#f6f9fe;font-size:.85rem;overflow-wrap:anywhere}
+#a2a-history-tools{border-top:1px solid #dce4ef;margin-top:17px;padding-top:12px}
+#a2a-history-tools p{font-size:.85rem;margin-bottom:0}
+pre{white-space:pre-wrap;word-break:break-word;background:#132643;color:#d9edff;border-radius:11px;padding:14px;max-height:230px;overflow:auto}
+@media(max-width:680px){body{padding:15px}.grid{grid-template-columns:1fr}.wide{grid-column:auto}}
+</style></head><body>
+<header><strong>p. proofline</strong><nav aria-label="Product parts"><a href="/demo">Part 1 · Freelancer platform</a><a href="/demo/innovation" aria-current="page">Part 2 · AI Innovation Lab</a></nav></header>
+<div class="hero"><span class="badge">Part 2 / Innovative PayPal AI Technology</span>
+<h1>Five agentic commerce skills.<br>One unified dashboard.</h1>
+<p>Separate, testable technology modules for A2A negotiations, delegated spending boundaries, shopping, subscription retention and merchant assistance.</p>
+<div class="warning"><strong>OFFLINE SYNTHETIC DEMO — NOT REAL AI OR PAYPAL.</strong> No PayPal Checkout/Capture, actual subscription change, invoice creation or dispute submission occurs. AI messages use deterministic fixtures, not a live model.</div></div>
+<main class="grid">
+<section class="card wide"><span class="badge">01 · Delegate & Consent</span><h2>Issue a scoped offline mandate</h2>
+<p>Explicit category, transaction maximum, lifetime and single-use authorization. This is not a PayPal spending credential.</p>
+<label for="category">Category</label><select id="category"><option value="services">Freelance services</option><option value="gifts">Gift shopping</option></select>
+<label for="limit">Maximum USD</label><input type="number" id="limit" min="1" max="10000" value="300">
+<label for="minutes">Expires after (minutes)</label><input type="number" id="minutes" min="1" max="1440" value="30">
+<button type="button" id="delegate">Configure delegation</button>
+<p id="delegation-status" role="status" aria-live="polite">No mandate configured.</p>
+<div id="mandate-tools">
+<label for="mandate-selector">Issued mandates · current / spent / revoked</label>
+<select id="mandate-selector" aria-describedby="mandate-state"><option value="">No mandates</option></select>
+<button type="button" id="revoke-mandate" disabled>Revoke selected active mandate</button>
+<p id="mandate-state" role="status" aria-live="polite">Select a mandate to inspect its status. Revoking never reverses a real PayPal payment.</p>
+</div></section>
+<section class="card"><span class="badge">02 · Agent-to-Agent</span><h2>Buyer ↔ Seller negotiation</h2>
+<p>OFFER → COUNTER → COUNTER → ACCEPT. Two deterministic agents respect the service spending ceiling.</p>
+<button type="button" id="a2a">Run A2A transaction</button>
+<p id="a2a-progress" role="status" aria-live="polite">No negotiation started. Synthetic agents only.</p>
+<ol id="a2a-transcript" aria-label="Buyer Seller agent negotiation transcript"></ol>
+<pre id="a2a-output">Issue a service mandate first.</pre>
+<div id="a2a-history-tools"><label for="a2a-history">Previous negotiations · saved SQLite history</label>
+<select id="a2a-history" aria-describedby="a2a-history-status"><option value="">No completed negotiation yet</option></select>
+<button type="button" id="show-a2a-history" disabled>View saved negotiation</button>
+<p id="a2a-history-status" role="status" aria-live="polite">Stored results are read-only. Viewing them never runs agents or creates PayPal orders.</p></div>
+<details id="owner-a2a-private-panel"><summary>Optional: inspect a private owner A2A CLI result (local file only)</summary>
+<p>The previously opt-in Gemini A2A pilot can output a JSON report. Choose a sanitized JSON file here to view its transcript without upload, account access, additional Gemini calls, or PayPal actions. Its locally computed hash is not a third-party signature and does not prove that Google ran the model. The report must explicitly state that real provider verification was NOT performed.</p>
+<label for="owner-a2a-private-file">Choose an owner CLI A2A JSON result (up to 12 KB; never secrets)</label>
+<input id="owner-a2a-private-file" type="file" accept=".json,application/json">
+<p id="owner-a2a-private-status" role="status" aria-live="polite">No owner file selected. Private pilot evidence is separate from synthetic browser A2A.</p>
+<ol id="owner-a2a-private-transcript" aria-label="Manually inspected private A2A report"></ol>
+</details></section>
+<section class="card wide" id="crosspart-panel" aria-labelledby="crosspart-heading">
+<span class="badge">Part 1 + Part 2 · Offline review</span>
+<h2 id="crosspart-heading">Compare AI agreement with human-approved quote</h2>
+<p>A real persisted Part 1 quote is read separately from a Part 2 saved agent negotiation. This is a <strong>read-only price and scope comparison</strong>, not a signed association, PayPal approval, merchant verification or authorization to charge.</p>
+<button type="button" id="crosspart-compare">Compare with approved Part 1 quote (GET only)</button>
+<p id="crosspart-result" role="status" aria-live="polite">Select or complete a Part 2 A2A negotiation, then compare with the human-approved quote in Part 1.</p>
+<div id="crosspart-evidence" class="crosspart-evidence" aria-live="polite">
+<p id="crosspart-part1">Part 1 quote · not checked</p>
+<p id="crosspart-part2">Part 2 negotiation · not checked</p>
+<p id="crosspart-match">Comparison · NOT_CHECKED</p>
+<p id="crosspart-payment">Payment · NOT_AUTHORIZED / NOT_CAPTURED</p>
+</div>
+<button type="button" id="crosspart-associate" disabled>Confirm saved synthetic review association</button>
+<button type="button" id="crosspart-inspect">Inspect saved review (GET only)</button>
+<button type="button" id="crosspart-revoke" disabled>Withdraw my saved review (no payment)</button>
+<p id="crosspart-association" role="status" aria-live="polite">No verified saved association yet. Matching prices never authorize payments.</p>
+<p><a href="/demo">Open Part 1 to draft and approve the human quote</a></p>
+</section>
+<section class="card"><span class="badge">03 · Gift Finder</span><h2>Gift preference matching</h2>
+<p>Choose a fictional category, preferred style and price ceiling. Compare a fixed local catalog and require an unused gift mandate; no inventory lookup or PayPal checkout.</p>
+<label for="gift-category">Gift category</label><select id="gift-category"><option value="lighting">Desk lighting</option><option value="mug">Mugs</option><option value="stationery">Stationery</option></select>
+<label for="gift-style">Preferred style</label><select id="gift-style"><option value="PRACTICAL">Practical</option><option value="PREMIUM">Premium</option></select>
+<label for="gift-priority">Ranking policy</label><select id="gift-priority"><option value="LOWEST_PRICE">Lowest eligible price</option><option value="MATCH_STYLE">Match preferred style first</option></select>
+<label for="gift-max-price">Maximum gift price (USD, at most mandate)</label><input id="gift-max-price" type="number" min="1" max="10000" step="0.01" value="39.00">
+<button type="button" id="gift">Run Gift Agent</button><pre id="gift-output">Issue a gift mandate first.</pre>
+<details id="local-catalog-panel"><summary>Optional: owner-supplied local product catalog (not vendor verified)</summary>
+<p>Only 2–8 product IDs, category, style and price in USD cents. Never enter names, contact details, URLs, photos, inventory credentials or customer information. Catalog data stays in this temporary local demo, without shopping, AI or PayPal requests.</p>
+<label for="gift-catalog-json">My local catalog (JSON array; explicitly saved only on click)</label>
+<textarea id="gift-catalog-json" rows="5" maxlength="2000" spellcheck="false" placeholder='[{"id":"local-light-a","category":"lighting","style":"PREMIUM","priceMinor":3500},{"id":"local-light-b","category":"lighting","style":"PRACTICAL","priceMinor":2900}]'></textarea>
+<button type="button" id="gift-catalog-save">Save owner-supplied local catalog</button>
+<p id="gift-catalog-status" role="status" aria-live="polite">Fictional demo catalog active. Nothing imported or purchased.</p>
+</details></section>
+<section class="card"><span class="badge">04 · Churn Saver</span><h2>Subscription retention policy</h2>
+<p>Use fictional monthly pricing, self-reported churn risk and a merchant policy cap. Offers are review-only: no real subscription or payment changes.</p>
+<label for="churn-reference">Fictional subscription reference</label>
+<input id="churn-reference" type="text" value="demo-sub-maintenance-001" maxlength="39" pattern="demo-sub-[a-z0-9-]{3,30}">
+<label for="churn-monthly">Current monthly USD</label>
+<input id="churn-monthly" type="number" min="1" max="10000" step="0.01" value="25.00">
+<label for="churn-months">Remaining months (1–24)</label>
+<input id="churn-months" type="number" min="1" max="24" step="1" value="6">
+<label for="churn-risk">Self-reported churn risk (not an AI score)</label>
+<select id="churn-risk"><option value="HIGH">High</option><option value="MEDIUM">Medium</option><option value="LOW">Low</option></select>
+<label for="churn-cap">Maximum fictional policy discount</label>
+<select id="churn-cap"><option value="2000">20%</option><option value="1000">10%</option><option value="500">5%</option><option value="0">0% (pause only)</option><option value="3000">30% ceiling</option></select>
+<label><input type="checkbox" id="churn-pause" checked> Consider a pause for human review</label>
+<button type="button" id="churn">Generate retention proposal</button>
+<pre id="churn-output">Ready for a synthetic retention policy calculation.</pre></section>
+<section class="card"><span class="badge">05 · Merchant Copilot</span><h2>Invoice / Dispute dossier</h2>
+<p>Enter a fictional milestone and self-reported evidence. A local checklist checks completeness and contradictions; nothing is verified or filed with PayPal.</p>
+<label for="invoice-contract">Fictional contract reference</label>
+<input id="invoice-contract" type="text" value="demo-contract-001" minlength="8" maxlength="37" pattern="demo-[a-z0-9-]{3,32}">
+<label for="invoice-amount">Invoice total (USD)</label>
+<input id="invoice-amount" type="number" min="1" max="10000" step="0.01" value="299.00">
+<label for="invoice-issue">Dispute reason</label>
+<select id="invoice-issue"><option value="QUALITY">Quality / acceptance</option><option value="NON_DELIVERY">Non-delivery</option><option value="BILLING">Billing disagreement</option></select>
+<label for="invoice-delivery">Reported delivery state</label>
+<select id="invoice-delivery"><option value="REVIEWED">Reviewed</option><option value="DELIVERED">Delivered</option><option value="NOT_DELIVERED">Not delivered</option></select>
+<fieldset><legend>Fictional evidence present (self-reported; not verified)</legend>
+<label><input type="checkbox" id="invoice-evidence-contract"> Contract terms</label>
+<label><input type="checkbox" id="invoice-evidence-delivery"> Delivery record</label>
+<label><input type="checkbox" id="invoice-evidence-review"> Reviewer decision</label>
+</fieldset>
+<button type="button" id="invoice">Generate merchant dossier</button><pre id="invoice-output">Ready for an offline scenario.</pre></section>
+<section class="card wide"><span class="badge">Read-only history</span><h2>Auditable synthetic results</h2>
+<button type="button" id="refresh">Refresh (GET only)</button>
+<p id="pending-status" role="status" aria-live="polite">Checking for pending or interrupted attempts…</p>
+<pre id="activity">Loading...</pre>
+<p id="message" role="status" aria-live="polite"></p></section></main>
+<script src="/demo/innovation.js" defer></script></body></html>

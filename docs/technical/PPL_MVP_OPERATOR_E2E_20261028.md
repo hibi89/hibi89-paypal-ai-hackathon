@@ -1,0 +1,15 @@
+# PayPal minimum working operator MVP (checkpoint 2026-10-28 KST)
+
+One-process local operator flow is source-implemented: bounded fictional client brief, real-provider-ready Gemini skill classification, ranked fictional sellers with honest missing skills, human-approved synthetic $1.50 price, durable one-shot Sandbox create, distinct buyer approval, separately authorized Capture, verified provider GET, SQLite ledger.
+
+Verified CODE CI: 435/435 Node PASS + Chromium offline E2E PASS + 18 progress entries, at b7506eea23781a9eb0bb6ac7f779616af8851902, Actions https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/40527605754 . All providers were injected fakes. DO NOT CLAIM a real Gemini or PayPal transaction or production service.
+
+Local safe check: git switch lead/paypal; npm test; npm run mvp:operator. Without all explicit flags and real interactive TTY the command exits 2 and does not read secrets, make payment or create the private ledger.
+
+Owner-only real verification remains BLOCKED until separate authorization. Before external use verify a legitimately free Gemini project, actual Sandbox Business REST app and Personal buyer, matching 13-character merchant ID, and an ACTUALLY REACHABLE trusted HTTPS origin with non-mutating /checkout/paypal/return and /checkout/paypal/cancel handlers. Store all credentials only in operator private environment: GEMINI_API_KEY, PAYPAL_SANDBOX_CLIENT_ID, PAYPAL_SANDBOX_CLIENT_SECRET, PAYPAL_SANDBOX_MERCHANT_ID, PAYPAL_PILOT_PUBLIC_ORIGIN. Never paste them in chat or GitHub.
+
+Only after owner approval, in an actual terminal: npm run mvp:operator -- --execute --owner-authorized --free-tier-confirmed --sandbox-only --buyer-is-sandbox-personal . The CLI confirms each step separately: START PRIVATE MVP; fictional brief; SEND SYNTHETIC GEMINI; APPROVE USD 1.50 including skill gaps; ISSUE SANDBOX SESSION; CREATE SANDBOX ORDER; browser buyer approval; BUYER APPROVED IN SANDBOX; CAPTURE SANDBOX USD 1.50; fresh GET. The script DOES NOT deploy the HTTPS callback. One local process, 15 minute checkout proof, private SQLite files in ~/.paypal-ai-mvp-private, fail closed on interrupted/unknown/no auto retry. Never delete the private DB to bypass duplicate prevention.
+
+Development history: initial Actions #40526636825 428/432 with four failing tests for too-strict all-skills vendor eligibility; rank disclosed partial synthetic seller and obtain human consent instead; Actions #40526878064 432/432 PASS; Actions #40527180914 433/433 PASS; final custom fictional brief Actions #40527605754 435/435 PASS. No real network calls were run.
+
+Remaining true product gates: real PayPal merchant/buyer and actual Capture+GET, authentic Gemini response in owner-authorized workflow, real callback host and authenticated judge access, production release main with root MIT LICENSE, English Devpost and public under-three-minute video. D03 65% / D04 80% / D15 20% remain partial and whole-product percentage unmeasured. User direction: running minimum first, frontend/features/security hardening toward Nov13 deadline. main remains unchanged and staged Draft release PR #7 precedes this code.

@@ -1,17 +1,7 @@
-# PayPal 5개 브랜치 협업 규약
-
-```text
-main — 검수 통과한 통합 코드만
-└─ lead/paypal — 설계·검수·제출·상위 보고
-├─ feature/quote-payment — 견적·결제
-├─ feature/delivery — 납품·단계 관리
-├─ feature/subscriptions — 구독 청구 이상 탐지
-```
-
-**선택 비교**: (A) 모든 AI가 하나의 브랜치에서 개발: 단순하지만 충돌·역할 혼선 가능. (B) KIC와 같은 5개 브랜치: 담당자의 독립 이력·검수 경계가 분명하나 문서 갱신 비용 증가. 기존 합의된 다중 AI 운영/이관 목적에 맞춰 (B)를 채택; **이 결정은 운영 구조에 한하며 제품 설계·범위 확정 아님**.
-
-- 각 역할별 소유 문서: `docs/roles/<role>/OPERATIONS.md`, `STATUS.md`, `HANDOFF.md`, 기능 담당 메시지 `TO_PAYPAL_LEAD.md` 또는 총괄 메시지 `TO_HACKATHON_LEAD.md`.
-- 기능 담당자는 자기 브랜치 개발·테스트→커밋→문서 최신화→메시지 보고.
-- 총괄은 세 담당자 메시지함·HEAD 전수 확인 후 `MESSAGE_REVIEW.md`에서 수락/보류/승인을 기록.
-- 검증된 결과만 PR→`main` 병합. 합성 테스트/CI 성공과 실제 서비스 검증을 구분.
-- 타 역할 브랜치 무단 수정, force push, 무의미한 빈 커밋, 자동 공유 가정 금지.
+# PayPal 단일 총괄 개발 브랜치 규칙 — 2026-10-24
+- `lead/paypal`: 총괄이 **직접 설계·소스·테스트·검수·문서·제출** 관리하는 유일한 신규 작업 브랜치.
+- `main`: 검증된 릴리스만 PR/승인 통합. 현재 운영 개편에서는 변경 금지.
+- `feature/quote-payment`, `feature/delivery`, `feature/subscriptions`: **과거 역할/코드 이력 보존, 신규 개발하지 않음**. 삭제/force push/재설정 불가.
+- 사용자 `ㄱ` → [LEAD_ACTIVE_WORK](roles/lead/LEAD_ACTIVE_WORK.md) 직접 실행. 과거 ACTIVE_TASK/worker/메시지함 왕복 폐기. 기능별 경계는 코드 모듈 단위.
+- 운영 A(1인 lead 브랜치) vs B(1인이 기능 브랜치 순회) 비교: A는 브랜치/보고/merge 왕복 최소, 유지보수·공통 CI 효율, B는 격리성은 높으나 시간·도구 호출 과다. **A 사용자 변경 지시 아래 채택**, `main` 안정 릴리스/이전 SHA 보존으로 위험 완화. 둘 다 신규 지출 0원.
+- 보안: Public repo에 비밀/민감정보 금지, 실제 API/브라우저/Production 성공은 실증 후만.

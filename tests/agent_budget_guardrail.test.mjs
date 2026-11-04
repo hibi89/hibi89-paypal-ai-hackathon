@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {evaluatePaymentGuardrail} from '../src/agent_budget_guardrail.mjs';
+const quote={ownerId:'owner',version:2,currency:'USD',status:'APPROVED',approval:{actorId:'owner',quoteVersion:2,amountMinor:27500}};
+const negotiation={status:'PROPOSED',currency:'USD',agreedMinor:27500,paymentAuthorized:false};
+const check=(o={})=>evaluatePaymentGuardrail({quote,negotiation,limitMinor:30000,actorApproved:true,...o});
+test('eligible is not payment authority',()=>{const x=check();assert.equal(x.allowed,true);assert.equal(x.paymentAuthorized,false);assert.equal(x.requiresDurableReservation,true)});
+test('overspend fails closed',()=>assert.equal(check({spentMinor:3000}).reason,'BUDGET_EXCEEDED'));
+test('mismatched quote approval fails closed',()=>assert.equal(check({quote:{...quote,approval:{...quote.approval,amountMinor:30000}}}).reason,'APPROVED_AMOUNT_MISMATCH'));
+test('explicit approval is required',()=>assert.equal(check({actorApproved:false}).reason,'HUMAN_APPROVAL_REQUIRED'));
+test('invalid numeric budgets rejected',()=>assert.throws(()=>check({reservedMinor:-1}),TypeError));

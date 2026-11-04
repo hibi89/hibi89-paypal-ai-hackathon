@@ -1,0 +1,25 @@
+name: Offline MVP smoke
+on:
+  push:
+    branches: [lead/paypal]
+  workflow_dispatch:
+jobs:
+  offline-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check browser scripts syntax
+        run: |
+          node --check web/agent_budget_client.js
+          node --check web/github_delivery_client.js
+          node --check web/marketplace_client.js
+      - name: Run complete transaction journey first
+        run: npm run test:journey
+      - name: Run offline regression suite
+        run: npm test

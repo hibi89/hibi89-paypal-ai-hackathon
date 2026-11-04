@@ -1,0 +1,18 @@
+# P0 PayPal MVP — buyer return/cancel host acceptance checkpoint
+
+Date 2026-10-28 KST. Working source SHA: 9ab24b4c2fab7977fcb8cde5da1b3a73a348a0bf, branch lead/paypal.
+
+## Functional change
+src/owner_mvp_callback_landing.mjs starts a real Node HTTP listener bound exclusively to 127.0.0.1 and serves only two exact read-only GET URLs: /checkout/paypal/return and /checkout/paypal/cancel. It deliberately ignores browser-provided token, PayerID, cookies and query strings, never sends OAuth/Gemini/PayPal API requests, never creates or captures an order and never claims buyer approval or paid state. Host allowlist, CSP, no-store and no-referrer headers verified. Public HTTPS reverse proxy or ingress remains external to this repository, must be independently operated by owner and verified reachable; this module does NOT create TLS or public access.
+
+## Minimum operator wiring
+Private operator command npm run mvp:operator, with all five explicit flags and TTY, now starts the local callback landing BEFORE any Gemini model call or payment. Default 127.0.0.1:8787; optional PAYPAL_PILOT_CALLBACK_PORT overrides. Required PAYPAL_PILOT_PUBLIC_ORIGIN is a genuine HTTPS origin, configured to proxy those two URLs back to 127.0.0.1 and not to mock localhost public authority. Operator MUST independently open the public HTTPS return/cancel page, then type the exact phrase PUBLIC HTTPS CALLBACK READY; otherwise workflow stops before Gemini. Other per-stage explicit typed approvals and private env requirements are unchanged. No API / payment done in this engineering turn. Optional smoke command npm run mvp:callback -- --serve-loopback-only requires PAYPAL_PILOT_PUBLIC_ORIGIN and does not create a tunnel. Without flags it never binds.
+
+## Verified evidence and test coverage
+New callback test suite verifies return/cancel pages ignore forged payment tokens, GET-only and no capture routes, untrusted Host with forged X-Forwarded-* is denied using native http.request, unsafe callback origin/port rejected. End-to-end regression creates owner MVP with injected fake Gemini and fake PayPal, sends forged return URL and verifies no Capture until trusted PayPal GET plus independent owner consent. Initial PR CI #40529695266 was FAIL 438/439 due Node native fetch normalizing Host header in test (not server defect). Fixed raw http Host request; final 2026-10-27 GitHub Actions #40530436195 completed SUCCESS: 440/440 Node tests PASS, 18-entry progress PASS, real Chromium offline UI journey PASS. Tests use fake injected provider responses; they do not prove real Sandbox/Gemini or public HTTPS reachability.
+
+## Blocking external acceptance
+Still requires legally owned Sandbox Business REST app + separate Sandbox Personal buyer; private merchant ID/client secret; owner-confirmed available Gemini Free tier key; owner-controlled actual HTTPS proxy to local return/cancel; explicit approvals. Single owner CLI process and 15-minute session remain limitations, and process/POST ambiguous results must not be blindly retried. Only after one genuine synthetic USD 1.50 Sandbox create→approval→separate capture→GET PAID, plus true Gemini classification, can live integration acceptance be claimed. Public reviewer session/host, judge demo/video/English Devpost and final main release remain separate gates.
+
+## Release integrity
+Public default main remains old until authorized PR; release draft #7 has older lead source. Do not merge, force update or claim payment acceptance based on this offline CI. Owner priority: working MVP before frontend/audit/DB management/additional marketplace features.
