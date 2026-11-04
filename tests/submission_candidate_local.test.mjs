@@ -13,6 +13,9 @@ function makeFixture(dir){
   const video=Buffer.concat([Buffer.from([0x1a,0x45,0xdf,0xa3]),Buffer.from('SYNTHETIC UNIT TEST ONLY')]);
   const hash=createHash('sha256').update(video).digest('hex');
   const metadata={evidence_class:'OFFLINE_SYNTHETIC_BROWSER_CAPTURE_ONLY',
+    storyboard_version:'TWO_PART_FIVE_SKILLS_V3',
+    demonstrated_categories:['ai_work','general_services'],
+    demonstrated_skills:['delegate','a2a','gift','churn','invoice'],
     video_filename:filename,video_sha256:hash,video_bytes:video.byteLength,
     wall_clock_elapsed_seconds:14.5,provider_calls:0,payment_posts:0,
     media_duration_independently_probed:false,publicly_uploaded:false,
@@ -32,6 +35,8 @@ test('private synthetic submission video verifies hash and not-public status',()
   assert.equal(result.status,'LOCAL_SYNTHETIC_WEBM_INTEGRITY_VERIFIED');
   assert.equal(result.mediaDurationProbed,false);
   assert.equal(result.publiclyUploaded,false);
+  assert.equal(result.storyboardVersion,'TWO_PART_FIVE_SKILLS_V3');
+  assert.deepEqual(result.demonstratedSkills,['delegate','a2a','gift','churn','invoice']);
  }finally{rmSync(root,{recursive:true,force:true})}
 });
 test('video candidate rejects tampering and fabricated publication claims',()=>{
@@ -41,6 +46,10 @@ test('video candidate rejects tampering and fabricated publication claims',()=>{
   const bad={...metadata,publicly_uploaded:true};
   writeFileSync(manifest,JSON.stringify(bad));
   assert.throws(()=>verifyPrivateSyntheticVideo(root),/UNAUTHORIZED_PUBLICATION_CLAIM/);
+  writeFileSync(manifest,JSON.stringify({...metadata,storyboard_version:'OPPORTUNITY_FIRST_V2'}));
+  assert.throws(()=>verifyPrivateSyntheticVideo(root),/FINAL_TWO_PART_STORYBOARD_REQUIRED/);
+  writeFileSync(manifest,JSON.stringify({...metadata,demonstrated_skills:['delegate','a2a']}));
+  assert.throws(()=>verifyPrivateSyntheticVideo(root),/FINAL_FIVE_SKILLS_VIDEO_REQUIRED/);
   writeFileSync(manifest,JSON.stringify(metadata));
   writeFileSync(join(root,filename),Buffer.from('CORRUPTED'));
   assert.throws(()=>verifyPrivateSyntheticVideo(root),/VIDEO_BYTES_MISMATCH|VIDEO_WEBM_HEADER_MISSING|VIDEO_SHA256_MISMATCH/);

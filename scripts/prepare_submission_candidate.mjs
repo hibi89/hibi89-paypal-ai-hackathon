@@ -26,6 +26,16 @@ export function verifyPrivateSyntheticVideo(dir){
   const manifest=JSON.parse(readFileSync(path,'utf8'));
   const filename=candidates[0].name.replace(/\.manifest\.json$/,'.webm');
   requireValue(manifest.video_filename===filename,'VIDEO_FILENAME_MISMATCH');
+  // Final candidate now requires ACTUAL recorded actions from BOTH product
+  // parts. A hash-valid Part1-only V2 recording is no longer review-ready.
+  requireValue(manifest.storyboard_version==='TWO_PART_FIVE_SKILLS_V3',
+    'FINAL_TWO_PART_STORYBOARD_REQUIRED');
+  requireValue(JSON.stringify(manifest.demonstrated_categories)===
+    JSON.stringify(['ai_work','general_services']),
+    'FINAL_TWO_CATEGORY_VIDEO_REQUIRED');
+  requireValue(JSON.stringify(manifest.demonstrated_skills)===
+    JSON.stringify(['delegate','a2a','gift','churn','invoice']),
+    'FINAL_FIVE_SKILLS_VIDEO_REQUIRED');
   requireValue(basename(filename)===filename,'UNSAFE_VIDEO_FILENAME');
   requireValue(manifest.evidence_class==='OFFLINE_SYNTHETIC_BROWSER_CAPTURE_ONLY','PROVIDER_PROOF_FALSE_CLAIM');
   requireValue(manifest.provider_calls===0&&manifest.payment_posts===0,'PROVIDER_ACTION_CLAIM_FORBIDDEN');
@@ -45,6 +55,8 @@ export function verifyPrivateSyntheticVideo(dir){
   requireValue(hash===manifest.video_sha256,'VIDEO_SHA256_MISMATCH');
   return {status:'LOCAL_SYNTHETIC_WEBM_INTEGRITY_VERIFIED',filename,sha256:hash,
     bytes,recordingWallClockSeconds:manifest.wall_clock_elapsed_seconds,
+    storyboardVersion:manifest.storyboard_version,
+    demonstratedSkills:[...manifest.demonstrated_skills],
     mediaDurationProbed:false,publiclyUploaded:false};
 }
 export function prepareSubmissionCandidate({root=ROOT}={}){

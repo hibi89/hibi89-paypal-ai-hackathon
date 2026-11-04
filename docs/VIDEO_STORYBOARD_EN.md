@@ -1,6 +1,6 @@
 # Proofline — two-part, five-skill judging video storyboard
 
-**Status:** Two-part V3 recorder now exercises both marketplace categories and all five innovation skills. The new final video is NOT yet independently verified or released. OWNER-OBSERVED external provider evidence is historical only. Owner review draft. The video recording script now traverses both service categories. No new owner-PC video, public video upload, or Devpost submission is claimed by this document.
+**Status:** Two-part V3 recorder now exercises both marketplace categories and all five innovation skills. The owner's final reviewed version was NOT filmed or released; the private CI V3 recording is separately verified but not published. OWNER-OBSERVED external provider evidence is historical only. Owner review draft. The video recording script now traverses both service categories. No new owner-PC video, public video upload, or Devpost submission is claimed by this document.
 
 **Key message:** AI should help people access their first freelance opportunities, not simply automate existing work.
 
