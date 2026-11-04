@@ -8,7 +8,7 @@ const ORIGIN='https://owner.proofline-review.dev',NOW=1793710000000;
 const TOKEN='a'.repeat(43),BIND='c'.repeat(64),ISS='https://login.proofline-review.dev';
 const CID='0047f90c-96d4-4fca-a28c-f6e9a78fd193';
 const sha=x=>createHash('sha256').update(x).digest('hex');
-function fixture(){
+function fixture({bodyReadTimeoutMs=2000}={}){
  const db=new DatabaseSync(':memory:');
  const names=['0001_payment_claims.sql','0002_worker_private_sessions.sql',
   '0003_worker_private_oidc.sql','0004_worker_private_binding_epoch.sql'];
@@ -31,7 +31,7 @@ function fixture(){
    }};
   }};
  }};
- return {db,handler:createWorkerPrivateQuoteWorkflow({db:wrapper,allowedOrigin:ORIGIN,now:()=>NOW}),
+ return {db,handler:createWorkerPrivateQuoteWorkflow({db:wrapper,allowedOrigin:ORIGIN,now:()=>NOW,bodyReadTimeoutMs}),
   setBeforeWrite:fn=>{beforeWrite=fn}};
 }
 function request(path,method='GET',body,options={}){
@@ -184,4 +184,58 @@ test('real Worker private router includes owner-only D1 quote revision and block
  assert.ok(content.includes('(?:approve|revise)'));
  assert.ok(content.includes('return quotes.fetch(request)'));
  assert.ok(!content.includes('router.fetch(request,untrustedOwnerClaims)'));
+});
+
+test('private quote draft upload has an absolute deadline even when stream cancel never settles',async()=>{
+ const f=fixture({bodyReadTimeoutMs:125});
+ try{
+  const blocked=new ReadableStream({
+   pull(){return new Promise(()=>{})},
+   cancel(){return new Promise(()=>{})}
+  });
+  const req=new Request(ORIGIN+'/__private/quotes',{
+   method:'POST',duplex:'half',body:blocked,
+   headers:{cookie:'__Host-proofline_session='+TOKEN,
+    'sec-fetch-site':'same-origin',origin:ORIGIN,
+    'content-type':'application/json','x-proofline-intent':'quote-draft'}
+  });
+  const started=Date.now();
+  const res=await f.handler.fetch(req);
+  assert.equal(res.status,400);
+  assert.equal((await res.json()).providerCalls,0);
+  assert.ok(Date.now()-started<1500,'stalled stream should not block an owner Worker');
+  assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM quotes').get().n,0);
+ }finally{f.db.close()}
+});
+test('aborted owner quote revision upload cannot mutate the D1 quote',async()=>{
+ const f=fixture({bodyReadTimeoutMs:1500});
+ try{
+  const initial=(await (await f.handler.fetch(request('/__private/quotes','POST',draft))).json()).quote;
+  const controller=new AbortController();
+  const blocked=new ReadableStream({pull(){return new Promise(()=>{})}});
+  const req=new Request(ORIGIN+'/__private/quotes/'+initial.quoteId+'/revise',{
+   method:'POST',duplex:'half',body:blocked,signal:controller.signal,
+   headers:{cookie:'__Host-proofline_session='+TOKEN,
+    'sec-fetch-site':'same-origin',origin:ORIGIN,
+    'content-type':'application/json','x-proofline-intent':'quote-revise'}
+  });
+  const pending=f.handler.fetch(req);
+  controller.abort();
+  const response=await pending;
+  assert.equal(response.status,400);
+  assert.equal((await response.json()).paymentAuthorized,false);
+  assert.equal(f.db.prepare('SELECT version FROM quotes').get().version,1);
+  assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM payment_attempts').get().n,0);
+ }finally{f.db.close()}
+});
+test('private D1 quote body timeout must be bounded before any request is accepted',()=>{
+ const f=fixture();
+ try{
+  const db={withSession(){throw Error('UNEXPECTED_DB_USE')}};
+  for(const bodyReadTimeoutMs of [0,99,5001,Infinity,NaN,1.5])
+   assert.throws(()=>createWorkerPrivateQuoteWorkflow({
+    db,allowedOrigin:ORIGIN,now:()=>NOW,bodyReadTimeoutMs
+   }),/QUOTE_WORKFLOW_DEPENDENCIES_REQUIRED/);
+  assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM quotes').get().n,0);
+ }finally{f.db.close()}
 });
