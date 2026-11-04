@@ -1,3 +1,20 @@
+## 2026-11-05 KST — VERIFIED whole-final 76→77 (+1pp): independently extracted ZIP full Chromium Part1+Part2
+
+**Exact tested SHA `78adbc04037f5e786fabd5803999f1ae5d48c308`**: [full CI #41883594828](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41883594828) **SUCCESS**, 1,160 Node PASS/0 FAIL, Windows first-run SUCCESS, both complete Chromium E2Es inside fresh extracted **private reviewer ZIP** PASS, external browser requests **0**, provider calls/payment posts **0**, one-command judge 8/8 PASS; [smoke #41883594861](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41883594861) SUCCESS. Prior ZIP integrity and HTTP checks did NOT prove its complete client interactions; this first independent ZIP/browser verification closes that specific gap. The ZIP remains unpublished, synthetic, and without remote provider proof.
+
+| Fixed whole-entry component | Weight | Previous | Now | Still missing |
+| --- | ---: | ---: | ---: | --- |
+| Part1 marketplace, quote, contract | 22 | 21 | 21 | Authenticated real merchant/customer system |
+| Part2 five agentic innovations | 23 | 21 | 21 | Independently verified actual AI provider |
+| Real PayPal Sandbox + AI evidence | 20 | 8 | 8 | Owner-approved provider proof |
+| Reviewer access/reproducibility | 15 | **12** | **13** | Authenticated externally reachable reviewer service / real deployment |
+| Default branch public source, MIT license | 8 | 7 | 7 | Owner-approved main merge |
+| Owner-approved public YouTube under 180s | 7 | 4 | 4 | Approved truthful public recording |
+| English Devpost and actual receipt | 5 | 3 | 3 | Authorized publication and receipt |
+| **Internal evidence-weighted final** | **100** | **76** | **77** | **Remaining 23; RELEASE HOLD** |
+
+**Limitations:** This is newly proven portable *offline* full browser delivery, not sponsor score, remote TLS IdP, PayPal payment, Gemini inference, live deployment, public video or Devpost. No double credit for previously proven original-checkout UI or local Wrangler D1.
+
 ## 2026-11-05 KST — Whole-final 75→76 (+1pp): owner-private same-task quote/AI binding, smoke verified
 
 **Exact latest executable SHA** `f8cc0dc27073443aa202cc001e3c617a24ac9565`, [smoke #41881440154](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41881440154) **SUCCESS Node 1,160/1,160 and transaction journey**, [full #41881440246](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41881440246) **COMPLETED SUCCESS**: Linux Node **1,160/1,160 PASS**, Windows first-run SUCCESS, actual two-part Chromium 8/8 reviewer PASS. Immediately prior full integrated feature `cb2de204` [#41880670260](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41880670260) **SUCCESS Node 1,157/1,157, Windows + Chromium 8/8**. Tested private quote now stores only a SHA-256 work brief fingerprint; local read-only receipt cross-checks Gemini's persisted brief fingerprint and refuses wrong-task evidence. Operator also blocks PayPal quote authorization/order/capture when this private fingerprint mismatches. Preserves existing legacy records with explicit unbound label. No external PayPal/Gemini call, remote provider attest, Production/release.
