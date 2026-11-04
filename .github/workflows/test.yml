@@ -1,7 +1,7 @@
 name: Offline payment-contract tests
 on:
   push:
-    branches: [lead/paypal]
+    branches: [main, lead/paypal]
   pull_request:
     branches: [main, lead/paypal]
 permissions:
