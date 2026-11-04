@@ -1,5 +1,27 @@
 # PayPal Hackathon — FINAL product completion evidence scorecard (2026-11-04 KST)
 
+## 2026-11-04 23:33 KST — Final WHOLE product 67 → 68 (+1pp; provisional fixed rubric)
+
+**What changed in actual final product:** the private owner D1 quote revision introduced in the preceding cycle was **inaccessible through the actual Workerd host**, because its explicit route table omitted `/__private/quotes/:id/revise`. Feature SHA `51cc432218dc7725d8d698135f13b67eb10be50f` connects this route to the existing authenticated same-origin D1 CAS handler and exercises it as a **real end-to-end HTTPS browser operation**. Verified browser path: owner OIDC session → create quote → click revised-scope form → D1 version 2 PROPOSED → separately approve amount → reload persisted D1 → confirmed immutable APPROVED quote. The quote revision could not complete this route before this change.
+
+| Final accepted scope | Fixed weight | Before | After | Remaining unmet acceptance |
+| --- | ---: | ---: | ---: | --- |
+| Part1 functional marketplace/quote/contract | 22 | 20 | 20 | Real seller/customer & actual payment-backed checkout |
+| Part2 five innovation skills | 23 | 19 | 19 | Real Gemini-powered buyer/seller exchange in judge-safe surface |
+| Real PayPal Sandbox + AI evidence | 20 | 8 | 8 | Independently verified real provider operations, strict owner consent |
+| Hosted identity, D1, reviewer E2E | 15 | **9** | **10** | Local workerd D1 path now real-browser-verified; remote Production D1/IdP still NOT VERIFIED |
+| Public source/default branch license/instructions | 8 | 7 | 7 | Owner-approved main/LICENSE release not done |
+| Final owner-approved public under-3m YouTube film | 7 | 3 | 3 | Actual reviewed/published footage not done |
+| Real English Devpost submission receipt | 5 | 1 | 1 | Not approved or submitted |
+| **Provisional whole-product completion** | **100** | **67** | **68** | **+1pp for functional authenticated local host integration, RELEASE HOLD** |
+
+**Exact-SHA test evidence:**
+- [Actions #41848113398](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41848113398) **SUCCESS** at code SHA `51cc432218dc7725d8d698135f13b67eb10be50f`: Ubuntu Node `1,141 PASS, 0 FAIL, 0 SKIP`, Windows first-run workflow **SUCCESS**, isolated actual local Wrangler six migrations, S256 PKCE + RS256 OIDC, HTTPS workerd D1 sessions, real Chromium full owner dashboard and quoted revision **SUCCESS**. Exact isolated-job browser report: `REAL_LOCAL_WORKERD_CHROMIUM_OWNER_D1_VIEW_PASS`, `browserQuoteD1Revision:true`, `quoteApiPosts:3`, `externalRequests:0`, `paymentPosts:0`, `pageErrors:0`, `remoteD1Verified:false`. Real local D1 integrity `D1_LOCAL_INTEGRITY_PASS_REMOTE_D1_UNVERIFIED_RELEASE_HOLD`. Part2 Chromium `CHROMIUM_INNOVATION_PART2_E2E_PASS`; entire `npm run verify:local` **8/8 PASS**, `JUDGE_ONE_COMMAND_TWO_PART_PASS`. [MVP smoke #41848113543](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41848113543) **SUCCESS**.
+- Changed only `src/worker_private_identity_read_router.mjs`, `tests/browser_private_d1_workerd_e2e.py`, `tests/worker_private_quote_workflow.test.mjs`. Authentication, all D1 schema/migration files, actual owner data, payment contract and original Part2 unchanged. Rollback to `3456beb7765ad08a530e459a220a76bfd60d4858` if needed.
+- **Scope caution:** Production Cloudflare/IdP and owner desktop are **not** verified; CI uses ephemeral signed synthetic identities and a disposable local D1, not real customers, real Sandbox or Gemini. No external provider calls, payment CREATE/CAPTURE/GET, public host deployment, new credentials, main branch merge, YouTube publication or Devpost submission occurred. Fixed rubric remains a provisional internal scoring framework, not an objective release certification or contest judge score.
+
+The preceding score of 67 had overstated end-to-end availability of the new D1 quote revision; the source itself existed but the actual router path did not. This cycle closes and independently verifies that missing step. **Do not award another point for repetition of these offline tests.** Next increments require a different proven final delivery gate, preferably authentic authorized PayPal/Gemini evidence, public source license/release or final video/submission after approval.
+
 ## 2026-11-04 ~23:20 KST — FINAL WHOLE PRODUCT 66% → 67% (provisional acceptance estimate)
 
 **Fixed full-scope 100-point rubric.** Increment **Part 1 functional marketplace + approvals/contracts from 19/22 to 20/22** for a newly implemented, tested, owner-authenticated **real-D1-shaped quote revision business path** that did not exist in the private Worker dashboard, not another test-count bump. It changes unapproved PROPOSED scope with strictly monotonic quote-version CAS, requires fresh human approval, rejects stale/replayed edits and cross-origin/unauthorized calls, and preserves APPROVED/claimed-payment immutability. No changes to other scoring categories or final release gates.
