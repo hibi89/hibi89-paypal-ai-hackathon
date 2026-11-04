@@ -1,5 +1,5 @@
 """Real Chromium E2E of Part 2, no real AI or payment providers."""
-import queue,re,shutil,subprocess,threading,time
+import hashlib,json,queue,re,shutil,subprocess,threading,time
 from pathlib import Path
 from playwright.sync_api import sync_playwright,expect
 root=Path(__file__).resolve().parents[1]
@@ -32,6 +32,51 @@ try:
    expect(page.locator("h1")).to_contain_text("Five agentic commerce skills")
    expect(page.locator("#activity")).to_contain_text("NOT_PAID")
    assert not any(method=="POST" for method,_ in requests)
+   # Explicit, read-only *private* CLI output preview in the same A2A dashboard.
+   # Local File API only, not a Gemini proof, not a PayPal/AI network action.
+   page.locator("#owner-a2a-private-panel summary").click()
+   private_messages=[{"role":"seller","action":"OFFER","amountMinor":29000},
+     {"role":"buyer","action":"ACCEPT","amountMinor":29000}]
+   private_hash=hashlib.sha256(json.dumps(private_messages,separators=(",",":")).encode()).hexdigest()
+   proof={
+    "status":"PRIVATE_A2A_OFFLINE_CONTRACT_ONLY",
+    "mode":"OWNER_LOCAL_ONLY_NO_PUBLIC_ROUTE",
+    "model":"gemini-3.5-flash-lite",
+    "accountFreeTierVerifiedByThisRun":False,
+    "productionAuthVerified":False,
+    "realGeminiVerifiedByThisRun":False,
+    "paypalConnected":False,"paymentState":"NOT_PAID","autoRetry":False,
+    "negotiationStatus":"AGREED_OFFLINE_CONTRACT",
+    "reason":"BOTH_ROLE_POLICIES_SATISFIED",
+    "transcriptSha256":private_hash,
+    "messages":private_messages,"syntheticBudgetMinor":30000,
+    "claimedRequests":2,"measuredTokens":90,"reservedTokens":5120,
+    "auditState":[{"role":role,"turn":i+1,"state":"DONE",
+      "promptHash":"0"*64,"outputHash":"1"*64}
+      for i,role in enumerate(("seller","buyer"))],
+    "provenance":"LOCAL_INJECTED_TRANSPORT_NO_EXTERNAL_ATTESTATION",
+    "livePaymentAuthorized":False
+   }
+   private_picker=page.locator("#owner-a2a-private-file")
+   posts_before_private=sum(method=="POST" for method,_ in requests)
+   private_picker.set_input_files({"name":"owner-private-a2a.json",
+     "mimeType":"application/json","buffer":json.dumps(proof).encode()})
+   expect(page.locator("#owner-a2a-private-status")).to_contain_text("HASH SELF-CONSISTENT")
+   expect(page.locator("#owner-a2a-private-status")).to_contain_text("REAL GEMINI NOT INDEPENDENTLY ATTESTED")
+   expect(page.locator("#owner-a2a-private-status")).to_contain_text("NOT PAID")
+   expect(page.locator("#owner-a2a-private-transcript li")).to_have_count(2)
+   assert sum(method=="POST" for method,_ in requests)==posts_before_private
+   forged={**proof,"messages":[{**private_messages[0],"amountMinor":30000},private_messages[1]]}
+   private_picker.set_input_files({"name":"altered.json","mimeType":"application/json",
+     "buffer":json.dumps(forged).encode()})
+   expect(page.locator("#owner-a2a-private-status")).to_contain_text("PRIVATE_A2A_REPORT_REJECTED")
+   expect(page.locator("#owner-a2a-private-transcript li")).to_have_count(0)
+   suspicious={**proof,"customerEmail":"NEVER_RENDER_SECRET"}
+   private_picker.set_input_files({"name":"untrusted.json","mimeType":"application/json",
+     "buffer":json.dumps(suspicious).encode()})
+   expect(page.locator("#owner-a2a-private-status")).to_contain_text("PRIVATE_A2A_REPORT_REJECTED")
+   assert "NEVER_RENDER_SECRET" not in page.locator("body").inner_text()
+   assert sum(method=="POST" for method,_ in requests)==posts_before_private
    # Part1/Part2 read-only comparison cannot approve or create anything.
    page.locator("#crosspart-compare").click()
    expect(page.locator("#crosspart-match")).to_contain_text("NEEDS_HUMAN_QUOTE_APPROVAL")

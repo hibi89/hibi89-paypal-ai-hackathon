@@ -39,6 +39,94 @@ function displayCatalogState(){
    ' items. No vendor inventory or PayPal verified.'
   :'Fictional sample catalog active · no owner-supplied items. No vendor inventory or PayPal verified.');
 }
+// Owner-selected private A2A JSON: inspect entirely in this browser.
+// Never upload/save to demo SQLite; never claim Google/PayPal attestation.
+const PRIVATE_A2A_KEYS=new Set([
+ 'status','mode','model','accountFreeTierVerifiedByThisRun',
+ 'productionAuthVerified','realGeminiVerifiedByThisRun','paypalConnected',
+ 'paymentState','autoRetry','negotiationStatus','reason','transcriptSha256',
+ 'messages','syntheticBudgetMinor','claimedRequests','measuredTokens',
+ 'reservedTokens','auditState','provenance','livePaymentAuthorized'
+]);
+const PRIVATE_HASH=/^[a-f0-9]{64}$/;
+function privateA2aReject(){throw Error('PRIVATE_A2A_REPORT_REJECTED');}
+async function inspectOwnerA2AFile(file){
+ if(!file||file.size<100||file.size>12288||!/\.json$/i.test(file.name))
+  privateA2aReject();
+ const raw=await file.text();let report;
+ try{report=JSON.parse(raw);}catch{privateA2aReject();}
+ if(!report||typeof report!=='object'||Array.isArray(report)||
+   Object.keys(report).length!==PRIVATE_A2A_KEYS.size||
+   Object.keys(report).some(k=>!PRIVATE_A2A_KEYS.has(k))||
+   report.status!=='PRIVATE_A2A_OFFLINE_CONTRACT_ONLY'||
+   report.mode!=='OWNER_LOCAL_ONLY_NO_PUBLIC_ROUTE'||
+   report.model!=='gemini-3.5-flash-lite'||
+   report.negotiationStatus!=='AGREED_OFFLINE_CONTRACT'||
+   report.provenance!=='LOCAL_INJECTED_TRANSPORT_NO_EXTERNAL_ATTESTATION'||
+   report.realGeminiVerifiedByThisRun!==false||
+   report.accountFreeTierVerifiedByThisRun!==false||
+   report.productionAuthVerified!==false||report.paypalConnected!==false||
+   report.livePaymentAuthorized!==false||report.autoRetry!==false||
+   report.paymentState!=='NOT_PAID'||report.syntheticBudgetMinor!==30000||
+   !Number.isSafeInteger(report.claimedRequests)||report.claimedRequests<2||
+   report.claimedRequests>4||
+   !Number.isSafeInteger(report.measuredTokens)||report.measuredTokens<2||
+   !Number.isSafeInteger(report.reservedTokens)||
+   report.reservedTokens!==report.claimedRequests*2560||
+   !PRIVATE_HASH.test(report.transcriptSha256||''))privateA2aReject();
+ const messages=report.messages,events=report.auditState;
+ if(!Array.isArray(messages)||messages.length<2||messages.length>4||
+   report.claimedRequests!==messages.length||
+   !Array.isArray(events)||events.length!==messages.length)
+  privateA2aReject();
+ for(let i=0;i<messages.length;i++){
+  const m=messages[i],a=events[i],role=i%2?'buyer':'seller';
+  if(!m||typeof m!=='object'||Array.isArray(m)||
+    m.role!==role||
+    (i===0?m.action!=='OFFER':
+      !['COUNTER','ACCEPT'].includes(m.action))||
+    Object.keys(m).sort().join(',')!=='action,amountMinor,role'||
+    !Number.isSafeInteger(m.amountMinor)||m.amountMinor<27000||
+    m.amountMinor>30000||
+    !a||typeof a!=='object'||Array.isArray(a)||
+    Object.keys(a).sort().join(',')!=='outputHash,promptHash,role,state,turn'||
+    a.turn!==i+1||a.role!==role||a.state!=='DONE'||
+    !PRIVATE_HASH.test(a.promptHash||'')||!PRIVATE_HASH.test(a.outputHash||''))privateA2aReject();
+  if(m.action==='ACCEPT'&&(i!==messages.length-1||
+    m.amountMinor!==messages[i-1].amountMinor))privateA2aReject();
+ }
+ if(messages.at(-1).action!=='ACCEPT')privateA2aReject();
+ // Browser Web Crypto is usable on the secure-context 127.0.0.1 demo.
+ const data=new TextEncoder().encode(JSON.stringify(messages));
+ const digest=new Uint8Array(await crypto.subtle.digest('SHA-256',data));
+ const hash=[...digest].map(x=>x.toString(16).padStart(2,'0')).join('');
+ if(hash!==report.transcriptSha256)privateA2aReject();
+ return {messages,hash,model:report.model,requests:report.claimedRequests};
+}
+el('owner-a2a-private-file').addEventListener('change',async e=>{
+ const list=el('owner-a2a-private-transcript');
+ list.replaceChildren();
+ show('owner-a2a-private-status','Checking selected private file in browser only...');
+ try{
+  const summary=await inspectOwnerA2AFile(e.target.files?.[0]);
+  for(const m of summary.messages){
+   const item=document.createElement('li');
+   item.textContent=m.role.toUpperCase()+' · '+m.action+' · '+money(m.amountMinor);
+   list.append(item);
+  }
+  show('owner-a2a-private-status',
+   'PRIVATE CLI RESULT / HASH SELF-CONSISTENT · '+summary.requests+
+   ' locally recorded role turns · '+summary.model+' (declared only) · SHA-256 '+
+   summary.hash.slice(0,16)+'… · REAL GEMINI NOT INDEPENDENTLY ATTESTED · '+
+   'PAYPAL NOT CONNECTED / NOT PAID. Browser file read only: zero uploads or new A2A calls.');
+ }catch{
+  list.replaceChildren();
+  show('owner-a2a-private-status',
+   'PRIVATE_A2A_REPORT_REJECTED · Unsupported, tampered, excessive, or unverified input. '+
+   'No file contents sent or persisted; never retry a real provider request to fix this.');
+ }finally{e.target.value='';}
+});
+
 function mandateStatus(c){
  // A confirmed revoke must not be visually undone by an older in-flight GET.
  if(c.revoked||model.confirmedRevocations.has(c.id))return 'REVOKED';

@@ -58,7 +58,14 @@ pre{white-space:pre-wrap;word-break:break-word;background:#132643;color:#d9edff;
 <div id="a2a-history-tools"><label for="a2a-history">Previous negotiations · saved SQLite history</label>
 <select id="a2a-history" aria-describedby="a2a-history-status"><option value="">No completed negotiation yet</option></select>
 <button type="button" id="show-a2a-history" disabled>View saved negotiation</button>
-<p id="a2a-history-status" role="status" aria-live="polite">Stored results are read-only. Viewing them never runs agents or creates PayPal orders.</p></div></section>
+<p id="a2a-history-status" role="status" aria-live="polite">Stored results are read-only. Viewing them never runs agents or creates PayPal orders.</p></div>
+<details id="owner-a2a-private-panel"><summary>Optional: inspect a private owner A2A CLI result (local file only)</summary>
+<p>The previously opt-in Gemini A2A pilot can output a JSON report. Choose a sanitized JSON file here to view its transcript without upload, account access, additional Gemini calls, or PayPal actions. Its locally computed hash is not a third-party signature and does not prove that Google ran the model. The report must explicitly state that real provider verification was NOT performed.</p>
+<label for="owner-a2a-private-file">Choose an owner CLI A2A JSON result (up to 12 KB; never secrets)</label>
+<input id="owner-a2a-private-file" type="file" accept=".json,application/json">
+<p id="owner-a2a-private-status" role="status" aria-live="polite">No owner file selected. Private pilot evidence is separate from synthetic browser A2A.</p>
+<ol id="owner-a2a-private-transcript" aria-label="Manually inspected private A2A report"></ol>
+</details></section>
 <section class="card wide" id="crosspart-panel" aria-labelledby="crosspart-heading">
 <span class="badge">Part 1 + Part 2 · Offline review</span>
 <h2 id="crosspart-heading">Compare AI agreement with human-approved quote</h2>
