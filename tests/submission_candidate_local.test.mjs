@@ -4,7 +4,7 @@ import {mkdtempSync,mkdirSync,readFileSync,writeFileSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createHash} from 'node:crypto';
-import {prepareSubmissionCandidate,verifyPrivateSyntheticVideo} from '../scripts/prepare_submission_candidate.mjs';
+import {prepareSubmissionCandidate,verifyPrivateSyntheticVideo,probePrivateWebmDuration} from '../scripts/prepare_submission_candidate.mjs';
 
 const fresh=()=>mkdtempSync(join(tmpdir(),'paypal-local-submission-'));
 function makeFixture(dir){
@@ -66,4 +66,44 @@ test('owner packet never claims official submission or provider verification',()
  assert.match(md,/PRIVATE SUBMISSION CANDIDATE \(NOT SUBMITTED\)/);
  assert.match(md,/owner-reported historical test, not the synthetic video/);
  assert.match(md,/OWNER TO ADD AFTER APPROVED PUBLIC YOUTUBE UPLOAD/);
+});
+
+test('ffprobe checks actual encoded duration, not recording elapsed time',()=>{
+ const calls=[];
+ const stub=(bin,args,opts)=>{calls.push({bin,args,opts});return {status:0,stdout:'133.680000\n'};};
+ assert.deepEqual(probePrivateWebmDuration('/tmp/private.webm',stub),
+  {status:'MEDIA_DURATION_UNDER_180_VERIFIED',durationSeconds:133.68});
+ assert.equal(calls[0].bin,'ffprobe');
+ assert.equal(calls[0].args.at(-1),'/tmp/private.webm');
+ assert.equal(calls[0].opts.shell,false);
+ assert.equal(calls[0].opts.timeout,10000);
+});
+test('media duration >= 180 and invalid/missing ffprobe cannot qualify for final review',()=>{
+ for(const [response,status] of [
+  [{status:0,stdout:'180.000\n'},'MEDIA_DURATION_TOO_LONG'],
+  [{status:0,stdout:'oops'},'MEDIA_DURATION_NOT_VERIFIED'],
+  [{status:1,stderr:'Invalid data'},'MEDIA_DURATION_NOT_VERIFIED'],
+  [{error:{code:'ENOENT'},status:null},'MEDIA_DURATION_NOT_VERIFIED'],
+  [{status:0,stdout:'NaN'},'MEDIA_DURATION_NOT_VERIFIED'],
+  [{status:0,stdout:'0'},'MEDIA_DURATION_NOT_VERIFIED']]){
+  assert.equal(probePrivateWebmDuration('/tmp/private.webm',()=>response).status,status);
+ }
+});
+test('owner review depends on independently measured duration while staying unpublished',()=>{
+ const root=fresh();
+ try{
+  makeFixture(root);
+  const short=verifyPrivateSyntheticVideo(root,{probeDuration:()=>
+    ({status:'MEDIA_DURATION_UNDER_180_VERIFIED',durationSeconds:133.68})});
+  assert.equal(short.mediaDurationProbed,true);
+  assert.equal(short.mediaDurationSeconds,133.68);
+  assert.equal(short.publiclyUploaded,false);
+  const tooLong=verifyPrivateSyntheticVideo(root,{probeDuration:()=>
+    ({status:'MEDIA_DURATION_TOO_LONG',durationSeconds:180})});
+  assert.equal(tooLong.mediaDurationProbed,false);
+  assert.equal(tooLong.mediaDurationStatus,'MEDIA_DURATION_TOO_LONG');
+  const counterfeit=verifyPrivateSyntheticVideo(root,{probeDuration:()=>
+    ({status:'MEDIA_DURATION_UNDER_180_VERIFIED',durationSeconds:999})});
+  assert.equal(counterfeit.mediaDurationProbed,false);
+ }finally{rmSync(root,{recursive:true,force:true})}
 });

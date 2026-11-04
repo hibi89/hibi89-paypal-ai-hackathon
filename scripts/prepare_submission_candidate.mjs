@@ -2,6 +2,7 @@
 // Reads only public checkout files and ignored synthetic video under output/videos.
 // Does not touch owner-private SQLite, provider credentials, payment APIs or browsers.
 import {createHash} from 'node:crypto';
+import {spawnSync} from 'node:child_process';
 import {readFileSync,readdirSync,lstatSync,mkdirSync,writeFileSync,existsSync} from 'node:fs';
 import {join,resolve,basename} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -14,7 +15,25 @@ const entryPaths=['LICENSE','README.md','docs/JUDGE_REPRODUCTION_EN.md',
   'scripts/record_judge_demo.py'];
 const read=(root,path)=>{try{return readFileSync(join(root,path),'utf8').replace(/\r\n?/g,'\n')}catch{return ''}};
 const requireValue=(condition,why)=>{if(!condition)throw Error(why)};
-export function verifyPrivateSyntheticVideo(dir){
+// The recorder's elapsed wall-clock time is NOT its encoded media duration.
+// Local ffprobe reads only this owner-selected, hash-checked WebM; no network.
+export function probePrivateWebmDuration(file,runner=spawnSync){
+  const result=runner('ffprobe',[
+    '-v','error','-show_entries','format=duration',
+    '-of','default=noprint_wrappers=1:nokey=1',file
+  ],{encoding:'utf8',shell:false,windowsHide:true,timeout:10000,
+      maxBuffer:4096,env:{PATH:process.env.PATH||'',
+        SystemRoot:process.env.SystemRoot||''}});
+  const raw=typeof result?.stdout==='string'?result.stdout.trim():'';
+  if(result?.error||result?.status!==0||!/^[0-9]+(?:\.[0-9]+)?$/.test(raw))
+    return {status:'MEDIA_DURATION_NOT_VERIFIED',durationSeconds:null};
+  const seconds=Number(raw);
+  if(!Number.isFinite(seconds)||seconds<=0)
+    return {status:'MEDIA_DURATION_NOT_VERIFIED',durationSeconds:null};
+  return {status:seconds<180?'MEDIA_DURATION_UNDER_180_VERIFIED':'MEDIA_DURATION_TOO_LONG',
+    durationSeconds:seconds};
+}
+export function verifyPrivateSyntheticVideo(dir,{probeDuration=probePrivateWebmDuration}={}){
   if(!existsSync(dir))return {status:'LOCAL_VIDEO_NOT_RECORDED'};
   const candidates=readdirSync(dir)
     .filter(n=>/^paypal-synthetic-review-\d{8}-\d{6}\.manifest\.json$/.test(n))
@@ -53,11 +72,19 @@ export function verifyPrivateSyntheticVideo(dir){
   requireValue(data.subarray(0,4).equals(Buffer.from([0x1a,0x45,0xdf,0xa3])),'VIDEO_WEBM_HEADER_MISSING');
   const hash=createHash('sha256').update(data).digest('hex');
   requireValue(hash===manifest.video_sha256,'VIDEO_SHA256_MISMATCH');
+  const duration=probeDuration(dest);
+  const durationValid=duration?.status==='MEDIA_DURATION_UNDER_180_VERIFIED'&&
+    typeof duration.durationSeconds==='number'&&Number.isFinite(duration.durationSeconds)&&
+    duration.durationSeconds>0&&duration.durationSeconds<180;
   return {status:'LOCAL_SYNTHETIC_WEBM_INTEGRITY_VERIFIED',filename,sha256:hash,
     bytes,recordingWallClockSeconds:manifest.wall_clock_elapsed_seconds,
     storyboardVersion:manifest.storyboard_version,
     demonstratedSkills:[...manifest.demonstrated_skills],
-    mediaDurationProbed:false,publiclyUploaded:false};
+    mediaDurationProbed:durationValid,
+    mediaDurationSeconds:Number.isFinite(duration?.durationSeconds)?duration.durationSeconds:null,
+    mediaDurationStatus:durationValid?'MEDIA_DURATION_UNDER_180_VERIFIED':
+      duration?.status==='MEDIA_DURATION_TOO_LONG'?'MEDIA_DURATION_TOO_LONG':'MEDIA_DURATION_NOT_VERIFIED',
+    publiclyUploaded:false};
 }
 export function prepareSubmissionCandidate({root=ROOT}={}){
   root=resolve(root);
@@ -66,13 +93,16 @@ export function prepareSubmissionCandidate({root=ROOT}={}){
   const assessment=assessSubmissionEvidence({ledger,files});
   const video=verifyPrivateSyntheticVideo(join(root,'output','videos'));
   const localSource=assessment.localAssets.every(a=>!a.status.includes('MISSING')&&!a.status.includes('INVALID'));
-  const ownerReviewReady=localSource&&video.status==='LOCAL_SYNTHETIC_WEBM_INTEGRITY_VERIFIED';
+  const ownerReviewReady=localSource&&
+    video.status==='LOCAL_SYNTHETIC_WEBM_INTEGRITY_VERIFIED'&&video.mediaDurationProbed;
   const copy=files['docs/DEVPOST_ENTRY_AND_VIDEO_COPY_EN_20261029.md'];
   requireValue(copy.includes('DRAFT — NOT PUBLISHED'),'DEVPOST_COPY_DRAFT_GUARD_MISSING');
   const dest=join(root,'output','submission');
   mkdirSync(dest,{recursive:true});
   const report={
-    status:ownerReviewReady?'LOCAL_PACKET_PREPARED_NOT_SUBMITTED':'LOCAL_PACKET_NEEDS_VIDEO_OR_SOURCE',
+    status:ownerReviewReady?'LOCAL_PACKET_PREPARED_NOT_SUBMITTED':
+      localSource&&video.status==='LOCAL_SYNTHETIC_WEBM_INTEGRITY_VERIFIED'?
+        'LOCAL_PACKET_NEEDS_INDEPENDENT_MEDIA_DURATION_PROOF':'LOCAL_PACKET_NEEDS_VIDEO_OR_SOURCE',
     sourceStatus:localSource?'LOCAL_SOURCE_DRAFTS_PRESENT':'LOCAL_SOURCE_MISSING',
     privateVideo:video,
     ownerReviewReady,
@@ -82,7 +112,7 @@ export function prepareSubmissionCandidate({root=ROOT}={}){
     mainBranchRelease:'NOT_APPROVED',
     externalSubmissionEligible:false,
     externalGates:assessment.externalGates,
-    note:'This file is local, synthetic, unpublished. No video duration probe, real-provider replay, publicity consent or Devpost submission.'
+    note:'This packet is local, synthetic and unpublished. ffprobe checks WebM duration only when available; hash or media length does not verify providers, publication approval or Devpost submission.'
   };
   const md='# PROOFLINE — PRIVATE SUBMISSION CANDIDATE (NOT SUBMITTED)\n\n'+
     '**No public YouTube link or Devpost receipt exists in this report. Do not publish without owner review and approval.**\n\n'+
