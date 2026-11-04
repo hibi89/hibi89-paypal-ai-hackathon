@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createGeminiA2ARoleAgents} from '../src/gemini_a2a_adapter.mjs';
 import {runBoundedA2A} from '../src/agentic_a2a_protocol.mjs';
+import {GEMINI_P0_ENDPOINT} from '../src/gemini_p0_model.mjs';
 
 const KEY='FAKE_TEST_KEY_NOT_A_REAL_TOKEN';
 const body=(action,amountMinor,tokenCount=40)=>new Response(JSON.stringify({
@@ -256,4 +257,43 @@ test('private Gemini role budgets are enforced even outside the orchestrator',as
  await assert.rejects(()=>buyer.buyerAgent(buyerView),
   e=>e.code==='GEMINI_A2A_CIRCUIT_OPEN');
  assert.equal(buyerCalls,2);
+});
+
+
+test('real Gemini A2A response source and MIME are pinned, without payment authority',async()=>{
+ // Native Responses constructed offline have no URL; simulate what the
+ // browser/undici network fetch would return, without any external request.
+ for(const kind of ['foreign-origin','wrong-mime','redirected']){
+  let posts=0;
+  const adapter=setup(async()=>{
+   posts++;
+   const result=body('OFFER',29000);
+   Object.defineProperty(result,'url',{value:kind==='foreign-origin'
+    ?'https://untrusted.invalid/v1' :GEMINI_P0_ENDPOINT});
+   if(kind==='wrong-mime')
+    result.headers.set('content-type','text/html');
+   if(kind==='redirected')
+    Object.defineProperty(result,'redirected',{value:true});
+   return result;
+  });
+  await assert.rejects(()=>adapter.sellerAgent(sellerView),e=>
+   e.code===(kind==='wrong-mime'
+    ?'GEMINI_A2A_RESPONSE_TYPE_INVALID':'GEMINI_A2A_RESPONSE_SOURCE_UNTRUSTED'));
+  assert.equal(posts,1);
+  assert.equal(adapter.status().requestsAttempted,1);
+  assert.equal(adapter.status().circuitOpen,true);
+  await assert.rejects(()=>adapter.sellerAgent(sellerView),
+   {code:'GEMINI_A2A_CIRCUIT_OPEN'});
+ }
+ // A pinned response with JSON MIME still exercises the normal full path.
+ let posts=0;
+ const normal=setup(async()=>{
+  posts++;
+  const result=body('OFFER',29000);
+  Object.defineProperty(result,'url',{value:GEMINI_P0_ENDPOINT});
+  return result;
+ });
+ assert.equal((await normal.sellerAgent(sellerView)).amountMinor,29000);
+ assert.equal(posts,1);
+ assert.equal(normal.status().circuitOpen,false);
 });

@@ -170,6 +170,18 @@ export function createGeminiA2ARoleAgents({
    if(!Number.isInteger(response?.status)||response.status!==200)
     throwCode(response?.status===429?'GEMINI_A2A_PROVIDER_QUOTA_BLOCKED':
       'GEMINI_A2A_PROVIDER_HTTP_FAILED');
+   // Real fetch Response must be pinned to the exact consented Gemini endpoint.
+   // Synthetic new Response() fixtures have an empty .url, unlike a network
+   // response, and remain supported by the explicitly injected test transport.
+   if(response instanceof Response){
+    if(response.redirected||response.type==='opaqueredirect'||
+       (response.url&&response.url!==GEMINI_P0_ENDPOINT))
+     throwCode('GEMINI_A2A_RESPONSE_SOURCE_UNTRUSTED');
+    if(response.url&&
+       !/^application\/json(?:\s*;|$)/i.test(
+        response.headers.get('content-type')??''))
+     throwCode('GEMINI_A2A_RESPONSE_TYPE_INVALID');
+   }
    const advertisedLength=response.headers?.get?.('content-length');
    if(advertisedLength!==null&&advertisedLength!==undefined&&
       (!/^\d+$/.test(advertisedLength)||Number(advertisedLength)>MAX_ENVELOPE_BYTES))
