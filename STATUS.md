@@ -1,3 +1,10 @@
+## 2026-11-05 KST — Final video safety and filmed owner-Gift path, source CI queued (LATEST)
+
+- New source: fff15c28a9d4ad6d0ae4e4964c4ccbd5a16377cb. Actual WebM length must independently measure <180 seconds; no ffprobe on Windows triggers fallback to existing Playwright FFmpeg. Recorder now actually imports a locally supplied two-item Gift catalog, selects a capped premium item, and records manifest evidence.
+- Previous aa9e09b Windows job failed because ffprobe unavailable, despite recording SUCCESS; first smoke #41861382031 SUCCESS. Final CI #41862397878 was QUEUED, full Linux/Windows/media duration NOT VERIFIED at check.
+- Whole-contest final evidence-weighted estimate 71/100 UNCHANGED. +1pp target not yet verified; RELEASE HOLD. No PayPal/Gemini external calls, remote deployment, final owner-reviewed YouTube or Devpost submission. Default main root LICENSE PR #16 awaits owner approval.
+- Rollback 8a06efcd456c71a4b93ad63e86bee8058c053c70. HANDOFF latest ten-part checkpoint explains rerun guard and next tasks.
+
 ## 2026-11-05 ~00:20 KST — Final whole-product 70→71: Part2 private A2A result local browser reviewer (VERIFIED)
 
 - **Actual new reviewer feature:** `/demo/innovation` now lets an OWNER deliberately choose a previously consent-gated `pilot:gemini:a2a` CLI JSON result file; the browser reads it locally, validates strict allowlisted provenance, no-provider-verification flags, payment-denied fields, quota/role/amount sequence and SHA-256 digest using Web Crypto. It shows only buyer/seller actions and amounts, NEVER sends the file to the server, calls Gemini/PayPal or modifies either product ledger. Tampered hash, extraneous customer field, invalid schema or excessive file size is refused. This closes the prior missing **private pilot → reviewer-visible inspection** path, not real Gemini invocation.

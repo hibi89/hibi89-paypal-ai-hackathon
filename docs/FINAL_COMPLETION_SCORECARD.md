@@ -1,3 +1,7 @@
+## 2026-11-05 KST — New video evidence pending, provisional whole-product 71 unchanged
+
+Source fff15c28a9d4ad6d0ae4e4964c4ccbd5a16377cb adds an independent encoded WebM duration limit, records owner-entered Gift matching on video, and uses existing Playwright FFmpeg if Windows ffprobe is missing. First Windows full CI on aa9e09b failed on ffprobe absence AFTER private video recording succeeded. Final exact-SHA Windows/Linux and default-speed media CI have NOT YET completed at the last check. Fixed whole-contest score remains 71/100, with video 3/7. Do not claim +1pp until genuine current private recording with accepted duration and regression evidence; no approved YouTube, real provider proof or Devpost receipt. RELEASE HOLD.
+
 # PayPal Hackathon — FINAL product completion evidence scorecard (2026-11-04 KST)
 
 ## 2026-11-05 ~00:20 KST — Final whole-contest acceptance 70→71 (+1pp; provisional rubric)
