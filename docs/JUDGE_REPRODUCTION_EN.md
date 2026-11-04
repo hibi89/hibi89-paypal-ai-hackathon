@@ -30,6 +30,14 @@ Click **Save owner-supplied local catalog** to save to a disposable local SQLite
 
 Exact SHA `204a21573e049be4d59fca4ec6215d20e61d835b` [CI #41853415775](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41853415775): 1,145 Node PASS, Windows PASS and real Part2 Chromium catalog-import journey PASS; historical provider proof still separate.
 
+## Optional local preview of the private Gemini A2A CLI result (read-only)
+
+The default browser is deliberately synthetic. Separately, `npm run pilot:gemini:a2a` checks readiness **without contacting Google or reading credentials**. An actual model run via the private CLI requires independently confirmed account Free Tier/quota, the owner's separate explicit approval, a private TTY and a private API key. **No such run is asserted by this guide.**
+
+If the operator already has a sanitized JSON **successful private A2A CLI result** on their own computer, open `npm run demo` → `/demo/innovation` → the **Optional: inspect a private owner A2A CLI result** section, and choose the local `.json` file (max 12 KB). The browser checks an allowlisted output schema, 2–4 alternating role turns, budget and required zero-payment flags, local quota-event hashes, and SHA-256 digest consistency, then displays actions/prices as plain text. The report **never leaves the browser, is not uploaded or saved to SQLite**, and does not trigger any model or payment request. Altered transcripts, extra fields (including customer email) and unsupported records are blocked. Reload clears the preview. The file's digest **is NOT a Google signature**, and even a valid private CLI report identifies `realGeminiVerifiedByThisRun:false`. Do not claim provider activity was independently attested. This viewer cannot substitute for the contest's substantive real PayPal + AI integration.
+
+Actual exact-source test: [#41856162809](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41856162809) completed SUCCESS, local Chromium valid/tamper/extra-field cases PASS, zero provider/payment POST. Official [PayPal AI Hackathon rules](https://paypalaihackathon.devpost.com/rules) accept complete run instructions in a public licensed repository **instead of** hosting, but require working integrations and public YouTube.
+
 ## Current verified scope
 
 - Root [MIT LICENSE](../LICENSE) is present and approved; `package.json` says `MIT`.
