@@ -7,6 +7,7 @@ import {runBoundedA2A,createOfflineRoleAgents} from './agentic_a2a_protocol.mjs'
 import {buildSyntheticMerchantDossier} from './merchant_dossier.mjs';
 import {buildSyntheticChurnProposal} from './churn_retention_policy.mjs';
 import {selectSyntheticGift} from './gift_policy.mjs';
+import {validateOwnerGiftCatalog,selectOwnerLocalGift} from './owner_local_gift_catalog.mjs';
 const validId=x=>typeof x==='string'&&/^[A-Za-z0-9_-]{1,64}$/.test(x);
 const err=(code,status=400)=>{throw new QuoteApiError(code,status)};
 const hash=o=>createHash('sha256').update(JSON.stringify(o)).digest('hex');
@@ -71,6 +72,8 @@ export function createInnovationLab({filename,now=Date.now,agentsFactory=createO
  if(!cols.includes('revoked'))db.exec('ALTER TABLE innovation_delegations ADD COLUMN revoked INTEGER NOT NULL DEFAULT 0');
  if(!cols.includes('revision'))db.exec('ALTER TABLE innovation_delegations ADD COLUMN revision INTEGER NOT NULL DEFAULT 1');
  db.exec("CREATE TABLE IF NOT EXISTS innovation_a2a_attempts (actor TEXT NOT NULL,merchant TEXT NOT NULL,request_key TEXT NOT NULL,consent_id TEXT NOT NULL UNIQUE,fingerprint TEXT NOT NULL,revision INTEGER NOT NULL,cap INTEGER NOT NULL,expires INTEGER NOT NULL,state TEXT NOT NULL,result TEXT,created INTEGER NOT NULL,PRIMARY KEY(actor,merchant,request_key))");
+ // Local disposable demo SQLite only: never deployed to remote D1.
+ db.exec("CREATE TABLE IF NOT EXISTS innovation_owner_gift_catalog(actor TEXT NOT NULL,merchant TEXT NOT NULL,revision INTEGER NOT NULL,items_json TEXT NOT NULL,PRIMARY KEY(actor,merchant))");
  const query=s=>db.prepare(s);
  function transact(fn){
   db.exec('BEGIN IMMEDIATE');
@@ -92,7 +95,41 @@ export function createInnovationLab({filename,now=Date.now,agentsFactory=createO
    return {...result,replayed:false};
   });
  }
- const safe=x=>({...x,mode:'OFFLINE_SYNTHETIC_ONLY',providerCalls:0,paymentAuthorized:false});
+ const safe=x=>({...x,mode:x.catalogSource==='OWNER_SUPPLIED_LOCAL_NOT_VENDOR_VERIFIED'?
+  'OFFLINE_OWNER_SUPPLIED_NOT_VENDOR_VERIFIED':'OFFLINE_SYNTHETIC_ONLY',
+  providerCalls:0,paymentAuthorized:false});
+ function catalog({actor,merchant}={}){
+  if(!validId(actor)||!validId(merchant))err('INVALID_ACTOR');
+  const row=query('SELECT revision,items_json FROM innovation_owner_gift_catalog WHERE actor=? AND merchant=?').get(actor,merchant);
+  let items=[];
+  if(row){try{items=validateOwnerGiftCatalog(JSON.parse(row.items_json)).map(({id,category,style,priceMinor})=>({id,category,style,priceMinor}))}
+    catch{err('OWNER_CATALOG_STORED_DATA_INVALID',503);}}
+  return safe({revision:row?.revision??0,items,available:!!row,
+   catalogSource:row?'OWNER_SUPPLIED_LOCAL_NOT_VENDOR_VERIFIED':
+     'STATIC_FICTIONAL_ITEMS_NO_LIVE_INVENTORY',
+   providerInventoryVerified:false,paymentState:'NOT_PAID',checkout:'DISABLED'});
+ }
+ function importCatalog({actor,merchant,key,expectedRevision,items}={}){
+  if(!validId(actor)||!validId(merchant)||!validId(key)||
+   !Number.isSafeInteger(expectedRevision)||expectedRevision<0||expectedRevision>=1000)
+    err('INVALID_CATALOG_REVISION');
+  let checked;
+  try{checked=validateOwnerGiftCatalog(items);}
+  catch{err('INVALID_OWNER_LOCAL_GIFT_CATALOG');}
+  return action({actor,merchant,key,kind:'catalog',
+   input:{expectedRevision,items:checked},execute:()=>{
+    const old=query('SELECT revision FROM innovation_owner_gift_catalog WHERE actor=? AND merchant=?').get(actor,merchant);
+    if((old?.revision??0)!==expectedRevision)err('OWNER_CATALOG_VERSION_CONFLICT',409);
+    const revision=expectedRevision+1;
+    query("INSERT INTO innovation_owner_gift_catalog(actor,merchant,revision,items_json) VALUES(?,?,?,?) ON CONFLICT(actor,merchant) DO UPDATE SET revision=excluded.revision,items_json=excluded.items_json")
+     .run(actor,merchant,revision,JSON.stringify(checked.map(x=>({
+      id:x.id,category:x.category,style:x.style,priceMinor:x.priceMinor
+     }))));
+    return safe({status:'OWNER_LOCAL_CATALOG_IMPORTED',revision,count:checked.length,
+     catalogSource:'OWNER_SUPPLIED_LOCAL_NOT_VENDOR_VERIFIED',
+     providerInventoryVerified:false,checkout:'DISABLED',paymentState:'NOT_PAID'});
+   }});
+ }
  function delegate({actor,merchant,key,category,maxMinor,expiresInMinutes}={}){
   if(!['services','gifts'].includes(category)||!Number.isSafeInteger(maxMinor)||
     maxMinor<100||maxMinor>1000000||!Number.isSafeInteger(expiresInMinutes)||
@@ -123,8 +160,15 @@ export function createInnovationLab({filename,now=Date.now,agentsFactory=createO
    let result;
    if(kind==='a2a')result=negotiateA2A(grant.cap);
    else if(giftPreferences!==undefined){
-    try{result=selectSyntheticGift(giftPreferences);}
-    catch(e){if(e?.code==='INVALID_SYNTHETIC_GIFT_PREFERENCES')err(e.code);throw e;}
+    try{
+     const source=catalog({actor,merchant});
+     result=source.available
+      ?selectOwnerLocalGift(giftPreferences,source.items,source.revision)
+      :selectSyntheticGift(giftPreferences);
+    }
+    catch(e){if(['INVALID_SYNTHETIC_GIFT_PREFERENCES',
+      'INVALID_OWNER_LOCAL_GIFT_CATALOG'].includes(e?.code))err(e.code);
+     throw e;}
     if(result.maxPriceMinor>grant.cap)err('DELEGATION_CAP_DENIED',403);
    }else result=findGift(grant.cap);
    const amount=kind==='a2a'?result.agreedMinor:result.selected?.priceMinor;
@@ -255,6 +299,7 @@ export function createInnovationLab({filename,now=Date.now,agentsFactory=createO
   const events=query('SELECT kind,result,created FROM innovation_events WHERE actor=? AND merchant=? ORDER BY id DESC LIMIT 30').all(actor,merchant)
    .map(x=>({kind:x.kind,result:JSON.parse(x.result),createdAt:x.created}));
   const snapshot=safe({part:'PART_2',skills:['a2a','delegation','gift','churn','invoice_dispute'],
+   catalog:catalog({actor,merchant}),
    consents:consents.map(c=>({...c,active:!c.revoked&&c.expiresAt>now()&&c.usedMinor===0})),pendingAttempts,
    events,paymentState:'NOT_PAID',realGemini:false,realPayPal:false});
   if(agentTransport==='PRIVATE_INJECTED_UNVERIFIED')
@@ -262,16 +307,17 @@ export function createInnovationLab({filename,now=Date.now,agentsFactory=createO
     providerCalls:'NOT_ATTESTED',providerEvidence:'EXTERNAL_TRANSPORT_NOT_ATTESTED'});
   return snapshot;
  }
- return Object.freeze({delegate,trade,a2a,revoke,skill,state,close:()=>db.close()});
+ return Object.freeze({delegate,trade,a2a,revoke,skill,state,catalog,importCatalog,close:()=>db.close()});
 }
 export function createInnovationApi({store,resolveSession,identityPolicy}={}){
- if(!store||typeof store.a2a!=='function'||typeof store.revoke!=='function'||typeof resolveSession!=='function'||!identityPolicy)throw new TypeError('LAB_DEPENDENCIES_REQUIRED');
+ if(!store||typeof store.a2a!=='function'||typeof store.revoke!=='function'||typeof store.importCatalog!=='function'||typeof resolveSession!=='function'||!identityPolicy)throw new TypeError('LAB_DEPENDENCIES_REQUIRED');
  return async request=>{
   try{
    const url=new URL(request.url);
-   const match=/^\/api\/demo\/innovation\/(state|delegate|revoke|a2a|gift|churn|invoice)$/.exec(url.pathname);
+   const match=/^\/api\/demo\/innovation\/(state|catalog|delegate|revoke|a2a|gift|churn|invoice)$/.exec(url.pathname);
    if(!match||url.search)err('NOT_FOUND',404);
-   const route=match[1],read=route==='state';
+   const route=match[1],read=route==='state'||
+    (route==='catalog'&&request.method==='GET');
    if(request.method!==(read?'GET':'POST'))
     return reply({error:'METHOD_NOT_ALLOWED'},405,{allow:read?'GET':'POST'});
    const session=await resolveSession(request);
@@ -280,10 +326,15 @@ export function createInnovationApi({store,resolveSession,identityPolicy}={}){
     err('OWNER_ONLY',403);
    await authorizePersistedLocalAction({policy:identityPolicy,request,session,action:'marketplace.match'});
    const actor=session.actorId,merchant=session.merchantId;
-   if(read)return reply(store.state({actor,merchant}));
+   if(read)return reply(route==='state'?store.state({actor,merchant}):store.catalog({actor,merchant}));
    if(request.headers.get('origin')!==url.origin||
       request.headers.get('x-csrf-token')!==session.csrfToken)err('CSRF_REQUIRED',403);
    const body=await parseSmallJson(request),key=body.idempotencyKey;
+   if(route==='catalog'){
+    if(!exact(body,['idempotencyKey','expectedRevision','items']))err('INVALID_BODY');
+    return reply(store.importCatalog({actor,merchant,key,
+     expectedRevision:body.expectedRevision,items:body.items}),201);
+   }
    if(route==='delegate'){
     if(!exact(body,['idempotencyKey','category','maxMinor','expiresInMinutes']))err('INVALID_BODY');
     return reply(store.delegate({actor,merchant,key,category:body.category,

@@ -5,7 +5,7 @@ const el=id=>document.getElementById(id);
 const model={csrf:null,consents:{services:null,gifts:null},selected:null,
   server:null,quoteId:null,busy:false,revoking:false,crosspartBusy:false,
   reviewCandidate:null,reviewBusy:false,confirmedRevocations:new Set(),
-  messageEpoch:0};
+  messageEpoch:0,catalogImportKey:null};
 const show=(id,value)=>{el(id).textContent=typeof value==='string'?value:JSON.stringify(value,null,2);};
 const key=()=>crypto.randomUUID();
 const money=n=>Number.isSafeInteger(n)?'$'+(n/100).toFixed(2):'UNKNOWN';
@@ -30,6 +30,14 @@ async function api(route,body){
   throw e;
  }
  return data;
+}
+function displayCatalogState(){
+ const c=model.server?.catalog;
+ if(!c)return;
+ show('gift-catalog-status',c.available
+  ?'OWNER SUPPLIED LOCAL CATALOG · revision '+c.revision+' · '+c.items.length+
+   ' items. No vendor inventory or PayPal verified.'
+  :'Fictional sample catalog active · no owner-supplied items. No vendor inventory or PayPal verified.');
 }
 function mandateStatus(c){
  // A confirmed revoke must not be visually undone by an older in-flight GET.
@@ -287,6 +295,7 @@ async function refresh(){
    model.consents[c.category]=c.id;
  renderMandates();
  renderSavedA2AHistory();
+ displayCatalogState();
  if(data.pendingAttempts.length)
   show('pending-status',data.pendingAttempts.length+
    ' PENDING_OR_INTERRUPTED attempt(s). Their live status is unverified. Do not resubmit; revoke an unused mandate to block late acceptance.');
@@ -385,6 +394,21 @@ el('a2a').addEventListener('click',()=>run('A2A',async()=>{
   ' policy-driven agent messages · paymentState '+result.paymentState+
   ' · hash '+(result.transcriptSha256||'NONE')+
   '. Accepted offline only; PayPal checkout disabled.');
+}));
+el('gift-catalog-save').addEventListener('click',()=>run('Catalog import',async()=>{
+ let items;
+ try{items=JSON.parse(el('gift-catalog-json').value);}
+ catch{throw Object.assign(new Error('INVALID_OWNER_LOCAL_GIFT_CATALOG'),
+  {code:'INVALID_OWNER_LOCAL_GIFT_CATALOG'});}
+ if(!model.catalogImportKey)model.catalogImportKey=key();
+ const result=await api('catalog',{
+  idempotencyKey:model.catalogImportKey,expectedRevision:model.server?.catalog?.revision??0,items
+ });
+ if(result?.status!=='OWNER_LOCAL_CATALOG_IMPORTED')throw Error('CATALOG_IMPORT_UNCONFIRMED');
+ model.catalogImportKey=null;
+ el('gift-catalog-json').value='';
+ show('gift-catalog-status','Saved local revision '+result.revision+
+  '. Issue a fresh gift mandate before selecting; no provider or PayPal calls.');
 }));
 el('gift').addEventListener('click',()=>run('Gift',async()=>{
  if(!model.consents.gifts)

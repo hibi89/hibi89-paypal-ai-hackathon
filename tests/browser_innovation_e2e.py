@@ -89,6 +89,29 @@ try:
    page.locator("#gift").click()
    expect(page.locator("#gift-output")).to_contain_text("NO_ELIGIBLE_GIFT")
    expect(page.locator("#gift-output")).to_contain_text('"reservedMinor": 0')
+   # New real local-data feature: an owner explicitly supplies typed product
+   # data, which the server persists and matches under a fresh gift mandate.
+   # No vendor inventory, Gemini transport or PayPal activity is asserted.
+   page.locator("#local-catalog-panel summary").click()
+   page.locator("#gift-catalog-json").fill('[{"id":"owner-premium-light","category":"lighting","style":"PREMIUM","priceMinor":3500},{"id":"owner-practical-light","category":"lighting","style":"PRACTICAL","priceMinor":2900}]')
+   page.locator("#gift-catalog-save").click()
+   expect(page.locator("#gift-catalog-status")).to_contain_text("OWNER SUPPLIED LOCAL CATALOG",timeout=8000)
+   page.locator("#limit").fill("40")
+   page.locator("#delegate").click()
+   expect(page.locator("#delegation-status")).to_contain_text("SYNTHETIC_CONSENT_CREATED")
+   page.locator("#gift-category").select_option("lighting")
+   page.locator("#gift-style").select_option("PREMIUM")
+   page.locator("#gift-priority").select_option("MATCH_STYLE")
+   page.locator("#gift-max-price").fill("40.00")
+   page.locator("#gift").click()
+   expect(page.locator("#gift-output")).to_contain_text("owner-premium-light")
+   expect(page.locator("#gift-output")).to_contain_text("OWNER_SUPPLIED_LOCAL_NOT_VENDOR_VERIFIED")
+   expect(page.locator("#gift-output")).to_contain_text('"catalogRevision": 1')
+   expect(page.locator("#gift-output")).to_contain_text('"paymentAuthorized": false')
+   before_catalog_reload=sum(method=="POST" for method,_ in requests)
+   page.reload()
+   expect(page.locator("#gift-catalog-status")).to_contain_text("revision 1",timeout=8000)
+   assert sum(method=="POST" for method,_ in requests)==before_catalog_reload
    # A fresh, still-unused service mandate is revocable from the actual browser.
    page.locator("#category").select_option("services")
    page.locator("#limit").fill("300")

@@ -9,7 +9,7 @@ p{color:#566987}.warning{background:#fff5df;border:1px solid #e4c992;border-radi
 .card{background:white;border:1px solid #dde4f0;border-radius:18px;padding:22px;min-width:0}
 .wide{grid-column:span 2}.badge{font-size:.73rem;font-weight:750;color:#396bb6;text-transform:uppercase;letter-spacing:.07em}
 h2{font-size:1.25rem;margin:10px 0}label{display:block;font-weight:700;margin-top:10px}
-input,select{padding:11px;width:100%;border:1px solid #c2d0e4;border-radius:9px;font:inherit}
+input,select,textarea{padding:11px;width:100%;border:1px solid #c2d0e4;border-radius:9px;font:inherit}
 fieldset{border:1px solid #c2d0e4;border-radius:9px;padding:12px;margin-top:14px}fieldset legend{font-weight:700}fieldset label{font-weight:400}fieldset input[type=checkbox]{width:auto;margin-right:9px}
 #churn-pause{width:auto;margin-right:8px}
 button{cursor:pointer;padding:11px 16px;margin:13px 5px 0 0;border:0;border-radius:10px;background:#2857b1;color:white;font:inherit;font-weight:700}
@@ -83,7 +83,14 @@ pre{white-space:pre-wrap;word-break:break-word;background:#132643;color:#d9edff;
 <label for="gift-style">Preferred style</label><select id="gift-style"><option value="PRACTICAL">Practical</option><option value="PREMIUM">Premium</option></select>
 <label for="gift-priority">Ranking policy</label><select id="gift-priority"><option value="LOWEST_PRICE">Lowest eligible price</option><option value="MATCH_STYLE">Match preferred style first</option></select>
 <label for="gift-max-price">Maximum gift price (USD, at most mandate)</label><input id="gift-max-price" type="number" min="1" max="10000" step="0.01" value="39.00">
-<button type="button" id="gift">Run Gift Agent</button><pre id="gift-output">Issue a gift mandate first.</pre></section>
+<button type="button" id="gift">Run Gift Agent</button><pre id="gift-output">Issue a gift mandate first.</pre>
+<details id="local-catalog-panel"><summary>Optional: owner-supplied local product catalog (not vendor verified)</summary>
+<p>Only 2–8 product IDs, category, style and price in USD cents. Never enter names, contact details, URLs, photos, inventory credentials or customer information. Catalog data stays in this temporary local demo, without shopping, AI or PayPal requests.</p>
+<label for="gift-catalog-json">My local catalog (JSON array; explicitly saved only on click)</label>
+<textarea id="gift-catalog-json" rows="5" maxlength="2000" spellcheck="false" placeholder='[{"id":"local-light-a","category":"lighting","style":"PREMIUM","priceMinor":3500},{"id":"local-light-b","category":"lighting","style":"PRACTICAL","priceMinor":2900}]'></textarea>
+<button type="button" id="gift-catalog-save">Save owner-supplied local catalog</button>
+<p id="gift-catalog-status" role="status" aria-live="polite">Fictional demo catalog active. Nothing imported or purchased.</p>
+</details></section>
 <section class="card"><span class="badge">04 · Churn Saver</span><h2>Subscription retention policy</h2>
 <p>Use fictional monthly pricing, self-reported churn risk and a merchant policy cap. Offers are review-only: no real subscription or payment changes.</p>
 <label for="churn-reference">Fictional subscription reference</label>
