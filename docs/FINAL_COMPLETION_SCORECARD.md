@@ -1,3 +1,20 @@
+## 2026-11-05 KST — VERIFIED final-entry 73→74 (+1pp): tool-use disclosure for official Devpost fields
+
+**Exact feature SHA** `67d37e905e7e7c2ad8e89fc1d1a38a7da45584b7`: [CI #41874256116](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41874256116) **SUCCESS** (Linux Node **1,154 PASS / 0 FAIL / 0 SKIP**, Windows SUCCESS, real Chromium both product parts and 8/8 one-command reviewer SUCCESS); [smoke #41874256049](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41874256049) **SUCCESS**. First attempt `89ee0e6d` failed 2 new/old negative tests; fixed in exact verified SHA. Separate official [Devpost What to Submit](https://paypalaihackathon.devpost.com/) explicitly requests model/AI service names and explanations. New local unpublished copy plus `toolsUsed` five-item structured explanations and `builtWithTags` eight-tag output are validated to refuse false live-provider statements. These are **not** submitted or independent PayPal/Gemini proof.
+
+| Fixed final-acceptance area | Weight | At 73 | Now at 74 | Still missing |
+| --- | ---: | ---: | ---: | --- |
+| Part1 marketplace / quote / contract | 22 | 21 | 21 | Real merchant/customer payment-backed service |
+| Part2 five agentic innovations | 23 | 21 | 21 | Independently attested live AI integration |
+| Real PayPal Sandbox + AI provider evidence | 20 | 8 | 8 | Owner-approved provider integration, judge-safe evidence |
+| Reviewer access / optional D1/IdP | 15 | 10 | 10 | Authenticated real-provider reviewer access; hosted URL optional |
+| Public source, default root LICENSE and guide | 8 | 7 | 7 | Owner-approved default-main release |
+| Approved public YouTube <180s | 7 | 4 | 4 | Owner review/publication; prior CI 141.40s file is private synthetic |
+| English Devpost form / submission receipt | 5 | **2** | **3** | Owner review, public video URL, submitted form and actual receipt |
+| **Whole final entry (internal evidence-weighted)** | **100** | **73** | **74** | **RELEASE HOLD** |
+
+**Boundary:** +1pp is only test-verified local completion of an actual listed official submission field. It is an internal subjective rubric, not an official contest grade, runtime real-provider proof, license on default main, approved video, submission, or Production release. Final remaining 26 points are not unlocked by additional synthetic-only test volume.
+
 ## 2026-11-05 01:34 KST — VERIFIED whole-entry 72→73 (+1pp): local Devpost form draft, not submission
 
 **Exact tested code** `9a152b0e9935d65003988b5156316ad215329616` [Actions #41868041612](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41868041612) SUCCESS: Linux **1,153/1,153 Node PASS**, Windows first-run SUCCESS, full two-part Chromium judge 8/8 PASS, plus [MVP smoke #41868041620](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41868041620) SUCCESS. New `scripts/build_devpost_form_fields.mjs` converts the checked-in concise unpublished English entry into gitignored `output/submission/devpost_form_draft.json`, with exact title/tagline/narrative/reviewer instructions; no platform upload, automatic release or payment authority. Four added tests reject missing/tampered labels and publication claims. The form and historical provider language remain for owner inspection only.
