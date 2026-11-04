@@ -48,6 +48,34 @@ jobs:
         run: .browser-venv/bin/python tests/test_local_loopback_connect_proxy.py
       - name: Real Chromium TLS socket for signed private marketplace via strictly local proxy
         run: .browser-venv/bin/python tests/browser_private_marketplace_real_tls_e2e.py
+      # Reproduce the same entire journey a reviewer runs on a fresh checkout,
+      # rather than merely running its component tests in isolation.
+      # No real Gemini/PayPal, payment POST, external deployment or artifact upload.
+      - name: Full judge one-command reproduction (Part1 + five Part2 skills, no providers)
+        shell: bash
+        run: |
+          export PATH="$PWD/.browser-venv/bin:$PATH"
+          npm run verify:local | tee "$RUNNER_TEMP/paypal-one-command.log"
+          node --input-type=module <<'NODE'
+          import {readFileSync} from 'node:fs';
+          const raw=readFileSync(process.env.RUNNER_TEMP+'/paypal-one-command.log','utf8').trim();
+          const r=JSON.parse(raw.split(/\r?\n/).at(-1));
+          const required=['GIT_HEAD','NODE_VERSION','MASTER_PROGRESS',
+            'NODE_REGRESSION','SYNTHETIC_MVP_E2E','REVIEWER_LOOPBACK',
+            'CHROMIUM_LOOPBACK','CHROMIUM_PART2'];
+          const actual=r.results?.map(x=>x.name);
+          const ok=r.status==='VERIFY_LOCAL_TWO_PART_PASS'&&
+            r.twoPartBrowserVerified===true&&
+            r.source==='OWNER_LOCAL_OR_CI_ONLY'&&
+            r.providerCalls===0&&r.paymentPosts===0&&
+            r.submissionEligible===false&&r.realProviderVerified===false&&
+            r.productionVerified===false&&
+            actual?.length===required.length&&
+            required.every((name,i)=>actual[i]===name&&r.results[i].status==='PASS');
+          if(!ok)throw Error('JUDGE_TWO_PART_ONE_COMMAND_PROOF_INCOMPLETE');
+          console.log('JUDGE_ONE_COMMAND_TWO_PART_PASS SHA='+process.env.GITHUB_SHA+
+            ' STEPS='+required.length+' PROVIDER_CALLS=0 PAYMENT_POSTS=0 RELEASE_HOLD');
+          NODE
       - name: Check recorder Python syntax and proof provenance regression
         run: |
           python3 -m py_compile scripts/record_judge_demo.py scripts/video_owner_evidence.py
