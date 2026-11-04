@@ -73,8 +73,16 @@ def main():
             expect(owner.locator("#role")).to_contain_text("BUYER")
             expect(owner.locator("#status")).to_contain_text("Showing 1 D1 contracts")
             form=owner.locator("#contract-form")
+            phase("BUYER_SELECT_APPROVED_D1_QUOTE")
+            expect(owner.locator("#approved-quote option[value='ciQuote']")).to_have_count(1,timeout=8000)
+            owner.locator("#approved-quote").select_option("ciQuote")
+            expect(owner.locator("#quote-picker-status")).to_contain_text("Approved owner quote selected",timeout=8000)
+            assert form.locator('[name="quoteId"]').input_value()=="ciQuote","SELECTED_D1_QUOTE_ID_MISSING"
+            assert form.locator('[name="quoteVersion"]').input_value()=="1","SELECTED_D1_QUOTE_VERSION_MISSING"
+            assert form.locator('[name="quoteId"]').get_attribute("readonly") is not None,"D1_QUOTE_ID_EDITABLE"
+            assert form.locator('[name="quoteVersion"]').get_attribute("readonly") is not None,"D1_QUOTE_VERSION_EDITABLE"
             for key,value in {
-                "quoteId":"ciQuote","quoteVersion":"1","sellerId":"ciSeller",
+                "sellerId":"ciSeller",
                 "reviewerId":"ciReviewer","milestoneId":"browser1",
                 "milestoneTitle":"Browser-delivered milestone with independently reviewed source archive"
             }.items():
@@ -128,7 +136,8 @@ def main():
             assert not errors,"BROWSER_SCRIPT_OR_CONSOLE_ERROR"
             print(json.dumps({"status":"LOCAL_WORKERD_CHROMIUM_3ROLE_D1_CONTRACT_PASS",
               "realChromium":True,"localHttps":True,"threeRoleViewsRendered":True,
-              "buyerContractCreated":True,"sellerSubmits":2,"reviewerRejects":1,
+              "buyerContractCreated":True,"buyerApprovedQuoteSelected":True,
+              "sellerSubmits":2,"reviewerRejects":1,
               "reviewerAccepts":1,"finalState":"ACCEPTED","browserPosts":5,
               "externalRequests":0,"browserErrors":0,"providerCalls":0,
               "paymentAuthorized":False,"publicDeployment":False}))

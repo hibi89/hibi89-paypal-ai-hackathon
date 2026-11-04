@@ -32,7 +32,7 @@ test('signed role contract page renders with strict CSP and no external dependen
  assert.match(res.headers.get('content-security-policy'),/connect-src 'self'/);
  assert.equal(res.headers.has('access-control-allow-origin'),false);
  const html=await res.text();
- for(const token of ['id="contracts"','id="contract-form"','id="buyer-panel"',
+ for(const token of ['id="contracts"','id="contract-form"','id="buyer-panel"',\n  'id="approved-quote"','id="quote-picker-status"',
   '/__private/contracts/view.js','never PayPal payment authorization','No payment']) assert.ok(html.includes(token),token);
  assert.deepEqual(f.calls,[{method:'GET',path:'/__private/contracts',limit:'1'}]);
 });
@@ -44,7 +44,7 @@ test('client JavaScript parses and contains explicit POST role intents and safe 
  assert.equal(js.status,200);assert.match(js.headers.get('content-type'),/^text\/javascript/);
  const src=await js.text();
  assert.doesNotThrow(()=>new Script(src,{filename:'contracts-view.js'}));
- for(const marker of ['contract-create',"'contract-'+verb",'/milestones/',
+ for(const marker of ['contract-create',"'contract-'+verb",'/milestones/',\n  "'/__private/quotes?limit=20'","q.status!=='APPROVED'","picker.addEventListener('change',quoteSelection)",
   'crypto.randomUUID()','textContent','credentials:\'same-origin\''])
   assert.ok(src.includes(marker),marker);
  assert.equal(src.includes('innerHTML'),false);
@@ -63,4 +63,19 @@ test('anonymous and unsafe navigations never receive private HTML/CSS/JS',async(
  }
  assert.equal((await f.api.fetch(request('/api/paypal/capture'))).status,404);
  assert.equal(f.calls.every(x=>x.method==='GET'&&x.limit==='1'),true);
+});
+
+test('buyer links to only approved owner-D1 quotes via safe text nodes; seller/reviewer never query owner quotes',async()=>{
+ const f=fixture();
+ const r=await f.api.fetch(request('/__private/contracts/view.js'));
+ const js=await r.text();
+ const {Script}=await import('node:vm');
+ assert.doesNotThrow(()=>new Script(js));
+ assert.match(js,/if\(activeRole==='BUYER'\)await loadApprovedQuotes\(\)/);
+ assert.match(js,/approvedQuotes\.set\(q\.quoteId,q\)/);
+ assert.match(js,/quoteIdField\.readOnly=!!q/);
+ assert.match(js,/quoteVersionField\.readOnly=!!q/);
+ assert.match(js,/q\.status!=='APPROVED'/);
+ assert.match(js,/const option=text\('option'/);
+ assert.doesNotMatch(js,/innerHTML|outerHTML|localStorage|generativelanguage|paypal\.com/);
 });
