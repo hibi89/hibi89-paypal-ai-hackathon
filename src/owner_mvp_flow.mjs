@@ -55,9 +55,21 @@ export function createOwnerMvpFlow({
     authorizeAction:async action=>approve(action)
   });
   let matches=null,approved=false,checkout=null,opened=false;
+  const expectedBriefDigest='sha256:'+createHash('sha256').update(brief).digest('hex');
+  const assertBoundQuote=async(status)=>{
+    const quote=await ledger.get(quoteId);
+    if(!quote||quote.ownerId!==actorId||quote.merchantId!==merchantId||
+       quote.scope!==expectedBriefDigest)
+      reject('MVP_QUOTE_AI_BRIEF_BINDING_CHANGED');
+    if(quote.status!==status||quote.version!==1)
+      reject('MVP_QUOTE_CHANGED');
+    return quote;
+  };
   const input=async()=>{
     if(!checkout)reject('MVP_CHECKOUT_NOT_ISSUED');
     const session=await host.resolveTrustedCheckout(checkout);
+    // An old/mismatched task must never reach provider GET/POST orchestration.
+    await assertBoundQuote('APPROVED');
     return {quoteId:session.quoteId,actorId:session.actorId,
       merchantId:session.merchantId,publicOrigin,sessionProof:session.sessionProof};
   };
@@ -89,12 +101,17 @@ export function createOwnerMvpFlow({
     if(!quote||quote.status!=='PROPOSED'||quote.version!==1||
        quote.ownerId!==actorId||quote.merchantId!==merchantId)
       reject('MVP_QUOTE_CHANGED');
+    if(quote.scope!==expectedBriefDigest)
+      reject('MVP_QUOTE_AI_BRIEF_BINDING_CHANGED');
     const ok=await approve({action:'APPROVE_SYNTHETIC_USD_1_50',
       actorId,merchantId,quoteId,quoteVersion:quote.version,
       amountMinor:MVP_AMOUNT_MINOR,currency:'USD',
       selectedProfileId:matches.profiles.find(p=>p.matchedSkills.length>0)?.id,
       missingSkills:matches.profiles.find(p=>p.matchedSkills.length>0)?.missingSkills??[]});
     if(!ok)reject('MVP_PRICE_HUMAN_APPROVAL_REQUIRED');
+    // The human approval callback can await a remote prompt; verify again
+    // before accepting a price for a differently scoped task.
+    await assertBoundQuote('PROPOSED');
     // CAS atomic approval; the AI suggestion never owns the payment amount.
     await ledger.approve({id:quoteId,expectedVersion:1,
       actorId,amountMinor:MVP_AMOUNT_MINOR});
@@ -104,6 +121,8 @@ export function createOwnerMvpFlow({
   }
   async function createOrder(){
     if(!approved||checkout)reject('MVP_HUMAN_APPROVAL_REQUIRED');
+    // Do not even issue private checkout authorization for a mismatched task.
+    await assertBoundQuote('APPROVED');
     const issued=await host.issue({hostLoginHandle:handle,quoteId});
     checkout=issued.handle;
     const result=await coordinator.openOwnerOrder(await input());

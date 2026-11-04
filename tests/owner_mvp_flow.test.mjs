@@ -61,8 +61,8 @@ function fixture(){
   const transport=createSandboxTransport({
     clientId:'FAKE_CLIENT',clientSecret:'FAKE_SECRET',fetchImpl});
   const authorizations=[];
-  const create=()=>createOwnerMvpFlow({
-    ledger,sessionStore,aiStore,geminiProvider:provider,paypalTransport:transport,
+  const create=(ledgerOverride=ledger)=>createOwnerMvpFlow({
+    ledger:ledgerOverride,sessionStore,aiStore,geminiProvider:provider,paypalTransport:transport,
     merchantId,publicOrigin:'https://checkout.example.org',
     authorizeStage:async action=>{
       authorizations.push(action);
@@ -249,4 +249,51 @@ test('PayPal buyer return landing never authorizes capture; provider GET and hum
     assert.equal(paid.paymentState,'VERIFIED_BY_GET');
     assert.equal(posts(f.calls,'/v2/checkout/orders/MVPORDER1/capture'),1);
   }finally{await landing.close()}
+}));
+
+test('private quote approval rejects mismatched AI task without PayPal requests',
+withFixture(async f=>{
+ let poisoned=false;
+ const guarded={...f.ledger,get:async id=>{
+   const quote=await f.ledger.get(id);
+   return poisoned&&quote?{...quote,scope:'sha256:'+'0'.repeat(64)}:quote;
+ }};
+ const s=f.create(guarded);
+ await s.classify();
+ poisoned=true;
+ await assert.rejects(s.approveQuote(),{code:'MVP_QUOTE_AI_BRIEF_BINDING_CHANGED'});
+ assert.equal((await f.ledger.get('operator_mvp_01')).status,'PROPOSED');
+ assert.equal(f.authorizations.some(x=>x.action==='APPROVE_SYNTHETIC_USD_1_50'),false);
+ assert.equal(posts(f.calls,'/v2/checkout/orders'),0);
+}));
+test('post-consent task drift blocks order, GET, and Capture before provider network',
+withFixture(async f=>{
+ let poisoned=false;
+ const guarded={...f.ledger,get:async id=>{
+   const quote=await f.ledger.get(id);
+   return poisoned&&quote?{...quote,scope:'sha256:'+'0'.repeat(64)}:quote;
+ }};
+ const s=f.create(guarded);
+ await s.classify();
+ await s.approveQuote();
+ poisoned=true;
+ await assert.rejects(s.createOrder(),{code:'MVP_QUOTE_AI_BRIEF_BINDING_CHANGED'});
+ assert.equal(posts(f.calls,'/v2/checkout/orders'),0);
+ assert.equal(f.calls.filter(x=>x.path==='/v1/oauth2/token').length,0);
+}));
+test('quote mutation during delayed human price consent blocks approval',withFixture(async f=>{
+ // An authority callback may cross async turns. Return a different scope
+ // on the second approved-quote read, never after a real PayPal HTTP request.
+ let reads=0;
+ const guarded={...f.ledger,get:async id=>{
+   const quote=await f.ledger.get(id);
+   if(!quote)return quote;
+   reads++;
+   return reads>=3?{...quote,scope:'sha256:'+'0'.repeat(64)}:quote;
+ }};
+ const s=f.create(guarded);
+ await s.classify();
+ await assert.rejects(s.approveQuote(),{code:'MVP_QUOTE_AI_BRIEF_BINDING_CHANGED'});
+ assert.equal((await f.ledger.get('operator_mvp_01')).status,'PROPOSED');
+ assert.equal(posts(f.calls,'/v2/checkout/orders'),0);
 }));
