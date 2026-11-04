@@ -5,6 +5,7 @@ import {startOwnerMvpReview} from '../src/owner_mvp_review_server.mjs';
 const saved={status:'LOCAL_PROVIDER_RESULT_RECORDED_NOT_FRESH_GET',amountMinor:150,
  currency:'USD',classifiedSkills:['web','payments','qa'],localAuditIntegrity:'PASS',
  localStates:{quote:'APPROVED',create:'APPROVED',capture:'PAID',gemini:'COMMITTED'},
+ quoteAiBriefBinding:'BOUND_LOCAL_HASH_MATCH',sameBriefProvenByLocalHashes:true,
  privateMerchantId:'SECRET_MERCHANT_SHOULD_NOT_SHOW',orderId:'SECRET_ORDER_SHOULD_NOT_SHOW'};
 const withApp=fn=>async()=>{const app=await startOwnerMvpReview({receipt:saved});
  try{await fn(app)}finally{await app.close()}};
@@ -14,7 +15,8 @@ test('saved Gemini skills and human quote render without new provider calls',wit
  const html=await reply.text();
  for(const label of ['Gemini-assisted skill review','web','payments','qa',
   'Demo Web Specialist','Missing:','Human review needed','USD 1.50',
-  'LOCAL GET RESULT','No new GET or POST'])assert.ok(html.includes(label),label);
+  'LOCAL GET RESULT','LOCAL SHA-256 TASK MATCH', 'No new GET or POST'])
+  assert.ok(html.includes(label),label);
  for(const secret of ['SECRET_MERCHANT','SECRET_ORDER','checkoutnow','PayerID',
   'payment_source','CLIENT_SECRET'])assert.ok(!html.includes(secret));
  assert.equal(reply.headers.get('cache-control'),'no-store');
@@ -127,4 +129,51 @@ test('unverified receipt cannot record human scope acknowledgment',async()=>{
   assert.ok(!html.includes('HUMAN SCOPE REVIEW RECORDED IN THIS PAGE ONLY'));
   assert.ok(html.includes('candidate decisions are disabled'));
  }finally{await app.close()}
+});
+
+test('legacy owner receipt stays readable but cannot claim same-task evidence or human review',async()=>{
+ const legacy={...saved,quoteAiBriefBinding:'LEGACY_NOT_CROSS_BOUND',
+   sameBriefProvenByLocalHashes:false};
+ const app=await startOwnerMvpReview({receipt:legacy});
+ try{
+  for(const u of [app.url,app.url+'?candidate=synthetic-web&ack=1']){
+   const response=await fetch(u);
+   const html=await response.text();
+   assert.equal(response.status,200);
+   assert.match(html,/LEGACY TASK LINK UNVERIFIED/);
+   assert.match(html,/REVIEW REQUIRED/);
+   assert.match(html,/candidate decisions are disabled/);
+   assert.ok(!html.includes('LOCAL GET RESULT'));
+   assert.ok(!html.includes('HUMAN SCOPE REVIEW RECORDED'));
+   assert.ok(!html.includes('Saved model-classified skills'));
+  }
+ }finally{await app.close()}
+});
+test('mismatched task digest never enables payment label or human preview',async()=>{
+ const mismatch={...saved,status:'LOCAL_EVIDENCE_REVIEW_REQUIRED',
+   quoteAiBriefBinding:'BOUND_LOCAL_HASH_MISMATCH',
+   sameBriefProvenByLocalHashes:false};
+ const app=await startOwnerMvpReview({receipt:mismatch});
+ try{
+  const html=await (await fetch(app.url+'?candidate=synthetic-data&ack=1')).text();
+  assert.match(html,/TASK DIGEST MISMATCH/);
+  assert.match(html,/candidate decisions are disabled/);
+  assert.ok(!html.includes('LOCAL GET RESULT'));
+  assert.ok(!html.includes('USD 1.50'));
+ }finally{await app.close()}
+});
+test('contradictory or missing local binding signal fails closed even with recorded capture',async()=>{
+ for(const evidence of [
+   {...saved,sameBriefProvenByLocalHashes:false},
+   {...saved,quoteAiBriefBinding:'NOT_CHECKED'},
+   {...saved,quoteAiBriefBinding:undefined,sameBriefProvenByLocalHashes:undefined}
+ ]){
+  const app=await startOwnerMvpReview({receipt:evidence});
+  try{
+   const html=await (await fetch(app.url+'?candidate=synthetic-web&ack=1')).text();
+   assert.match(html,/NO VERIFIED SAME-TASK LOCAL LINK/);
+   assert.ok(!html.includes('HUMAN SCOPE REVIEW RECORDED'));
+   assert.ok(!html.includes('LOCAL GET RESULT'));
+  }finally{await app.close()}
+ }
 });

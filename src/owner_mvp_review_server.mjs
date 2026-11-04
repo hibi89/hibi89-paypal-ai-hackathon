@@ -14,12 +14,25 @@ function render(receipt,{selectedProfileId=null,acknowledgeGaps=false}={}){
    receipt?.amountMinor===150&&receipt?.currency==='USD'&&
    receipt?.localAuditIntegrity==='PASS'&&valid&&
    receipt?.localStates?.capture==='PAID'&&receipt?.localStates?.gemini==='COMMITTED';
- const matches=recorded?matchSyntheticMarketplaceSkills(skills,{source:'GEMINI_API'}):null;
+ // Local DB rows are not a provider signature. Only current, internally
+ // consistent SAME-TASK digests permit a human to acknowledge a candidate.
+ // Legacy owner receipts must remain viewable via CLI but never be elevated
+ // to an apparently verified end-to-end quote/Gemini browser workflow.
+ const taskBound=receipt?.quoteAiBriefBinding==='BOUND_LOCAL_HASH_MATCH'&&
+   receipt?.sameBriefProvenByLocalHashes===true;
+ const reviewable=recorded&&taskBound;
+ const taskLabel=reviewable?'LOCAL SHA-256 TASK MATCH — NOT PROVIDER ATTESTED':
+   receipt?.quoteAiBriefBinding==='LEGACY_NOT_CROSS_BOUND'
+      ?'LEGACY TASK LINK UNVERIFIED':
+   receipt?.quoteAiBriefBinding==='BOUND_LOCAL_HASH_MISMATCH'
+      ?'TASK DIGEST MISMATCH — REVIEW BLOCKED':
+   'NO VERIFIED SAME-TASK LOCAL LINK';
+ const matches=reviewable?matchSyntheticMarketplaceSkills(skills,{source:'GEMINI_API'}):null;
  const profiles=matches?.profiles??[];
  // Explicit user selection is a local GET-only worksheet state, not payment authority.
  const candidate=profiles.find(p=>p.id===selectedProfileId)||
    (selectedProfileId===null?profiles.find(p=>p.matchedSkills.length>0):null);
- const reviewed=Boolean(recorded&&selectedProfileId&&candidate&&acknowledgeGaps);
+ const reviewed=Boolean(reviewable&&selectedProfileId&&candidate&&acknowledgeGaps);
  const tags=items=>items.length?items.map(v=>'<span class="tag">'+esc(v)+'</span>').join(' '):'<em>None</em>';
  const rows=profiles.map(p=>
   '<label class="candidate"><input type="radio" name="candidate" value="'+esc(p.id)+'" '+
@@ -27,7 +40,7 @@ function render(receipt,{selectedProfileId=null,acknowledgeGaps=false}={}){
    ' — '+p.matchedSkills.length+'/'+matches.requestedSkills.length+' required skills'+
    (p.eligible?' (complete skill match)':' (missing: '+esc(p.missingSkills.join(', ')||'none')+')')+
    '</label>').join('');
- const worksheet=recorded?
+ const worksheet=reviewable?
   '<form method="GET"><p>Select a fictional candidate to review the real, previously saved model skill taxonomy.</p>'+
    rows+'<label class="review-check"><input type="checkbox" name="ack" value="1" '+
    (acknowledgeGaps?'checked ':'')+
@@ -37,7 +50,7 @@ function render(receipt,{selectedProfileId=null,acknowledgeGaps=false}={}){
     'AWAITING EXPLICIT SCOPE REVIEW')+'</p>'+
    '<p>Review is an ephemeral preview, not a new quote approval, contract or payment authorization.</p>':
   '<p>Private Gemini classification unavailable; candidate decisions are disabled.</p>';
- const ai=recorded?'<p>Saved model-classified skills (no new Gemini call):</p>'+tags(matches.requestedSkills):
+ const ai=reviewable?'<p>Saved model-classified skills (no new Gemini call):</p>'+tags(matches.requestedSkills):
   '<p>No complete, consistent local AI and payment record is available for this review.</p>';
  const worker=candidate?
   '<p><strong>'+esc(candidate.displayName)+'</strong> — fictional profile, not a real onboarded seller.</p>'+
@@ -66,24 +79,27 @@ function render(receipt,{selectedProfileId=null,acknowledgeGaps=false}={}){
  '.candidate{padding:9px;border:1px solid #e2e8f0;border-radius:6px}',
  '</style></head><body>',
   '<header><h1>PayPal AI Marketplace — Owner MVP Review</h1>',
-  '<div class="label">',recorded?'LOCAL RESULT RECORDED':'REVIEW REQUIRED','</div>',
+  '<div class="label">',reviewable?'LOCAL TASK LINK RECORDED':'REVIEW REQUIRED','</div>',
   '<p>Private, read-only snapshot from an earlier owner-operated Sandbox CLI.</p></header>',
   '<div class="notice"><strong>Not a new PayPal verification.</strong> This page never',
   ' contacts Gemini or PayPal, cannot attest current remote status, and does not',
   ' create, charge, capture or replay any payment. NOT a production service.</div>',
+  '<section class="panel" id="quote-ai-task-binding"><h2>Task provenance</h2><strong>',
+  esc(taskLabel),'</strong><p>Local SHA-256 equality is not an authenticated provider',
+  ' receipt and never proves a remote payment or fresh Gemini response.</p></section>',
   '<section class="panel"><h2>1. Gemini-assisted skill review</h2>',ai,'</section>',
   '<section class="panel"><h2>2. Synthetic freelancer match</h2>',worker,'</section>',
   '<section class="panel"><h2>3. Explicit human scope review</h2>',worksheet,'</section>',
   '<div class="grid"><section class="panel"><h2>4. Previously human-approved quote</h2>',
-  '<div class="metric">',recorded?'USD 1.50':'NOT VERIFIED','</div>',
+  '<div class="metric">',reviewable?'USD 1.50':'NOT VERIFIED','</div>',
   '<p>Fixed by a person, not AI-predicted market pricing.</p></section>',
   '<section class="panel"><h2>5. Sandbox payment evidence</h2>',
-  '<div class="metric">',recorded?'LOCAL GET RESULT':'NOT VERIFIED','</div>',
-  '<p>',recorded?'Local SQLite records a previous provider-GET-verified Sandbox capture.':
+  '<div class="metric">',reviewable?'LOCAL GET RESULT':'NOT VERIFIED','</div>',
+  '<p>',reviewable?'Local SQLite records a previous provider-GET-verified Sandbox capture.':
    'No complete local capture result is available.', ' No new GET or POST was performed here.</p>',
   '</section></div><section class="panel"><h2>6. Audit integrity</h2><p>',
   'Unsigned local SQLite hash chain: <strong>',
-  recorded?'PASS':'NOT VERIFIED','</strong>. No external attestation.</p></section>',
+  reviewable?'PASS':'NOT VERIFIED','</strong>. No external attestation.</p></section>',
   '<footer><small>127.0.0.1 only • GET only • no merchant or order IDs',
   ' • no raw prompts, buyer details, payment secrets or Live transactions',
   ' • never expose through a public tunnel</small></footer></body></html>'
