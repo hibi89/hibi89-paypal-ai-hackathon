@@ -1,3 +1,20 @@
+## 2026-11-05 KST — VERIFIED whole-final 77→78 (+1pp), proof-bound human review UI
+
+Feature `c46da7103010b6bc5659572943c6fa65b312700c`: [full CI #41885993472](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41885993472) **SUCCESS** 1,163/1,163 Node tests, Windows first-run SUCCESS, Chromium ZIP two-part 2/2 PASS and complete judge 8/8; [smoke #41885993553](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41885993553) SUCCESS. Real new behavior: legacy, cross-task mismatch and missing/contradictory private quote+AI hashes no longer masquerade as eligible evidence for a human GET-only scope review. Owner UI explicitly distinguishes `LOCAL SHA-256 TASK MATCH`, `LEGACY TASK LINK UNVERIFIED` and mismatches; no remote/network change.
+
+| Fixed component | Weight | Before | Now | Pending |
+| --- | ---: | ---: | ---: | --- |
+| Part1 freelance marketplace/quote/contract | 22 | 21 | 21 | Authenticated real users and merchant payments |
+| Part2 five agentic skills | 23 | 21 | 21 | Independently verified real AI service |
+| Actual PayPal Sandbox + AI evidence | 20 | 8 | 8 | Owner-approved external provider confirmation |
+| Reviewer access/evidence correctness | 15 | **13** | **14** | Authenticated hosted reviewer service |
+| Public default branch MIT LICENSE | 8 | 7 | 7 | Approved main merge |
+| Public owner-approved YouTube <180s | 7 | 4 | 4 | Film released by owner |
+| English Devpost submission receipt | 5 | 3 | 3 | Authorized real submission |
+| **Internal weighted whole-final** | **100** | **77** | **78** | **22 remain; RELEASE HOLD** |
+
+This is a newly shipped, verified UI fail-closed evidence safeguard, **not third-party provider attestation**, and not a 1% increase in competition judging probability. Do not count repeated offline synthetic flows again. Actual remote PayPal/Gemini, authenticated Production, public main, YouTube and Devpost remain unverified.
+
 ## 2026-11-05 KST — VERIFIED whole-final 76→77 (+1pp): independently extracted ZIP full Chromium Part1+Part2
 
 **Exact tested SHA `78adbc04037f5e786fabd5803999f1ae5d48c308`**: [full CI #41883594828](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41883594828) **SUCCESS**, 1,160 Node PASS/0 FAIL, Windows first-run SUCCESS, both complete Chromium E2Es inside fresh extracted **private reviewer ZIP** PASS, external browser requests **0**, provider calls/payment posts **0**, one-command judge 8/8 PASS; [smoke #41883594861](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41883594861) SUCCESS. Prior ZIP integrity and HTTP checks did NOT prove its complete client interactions; this first independent ZIP/browser verification closes that specific gap. The ZIP remains unpublished, synthetic, and without remote provider proof.
