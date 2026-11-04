@@ -4,7 +4,6 @@ import {mkdtempSync,rmSync,readdirSync,writeFileSync,symlinkSync} from 'node:fs'
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {DatabaseSync} from 'node:sqlite';
 import {createHash} from 'node:crypto';
 import {createSqliteLedger} from '../src/sqlite_ledger.mjs';
 import {createMarketplaceAiBudgetStore} from '../src/marketplace_ai_budget.mjs';
@@ -18,10 +17,10 @@ const fixture=fn=>async t=>{
   try{await fn(directory,t)}
   finally{rmSync(directory,{recursive:true,force:true})}
 };
-async function seed(directory,{paid=true,ai=true,bound=true}={}){
+async function seed(directory,{paid=true,ai=true,bound=true,quoteBrief=brief}={}){
  const ledger=createSqliteLedger({filename:join(directory,'checkout.sqlite')});
  await ledger.insertQuote({id:ID,ownerId:ACTOR,merchantId:MERCHANT,
-  ...(bound?{scopeDigest:createHash('sha256').update(brief).digest('hex')}:{})});
+  ...(bound?{scopeDigest:createHash('sha256').update(quoteBrief).digest('hex')}:{})});
  await ledger.approve({id:ID,actorId:ACTOR,expectedVersion:1,amountMinor:150});
  const quote=await ledger.get(ID);
  const session=createPilotCheckoutSessionStore({
@@ -144,11 +143,10 @@ test('legacy receipt stays readable but never claims quote-to-AI brief binding',
  assert.deepEqual(readdirSync(directory).sort(),before);
 }));
 test('mismatched quote brief digest fails private receipt closed without repeat GET',fixture(async directory=>{
- await seed(directory);
- const db=new DatabaseSync(join(directory,'checkout.sqlite'));
- db.prepare('UPDATE quotes SET scope_text=? WHERE id=?')
-   .run('sha256:'+'0'.repeat(64),ID);
- db.close();
+ // Make a valid, independently initialized quote bound to a different
+ // fictional task. Raw SQLite UPDATE would bypass ledger audit_hash triggers
+ // and test an invalid fixture setup instead of the fail-closed receipt.
+ await seed(directory,{quoteBrief:'A different synthetic design task for testing the quote boundary.'});
  const before=readdirSync(directory).sort();
  const r=inspectOwnerMvpReceipt({directory});
  assert.equal(r.status,'LOCAL_EVIDENCE_REVIEW_REQUIRED');
