@@ -172,3 +172,63 @@ test('caller abort interrupts noncooperative provider and consumes reservation',
  assert.equal(adapter.status().requestsAttempted,1);
  assert.equal(adapter.status().circuitOpen,true);
 });
+
+test('successful A2A turns reject replay and completed-negotiation reuse without network',async()=>{
+ let calls=0;
+ const adapter=setup(async()=>{
+  calls++;
+  return body(calls===1?'OFFER':'ACCEPT',29000,20);
+ });
+ const first=await adapter.sellerAgent(sellerView);
+ assert.equal(first.action,'OFFER');
+ await assert.rejects(()=>adapter.sellerAgent(sellerView),
+  e=>e.code==='GEMINI_A2A_STALE_OR_FORKED_TURN');
+ assert.equal(adapter.status().requestsAttempted,1);
+ assert.equal(calls,1);
+ const second=await adapter.buyerAgent(buyerView);
+ assert.equal(second.action,'ACCEPT');
+ await assert.rejects(()=>adapter.buyerAgent(buyerView),
+  e=>e.code==='GEMINI_A2A_STALE_OR_FORKED_TURN');
+ assert.equal(adapter.status().requestsAttempted,2);
+ assert.equal(calls,2);
+});
+
+test('forked transcript and changed delegated limit cannot spend additional provider quota',async()=>{
+ let calls=0;
+ const adapter=setup(async()=>{
+  calls++;
+  return body(calls===1?'OFFER':calls===2?'COUNTER':'ACCEPT',
+   calls===1?29000:28000,20);
+ });
+ await adapter.sellerAgent(sellerView);
+ const fork={role:'buyer',turn:2,ownLimitMinor:30000,
+  history:[{role:'seller',action:'OFFER',amountMinor:28000}],
+  lastOffer:{role:'seller',action:'OFFER',amountMinor:28000}};
+ await assert.rejects(()=>adapter.buyerAgent(fork),
+  e=>e.code==='GEMINI_A2A_STALE_OR_FORKED_TURN');
+ await adapter.buyerAgent(buyerView);
+ const history=[
+  {role:'seller',action:'OFFER',amountMinor:29000},
+  {role:'buyer',action:'COUNTER',amountMinor:28000}
+ ];
+ const sellerThird={role:'seller',turn:3,ownLimitMinor:27001,
+  history,lastOffer:history.at(-1)};
+ await assert.rejects(()=>adapter.sellerAgent(sellerThird),
+  e=>e.code==='GEMINI_A2A_STALE_OR_FORKED_TURN');
+ assert.equal(calls,2);
+ assert.equal(adapter.status().requestsAttempted,2);
+ const result=await adapter.sellerAgent({...sellerThird,ownLimitMinor:27000});
+ assert.equal(result.action,'ACCEPT');
+ assert.equal(calls,3);
+});
+
+test('model cannot accept before any opposing offer even with valid JSON',async()=>{
+ let calls=0;
+ const adapter=setup(async()=>{calls++;return body('ACCEPT',29000)});
+ await assert.rejects(()=>adapter.sellerAgent(sellerView),
+  e=>e.code==='GEMINI_A2A_INVALID_TURN_TRANSITION');
+ assert.equal(calls,1);
+ assert.equal(adapter.status().circuitOpen,true);
+ await assert.rejects(()=>adapter.sellerAgent(sellerView),
+  e=>e.code==='GEMINI_A2A_CIRCUIT_OPEN');
+});
