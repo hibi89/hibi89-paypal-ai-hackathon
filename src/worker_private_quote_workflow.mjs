@@ -53,34 +53,52 @@ function mapQuote(row){
   paymentState:'NOT_AUTHORIZED'};
 }
 const changes=r=>{const n=r?.meta?.changes;if(!Number.isSafeInteger(n)||n<0||n>1)throw Error('INVALID_WRITE_RESULT');return n};
-async function smallJson(req){
+async function smallJson(req,bodyReadTimeoutMs){
  if(!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(req.headers.get('content-type')??''))
   throw Error('BAD_TYPE');
  const header=req.headers.get('content-length');
  if(header!==null&&(!/^\d{1,5}$/.test(header)||Number(header)>4096))throw Error('OVERSIZE');
  if(!req.body)throw Error('NO_BODY');
- let size=0;const chunks=[];const reader=req.body.getReader();
- try{while(true){const {value,done}=await reader.read();if(done)break;
-  if(!(value instanceof Uint8Array)||(size+=value.length)>4096)throw Error('OVERSIZE');
+ // An absolute upload deadline cannot be extended by slow trickle.
+ // A malicious stream may ignore cancellation, so never await cancel().
+ const reader=req.body.getReader(),chunks=[];let size=0,timer,onAbort;
+ const deadline=new Promise((_,reject)=>{
+  timer=setTimeout(()=>reject(Error('BODY_READ_TIMEOUT')),bodyReadTimeoutMs);
+ });
+ const aborted=new Promise((_,reject)=>{
+  onAbort=()=>reject(Error('BODY_ABORTED'));
+  req.signal.addEventListener('abort',onAbort,{once:true});
+  if(req.signal.aborted)onAbort();
+ });
+ try{while(true){
+  const {value,done}=await Promise.race([reader.read(),deadline,aborted]);
+  if(done)break;
+  if(!(value instanceof Uint8Array)||(size+=value.byteLength)>4096)throw Error('OVERSIZE');
   chunks.push(value);
- }}catch(err){try{await reader.cancel()}catch{}throw err}
- finally{try{reader.releaseLock()}catch{}}
+ }}finally{
+  clearTimeout(timer);
+  req.signal.removeEventListener('abort',onAbort);
+  try{const cancellation=reader.cancel();cancellation?.catch?.(()=>{});}catch{}
+  try{reader.releaseLock()}catch{}
+ }
  const bytes=new Uint8Array(size);let offset=0;
- for(const c of chunks){bytes.set(c,offset);offset+=c.length}
+ for(const c of chunks){bytes.set(c,offset);offset+=c.byteLength}
  const data=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
  if(!data||typeof data!=='object'||Array.isArray(data))throw Error('BAD_JSON');
  return data;
 }
+
 const hex=b=>Array.from(new Uint8Array(b),x=>x.toString(16).padStart(2,'0')).join('');
 async function requestQuoteId(actor,merchant,requestId){
  const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(
   'proofline:quote:v1\0'+actor+'\0'+merchant+'\0'+requestId));
  return 'q_'+hex(bytes).slice(0,32);
 }
-export function createWorkerPrivateQuoteWorkflow({db,allowedOrigin,now=Date.now}={}){
+export function createWorkerPrivateQuoteWorkflow({db,allowedOrigin,now=Date.now,bodyReadTimeoutMs=2000}={}){
  let origin;
  try{const u=new URL(allowedOrigin);if(u.protocol==='https:'&&u.origin===allowedOrigin&&!u.username&&!u.password)origin=allowedOrigin}catch{}
- if(!origin||typeof db?.withSession!=='function'||typeof now!=='function')
+ if(!origin||typeof db?.withSession!=='function'||typeof now!=='function'||
+    !Number.isSafeInteger(bodyReadTimeoutMs)||bodyReadTimeoutMs<100||bodyReadTimeoutMs>5000)
   throw Error('QUOTE_WORKFLOW_DEPENDENCIES_REQUIRED');
  const resolve=createWorkerPrivateSessionResolver({db,now});
  return Object.freeze({async fetch(request){
@@ -119,7 +137,7 @@ export function createWorkerPrivateQuoteWorkflow({db,allowedOrigin,now=Date.now}
     {error:e?.code==='SESSION_STORE_UNAVAILABLE'?'DEPENDENCY_UNAVAILABLE':'UNAUTHENTICATED'});
   }
   let data;
-  if(!listing){try{data=await smallJson(request)}catch{return reply(400,{error:'INVALID_BODY'})}}
+  if(!listing){try{data=await smallJson(request,bodyReadTimeoutMs)}catch{return reply(400,{error:'INVALID_BODY'})}}
   const t=now();
   if(!Number.isSafeInteger(t)||t<=0)return reply(503,{error:'DEPENDENCY_UNAVAILABLE'});
   let result;
