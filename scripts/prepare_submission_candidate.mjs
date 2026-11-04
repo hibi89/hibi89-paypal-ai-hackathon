@@ -128,18 +128,40 @@ export function prepareSubmissionCandidate({root=ROOT}={}){
   const video=verifyPrivateSyntheticVideo(join(root,'output','videos'));
   const localSource=assessment.localAssets.every(a=>!a.status.includes('MISSING')&&!a.status.includes('INVALID'));
   const ownerReviewReady=localSource&&
-    video.status==='LOCAL_SYNTHETIC_WEBM_INTEGRITY_VERIFIED'&&video.mediaDurationProbed;
+    video.status==='LOCAL_SYNTHETIC_WEBM_INTEGRITY_VERIFIED'&&video.mediaDurationProbed&&
+    // Assigned below after reading the new final copy.
+    true;
   const copy=files['docs/DEVPOST_ENTRY_AND_VIDEO_COPY_EN_20261029.md'];
+  // A separate short, owner-editable final entry draft. Never label this
+  // unpublished copy as Devpost-submitted or provider-verified.
+  const finalCopy=read(root,'docs/DEVPOST_FINAL_REVIEW_PACKET_EN_20261105.md');
+  const requiredCopy=[
+    'DRAFT — NOT PUBLISHED','OFFLINE_MOCK','AI Work','Global Services',
+    'A2A negotiation','Delegate & Consent','Gift-finder',
+    'Subscription Churn Saver','Invoice / Dispute Copilot',
+    'not independently reproduced in CI',
+    'OWNER TO ADD AFTER APPROVED PUBLIC YOUTUBE UPLOAD',
+    'NOT SUBMITTED','RELEASE HOLD.'
+  ];
+  const finalCopyReady=finalCopy.length>=5000&&finalCopy.length<=18000&&
+    requiredCopy.every(term=>finalCopy.includes(term));
   requireValue(copy.includes('DRAFT — NOT PUBLISHED'),'DEVPOST_COPY_DRAFT_GUARD_MISSING');
+  // Keep owner review unready if the fresh English copy was removed or corrupted.
+  const copyAndVideoReviewReady=ownerReviewReady&&finalCopyReady;
   const dest=join(root,'output','submission');
   mkdirSync(dest,{recursive:true});
   const report={
-    status:ownerReviewReady?'LOCAL_PACKET_PREPARED_NOT_SUBMITTED':
-      localSource&&video.status==='LOCAL_SYNTHETIC_WEBM_INTEGRITY_VERIFIED'?
-        'LOCAL_PACKET_NEEDS_INDEPENDENT_MEDIA_DURATION_PROOF':'LOCAL_PACKET_NEEDS_VIDEO_OR_SOURCE',
+    status:copyAndVideoReviewReady?'LOCAL_PACKET_PREPARED_NOT_SUBMITTED':
+      localSource&&video.status==='LOCAL_SYNTHETIC_WEBM_INTEGRITY_VERIFIED'&&
+       !video.mediaDurationProbed?
+        'LOCAL_PACKET_NEEDS_INDEPENDENT_MEDIA_DURATION_PROOF':
+        localSource&&!finalCopyReady?'LOCAL_PACKET_NEEDS_FINAL_ENGLISH_COPY':
+        'LOCAL_PACKET_NEEDS_VIDEO_OR_SOURCE',
     sourceStatus:localSource?'LOCAL_SOURCE_DRAFTS_PRESENT':'LOCAL_SOURCE_MISSING',
     privateVideo:video,
-    ownerReviewReady,
+    ownerReviewReady:copyAndVideoReviewReady,
+    finalEnglishCopy:finalCopyReady?
+      'OWNER_REVIEW_COPY_VALIDATED_NOT_PUBLISHED':'OWNER_REVIEW_COPY_MISSING_OR_INVALID',
     authorizedToPublish:false,
     publicVideoUrl:'NOT_PROVIDED',
     devpostReceipt:'NOT_SUBMITTED',
@@ -156,7 +178,9 @@ export function prepareSubmissionCandidate({root=ROOT}={}){
     '- Public video URL: NOT PROVIDED\n- Devpost receipt: NOT SUBMITTED\n'+
     '- Main branch release: OWNER APPROVAL REQUIRED\n'+
     '- Real Gemini / PayPal Sandbox: owner-reported historical test, not the synthetic video\n\n'+
-    '---\n\n'+copy;
+    '## Final concise English copy (UNPUBLISHED / OWNER REVIEW)\n\n'+
+    (finalCopyReady?finalCopy:'FINAL_ENGLISH_COPY_MISSING_OR_INVALID')+
+    '\n\n---\n\n## Original detailed draft (archive / NOT SUBMITTED)\n\n'+copy;
   writeFileSync(join(dest,'submission_candidate.md'),md,'utf8');
   writeFileSync(join(dest,'submission_candidate_status.json'),JSON.stringify(report,null,2)+'\n','utf8');
   return report;

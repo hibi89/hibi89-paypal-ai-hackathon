@@ -1,3 +1,20 @@
+## 2026-11-05 KST — VERIFIED full-entry 71→72 (+1pp), immutable external-video evidence boundary
+
+Latest **verified** media feature SHA `fff15c28a9d4ad6d0ae4e4964c4ccbd5a16377cb`: [GitHub Actions #41862397878](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41862397878) completed SUCCESS (Linux Node **1,149 PASS**, Windows **SUCCESS**, real one-command two-part Chromium 8/8 **PASS**). Actual CI default-speed private synthetic video covered AI Work, Global Services, all five Part2 skills **and the owner-entered local Gift catalog**, with independent **141.40-second ffprobe media duration** and integrity PASS. No media was published or retained as a production asset; this is not the owner's personally watched final film. Earlier media SHA aa9e09b Windows failure on missing ffprobe was resolved by existing Playwright FFmpeg fallback; do not treat failed SHA as success.
+
+| Final whole-contest area | Fixed weight | At 71 | Now at 72 | Outstanding requirement |
+| --- | ---: | ---: | ---: | --- |
+| Part1 marketplace / quote / contract | 22 | 21 | 21 | Real merchant and customer flow |
+| Part2 five innovation skills | 23 | 21 | 21 | Live AI provider and safe judge access |
+| Real PayPal Sandbox + actual AI evidence | 20 | 8 | 8 | Independent authorized provider proof |
+| Reviewer access / optional hosted D1 and IdP | 15 | 10 | 10 | Real-provider reviewer path; Production optional if local runnable |
+| Public source / default LICENSE / instructions | 8 | 7 | 7 | Approved main release and root license |
+| Owner-reviewed public YouTube under 180 seconds | 7 | **3** | **4** | Actual owner visual review and public upload; current 141.40s CI clip only |
+| English Devpost submission and receipt | 5 | 1 | 1 | Current concise owner-review copy pending CI, submission absent |
+| **Whole contest entry (internal evidence-weighted)** | **100** | **71** | **72** | **RELEASE HOLD** |
+
+**Scope and score integrity:** +1pp is solely for a new, independently timed and fully source-verified current two-part **private** video candidate exercising latest Gift flow. This does **NOT** prove third-party PayPal/Gemini calls, main deployment, owner-reviewed/published YouTube or Devpost confirmation. The new concise English review packet at `docs/DEVPOST_FINAL_REVIEW_PACKET_EN_20261105.md` and generator source `85682084461f7a3f645ba00dcf1eaf9cf203245b` are not yet exact-SHA CI verified and gain **zero** extra points pending proof.
+
 ## 2026-11-05 KST — New video evidence pending, provisional whole-product 71 unchanged
 
 Source fff15c28a9d4ad6d0ae4e4964c4ccbd5a16377cb adds an independent encoded WebM duration limit, records owner-entered Gift matching on video, and uses existing Playwright FFmpeg if Windows ffprobe is missing. First Windows full CI on aa9e09b failed on ffprobe absence AFTER private video recording succeeded. Final exact-SHA Windows/Linux and default-speed media CI have NOT YET completed at the last check. Fixed whole-contest score remains 71/100, with video 3/7. Do not claim +1pp until genuine current private recording with accepted duration and regression evidence; no approved YouTube, real provider proof or Devpost receipt. RELEASE HOLD.
