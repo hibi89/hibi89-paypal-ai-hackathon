@@ -31,7 +31,8 @@
     "proof:injected-a2a": "node --experimental-sqlite scripts/check_injected_a2a_cross_part.mjs",
     "pilot:gemini:part2": "node --experimental-sqlite scripts/run_owner_private_gemini_innovation.mjs",
     "mvp:two-part:evidence": "node --experimental-sqlite scripts/check_owner_two_part_evidence.mjs",
-    "mvp:reconcile:get": "node --experimental-sqlite scripts/reconcile_existing_sandbox_get_only.mjs"
+    "mvp:reconcile:get": "node --experimental-sqlite scripts/reconcile_existing_sandbox_get_only.mjs",
+    "submission:fields:local": "node scripts/build_devpost_form_fields.mjs"
   },
   "engines": {
     "node": ">=22.5.0"
