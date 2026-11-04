@@ -2,6 +2,7 @@
 // Reads only public checkout files and ignored synthetic video under output/videos.
 // Does not touch owner-private SQLite, provider credentials, payment APIs or browsers.
 import {createHash} from 'node:crypto';
+import {homedir} from 'node:os';
 import {spawnSync} from 'node:child_process';
 import {readFileSync,readdirSync,lstatSync,mkdirSync,writeFileSync,existsSync} from 'node:fs';
 import {join,resolve,basename} from 'node:path';
@@ -15,23 +16,55 @@ const entryPaths=['LICENSE','README.md','docs/JUDGE_REPRODUCTION_EN.md',
   'scripts/record_judge_demo.py'];
 const read=(root,path)=>{try{return readFileSync(join(root,path),'utf8').replace(/\r\n?/g,'\n')}catch{return ''}};
 const requireValue=(condition,why)=>{if(!condition)throw Error(why)};
-// The recorder's elapsed wall-clock time is NOT its encoded media duration.
-// Local ffprobe reads only this owner-selected, hash-checked WebM; no network.
-export function probePrivateWebmDuration(file,runner=spawnSync){
+// The recorder's wall-clock time is NOT the encoded media duration.
+// Prefer ffprobe. On fresh Windows installs, reuse the already-installed
+// Playwright ffmpeg helper instead of downloading another tool or guessing.
+function findRecorderFfmpeg(){
+  const roots=[process.env.LOCALAPPDATA&&join(process.env.LOCALAPPDATA,'ms-playwright'),
+    join(homedir(),'.cache','ms-playwright')].filter(Boolean);
+  for(const root of roots){
+    let folders=[];
+    try{folders=readdirSync(root).filter(name=>/^ffmpeg-\d+$/.test(name))}catch{}
+    for(const folder of folders){
+      for(const name of ['ffmpeg-win64.exe','ffmpeg-linux','ffmpeg-mac']){
+        const path=join(root,folder,name);
+        try{if(lstatSync(path).isFile()&&!lstatSync(path).isSymbolicLink())return path}catch{}
+      }
+    }
+  }
+  return null;
+}
+export function probePrivateWebmDuration(file,runner=spawnSync,
+  {findBundled=findRecorderFfmpeg}={}){
+  const opts={encoding:'utf8',shell:false,windowsHide:true,timeout:10000,
+    maxBuffer:4096,env:{PATH:process.env.PATH||'',
+      SystemRoot:process.env.SystemRoot||''}};
+  const classify=seconds=>Number.isFinite(seconds)&&seconds>0?
+    {status:seconds<180?'MEDIA_DURATION_UNDER_180_VERIFIED':'MEDIA_DURATION_TOO_LONG',
+      durationSeconds:seconds}:
+    {status:'MEDIA_DURATION_NOT_VERIFIED',durationSeconds:null};
   const result=runner('ffprobe',[
     '-v','error','-show_entries','format=duration',
     '-of','default=noprint_wrappers=1:nokey=1',file
-  ],{encoding:'utf8',shell:false,windowsHide:true,timeout:10000,
-      maxBuffer:4096,env:{PATH:process.env.PATH||'',
-        SystemRoot:process.env.SystemRoot||''}});
+  ],opts);
   const raw=typeof result?.stdout==='string'?result.stdout.trim():'';
-  if(result?.error||result?.status!==0||!/^[0-9]+(?:\.[0-9]+)?$/.test(raw))
+  if(!result?.error&&result?.status===0&&/^[0-9]+(?:\.[0-9]+)?$/.test(raw))
+    return classify(Number(raw));
+  // Fail closed if ffprobe rejected the media. Fallback is ONLY for an absent binary.
+  if(result?.error?.code!=='ENOENT')
     return {status:'MEDIA_DURATION_NOT_VERIFIED',durationSeconds:null};
-  const seconds=Number(raw);
-  if(!Number.isFinite(seconds)||seconds<=0)
-    return {status:'MEDIA_DURATION_NOT_VERIFIED',durationSeconds:null};
-  return {status:seconds<180?'MEDIA_DURATION_UNDER_180_VERIFIED':'MEDIA_DURATION_TOO_LONG',
-    durationSeconds:seconds};
+  for(const executable of [findBundled(),'ffmpeg'].filter(Boolean)){
+    const fallback=runner(executable,['-hide_banner','-i',file],opts);
+    const info=typeof fallback?.stderr==='string'?fallback.stderr:'';
+    // FFmpeg intentionally exits nonzero without an output target. Require
+    // actual input video stream metadata and a parseable HH:MM:SS duration.
+    const match=/Duration:\s*(\d{2}):([0-5]\d):([0-5]\d(?:\.\d+)?)/.exec(info);
+    if(!fallback?.error&&match&&/Stream #\d+:\d+.*Video:/.test(info)){
+      const seconds=Number(match[1])*3600+Number(match[2])*60+Number(match[3]);
+      return classify(seconds);
+    }
+  }
+  return {status:'MEDIA_DURATION_NOT_VERIFIED',durationSeconds:null};
 }
 export function verifyPrivateSyntheticVideo(dir,{probeDuration=probePrivateWebmDuration}={}){
   if(!existsSync(dir))return {status:'LOCAL_VIDEO_NOT_RECORDED'};

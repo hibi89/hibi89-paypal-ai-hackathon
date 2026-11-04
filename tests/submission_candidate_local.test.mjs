@@ -110,3 +110,23 @@ test('owner review depends on independently measured duration while staying unpu
   assert.equal(counterfeit.mediaDurationProbed,false);
  }finally{rmSync(root,{recursive:true,force:true})}
 });
+
+test('missing ffprobe uses already-present recorder FFmpeg metadata without downloading tools',()=>{
+ const commands=[];
+ const run=(name,args,opts)=>{
+  commands.push({name,args,opts});
+  if(name==='ffprobe')return {error:{code:'ENOENT'},status:null};
+  if(name==='/existing/playwright/ffmpeg')return {status:1,stderr:
+   "Input #0, matroska,webm\n  Duration: 00:02:13.680, start: 0.000\n  Stream #0:0: Video: vp8"};
+  return {error:{code:'ENOENT'}};
+ };
+ const found=probePrivateWebmDuration('/private/video.webm',run,
+  {findBundled:()=>'/existing/playwright/ffmpeg'});
+ assert.deepEqual(found,{status:'MEDIA_DURATION_UNDER_180_VERIFIED',durationSeconds:133.68});
+ assert.equal(commands[1].name,'/existing/playwright/ffmpeg');
+ assert.equal(commands[1].opts.shell,false);
+ const bad=probePrivateWebmDuration('/private/video.webm',(name)=>name==='ffprobe'?
+  {error:{code:'ENOENT'}}:{status:1,stderr:'Invalid data'},
+  {findBundled:()=>'/existing/playwright/ffmpeg'});
+ assert.equal(bad.status,'MEDIA_DURATION_NOT_VERIFIED');
+});
