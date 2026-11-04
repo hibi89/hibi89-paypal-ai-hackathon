@@ -171,7 +171,7 @@ test('claimed PayPal attempt makes existing quote immutable to revision',async()
   const q=(await (await f.handler.fetch(request('/__private/quotes','POST',draft))).json()).quote;
   f.db.prepare("INSERT INTO payment_attempts(request_id,quote_id,quote_version,merchant_id,operation,state,amount_minor,currency) VALUES('attempt1',?,1,'merchant-1','create','UNKNOWN',1500,'USD')").run(q.quoteId);
   const res=await f.handler.fetch(request('/__private/quotes/'+q.quoteId+'/revise','POST',
-    {expectedVersion:1,scopeText:'No revisions after a PayPal claim has been made'});
+    {expectedVersion:1,scopeText:'No revisions after a PayPal claim has been made'}));
   assert.equal(res.status,409);
   assert.equal((await res.json()).error,'QUOTE_REVISION_CONFLICT');
   assert.equal(f.db.prepare('SELECT version FROM quotes').get().version,1);
