@@ -57,13 +57,13 @@ function inspectAI(directory,actor,merchant){
       JSON.stringify(MARKETPLACE_SKILL_NAMES.filter(s=>skills.includes(s)))!==row.skills_json||
       digest(JSON.stringify([actor,merchant,row.brief_hash,row.skills_json]))!==row.result_hash)
       return {state:'REVIEW_REQUIRED',skills:[],integrity:false};
-    return {state:'COMMITTED',skills,integrity:true};
+    return {state:'COMMITTED',skills,integrity:true,briefHash:row.brief_hash};
   });
 }
 function inspectCheckout(directory){
  return checkedRead(directory,'checkout.sqlite',db=>{
   const quotes=db.prepare('SELECT id,owner_id,merchant_id,version,currency,'+
-    'status,approval_actor,approval_version,approval_amount_minor FROM quotes').all();
+    'status,approval_actor,approval_version,approval_amount_minor,scope_text FROM quotes').all();
   const attempts=db.prepare('SELECT quote_id,quote_version,merchant_id,'+
     'operation,state,remote_id,amount_minor,currency,observed_at '+
     'FROM payment_attempts').all();
@@ -91,6 +91,12 @@ function inspectCheckout(directory){
   return {
    match,actor:amountsBound?quote.owner_id:null,
    merchant:amountsBound?quote.merchant_id:null,
+   quoteScopeDigest:typeof quote?.scope_text==='string'&&
+     /^sha256:[a-f0-9]{64}$/.test(quote.scope_text)
+       ?quote.scope_text.slice(7):null,
+   quoteScopeBinding:quote?.scope_text===null?'LEGACY_NOT_BOUND':
+     typeof quote?.scope_text==='string'&&/^sha256:[a-f0-9]{64}$/.test(quote.scope_text)
+       ?'SHA256_BOUND':'INVALID_BOUNDING_DIGEST',
    // Do not expose PayPal order or capture IDs, quote owner or merchant.
    quoteApproved:quote?.status==='APPROVED',
    createState:create?.state??'ABSENT',
@@ -117,7 +123,9 @@ export function inspectOwnerMvpReceipt({directory}={}){
    safeToRepeatPayment:false,
    localStates:local.states,localFiles:local.files,
    amountMinor:null,currency:null,
-   classifiedSkills:[],localAuditIntegrity:'NOT_CHECKED',localAuditEvents:0
+   classifiedSkills:[],localAuditIntegrity:'NOT_CHECKED',localAuditEvents:0,
+   quoteAiBriefBinding:'NOT_CHECKED',sameBriefProvenByLocalHashes:false,
+   freshProviderAttested:false
  };
  if(local.status==='CLEAN_LOCAL_ONE_SHOT')
   return Object.freeze({...result,status:'NO_LOCAL_ATTEMPT'});
@@ -127,7 +135,15 @@ export function inspectOwnerMvpReceipt({directory}={}){
   const checkout=inspectCheckout(directory);
   const ai=checkout.actor&&checkout.merchant?
     inspectAI(directory,checkout.actor,checkout.merchant):null;
+  // Mismatched stamped quotes cannot be combined with Gemini. Old owner
+  // records retain their historic status, explicitly marked not cross-bound.
+  const briefBinding=checkout.quoteScopeBinding==='SHA256_BOUND'
+    ?(checkout.quoteScopeDigest===ai?.briefHash
+       ?'BOUND_LOCAL_HASH_MATCH':'BOUND_LOCAL_HASH_MISMATCH')
+    :checkout.quoteScopeBinding==='LEGACY_NOT_BOUND'
+       ?'LEGACY_NOT_CROSS_BOUND':'INVALID_QUOTE_BRIEF_DIGEST';
   const full=checkout.match&&checkout.auditPass&&ai?.integrity===true&&
+    ['BOUND_LOCAL_HASH_MATCH','LEGACY_NOT_CROSS_BOUND'].includes(briefBinding)&&
     local.states.capture==='PAID'&&local.states.create==='APPROVED'&&
     local.states.quote==='APPROVED'&&local.states.gemini==='COMMITTED';
   result={...result,
@@ -136,7 +152,9 @@ export function inspectOwnerMvpReceipt({directory}={}){
     amountMinor:full?EXPECTED_AMOUNT:null,currency:full?'USD':null,
     classifiedSkills:full?[...ai.skills]:[],
     localAuditIntegrity:checkout.auditIntegrity,
-    localAuditEvents:checkout.auditEvents};
+    localAuditEvents:checkout.auditEvents,
+    quoteAiBriefBinding:briefBinding,
+    sameBriefProvenByLocalHashes:full&&briefBinding==='BOUND_LOCAL_HASH_MATCH'};
  }catch{
    // Unreadable, foreign, tampered or legacy files are not payment evidence.
    result={...result,status:'LOCAL_EVIDENCE_REVIEW_REQUIRED'};

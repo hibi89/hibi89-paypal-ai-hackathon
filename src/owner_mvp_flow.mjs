@@ -1,6 +1,7 @@
 // Owner-only one-process MVP: real Gemini skill matching -> human-approved
 // synthetic quote -> PayPal Sandbox buyer approval -> authorized Capture -> GET.
 // This module is NOT HTTP authentication, public hosting or a PayPal Live client.
+import {createHash} from 'node:crypto';
 import {createOwnerMarketplaceAiService} from './owner_marketplace_ai_service.mjs';
 import {createOwnerCheckoutHostSession} from './owner_checkout_host_session.mjs';
 import {createOwnerPilotCheckoutCoordinator} from './owner_pilot_checkout_coordinator.mjs';
@@ -66,7 +67,8 @@ export function createOwnerMvpFlow({
     if(existing)reject('MVP_EXISTING_QUOTE_REVIEW_REQUIRED');
     // Quote is persistent: one fixed quote per private ledger, even across runs.
     await ledger.insertQuote({id:quoteId,ownerId:actorId,
-      merchantId,version:1});
+      merchantId,version:1,
+      scopeDigest:createHash('sha256').update(brief).digest('hex')});
     matches=await ai.classify({sessionHandle:handle,brief});
     if(matches.requestedSkills.length===0)reject('MVP_AI_SKILLS_EMPTY');
     // Fictional profiles may only partially match a real task. Never claim
