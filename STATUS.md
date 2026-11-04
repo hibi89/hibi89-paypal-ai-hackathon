@@ -1,3 +1,10 @@
+## 2026-11-05 KST — Reviewer evidence/PR28 corrected, FINAL 73% UNCHANGED (LATEST)
+
+- Updated `README.md` and `docs/JUDGE_REPRODUCTION_EN.md` on lead in docs-only commit `c3e38eef395f7a18e59d7024328f1ce2faaaf2b3`: 1,153 PASS/0 FAIL at executable `9a152b0` (Actions #41868041612), Windows+two-part Chromium 8/8, separate independently measured **141.40s** private V3 WebM at `fff15c28` (#41862397878). No additional executable CI claimed for this documentation.
+- Re-staged DRAFT PR #28 full-source release-preview; GitHub recursive tree comparison **510/510** exact lead blob matches plus original main-only `docs/ROLE_COORDINATION.md`, DRAFT clean. Previous preview SHA `7c6c57ec51fbb022e9121d6ce83c333c07e5c600`, resync after this checkpoint. `main` stays at `b8e7f7914084166b24a1eacf97e262c5d855d17b` and remains unlicensed/older.
+- **Full final readiness unchanged 73/100 (+0pp this turn), RELEASE HOLD.** Documentation and staging do not satisfy the remaining real PayPal/Gemini evidence, approved default-main release, public owner-approved YouTube or Devpost submission. No external provider/payment calls or publication.
+- Next: only owner-explicit approval for protected main/provider/video/Devpost actions, then independent actual evidence; do not credit synthetic reruns with +1pp. See latest HANDOFF for 10-part recovery details.
+
 ## 2026-11-05 01:34 KST — Whole FINAL entry 72→73; verified local Devpost form generation (LATEST)
 
 - **Verified exact source `9a152b0e9935d65003988b5156316ad215329616`:** [CI #41868041612](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41868041612) SUCCESS, Linux **1,153 PASS/0 FAIL/0 SKIP**, Windows SUCCESS, two-part judge Chromium 8/8 PASS; [MVP smoke #41868041620](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41868041620) SUCCESS.
