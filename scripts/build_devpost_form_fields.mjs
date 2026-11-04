@@ -55,12 +55,21 @@ export function buildDevpostFormFields(source){
   if(!m||m[1]!==TOOL_NAMES[index])fail('OFFICIAL_TOOL_USE_DISCLOSURE_REQUIRED');
   return Object.freeze({name:m[1],howUsed:m[2]});
  });
+ // Explicit negative claims are part of the generated disclosure contract:
+ // generic references to the browser cannot replace an actual no-provider-call statement.
  for(const item of toolsUsed.slice(0,2)){
   if(!item.howUsed.includes('owner-reported')||
-     !item.howUsed.includes('not independently reproduced in CI')||
-     !item.howUsed.includes('default browser'))
+     !item.howUsed.includes('not independently reproduced in CI'))
    fail('PROVIDER_USE_PROVENANCE_REQUIRED');
  }
+ if(!toolsUsed[0].howUsed.includes('default browser performs no PayPal calls')||
+    !toolsUsed[1].howUsed.includes(
+      'default browser uses deterministic OFFLINE_MOCK agents with no Gemini calls'))
+  fail('OFFLINE_BROWSER_PROVIDER_BOUNDARY_REQUIRED');
+ const modelAndPayment=blocks.get('What uses PayPal and AI');
+ if(!modelAndPayment?.includes('**not independently reproduced in CI**')||
+    !modelAndPayment.includes('**zero actual PayPal or Gemini requests**'))
+  fail('LIVE_PROVIDER_PROOF_NOT_ATTESTED');
  if(!BUILT_WITH_TAGS.every(tag=>builtWith.includes(tag)))
   fail('BUILT_WITH_TOOL_TAGS_MISSING');
  const sourceAndDemo=blocks.get('Source and demo');

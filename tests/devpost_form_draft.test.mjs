@@ -38,7 +38,7 @@ test('cannot transform tampered or prematurely published copy into an owner-read
   draft.replace('DRAFT — NOT PUBLISHED','PUBLISHED'),
   draft.replace('NOT SUBMITTED','SUBMITTED'),
   draft.replace('RELEASE HOLD','RELEASE APPROVED'),
-  draft.replace('not independently reproduced in CI','independently reproduced in CI'),
+  draft.replaceAll('not independently reproduced in CI','independently reproduced in CI'),
   draft.replace('## Inspiration','## MISSING'),
   draft.replace('## What we learned','## Inspiration'),
   draft.replace('git switch lead/paypal','git switch main'),
@@ -84,5 +84,9 @@ test('mandatory Devpost tools/how-used field is structured and cannot claim live
     'historical private model use is independently verified in CI'),
   draft.replace('default browser uses deterministic OFFLINE_MOCK agents with no Gemini calls',
     'default browser performs real Gemini calls'),
+  draft.replace('default browser performs no PayPal calls',
+    'default browser performs live PayPal calls'),
+  draft.replace('**zero actual PayPal or Gemini requests**',
+    '**real PayPal or Gemini requests were made**'),
  ])assert.throws(()=>buildDevpostFormFields(bad));
 });
