@@ -1,0 +1,34 @@
+# PayPal Hackathon — FINAL product completion evidence scorecard (2026-11-04 KST)
+
+This score is **not** the previous 97% internal engineering-scope estimate or a production release certificate. It tracks the actual user-required *finished two-part submission* across functional runtime, external APIs, reviewer access, approved final video, and Devpost. Owner-requested target: each work cycle should achieve at least **+1 percentage point on this complete-product metric**, measured against verified deliverables. Evidence remains stronger than estimates; unresolved external gate is never credited as passed.
+
+## Scoring method (fixed 100-point owner-scope assessment; internal estimate, not official judge scoring)
+
+| Final deliverable / gate | Weight | Before V3 | After V3 | Grounding / remaining acceptance |
+| --- | ---: | ---: | ---: | --- |
+| Part 1 functional marketplace + approvals/contracts | 22 | 19 | 19 | Local Node+Chromium quote, roles, SQLite; real customers/revenue/fully hosted checkout NOT verified |
+| Part 2 five innovation skills | 23 | 19 | 19 | All five local browser actions verified; actual Gemini A2A model operation in hosted judge path NOT verified |
+| Real PayPal Sandbox + real AI evidence | 20 | 8 | 8 | 2026-10-28 historical owner-observed real test; not independently reproduced by this CI or deployed app |
+| Hosted authentication, D1, reviewer E2E | 15 | 7 | 7 | Local Workerd/D1/OIDC/Chromium, remote hosted production and authenticated reviewer URL NOT verified |
+| Public source, root license and English instructions | 8 | 7 | 7 | Public `lead/paypal` source/license, English reproduction guide; `main` release/license merge not approved |
+| Sub-three-minute complete **two-part** reviewer film | 7 | 2 | **3** | Previously only Part1-heavy private video; V3 actually records all five Part2 skills and is independently `ffprobe`-measured **133.68 sec** on CI. Owner-reviewed final file/public YouTube NOT completed |
+| Official English Devpost submission and receipt | 5 | 1 | 1 | Draft exists, real submission/receipt NOT completed |
+| **Estimated final whole-product score** | **100** | **63** | **64** | **+1pp evidence-weighted final-scope progress**, not 97→98; RELEASE HOLD |
+
+Scores below maximum remain provisional until owner/third-party evidence verifies them. Historical engineering estimates and 18-day day-by-day progress are separate measures and must not be substituted for this final whole-product score. Do not count a locally rendered synthetic demo as an actual provider call, or an ephemeral CI WebM as an approved public submission.
+
+## Exact code/CI acceptance in this cycle
+
+- Initial video implementation SHA `7f03f3e5a062bbd76df2888283b5515e52f008fc`: actual default-speed V3 Playwright browser actions exercised five Part2 skills, plus Part1 and source disclosures; [workflow #41839120665](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41839120665) **default-speed video job SUCCESS**, private WebM `ffprobe` **133.68 sec**. Its general Node/Windows submission gates FAILED due replacing a deliberate `NOT filmed` owner-final-video disclaimer; do not label full first CI success.
+- Single cause-specific correction at verified source SHA `8c226a701d1637030e641c0a523573e1fd5d6271`: restored the draft gate; `scripts/prepare_submission_candidate.mjs` now rejects V2/Part1-only candidate files and mismatched/missing V3 five-skill manifests. Tests updated; English Devpost draft describes all five truthful offline skills and new film provenance.
+- At exact `8c226a701d1637030e641c0a523573e1fd5d6271`, [contract workflow #41839813407](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41839813407) **SUCCESS**: Linux Node `1,128 PASS / 0 FAIL / 0 SKIP`, Windows owner-runner offline recording/submission candidate **SUCCESS**, actual offline Chromium E2E **SUCCESS**. [MVP smoke #41839813391](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41839813391) **SUCCESS**. New exact SHA did not repeat full-duration [video-full] because recorder itself was unchanged after the first measured run; that duration proof belongs to `7f03f3e` only.
+- External permission/network/payment/secrets changes **zero**; CI film remained ephemeral/unpublished, no URL to user-generated file; original six migrations, Part1/Part2 and historical private account files untouched.
+
+## Remaining +1pp tasks must close genuine final gates
+
+1. Inspect/obtain the historical owner local receipt in a safe, read-only way and the genuine provider/account provenance with explicit scoped approval; **do not replay** CREATE/CAPTURE or model calls.
+2. Obtain owner approval for default `main` license/source release and, only if required/authorized, remote Cloudflare D1/IdP/reviewer access. Verify actual browser/API/console/network; no assumption from local Workerd.
+3. Record and visually review an owner-controlled under-180-second **V3** video; verify its encoded duration and source labeling, then obtain explicit approval before YouTube publishing. CI 133.68s is NOT the owner final file.
+4. Complete real English Devpost fields and public video links, submit only with owner authorization and retain the real confirmation.
+
+All prices/provider entitlement/quotas, remote migration, public hosting, media publication and Devpost submission remain separate approval gates.
