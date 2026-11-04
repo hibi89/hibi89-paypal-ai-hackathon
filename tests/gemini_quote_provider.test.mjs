@@ -131,3 +131,58 @@ test('model-denied requests stop without paid or old-model fallback',async()=>{
  await assert.rejects(f({scope,currency:'USD'}),{message:'AI_HTTP_FAILED'});
  assert.deepEqual(requests,[GEMINI_P0_ENDPOINT]);
 });
+
+test('actual quote transport timeout is bounded even if injected fetch ignores abort',async()=>{
+ let calls=0,signal;
+ const fn=createGeminiQuoteDraftProvider({...opts,timeoutMs:60,
+   fetchImpl:async(_url,init)=>{
+     calls++;signal=init.signal;return new Promise(()=>{});
+   }});
+ await assert.rejects(fn({scope,currency:'USD'}),{message:'AI_TRANSPORT_FAILED'});
+ assert.equal(calls,1);
+ assert.equal(signal.aborted,true);
+});
+test('actual quote body read has same deadline and does not await stalled cancel',async()=>{
+ let calls=0,cancels=0;
+ const stream=new ReadableStream({
+   start(controller){controller.enqueue(new TextEncoder().encode('{"candidates":'))},
+   cancel(){cancels++;return new Promise(()=>{});}
+ });
+ const fn=createGeminiQuoteDraftProvider({...opts,timeoutMs:60,
+   fetchImpl:async()=>{
+     calls++;
+     return new Response(stream,{headers:{'content-type':'application/json'}});
+   }});
+ await assert.rejects(fn({scope,currency:'USD'}),{message:'AI_JSON_INVALID'});
+ assert.equal(calls,1);assert.equal(cancels,1);
+});
+test('actual quote response rejects wrong MIME, oversized stream and advertised length',async()=>{
+ let calls=0;
+ const samples=[
+  new Response('{}',{headers:{'content-type':'text/html'}}),
+  new Response('x'.repeat(17000),{headers:{'content-type':'application/json'}}),
+  new Response('{}',{headers:{'content-type':'application/json','content-length':'16385'}})
+ ];
+ for(const item of samples){
+   const fn=createGeminiQuoteDraftProvider({...opts,fetchImpl:async()=>{
+     calls++;return item;
+   }});
+   await assert.rejects(fn({scope,currency:'USD'}),{message:'AI_JSON_INVALID'});
+ }
+ assert.equal(calls,3);
+});
+test('injected quote JSON promise cannot stall indefinitely',async()=>{
+ const fn=createGeminiQuoteDraftProvider({...opts,timeoutMs:60,
+   fetchImpl:async()=>({status:200,json:()=>new Promise(()=>{})})});
+ await assert.rejects(fn({scope,currency:'USD'}),{message:'AI_JSON_INVALID'});
+});
+test('actual native Gemini quote JSON returns only a proposal, not payment authority',async()=>{
+ const data={candidates:[{finishReason:'STOP',content:{parts:[{text:'{"suggestedMinor":25000}'}]}}]};
+ const fn=createGeminiQuoteDraftProvider({...opts,fetchImpl:async()=>
+   new Response(JSON.stringify(data),{status:200,headers:{'content-type':'application/json; charset=utf-8'}})
+ });
+ const result=await fn({scope,currency:'USD'});
+ assert.equal(result.suggestedMinor,25000);
+ assert.equal(result.source,'GEMINI_API');
+ assert.equal('paymentAuthorized' in result,false);
+});
