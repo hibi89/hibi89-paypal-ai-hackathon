@@ -47,6 +47,12 @@ export function createOwnerMarketplaceAiService({store,provider,
       if(result?.source!=='GEMINI_API')deny('AI_MARKETPLACE_SOURCE_MISMATCH');
       const skills=validateMarketplaceSkills({skills:result.skills});
       const candidates=decorate(skills);
+      // A provider round-trip can outlive the trusted login. Never return a
+      // cached model result to a revoked/reassigned principal; mark the
+      // already-spent one-shot UNKNOWN rather than attempting another call.
+      const afterProvider=await checkedScope(sessionHandle,brief);
+      if(afterProvider.actorId!==scope.actorId||afterProvider.merchantId!==scope.merchantId)
+        deny('MARKETPLACE_AI_SCOPE_CHANGED_DURING_PROVIDER');
       // Persist the validated result in the same atomic state transition;
       // success must never be returned if SQLite commit fails.
       store.commit({...scope,skills});

@@ -244,3 +244,42 @@ test('AI authorization rejects revoked session or switched merchant before quota
  assert.equal(f.store().status(body),null);
  assert.equal(f.calls.length,0);
 }));
+
+
+test('revoked owner during an in-flight Gemini response never sees or commits classification',async()=>{
+ const f=fixture();
+ try{
+  let releaseProvider;
+  const block=new Promise(resolve=>{releaseProvider=resolve;});
+  let notifyStarted;
+  const started=new Promise(resolve=>{notifyStarted=resolve;});
+  let authorized=true,providerCalls=0;
+  const provider=async()=>{
+   providerCalls++;
+   notifyStarted();
+   await block;
+   return {source:'GEMINI_API',skills:['web','payments']};
+  };
+  provider.requiresExternalConsent=true;
+  const service=createOwnerMarketplaceAiService({
+   store:f.store(),provider,
+   resolveTrustedActor:async handle=>
+    handle==='trusted'&&authorized?identity:null,
+   authorizeRequest:async()=>true
+  });
+  const pending=service.classify({sessionHandle:'trusted',brief});
+  await started;
+  authorized=false;
+  releaseProvider();
+  await assert.rejects(pending,{code:'MARKETPLACE_AI_RESULT_UNKNOWN_NO_AUTO_RETRY'});
+  assert.equal(f.store().status(body).state,'UNKNOWN');
+  assert.equal(providerCalls,1);
+  authorized=true;
+  await assert.rejects(service.classify({sessionHandle:'trusted',brief}),
+   {code:'MARKETPLACE_AI_BUDGET_USED'});
+  assert.equal(providerCalls,1);
+  const saved=await service.readSaved({sessionHandle:'trusted',brief});
+  assert.equal(saved.status,'UNAVAILABLE');
+  assert.equal(saved.autoRetry,false);
+ }finally{f.close();}
+});

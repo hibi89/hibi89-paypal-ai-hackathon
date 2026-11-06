@@ -8,7 +8,9 @@ permissions:
   contents: read
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # Playwright 1.56.0 ffmpeg is unsupported on ubuntu26.04 (ubuntu-latest).
+    # Pin the previously supported runner until Playwright is upgraded and verified.
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
@@ -140,7 +142,8 @@ jobs:
   d1-local-wrangler:
     name: Isolated Wrangler D1 engine compatibility (LOCAL ONLY)
     if: github.event_name == 'push' && contains(github.event.head_commit.message, '[d1-local]')
-    runs-on: ubuntu-latest
+    # Real Wrangler/workerd+Playwright integration must use the verified Linux image.
+    runs-on: ubuntu-24.04
     timeout-minutes: 9
     permissions:
       contents: read
