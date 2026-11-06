@@ -1,5 +1,7 @@
 # PayPal Global Services Marketplace — PayPal + AI Hackathon (owner proposal)
 
+> **Owner final acceptance checklist:** [2026-11-06 home-only verification and release steps](docs/OWNER_FINAL_HOME_CHECKLIST_20261106.md). All external account operations and public publication remain owner-approved; this source is not a live hosted service.
+
 ## For judges — Proofline in 60 seconds (English)
 
 **Concept:** AI should help skilled newcomers get their first freelance opportunity, not only automate existing jobs. Proofline is **one proposed global freelancer marketplace** with two playable categories: **AI Work** (agents, automation, development) and **Global Services** (design, translation, marketing). The current implementation is a working **offline synthetic browser demo**, not a commercial service.

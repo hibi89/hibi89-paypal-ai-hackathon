@@ -1,6 +1,6 @@
 # Proofline — PayPal AI Hackathon | Final English entry candidate
 
-**DRAFT — NOT PUBLISHED. OWNER APPROVAL REQUIRED BEFORE DEVPOST / YOUTUBE / GITHUB MAIN RELEASE.**
+**DRAFT — NOT PUBLISHED. The source and root MIT LICENSE are already public on main via merged PR #28; OWNER APPROVAL IS STILL REQUIRED BEFORE YOUTUBE AND DEVPOST PUBLICATION.**
 
 This is a concise owner-review copy, not a submitted or independently provider-verified contest entry. All browser actions described as *offline* are fictional/test-data actions. Do not substitute this for the official Devpost submission receipt.
 
