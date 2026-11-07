@@ -1,3 +1,8 @@
+## 2026-11-08 KST — auto filming CI compatibility fix
+
+- Cause: first auto extension changed legacy `paypal-synthetic-review` naming with a microsecond suffix; Windows video candidate uses a strict timestamp filename regex and failed after a successful video recording. Do not reintroduce old-name microseconds.
+- Fix: separate original default filename and new WorkNova auto filename, add test asserting both; new auto capture 1600×900 pointer-highlighted browser video. Preserve all source/media/DB and release HOLD. Check new full CI and Windows CI before success claim.
+
 ## 2026-11-08 KST — WORKNOVA fully automated private browser filming pivot
 
 1. **Goal:** Remove manual owner clicking; Devpost requires functioning footage under 3 min, not physical human operation. WORKNOVA Part 1 + Part 2 five skills, no live payment/provider claims.

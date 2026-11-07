@@ -26,6 +26,9 @@ test('actual WORKNOVA auto capture reuses full five-skill browser steps with tru
   const code=read('scripts/record_judge_demo.py');
   assert.match(code,/def capture\(output_dir, pace_ms, worknova=False\)/);
   assert.match(code,/worknova-automated-two-part-/);
+  assert.match(code,/paypal-synthetic-review-" \+ datetime\.now\(\)\.strftime\("%Y%m%d-%H%M%S"\)/);
+  assert.match(code,/1600 if worknova else 1280/);
+  assert.match(code,/context\.add_init_script\(script=CURSOR_JS\)/);
   assert.match(code,/owner_operated_clicks_claimed": False/);
   assert.match(code,/capture_mode": "PLAYWRIGHT_AUTOMATED_OFFLINE_BROWSER"/);
   for(const selector of [

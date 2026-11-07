@@ -1,3 +1,8 @@
+## 2026-11-08 KST — WORKNOVA CI regression pivot: legacy filename restored
+
+- Windows CI at `07a03a0d` recorded a correct default synthetic WebM, but candidate validator reported LOCAL_VIDEO_NOT_RECORDED: default filename had inadvertently gained microseconds, violating its exact regex. The existing `paypal-synthetic-review-YYYYMMDD-HHMMSS.webm` convention is restored; WORKNOVA automated WebM alone retains a unique microsecond suffix. This is a file naming compatibility issue, not evidence of payment/API defect.
+- New WORKNOVA auto recording uses 1600×900 16:9 screen and synthetic on-page pointer cursor. Automated interactions remain explicitly NOT owner-operated. Added direct regression assertions. CI on this corrected commit PENDING; full release and media review HOLD. No changes to archived owner manual WebM.
+
 ## 2026-11-08 KST — WORKNOVA auto browser capture implementation (validation pending)
 
 - **Reason:** Official PayPal AI Hackathon rules do not mandate real human pointer clicks. Owner requested elimination of manual clicking. Selected deterministic Playwright automation over manual owner capture and legacy video rebranding. Official rules: https://paypalaihackathon.devpost.com/rules

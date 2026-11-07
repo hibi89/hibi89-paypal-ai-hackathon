@@ -86,11 +86,17 @@ def capture(output_dir, pace_ms, worknova=False):
             browser = p.chromium.launch(executable_path=binary, headless=True,
                                         args=["--no-sandbox", "--disable-dev-shm-usage"])
             try:
+                video_size = {"width": 1600 if worknova else 1280, "height": 900}
                 context = browser.new_context(
-                    viewport={"width": 1280, "height": 900},
+                    viewport=video_size,
                     record_video_dir=str(output_dir),
-                    record_video_size={"width": 1280, "height": 900},
+                    record_video_size=video_size,
                 )
+                if worknova:
+                    # Visible on-page pointer highlight for automated synthetic clicks.
+                    # This does NOT prove human operation.
+                    from worknova_owner_capture import CURSOR_JS
+                    context.add_init_script(script=CURSOR_JS)
                 page = context.new_page()
                 video_started = time.monotonic()
                 page.set_default_timeout(10000)
@@ -392,7 +398,12 @@ def capture(output_dir, pace_ms, worknova=False):
             raise RuntimeError("NO_VIDEO_RECORDED")
         if not source.is_file() or source.stat().st_size == 0:
             raise RuntimeError("EMPTY_VIDEO_RECORDING")
-        filename = ("worknova-automated-two-part-" if worknova else "paypal-synthetic-review-") + datetime.now().strftime("%Y%m%d-%H%M%S-%f") + ".webm"
+        # Keep the legacy filename contract consumed by the private release gate.
+        # Only the separate WORKNOVA auto clip gets microseconds for uniqueness.
+        if worknova:
+            filename = "worknova-automated-two-part-" + datetime.now().strftime("%Y%m%d-%H%M%S-%f") + ".webm"
+        else:
+            filename = "paypal-synthetic-review-" + datetime.now().strftime("%Y%m%d-%H%M%S") + ".webm"
         dest = output_dir / filename
         if dest.exists():
             raise RuntimeError("OUTPUT_WOULD_OVERWRITE")
@@ -424,6 +435,7 @@ def capture(output_dir, pace_ms, worknova=False):
         if worknova:
             manifest.update({
                 "product": "WORKNOVA",
+                "resolution": "1600x900",
                 "capture_mode": "PLAYWRIGHT_AUTOMATED_OFFLINE_BROWSER",
                 "owner_operated_clicks_claimed": False,
                 "part1_and_part2_functional_ui": True,
