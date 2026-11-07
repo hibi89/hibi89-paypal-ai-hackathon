@@ -15,7 +15,7 @@ test('WORKNOVA identity is consistent on three real product HTML surfaces',()=>{
     const html=read(path);
     assert.match(html,/<title>WORKNOVA/,'page title: '+path);
     assert.ok(html.includes(visible),'visible identity: '+path);
-    assert.doesNotMatch(html,/\\bProofline\\b|\\bproofline\\b/,'legacy visible brand: '+path);
+    assert.doesNotMatch(html,/\bProofline\b|\bproofline\b/,'legacy visible brand: '+path);
   }
 });
 test('Part 1 browser hooks and offline-only disclosures survive branding',()=>{
