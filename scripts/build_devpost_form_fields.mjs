@@ -20,6 +20,14 @@ export function buildDevpostFormFields(source){
     !source.includes('not independently reproduced in CI')||
     !source.includes('OWNER TO ADD AFTER APPROVED PUBLIC YOUTUBE UPLOAD'))
   fail('UNPUBLISHED_SOURCE_EVIDENCE_REQUIRED');
+ // Release history in the first banner is security-relevant, not decorative.
+ // A changed top-line publication claim must not be rescued by a separate,
+ // still-unchanged mention of the same merged PR in a later section.
+ const topBanner=source.split(/\r?\n/).slice(0,6)
+   .find(line=>line.startsWith('**DRAFT — NOT PUBLISHED.'));
+ if(!topBanner||!topBanner.includes('via merged PR #28;')||
+    !topBanner.includes('OWNER APPROVAL IS STILL REQUIRED BEFORE YOUTUBE AND DEVPOST PUBLICATION.'))
+  fail('SOURCE_RELEASE_BANNER_PROVENANCE_REQUIRED');
  const heading=/^## ([^\r\n]+)\r?$/gm;
  const matches=[...source.matchAll(heading)];
  const blocks=new Map();

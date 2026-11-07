@@ -12,7 +12,7 @@ test('real English draft extracts full editable Devpost fields while remaining u
  const r=buildDevpostFormFields(draft);
  assert.equal(r.schemaVersion,1);
  assert.equal(r.state,'OWNER_REVIEW_REQUIRED_NOT_SUBMITTED');
- assert.match(r.projectTitle,/Proofline/);
+ assert.match(r.projectTitle,/WORKNOVA/);
  assert.match(r.tagline,/opportunity/i);
  assert.equal(r.devpostSubmitted,false);
  assert.equal(r.publicYouTubeUrl,null);

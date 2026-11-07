@@ -1,11 +1,11 @@
-# Proofline — PayPal AI Hackathon | Final English entry candidate
+# WORKNOVA — PayPal AI Hackathon | Final English entry candidate
 
 **DRAFT — NOT PUBLISHED. The source and root MIT LICENSE are already public on main via merged PR #28; OWNER APPROVAL IS STILL REQUIRED BEFORE YOUTUBE AND DEVPOST PUBLICATION.**
 
 This is a concise owner-review copy, not a submitted or independently provider-verified contest entry. All browser actions described as *offline* are fictional/test-data actions. Do not substitute this for the official Devpost submission receipt.
 
 ## Project title
-Proofline — AI-Assisted Freelance Opportunities with Human-Controlled Payments
+WORKNOVA — AI-Assisted Freelance Opportunities with Human-Controlled Payments
 
 ## Tagline
 Help newcomers find an opportunity, agree on a clear scope, and keep AI agents under human payment authority.
@@ -19,7 +19,7 @@ Help newcomers find an opportunity, agree on a clear scope, and keep AI agents u
 
 ## Inspiration
 
-A freelancer may have useful skills and still struggle to win a first project without reviews or visibility. I wanted AI to help people access opportunities rather than only automate work. Proofline explores a global, opt-in digital-services marketplace where a customer describes a need, can see missing skills and reviews the proposed transaction before anything could be paid. The business model and potential fee reductions are hypotheses—not operational claims or a PayPal partnership.
+A freelancer may have useful skills and still struggle to win a first project without reviews or visibility. I wanted AI to help people access opportunities rather than only automate work. WORKNOVA explores a global, opt-in digital-services marketplace where a customer describes a need, can see missing skills and reviews the proposed transaction before anything could be paid. The business model and potential fee reductions are hypotheses—not operational claims or a PayPal partnership.
 
 ## What it does
 
