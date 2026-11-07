@@ -9,7 +9,8 @@ const python=join(root,'.video-venv',process.platform==='win32'?'Scripts/python.
 const [mode,...flags]=process.argv.slice(2);
 const modes=Object.freeze({
   capture:'scripts/worknova_owner_capture.py',
-  voice:'scripts/worknova_part2_neural.py'
+  voice:'scripts/worknova_part2_neural.py',
+  mix:'scripts/worknova_private_voice_mux.py'
 });
 if(!Object.hasOwn(modes,mode)||!flags.length||flags.some(f=>/^(--publish|--upload|--devpost|--pay|--live)$/i.test(f))){
   console.error('WORKNOVA_LOCAL_TOOL_MODE_REQUIRED capture|voice and explicit options. No publication allowed.');

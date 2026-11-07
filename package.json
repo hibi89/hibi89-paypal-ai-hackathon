@@ -38,7 +38,8 @@
     "worknova:video:capture:part2": "node scripts/worknova_owner_video.mjs capture --part 2",
     "worknova:video:voice:check-cues": "node scripts/worknova_owner_video.mjs voice --check-cues",
     "worknova:video:voice:check-model": "node scripts/worknova_owner_video.mjs voice --check-model",
-    "worknova:video:voice:part2": "node scripts/worknova_owner_video.mjs voice --render"
+    "worknova:video:voice:part2": "node scripts/worknova_owner_video.mjs voice --render",
+    "worknova:video:voice:mux": "node scripts/worknova_owner_video.mjs mix"
   },
   "engines": {
     "node": ">=22.5.0"

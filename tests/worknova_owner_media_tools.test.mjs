@@ -60,3 +60,28 @@ test('offline cue preflight passes; ambiguous flags fail; both Python files comp
     assert.equal(result.status,0,name+': '+result.stderr);
   }
 });
+
+test('private Kokoro audio mux validates exact 170s media, manifest SHA and release hold',t=>{
+  const code=read('scripts/worknova_private_voice_mux.py');
+  for(const value of [
+    'PINNED_KOKORO_VOICE_MANIFEST_REQUIRED',
+    'PART2_KOKORO_PROVENANCE_OR_SHA_MISMATCH',
+    'PREVIEW_TIMELINE_NOT_170S',
+    'FFMPEG_PRIVATE_MUX_FAILED',
+    'owner_captured_real_click_footage_verified',
+    'legacy_proofline_pixels_may_remain',
+    'release_hold',
+    'output_af_heart'
+  ].filter(v=>v!=='output_af_heart'))assert.ok(code.includes(value),value);
+  assert.match(JSON.parse(read('package.json')).scripts['worknova:video:voice:mux'],/worknova_owner_video\.mjs mix/);
+  const python=process.platform==='win32'?'python':'python3';
+  const probe=spawnSync(python,['--version'],{encoding:'utf8',timeout:3000});
+  if(probe.status!==0){t.skip('Python absent in runner');return}
+  const pyCode="import pathlib,sys;p=pathlib.Path(sys.argv[1]);compile(p.read_text('utf8'),str(p),'exec')";
+  const compiled=spawnSync(python,['-c',pyCode,local('scripts/worknova_private_voice_mux.py')],{encoding:'utf8',timeout:8000});
+  assert.equal(compiled.status,0,compiled.stderr);
+  const refused=spawnSync(python,[local('scripts/worknova_private_voice_mux.py'),
+    '--video','not-existing-video.mp4','--part2-wav','not-existing-voice.wav','--check-only'],{encoding:'utf8',timeout:8000});
+  assert.equal(refused.status,2);
+  assert.match(refused.stderr,/REAL_LOCAL_VIDEO_AND_WAV_REQUIRED/);
+});

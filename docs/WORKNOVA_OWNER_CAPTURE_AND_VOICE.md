@@ -41,3 +41,23 @@ Original Proofline media, SQLite state, cookies, authenticated APIs and history
 are preserved. After real owner capture and voice output, re-edit 165-175s,
 verify all sound, subtitles, privacy and screenshots, and get explicit approval
 before publishing or merging release PRs.
+
+
+## Private editorial voice mux (after model-backed Part 2 narration)
+
+The program checks the new 170s WAV against its SHA256/voice/cue manifest and
+checks an existing 170s 1080p H.264 review MP4. It adds the five Part 2 voice
+scenes without changing any original video pixel, keeping video stream copy.
+The mixed MP4 is a **new, private review candidate only**, never publication ready.
+
+Example after obtaining the current 170s review cut and freshly generated WAV:
+
+  npm run worknova:video:voice:mux -- --video "path/to/WORKNOVA_Private_Review_Cut_170s_1080p.mp4" --part2-wav "path/to/worknova-part2-kokoro-af-heart-XXXX.wav"
+
+Before muxing, add --check-only to validate inputs without writing. The
+matching WAV-side JSON is mandatory. Actual inference is only performed by
+the owner's pinned local model tool; the sidecar alone is not independent
+third-party attestation of that model. The resulting film still may display
+old Proofline screen pixels until fresh in-app capture replaces those shots.
+It is not a final 2-part release or a substitute for actual operator clicks,
+privacy review, audio listening, or owner-approved YouTube/Devpost.
