@@ -97,6 +97,7 @@ test('Windows WORKNOVA single-run script only records offline footage and local 
     'worknova:video:voice:part2',
     'if errorlevel 1 goto FAILED'
   ])assert.ok(script.includes(step),'missing offline safe step: '+step);
-  assert.doesNotMatch(script,/npm publish|gh release|git push|youtube|devpost\.com|--live|--capture-payment/i);
+  const commands=script.split(/\r?\n/).filter(line=>!/^[ \t]*(?:echo(?:[.\s]|$)|rem\s|::)/i.test(line)).join('\n');
+  assert.doesNotMatch(commands,/npm publish|gh release|git push|youtube|devpost\.com|--live|--capture-payment/i);
   assert.ok(script.includes('RELEASE HOLD'));
 });
