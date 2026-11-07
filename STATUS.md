@@ -1,3 +1,10 @@
+## 2026-11-07 KST — Owner-local final synthetic two-part video 135.08s and unpublished packet verified
+
+- **Owner-machine actual run (source `lead/paypal@70da9e3`):** `npm run video:record:owner` completed with pinned Playwright 1.56.0 and isolated Python environment; `LOCAL_VIDEO_INTEGRITY_PASS`, `PROVIDER_CALLS=0`, `PAYMENT_POSTS=0`, `PUBLIC_UPLOAD=NO`. Local, gitignored `output/videos/paypal-synthetic-review-20261107-223015.webm`, 11,996,187 bytes; do **not** upload raw video or owner-private data to public GitHub as part of this checkpoint.
+- **Independent media-length probe on owner PC:** `npm run submission:candidate:local` returned `LOCAL_PACKET_PREPARED_NOT_SUBMITTED`, `LOCAL_SYNTHETIC_WEBM_INTEGRITY_VERIFIED`, `mediaDurationProbed:true`, `mediaDurationSeconds:135.08`, `MEDIA_DURATION_UNDER_180_VERIFIED`, SHA256 `a84e948051295980c81fc7b4bcf27697a6e526163b6dc2c7ecf7938d93b7c096`. `TWO_PART_FIVE_SKILLS_V3` manifest includes delegate/a2a/gift/churn/invoice and both product parts. Visual/editorial quality **not** independently reviewed by assistant.
+- **Submission packet:** `sourceStatus=LOCAL_SOURCE_DRAFTS_PRESENT`, `ownerReviewReady=true`, English copy structurally validated but not published; `authorizedToPublish:false`, YouTube URL absent, Devpost receipt absent, hosted reviewer access unverified. This local candidate is **not** official eligibility approval or submission.
+- **Completion baseline:** Frozen evidence-weighted `79/100` not mechanically increased from local packet. Real payment GET success and Part2 local results documented in prior checkpoint. Owner to inspect the private WebM and generate `npm run submission:fields:local`; explicit approval needed before YouTube upload, `main` merge of Draft PR #30, and Devpost final submission. **RELEASE HOLD.** No new payment/provider attempts.
+
 ## 2026-11-07 KST — Owner-local PayPal Sandbox GET and Part2 Gemini A2A results (sanitized; release still HOLD)
 
 - **Clean checkout:** `lead/paypal@70da9e3` from owner Windows, original private `paypal-mvp` folder preserved.
