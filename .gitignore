@@ -19,3 +19,8 @@ output/
 
 # Ephemeral Worker/D1 runtime CI config; never commit local D1 binding identifiers
 .wrangler-private-read-ci-*.json
+
+# Disposable Python/browser caches (preserve files; only exclude from Git)
+.browser-venv/
+__pycache__/
+*.pyc

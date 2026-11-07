@@ -92,6 +92,29 @@ jobs:
         run: npm run video:record:offline -- --pace-ms 200
       - name: Validate private synthetic WebM hash and release flags
         run: python3 scripts/check_recorded_video.py
+      - name: WORKNOVA no-click auto capture, real UI and provenance (CI ephemeral, no upload)
+        run: |
+          .browser-venv/bin/python scripts/worknova_auto_capture.py --check
+          .browser-venv/bin/python scripts/worknova_auto_capture.py --run --pace-ms 200
+          python3 - <<'PY'
+          import glob,hashlib,json,os
+          from pathlib import Path
+          reports=sorted(glob.glob('output/videos/worknova-automated-two-part-*.manifest.json'))
+          assert len(reports)==1, 'WORKNOVA_AUTO_MANIFEST_NOT_UNIQUE'
+          manifest=json.loads(Path(reports[0]).read_text())
+          video=Path(reports[0]).with_suffix('').with_suffix('.webm')
+          assert video.is_file() and video.stat().st_size>1000
+          assert manifest['video_sha256']==hashlib.sha256(video.read_bytes()).hexdigest()
+          assert manifest['source_sha']==os.environ['GITHUB_SHA']
+          assert manifest['product']=='WORKNOVA'
+          assert manifest['capture_mode']=='PLAYWRIGHT_AUTOMATED_OFFLINE_BROWSER'
+          assert manifest['owner_operated_clicks_claimed'] is False
+          assert manifest['demonstrated_categories']==['ai_work','general_services']
+          assert manifest['demonstrated_skills']==['delegate','a2a','gift','churn','invoice']
+          assert manifest['provider_calls']==0 and manifest['payment_posts']==0
+          assert manifest['publication_approved'] is False and manifest['release_hold'] is True
+          print('WORKNOVA_AUTO_CAPTURE_CI_PASS NO_HUMAN_CLICKS NO_PROVIDER NO_PUBLISH')
+          PY
       - name: Build private submission candidate and assert not published
         run: |
           npm run submission:candidate:local

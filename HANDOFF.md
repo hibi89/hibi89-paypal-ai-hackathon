@@ -2,7 +2,7 @@
 
 1. **Goal:** Remove manual owner clicking; Devpost requires functioning footage under 3 min, not physical human operation. WORKNOVA Part 1 + Part 2 five skills, no live payment/provider claims.
 2. **Decision/changes:** Reuse the existing proven Playwright end-to-end video script with optional WORKNOVA overlay branding and distinct automated manifest. New `scripts/worknova_auto_capture.py`, `scripts/WORKNOVA-Film-Auto.cmd`, npm `worknova:video:capture:auto:check` and `worknova:video:capture:auto`. Existing owner manual recorder and video assets untouched. No Kokoro dependency for capture.
-3. **Verification:** New static/syntax tests added. CI and Windows auto recording PENDING; prior 1199 PASS not evidence for this commit. Offline UI flows in existing recorder were previously CI-tested.
+3. **Verification:** New static/syntax tests and CI ephemeral automated browser capture gate added. CI and Windows auto recording PENDING; prior 1199 PASS not evidence for this commit. Offline UI flows in existing recorder were previously CI-tested.
 4. **Status:** Automation source IMPLEMENTED, runtime NOT YET VERIFIED, private actual video/voice/final editor PENDING; overall 79/100, RELEASE HOLD.
 5. **Failure/restrictions:** Manual capture had 22 pointerdown events and saved Part1 WebM on owner Windows (2026-11-08 08:30), but created too much human work; remote GitHub CI prior passes distinguish from actual new footage. Do not describe programmatic Playwright as owner-operated. Local Kokoro model absent (no download).
 6. **Repo/branch/SHA:** `hibi89/hibi89-paypal-ai-hackathon` / `lead/paypal`; parent baseline `5ca6c9c7d7fd4e1a88ee83a12bb110be2f342cc4`; latest SHA inspect after commit. Key paths listed in #2 and `docs/WORKNOVA_AUTO_CAPTURE.md`.
