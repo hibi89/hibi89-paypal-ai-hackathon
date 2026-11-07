@@ -61,3 +61,18 @@ third-party attestation of that model. The resulting film still may display
 old Proofline screen pixels until fresh in-app capture replaces those shots.
 It is not a final 2-part release or a substitute for actual operator clicks,
 privacy review, audio listening, or owner-approved YouTube/Devpost.
+
+
+## Windows one-click sequence
+
+From a clean and updated WORKNOVA repository, double-click:
+
+  scripts/WORKNOVA-Film-Owner.cmd
+
+It preflights the existing local Python video environment, verifies the
+WORKNOVA source and pinned Kokoro files, then runs owner-controlled Part1
+screen capture, Part2 screen capture and Part2 narration. The human operator
+must perform actual browser mouse clicks and press Enter after each browser
+shoot. Only a fresh WebM/WAV/JSON set under gitignored output/videos is made;
+the command explicitly does NOT auto-mix, authorize a PayPal payment,
+open an external provider session, publish, or submit to Devpost.

@@ -85,3 +85,18 @@ test('private Kokoro audio mux validates exact 170s media, manifest SHA and rele
   assert.equal(refused.status,2);
   assert.match(refused.stderr,/REAL_LOCAL_VIDEO_AND_WAV_REQUIRED/);
 });
+
+test('Windows WORKNOVA single-run script only records offline footage and local Kokoro',()=>{
+  const script=read('scripts/WORKNOVA-Film-Owner.cmd');
+  for(const step of [
+    'worknova:video:capture:check',
+    'worknova:video:voice:check-cues',
+    'worknova:video:voice:check-model',
+    'worknova:video:capture:part1',
+    'worknova:video:capture:part2',
+    'worknova:video:voice:part2',
+    'if errorlevel 1 goto FAILED'
+  ])assert.ok(script.includes(step),'missing offline safe step: '+step);
+  assert.doesNotMatch(script,/npm publish|gh release|git push|youtube|devpost\.com|--live|--capture-payment/i);
+  assert.ok(script.includes('RELEASE HOLD'));
+});
