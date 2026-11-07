@@ -1,0 +1,62 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync,existsSync} from 'node:fs';
+import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+const root=new URL('../',import.meta.url);
+const local=(path)=>fileURLToPath(new URL(path,root));
+const read=(path)=>readFileSync(new URL(path,root),'utf8');
+test('WORKNOVA local media tools entrypoints preserve no-publish boundary',()=>{
+  const pkg=JSON.parse(read('package.json'));
+  assert.match(pkg.scripts['worknova:video:capture:part2'],/capture --part 2/);
+  assert.match(pkg.scripts['worknova:video:voice:part2'],/voice --render/);
+  assert.match(pkg.scripts['worknova:video:capture:check'],/capture --check/);
+  const runner=read('scripts/worknova_owner_video.mjs');
+  assert.match(runner,/\.video-venv/);
+  assert.match(runner,/shell:false/);
+  assert.match(runner,/--publish\|--upload\|--devpost/);
+  assert.ok(existsSync(local('scripts/worknova_owner_capture.py')));
+  assert.ok(existsSync(local('scripts/worknova_part2_neural.py')));
+});
+test('owner capture uses real DOM clicks; nonlocal requests and dirty source are refused',()=>{
+  const src=read('scripts/worknova_owner_capture.py');
+  for(const requirement of [
+    'OWNER_INTERACTIVE_TERMINAL_REQUIRED',
+    'NO_REAL_BROWSER_POINTERDOWN__CAPTURE_NOT_ACCEPTED',
+    'worknovaRecordedPointerDown',
+    "hostname=='127.0.0.1'",
+    'CLEAN_GIT_SOURCE_REQUIRED',
+    'SOURCE_CHANGED_DURING_RECORDING',
+    'WORKNOVA_SOURCE_NOT_BRANDED',
+    "public_upload':False"
+  ])assert.ok(src.includes(requirement),requirement);
+});
+test('five approved-voice scenes are pinned to the private 170-second edit',()=>{
+  const src=read('scripts/worknova_part2_neural.py');
+  for(const requirement of [
+    "voice='af_heart'",'kokoro-v1.0.fp16.onnx',
+    'PART2_CUE_TIMING_NOT_SAFE',
+    "'delegate'","'a2a'","'gift'","'churn'","'invoice'",
+    'NO_AUTO_DOWNLOAD',"owner_approved_for_release':False"
+  ])assert.ok(src.includes(requirement),requirement);
+});
+test('offline cue preflight passes; ambiguous flags fail; both Python files compile without disk writes',t=>{
+  const python=process.platform==='win32'?'python':'python3';
+  const probe=spawnSync(python,['--version'],{encoding:'utf8',timeout:3000});
+  if(probe.status!==0){t.skip('Python absent in current runner');return}
+  const path=local('scripts/worknova_part2_neural.py');
+  const pass=spawnSync(python,[path,'--check-cues'],{encoding:'utf8',timeout:8000});
+  assert.equal(pass.status,0,pass.stderr);
+  const obj=JSON.parse(pass.stdout.trim());
+  assert.equal(obj.count,5);
+  assert.equal(obj.film_seconds,170);
+  assert.equal(obj.provider_calls,0);
+  const fail=spawnSync(python,[path,'--check-cues','--render'],{encoding:'utf8',timeout:8000});
+  assert.equal(fail.status,2);
+  assert.match(fail.stderr,/not allowed with argument/);
+  for(const name of ['scripts/worknova_owner_capture.py','scripts/worknova_part2_neural.py']){
+    const pyCode="import pathlib,sys; p=pathlib.Path(sys.argv[1]); compile(p.read_text('utf8'),str(p),'exec')";
+    const result=spawnSync(python,['-c',pyCode,local(name)],{encoding:'utf8',timeout:8000});
+    assert.equal(result.status,0,name+': '+result.stderr);
+  }
+});
