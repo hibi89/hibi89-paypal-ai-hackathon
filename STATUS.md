@@ -1,3 +1,11 @@
+## 2026-11-07 KST — Owner-local PayPal Sandbox GET and Part2 Gemini A2A results (sanitized; release still HOLD)
+
+- **Clean checkout:** `lead/paypal@70da9e3` from owner Windows, original private `paypal-mvp` folder preserved.
+- **Part2 owner-approved one-shot:** `PRIVATE_PART2_ATTEMPT_PERSISTED` / `SYNTHETIC_AGREEMENT`, three `DONE` quota claims. Separate read-only `mvp:two-part:evidence` verified the local SQLite A2A result as `PRIVATE_A2A_SQLITE_RESULT_NOT_GEMINI_ATTESTED`; **not independently provider-attested**. Part1 $1.50 and fictional Part2 $300 are separate demos, not one transaction.
+- **Part1 owner-approved fresh provider GET:** `SANDBOX_CAPTURE_GET_MATCHES_LOCAL_PAID`, `freshSandboxOrderGet=true`, `paymentVerifiedByFreshGet=true`; OAuth token POST **2**, existing-order GET **2**, Orders CREATE **0**, Capture **0**, local file writes **0**, `independentAttestation=false`. No Live/Production payment.
+- **Status:** new owner-local evidence of a real Sandbox GET, but not independently audited/CI-run provider calls; code unchanged. Score baseline **79/100** pending frozen-rubric assessment, external video/public submission/deployment still missing, **RELEASE HOLD**. Never replay historical payment or consumed Gemini requests.
+- **Next:** owner-local synthetic two-part video + validation + English Devpost candidate; separately approve public video/PR #30 merge and submit, retain URLs/receipts. No IDs, secrets, raw DB or private transcripts in GitHub.
+
 ## 2026-11-06 KST — Owner-away final release preparation and real 140.12s film CI verified; 79/100
 
 - **Verified source:** `lead/paypal@7c95d0ccb322d219641e59e3a1e82e0af4f4257f`. Pinned previously failing full-speed film test job to Ubuntu 24.04, preserving main product code. [Full #42231932159](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42231932159) SUCCESS: Linux Node **1,189/1,189 PASS, 0 FAIL/SKIP**, Windows SUCCESS, full Chromium/judge SUCCESS, real local synthetic WebM ffprobe **140.12 seconds** (<180s), integrity PASS. Not an owner-approved YouTube upload, external AI/PayPal proof or public app.
