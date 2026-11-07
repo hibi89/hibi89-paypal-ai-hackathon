@@ -1,3 +1,13 @@
+## 2026-11-08 KST — WORKNOVA brand and cinematic film direction approved; visual assets saved
+
+- Owner explicitly approved WORKNOVA as the product/film brand, replacing Proofline for future creative output. Tagline: The Next Generation of Work. Supporting line: Where People and AI Work as One. No trademark/domain clearance claimed; this is the hackathon presentation name.
+- Durable brand assets added: assets/brand/worknova-logo.svg and assets/brand/worknova-hero-16x9.svg; full creative/product/film brief: docs/WORKNOVA_BRAND_AND_VIDEO_CONCEPT.md. SVGs are editable vector masters, not screenshots.
+- Product story: Part 1 AI Work + Global Services marketplace, discovery/matching/quote/human approval/PayPal Sandbox flow; Part 2 five agent skills (Delegate & Consent, A2A Negotiation, Gift Finder, Churn Saver, Invoice & Dispute Copilot). Integrated narrative: Discover → Match → Delegate/Negotiate → Human Approves → PayPal Flow → Evidence/Delivery.
+- Owner-confirmed voice: Kokoro ONNX FP16 af_heart; 13 safe narration cues. Owner terminal log reported PRIVATE_NARRATED_RECOVERY_PASS, INDEPENDENT_MEDIA_DURATION_SECONDS 179.48, no provider calls/payment/public upload. Preferred owner-local source: paypal-premium-review/output/videos/proofline-premium-narrated-recovered-20261107-233338-c6315d99.webm. Preserve this source and all voice assets. Owner-run evidence, not independently re-run by this docs update.
+- Film target: 1920x1080 16:9, 165–175 seconds (<180s), WorkNova cinematic midnight navy/cyan/indigo identity, real frontend browser interactions with actual pointer/click capture, premium transitions and sound design, Kokoro af_heart, bilingual captions. Existing 179.48s cut needs trimming/re-time; do not stretch speech unnaturally.
+- Truth constraints: product flows are offline deterministic/synthetic; owner-observed Sandbox GET evidence is separate and not independent attestation or Production payment. Clearly label synthetic flows. No public upload, main merge or Devpost submission approved.
+- Next: use SVG assets and brief to rebrand intro/end/UI overlays, retain liked narrated source, record true UI/pointer actions where needed, create 165–175s final candidate, inspect entire render/audio and verify media metadata before owner approval.
+
 ## 2026-11-07 KST — Proofline cinematic submission cut v1 created locally; owner review required
 
 - Source: owner-uploaded original WebM and manifest. Direct ffprobe: source 1280x900 VP8, 135.08s, no audio stream. Manifest says OFFLINE_SYNTHETIC_BROWSER_CAPTURE_ONLY, provider_calls=0, payment_posts=0, and no publication/submission approval.
