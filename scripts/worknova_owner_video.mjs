@@ -9,6 +9,7 @@ const python=join(root,'.video-venv',process.platform==='win32'?'Scripts/python.
 const [mode,...flags]=process.argv.slice(2);
 const modes=Object.freeze({
   capture:'scripts/worknova_owner_capture.py',
+  auto:'scripts/worknova_auto_capture.py',
   voice:'scripts/worknova_part2_neural.py',
   mix:'scripts/worknova_private_voice_mux.py'
 });

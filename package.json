@@ -39,7 +39,9 @@
     "worknova:video:voice:check-cues": "node scripts/worknova_owner_video.mjs voice --check-cues",
     "worknova:video:voice:check-model": "node scripts/worknova_owner_video.mjs voice --check-model",
     "worknova:video:voice:part2": "node scripts/worknova_owner_video.mjs voice --render",
-    "worknova:video:voice:mux": "node scripts/worknova_owner_video.mjs mix"
+    "worknova:video:voice:mux": "node scripts/worknova_owner_video.mjs mix",
+    "worknova:video:capture:auto:check": "node scripts/worknova_owner_video.mjs auto --check",
+    "worknova:video:capture:auto": "node scripts/worknova_owner_video.mjs auto --run"
   },
   "engines": {
     "node": ">=22.5.0"

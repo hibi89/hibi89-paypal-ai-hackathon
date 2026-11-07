@@ -68,7 +68,7 @@ def start_demo():
     raise RuntimeError("LOCAL_DEMO_START_FAILED")
 
 
-def capture(output_dir, pace_ms):
+def capture(output_dir, pace_ms, worknova=False):
     binary = chrome_binary()
     # Explicit local read-only snapshot of the owner's earlier evidence.
     # CI has no original private receipt and falls back to owner-reported labels.
@@ -108,6 +108,16 @@ def capture(output_dir, pace_ms):
                 page.route("**/*", intercept)
                 pause = lambda: page.wait_for_timeout(pace_ms)
                 def caption(label):
+                    if worknova:
+                        label = label.replace("PROOFLINE", "WORKNOVA")
+                        label = label.replace(
+                            "A HUMAN approves a specific quote version and amount",
+                            "The demo simulates a human-controlled quote approval gate"
+                        )
+                        label = label.replace("Owner creates an unpaid contract",
+                                              "The offline demo creates an unpaid contract")
+                        label = label.replace("Two owner-entered gift items",
+                                              "Two locally entered fictional gift items")
                     # Presenter captions are part of the video, never injected into
                     # the trusted application or sent to a provider.
                     page.evaluate("""(label) => {
@@ -129,7 +139,7 @@ def capture(output_dir, pace_ms):
                 def evidence_overlay(card):
                     # Strict allowlisted display data only. Text nodes, never HTML;
                     # original private receipt values/IDs are not copied to a page.
-                    page.evaluate("""({heading, eyebrow, lines}) => {
+                    page.evaluate("""({heading, eyebrow, lines, video_brand}) => {
                       let panel=document.getElementById('owner-evidence-video-slide');
                       if(!panel){
                         panel=document.createElement('section');
@@ -146,7 +156,7 @@ def capture(output_dir, pace_ms):
                       }
                       panel.replaceChildren();
                       const tag=document.createElement('p');
-                      tag.textContent='PROOFLINE / SEPARATE HISTORICAL EVIDENCE';
+                      tag.textContent=video_brand+' / SEPARATE HISTORICAL EVIDENCE';
                       Object.assign(tag.style,{
                         color:'#80e0ff',fontSize:'16px',letterSpacing:'2px',
                         fontWeight:'800',margin:'0 0 24px'
@@ -179,7 +189,7 @@ def capture(output_dir, pace_ms):
                         fontSize:'13px',color:'#a3b9d8',margin:'22px 0 0'
                       });
                       panel.appendChild(foot);
-                    }""", card)
+                    }""", {**card, "video_brand": "WORKNOVA" if worknova else "PROOFLINE"})
                 page.goto(address, wait_until="domcontentloaded")
                 expect(page.locator("#message")).to_contain_text("Offline demo ready")
                 expect(page.locator("#marketplace-submit")).to_be_enabled()
@@ -382,7 +392,7 @@ def capture(output_dir, pace_ms):
             raise RuntimeError("NO_VIDEO_RECORDED")
         if not source.is_file() or source.stat().st_size == 0:
             raise RuntimeError("EMPTY_VIDEO_RECORDING")
-        filename = "paypal-synthetic-review-" + datetime.now().strftime("%Y%m%d-%H%M%S") + ".webm"
+        filename = ("worknova-automated-two-part-" if worknova else "paypal-synthetic-review-") + datetime.now().strftime("%Y%m%d-%H%M%S-%f") + ".webm"
         dest = output_dir / filename
         if dest.exists():
             raise RuntimeError("OUTPUT_WOULD_OVERWRITE")
@@ -411,6 +421,19 @@ def capture(output_dir, pace_ms):
             "owner_approval_for_publication": False,
             "notes": "Local synthetic content with historical owner-reported provider disclaimer. Human review required."
         }
+        if worknova:
+            manifest.update({
+                "product": "WORKNOVA",
+                "capture_mode": "PLAYWRIGHT_AUTOMATED_OFFLINE_BROWSER",
+                "owner_operated_clicks_claimed": False,
+                "part1_and_part2_functional_ui": True,
+                "source_sha": subprocess.check_output(
+                    ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, timeout=8
+                ).strip(),
+                "publication_approved": False,
+                "release_hold": True,
+                "notes": "Automated UI actions, not human-operated footage or live provider evidence. Private review only."
+            })
         dest.with_suffix(".manifest.json").write_text(
             json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
         )

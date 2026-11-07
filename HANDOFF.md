@@ -1,3 +1,16 @@
+## 2026-11-08 KST — WORKNOVA fully automated private browser filming pivot
+
+1. **Goal:** Remove manual owner clicking; Devpost requires functioning footage under 3 min, not physical human operation. WORKNOVA Part 1 + Part 2 five skills, no live payment/provider claims.
+2. **Decision/changes:** Reuse the existing proven Playwright end-to-end video script with optional WORKNOVA overlay branding and distinct automated manifest. New `scripts/worknova_auto_capture.py`, `scripts/WORKNOVA-Film-Auto.cmd`, npm `worknova:video:capture:auto:check` and `worknova:video:capture:auto`. Existing owner manual recorder and video assets untouched. No Kokoro dependency for capture.
+3. **Verification:** New static/syntax tests added. CI and Windows auto recording PENDING; prior 1199 PASS not evidence for this commit. Offline UI flows in existing recorder were previously CI-tested.
+4. **Status:** Automation source IMPLEMENTED, runtime NOT YET VERIFIED, private actual video/voice/final editor PENDING; overall 79/100, RELEASE HOLD.
+5. **Failure/restrictions:** Manual capture had 22 pointerdown events and saved Part1 WebM on owner Windows (2026-11-08 08:30), but created too much human work; remote GitHub CI prior passes distinguish from actual new footage. Do not describe programmatic Playwright as owner-operated. Local Kokoro model absent (no download).
+6. **Repo/branch/SHA:** `hibi89/hibi89-paypal-ai-hackathon` / `lead/paypal`; parent baseline `5ca6c9c7d7fd4e1a88ee83a12bb110be2f342cc4`; latest SHA inspect after commit. Key paths listed in #2 and `docs/WORKNOVA_AUTO_CAPTURE.md`.
+7. **Runtime/Production:** Existing Windows `.video-venv`, Chrome/Chromium and Node >=22.5; local loopback only. Vercel/Cloudflare production status and SHA NOT VERIFIED.
+8. **Backup/security:** Existing `worknova-owner-clicks-part1-20261108-083005-442353.webm`, old 170s preview and model sources preserved. New output `output/videos/worknova-automated-two-part-*.webm` with SHA sidecar. No secrets, DB files or media committed. No YouTube/Devpost action.
+9. **Next:** Check GitHub CI, owner fast-forward pulls branch, executes one no-click automation command or CMD, reviews generated clip/sidecar; model discovery and audio/editor assembly separately; owner approval required for publication.
+10. **Document date:** 2026-11-08 KST. This entry refers to the source commit that contains it; exact SHA and runtime results to be recorded after CI. Status docs consistent: implemented-not-run. No Production inference.
+
 ## 2026-11-08 KST — WORKNOVA owner film toolchain, 1199/1199 CI PASS, release HOLD
 
 1. **Goal/confirmed scope/stack:** PayPal Hackathon WORKNOVA two-part 165–175s H.264 1080p film. Part1 AI Work + Global Services, quote/human approval, historical owner-reported Sandbox evidence; Part2 Delegate/Consent, A2A, Gift, Churn, Invoice/Dispute. Actual frontend pointer/click filming; offline pinned Kokoro FP16 af_heart. No external calls/public release without approval.
