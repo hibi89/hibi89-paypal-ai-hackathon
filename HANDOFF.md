@@ -1,3 +1,16 @@
+## 2026-11-08 KST — WORKNOVA new-chat persistent Library media archive SAVED
+
+1. **Goal/scope:** Preserve the owner-approved WORKNOVA premium film treatment and every critical media/editor source when opening a new chat, without committing large media or secrets to GitHub. Final PayPal AI Hackathon entry <3m, WorkNova identity, two-part product.
+2. **Completed:** Library archive `/WORKNOVA PayPal Hackathon/2026-11-08 Handoff/WORKNOVA_Handoff_20261108.zip` uploaded and independently listed after upload. Contains newest 170s v4b preview, v3 rollback, original liked 179.48s Kokoro `af_heart` video, newer WorkNova two-part auto source+manifest, approved WorkNova logo/hero SVGs and PNGs, draft subtitles, editor scripts and README/inventory; 27 ZIP entries.
+3. **Tests/verification:** `zip.testzip(): None`; archive **131,806,056 bytes**, SHA256 `b9b2bdeafeaed5ab9c06a4432e3d12f38c1ab8beeab99b44102d5cd76fb0987a`. Library list confirmed upload. Prior v4b media render technically checked (170.000 s 1920x1080 H264/AAC, SHA256 `abe1b4094f0d11b526a5c467a1b79939c18a45c9f6adab4524ac66d8337c2494`); full audition/voice sync NOT_VERIFIED. Product CI at `c75b51f5` 1203/1203 PASS separate.
+4. **Status:** Persistent source/media package DONE; film still PRIVATE v4b reference, Part2 neural speech, true synced subtitle, full listening/owner review PENDING; real provider/production/public submission UNVERIFIED. 79/100 unchanged, RELEASE HOLD.
+5. **Failures/decisions:** Do not claim v4b is final, human-operated clicks, new Gemini/PayPal calls, or new Part2 voice. Kokoro owner-local pinned models missing in expected folder. Preferred voice recovered from original video; no eSpeak/robotic fallback.
+6. **Repo/branch/SHA:** `hibi89/hibi89-paypal-ai-hackathon` / `lead/paypal`; last media design doc commit `b036f6a234084694c8a4d3d9a3b981962a101a5c`; subsequent doc-only SHA inspect. Product functional CI SHA `c75b51f5fac3ecf17a6094d28d81f0c956dc5451`. Design reference `docs/WORKNOVA_BRAND_AND_VIDEO_CONCEPT.md` and `docs/WORKNOVA_PREMIUM_PRIVATE_CUT_20261108.md`.
+7. **Runtime/production:** Local footage/editor from ChatGPT environment; GitHub has only source/documentation; private Library holds archive. No production SHA/URL verified and no YouTube upload.
+8. **Security/backup:** Library original path preserved, ZIP also downloadable in original conversation. Video bytes never committed to GitHub. No credentials/.env/SQLite/voice model weights included. All original inputs and v3 backup included; no overwrite. GitHub was updated with documentation only.
+9. **Next:** In a new chat read `HANDOFF.md`→`STATUS.md`→`AGENTS.md`→`REQUIREMENTS.md`; retrieve Library ZIP path above or direct archive named `WORKNOVA_Handoff_20261108.zip`. Resume v4b premium design/Part2 voice and subtitle alignment; inspect release gates; commit only meaningful changes. Publication, PayPal provider calls and any spending require owner approval.
+10. **Last updated:** 2026-11-08 KST, Library listed post-upload and ZIP content tested locally. No product/build/deploy changes in this handoff commit.
+
 ## 2026-11-08 KST — WORKNOVA premium visual tuning v4b handoff
 
 1. **Goal:** Owner requested design iteration until submission using already-approved premium WorkNova front-end, native GitHub SVG and favorite recovered Kokoro af_heart narration/click effects.

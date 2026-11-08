@@ -1,3 +1,8 @@
+## 2026-11-08 KST — WORKNOVA full media handoff archived in persistent Library
+
+- Saved complete private film handoff ZIP (27 entries, 131,806,056 bytes, SHA256 `b9b2bdeafeaed5ab9c06a4432e3d12f38c1ab8beeab99b44102d5cd76fb0987a`) to **`/WORKNOVA PayPal Hackathon/2026-11-08 Handoff/WORKNOVA_Handoff_20261108.zip`**. Both upload and Library re-list SUCCESS; archive `ZipFile.testzip=None`. Includes v4b reference, v3 fallback, owner-liked Kokoro original, WorkNova auto source+manifest, SVG brand, subtitles drafts, editing scripts, README and hashes. Earlier v4b/v3 and auto WebM also already stored as individual Library files at root.
+- GitHub remains code/doc source of truth; no media files pushed. Existing 170s v4b technically checked, but full auditory review, Part2 af_heart speech and bilingual transcript remain PENDING. Owner's satisfaction with prior premium video is locked aesthetic baseline. Keep 79/100 verified, RELEASE HOLD; production/payment public submission not newly verified.
+
 ## 2026-11-08 KST — WORKNOVA premium v4b design pass (private, no app changes)
 
 - v3 reference preserved; new `WORKNOVA_Premium_Design_Audio_Private_170s_1080p_v4b.mp4` 170.000s, 1920×1080 H264/AAC, 39,781,110 bytes, SHA256 `abe1b4094f0d11b526a5c467a1b79939c18a45c9f6adab4524ac66d8337c2494`. Full ffmpeg decode PASS; 17-point visual contact-sheet check PASS. Original v3 AAC stream unchanged (MD5 `2959cc9c1f5ee996edaefb3b06a147ea`).
