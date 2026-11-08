@@ -1,3 +1,16 @@
+## 2026-11-08 KST — WORKNOVA Part2 v4d / newly added offline audio tools
+
+1. **Goal/requirements:** Complete approved WORKNOVA premium two-part 170s film while preserving v4b/v4c visual and favorite af_heart/click audio style; no unapproved change to provider/release boundaries.
+2. **Completed:** 50s full-HD Part2 v4d *preview only* with A2A refocus, Churn isolated and Invoice reviewer card; 3 reusable offline scripts (editor, pinned model locator, manifest-to-bilingual-SRT generator); 5 regression tests.
+3. **Verification:** 50.000s, 1,250 frames, H264/AAC, 9,391,246 bytes SHA256 `4ebfa2497d979e4ac0a7e74de3fb8fd266d6318fa87d8b17bf5c955e90afa3b7`; ffprobe+full ffmpeg decode+15 frames PASS; local Python 5 PASS/0 FAIL/0 SKIP. Actual new voice and full owner listening NOT VERIFIED.
+4. **Status:** Part2 v4d 50s visual DONE private; full 170s v4d NOT_COMPLETE; original 170s v4c remains fallback. Model/voicepack unavailable in current container, five new af_heart cues and exact real audio-aligned SRT PENDING; RELEASE HOLD, weighted project 79%.
+5. **Failure/pivot:** Whole-film 170s ffmpeg encode exceeded 180s runtime limit, incomplete film deleted. Switched to 50s scope as separate preview, did not silently shrink final delivery requirement. No eSpeak or cloud TTS substitution or model download.
+6. **Repo/SHA/paths:** `hibi89/hibi89-paypal-ai-hackathon`/`lead/paypal`; parent `55a2a2913df276bce1304de8d98e009c6ab93aaa`. New `scripts/worknova_voice_locator.py`, `scripts/worknova_subtitles_from_voice.py`, `scripts/worknova_part2_v4d_private_editor.py`, `tests/test_worknova_part2_editor_pipeline.py`, `docs/WORKNOVA_PART2_V4D_PRIVATE_PROGRESS.md`; new SHA must be read back.
+7. **Environment/deployment:** ChatGPT scratch FFmpeg/Pillow private preview. Owner Windows has previously used Kokoro locally, original pinned file location unverified. Production SHA/URL NOT VERIFIED; no public deployment.
+8. **Source/backup/security:** Persistent Library `WORKNOVA_Handoff_20261108.zip` and private v4c/v4b/v3/179.48s recovered WebM originals preserved. No large video/model/voice weights/DB/.env in GitHub.
+9. **Next:** Locate genuine pinned model in owner local project read-only, synthesize five af_heart scenes, generate manifest-grounded bilingual SRT, build final full 170s from approved visuals, visually/listen QA, owner approval; then independently clear provider, public access and submission gates.
+10. **Updated/check scope:** 2026-11-08 KST; this is local video+unit-test evidence only, new GitHub CI/prod not yet claimed. Separate paid/external request/public submission requires explicit approval.
+
 ## 2026-11-08 KST — WORKNOVA v4c private visual recut / voice gate still open
 
 1. **Goal:** Correct Churn scene in premium v4b while preserving all approved source footage/voice and preparing five Part2 af_heart cues.

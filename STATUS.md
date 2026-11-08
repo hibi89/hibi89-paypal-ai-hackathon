@@ -1,3 +1,9 @@
+## 2026-11-08 KST — WORKNOVA v4d 50s Part2 preview + voice helper tools (PRIVATE)
+
+- From SHA-pinned private v4c full 170s, created separate 50s/1080p/1,250-frame H264/AAC Part2 v4d visual preview SHA256 `4ebfa2497d979e4ac0a7e74de3fb8fd266d6318fa87d8b17bf5c955e90afa3b7`. A2A adjacent-frame error removed, Churn separated from Gift, Invoice review-first card added. FFmpeg full decode, ffprobe and 15-frame inspection PASS. Full 170s v4d not produced (timed out, incomplete discarded). v4c/v4b/v3 and approved voice unchanged.
+- Added read-only pinned-Kokoro locator, report-grounded bilingual SRT generator, reproducible exact-hash Part2 private editor and 5 local Python tests **5 PASS/0 FAIL**. Pinned model/voicepack NOT FOUND in current scratch; actual neural speech NOT MADE; test WAV synthetic only. See `docs/WORKNOVA_PART2_V4D_PRIVATE_PROGRESS.md`.
+- Media stays out of GitHub. 79/100 overall unchanged, RELEASE HOLD. Actual full audio owner review, production, payment, Gemini and YouTube/Devpost NOT RUN. CI for the new SHA separate.
+
 ## 2026-11-08 KST — WORKNOVA private v4c Churn recut verified, old v4b untouched
 
 - Original WorkNova v4b/auto capture in private Library was hash checked. Replaced inaccurate Churn Saver visual at film 135–144s with actual original OFFLINE-synthetic retention proposal UI 101.5–105.6s. New private v4c (not in GitHub): **170.000s, 1920x1080, 4,250 frames, H.264/AAC, SHA256 `96941f892dc91f4c7508b2d70fdec67ba93acb2738a71b997e781c6dd198d7a8`**. Full ffmpeg decode exit0, several transition/frame samples PASS; AAC packet MD5 identical to v4b `2959cc9c1f5ee996edaefb3b06a147ea`. Initial splice erroneously added 2 frames (3377 instead of 3375 before cut); corrected after direct frame-count audit. Source original/v4b/v3/backups untouched. See `docs/WORKNOVA_V4C_CHURN_RECUT.md`.

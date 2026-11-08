@@ -1,0 +1,22 @@
+# WORKNOVA — private Part 2 v4d + offline voice pipeline (2026-11-08 KST)
+
+## Source, decisions, reproducibility
+- Owner-approved WORKNOVA midnight-navy/cyan/indigo identity, favorite original Kokoro ONNX FP16 af_heart voice and click style, 170s under-three-minute target. Preserve original sources and no alternative OS/cloud voice.
+- Library original `WORKNOVA_Handoff_20261108.zip` SHA256 `b9b2bdeafeaed5ab9c06a4432e3d12f38c1ab8beeab99b44102d5cd76fb0987a`, v3, v4b, original recovered 179.48s WebM and v4c remain unmodified.
+- Exact 170s v4c parent `WORKNOVA_Premium_Design_Audio_Private_170s_1080p_v4c.mp4` SHA256 `96941f892dc91f4c7508b2d70fdec67ba93acb2738a71b997e781c6dd198d7a8`.
+- Two options considered: full 170s re-encode (container exceeded 180-second limit, incomplete output discarded) vs independent 50s Part2 patch preview (completed, no parent overwrite). Selected the latter while full-length final and neural speech remain blocked. No lower-resolution replacement.
+
+## New 50s private preview — not a full final film
+- `WORKNOVA_Part2_50s_Visual_v4d_PRIVATE.mp4`, 50.000 seconds corresponding to film 104–154s; 1920×1080/25fps/1,250 H264 frames, AAC 48k stereo, **9,391,246 bytes**; SHA256 **`4ebfa2497d979e4ac0a7e74de3fb8fd266d6318fa87d8b17bf5c955e90afa3b7`**.
+- FFprobe and whole-file FFmpeg decode PASS, 15 distributed frames inspected. A2A from verified UI 113–119s was slowed to 11s so Gift UI does not enter; right-side card shows fictional offer $345 → counter $290 → counter $299 → accept $299, clearly `NOT PAID`. Churn is isolated from adjacent Gift UI in a branded crop with fictional 20% retention ceiling/no subscription change. Invoice adds an editorial review-first panel in unused whitespace. Delegate/Gift retain the existing source.
+- `scripts/worknova_part2_v4d_private_editor.py --check-plan`; render with `python scripts/worknova_part2_v4d_private_editor.py --source PATH_TO_VERIFIED_V4C.mp4 --output NEW_PART2_v4d.mp4`. Only the exact parent v4c SHA passes; refuses existing outputs. Optional Pillow, FFmpeg/ffprobe and a local TTF font are required. This creates **50s preview only**. No binary in GitHub.
+- Actual Part2 narration is absent; preview audio is only re-encoded existing ambience. No fully heard/word-level subtitle claim.
+
+## Voice recovery and synchronization
+- `python scripts/worknova_voice_locator.py --root PATH_TO_OWNER_LOCAL_WORKNOVA_PROJECT` is bounded and read-only. It checks for original `kokoro-v1.0.fp16.onnx` and `voices-v1.0.bin` in the same folder with pinned SHA256, never downloads/copies/uploads, skips symlinks. In this environment only 15 scratch directories were scanned, model **NOT FOUND**; owner Windows location is unverified.
+- Existing `scripts/worknova_part2_neural.py` must synthesize real five-scene pinned `af_heart` WAV and JSON locally. Then `python scripts/worknova_subtitles_from_voice.py --wav PATH --check-only` verifies 170s PCM16 mono 24k, WAV SHA, strict report/voice/plan/source hashes, cue text/order and actual spoken lengths. `--wav PATH --output NEW_FILE.srt` emits non-overwriting bilingual cue-level SRT based on actual render durations, not word-level ASR. No external provider request.
+- Local test: `python -m unittest discover -s tests -p test_worknova_part2_editor_pipeline.py -v`: **5 PASS / 0 FAIL / 0 SKIP**. Synthetic WAV fixtures exercise guards only, not real model inference. Scripts compiled; FFmpeg full Part2 preview decode PASS. GitHub Actions for this commit must be verified separately.
+
+## Boundaries and next
+- UI is local offline Playwright synthetic footage; automated clicks are not human-operated. No PayPal/Gemini API requests, payment, production deployment, public YouTube, Devpost, or main merge.
+- Missing: confirmed pinned owner Windows voicepack and local model, five newly rendered Part2 cues, true cue-level subtitle output from them, reviewed full 170s master, owner full ears-on/pixel privacy QA, independent real provider/public judge verification and explicit publication approval. Overall prior product estimate **79/100 unchanged; RELEASE HOLD**.
