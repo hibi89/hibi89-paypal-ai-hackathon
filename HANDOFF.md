@@ -1,3 +1,16 @@
+## 2026-11-08 KST — WORKNOVA full 170s v4d offline voice finalizer
+
+1. **Goal/technical scope:** Finish approved 170s premium WORKNOVA v4d visual film by adding genuine owner-approved Kokoro FP16 `af_heart` narration to Part2 five scenes, then bilingual cue-aligned subtitles; all offline and no original media overwrite.
+2. **Completed/decisions:** Allowlist exact 170s v4d SHA in existing guarded private mixer; new read-only-preflight/default and explicit `--render` orchestrator for Kokoro WAV→report→SRT→new private H264/AAC mix. Avoid OS/eSpeak fallback, cloud TTS and untrusted source mismatches.
+3. **Tests:** Local `python -m unittest discover -s tests -p 'test_worknova_*.py'` **19 PASS**; added five negative/preflight scenarios. FFmpeg filter with **synthetic silence** smoke PASS. Full 170s visual video independently previously decoded PASS. GitHub Actions for new commit must be checked after write; actual af_heart inference/audio QA NOT_RUN (model files missing).
+4. **Status:** Voice preparation CODE_COMPLETE, owner-local model validation/render BLOCKED, SRT/AV owner approval/publication PENDING; whole-project verified 79%, RELEASE HOLD.
+5. **Failures/stop pivot:** No pinned local 150MB+ model and 10MB+ voicepack in supplied Library/ChatGPT scratch; do not retry other generic TTS. New v4d film was not previously mux-allowlisted; targeted fix now preserves cue timing. Full audio never fabricated.
+6. **Repo/branch/SHA:** `hibi89/hibi89-paypal-ai-hackathon` `lead/paypal`, previous `af73ff4c73df797d58624a2b41ce4a83fd4f08dd`. Changed `scripts/worknova_private_voice_mux.py`, `scripts/worknova_v4d_offline_voice_finish.py`, `tests/worknova_owner_media_tools.test.mjs`, `tests/test_worknova_v4d_voice_finish.py`, docs and STATUS/HANDOFF. Verify new commit identity/CI.
+7. **Runtime/production:** Local Python 3 + FFmpeg + existing owner pinned Kokoro environment. Cloudflare/Vercel Production SHA/URL not verified; no release.
+8. **Media/security:** Existing private Library `WORKNOVA_Handoff_20261108.zip`, 170s v4d video private chat artifact, v4c/v4b/v3/favorite original af_heart all unchanged. No model weights, tokens, SQLite, private video files in GitHub.
+9. **Next/acceptance:** Owner Windows: find pinned model with read-only locator, download private 170s v4d visual movie to local; run `python scripts/worknova_v4d_offline_voice_finish.py --video PATH --model-dir PATH --check-only`, then `--render`. Inspect WAV/MP4/speech-timed SRT and listen full 170s, require explicit owner approval before any external provider request, YouTube/Devpost or paid action.
+10. **KST:** 2026-11-08; code/local synthetic-smoke only, no new actual voice or Production claim. GitHub source commit + CI must be verified.
+
 ## 2026-11-08 KST — WORKNOVA full 170s v4d visual integration / no new neural voice
 
 1. **Goal/requirements/stack:** Resume approved WorkNova premium 165–175s film, keeping 1920×1080 cinematic navy/cyan identity, owner-preferred Kokoro FP16 af_heart voice/clicks, both marketplace and five-agent parts; FFmpeg/Python offline editing; original media immutable.

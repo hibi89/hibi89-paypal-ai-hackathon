@@ -1,3 +1,9 @@
+## 2026-11-08 KST — WORKNOVA v4d 170s Part2 local audio finish contract
+
+- **Implemented** SHA-pinned v4d full 170s addition to existing private voice mux allowlist (old v4b/v4c still supported); new offline `scripts/worknova_v4d_offline_voice_finish.py` handles read-only check then explicit `--render` five `af_heart` cues, SRT generation and separate private voice mux. Exact full visual-only v4d SHA `d74482b77770259a5cf18f4cd81a6e4b15264ce401431ef65d3e21530dbaebdb`. Model+voicepack **MISSING in this runtime**: actual synthesis still BLOCKED.
+- Local Python WorkNova suite **19/19 PASS**, including 5 new fail-closed cases; FFmpeg `amix` filter with synthetic **silence** 3s syntax PASS (NOT actual neural voice). No new final narrated film produced. See `docs/WORKNOVA_V4D_AUDIO_FINISH_20261108.md`.
+- Repo `lead/paypal`: this commit affects only private audio tools, tests and docs; no app/payment data, source videos, API calls, releases, YouTube/Devpost or production. **79/100 unchanged, RELEASE HOLD**; check Actions at actual new SHA.
+
 ## 2026-11-08 KST — WORKNOVA 170s v4d visual integration, source pinned, private
 
 - New complete **visual-only** private 170s 1920×1080 / 4250-frame film: 0–104s and 154–170s from byte-verified v4c, 104–154s from byte-verified 50s v4d. New 45,576,653-byte SHA256 `d74482b77770259a5cf18f4cd81a6e4b15264ce401431ef65d3e21530dbaebdb`. AAC original/assembled packet MD5 `2959cc9c1f5ee996edaefb3b06a147ea` identical. Whole FFmpeg decode PASS, 12 timeline samples checked; script reproduced identical output hash. Earlier naive full re-encode timed out and incomplete file discarded; source remained safe. Segment copy first seek approach gave wrong packet count and was corrected to output-side -ss.

@@ -67,6 +67,7 @@ def validate(video:Path,wav:Path):
     allowed_cuts={
         'abe1b4094f0d11b526a5c467a1b79939c18a45c9f6adab4524ac66d8337c2494',  # v4b
         '96941f892dc91f4c7508b2d70fdec67ba93acb2738a71b997e781c6dd198d7a8',  # v4c
+        'd74482b77770259a5cf18f4cd81a6e4b15264ce401431ef65d3e21530dbaebdb',  # verified 170s v4d
     }
     if sha256(video) not in allowed_cuts:
         raise ValueError('VERIFIED_V4B_V4C_VIDEO_SHA_REQUIRED__NEW_CUT_NEEDS_RETIMING')

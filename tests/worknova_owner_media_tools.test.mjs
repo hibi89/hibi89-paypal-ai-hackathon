@@ -118,3 +118,18 @@ test('WORKNOVA v4b five neural cues fit each actual 170s scene',()=>{
   assert.match(mux,/between\(t,104,154\).*eval=frame/);
   assert.doesNotMatch(mux,/between\(t,108,152\)/);
 });
+
+
+test('private v4d 170s final voice preparation only accepts SHA-pinned input',()=>{
+  const mux=read('scripts/worknova_private_voice_mux.py');
+  const finish=read('scripts/worknova_v4d_offline_voice_finish.py');
+  const exact='d74482b77770259a5cf18f4cd81a6e4b15264ce401431ef65d3e21530dbaebdb';
+  assert.ok(mux.includes(exact));
+  assert.ok(finish.includes(exact));
+  assert.match(finish,/--check-model/);
+  assert.match(finish,/--render/);
+  assert.match(finish,/--check-cues/);
+  assert.match(finish,/--part2-wav/);
+  assert.match(finish,/release_hold':True/);
+  assert.doesNotMatch(finish,/urlopen|requests\.get|npm publish|youtube\.com\/upload|devpost\.com\/submit/);
+});
