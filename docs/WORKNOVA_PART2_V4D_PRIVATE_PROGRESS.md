@@ -20,3 +20,11 @@
 ## Boundaries and next
 - UI is local offline Playwright synthetic footage; automated clicks are not human-operated. No PayPal/Gemini API requests, payment, production deployment, public YouTube, Devpost, or main merge.
 - Missing: confirmed pinned owner Windows voicepack and local model, five newly rendered Part2 cues, true cue-level subtitle output from them, reviewed full 170s master, owner full ears-on/pixel privacy QA, independent real provider/public judge verification and explicit publication approval. Overall prior product estimate **79/100 unchanged; RELEASE HOLD**.
+
+## 2026-11-08 KST — independent v4d audiovisual static-hold QA addendum
+
+- Audio/visual **full decode PASS** and `blackdetect=d=0.1:pix_th=0.08` reported no black frames in the 50-second v4d preview.
+- `freezedetect=n=-45dB:d=3` identified near-static chapter holds around film-relative Part2 offsets 0.2–7.8, 8–19, 31.2–39.76 and 40.2–49.8 seconds, among others. These are extended fixed UI states, **not necessarily decoder freezes**; they remain an editorial pacing risk and must not be reported as fluid visual interactions.
+- A separate 50-second optical 2% microzoom experiment did not materially reduce freeze detection and was **not selected** as the new preferred film. Keep hash-pinned v4d preview and v4c 170-second parent; instead improve actual UI transitions/active browser footage when building final 170s.
+- Private review kit `WORKNOVA_Part2_v4d_PRIVATE_Review_Kit_20261108.zip` contains v4d clip, 15-frame contact sheet, scripts, regression test, README and manifest; ZIP 8,581,729 bytes, integrity `testzip()=None`, SHA256 `237b57f03738455c534661f3f4ef06feb64e1643e4695b54c5eaf4d7f79eef27`. Downloadable from this chat, **not Library or GitHub media**.
+- Latest code commit `4e755707db4f8c5e53fe3325e131f430e8e1ff4c` actual GitHub Actions offline smoke #42434094802 and offline payment-contract tests #42434094803 both **SUCCESS** at this SHA; local Python pipeline tests 5/5 PASS. No new model-backed neural speech, 170s final re-render, full ears-on review, Vercel production validation, PayPal/Gemini call or publication. **79/100 unchanged, RELEASE HOLD**.

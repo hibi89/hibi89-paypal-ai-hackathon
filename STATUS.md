@@ -1,3 +1,7 @@
+## 2026-11-08 KST — v4d QA addendum; CI verified on exact feature SHA
+
+- `4e755707db4f8c5e53fe3325e131f430e8e1ff4c`: [offline smoke #42434094802](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42434094802) SUCCESS and [payment-contract tests #42434094803](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42434094803) SUCCESS. Local Python 5/5 PASS. v4d 50s visual FULL DECODE/BLACK FRAME CHECK PASS, but 3+ second static UI holds found; a 2% optical zoom test did not materially fix them and was rejected. See `docs/WORKNOVA_PART2_V4D_PRIVATE_PROGRESS.md`. Private review kit ZIP integrity PASS; no media on GitHub. Real Part2 af_heart still missing, 170s final NOT COMPLETE, 79/100 RELEASE HOLD.
+
 ## 2026-11-08 KST — WORKNOVA v4d 50s Part2 preview + voice helper tools (PRIVATE)
 
 - From SHA-pinned private v4c full 170s, created separate 50s/1080p/1,250-frame H264/AAC Part2 v4d visual preview SHA256 `4ebfa2497d979e4ac0a7e74de3fb8fd266d6318fa87d8b17bf5c955e90afa3b7`. A2A adjacent-frame error removed, Churn separated from Gift, Invoice review-first card added. FFmpeg full decode, ffprobe and 15-frame inspection PASS. Full 170s v4d not produced (timed out, incomplete discarded). v4c/v4b/v3 and approved voice unchanged.

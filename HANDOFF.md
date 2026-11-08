@@ -1,3 +1,16 @@
+## 2026-11-08 KST — v4d QA / CI result since last handoff
+
+1. **Goal:** Avoid declaring the private Part2 50s v4d preview final without playback-risk testing.
+2. **Verified:** No black frames, full ffmpeg decode PASS; exact SHA `4e755707` offline smoke #42434094802 SUCCESS and payment-contract #42434094803 SUCCESS, local Python 5/5 PASS.
+3. **New issue:** Near-static 3+ second browser UI shots across the chapter; optical microzoom pass provided no meaningful fix and was rejected. For final 170s prefer actual active user-interface captures/meaningful storyboard beats rather than cosmetic reencode. No silent acceptance.
+4. **Preservation:** 170s v4c parent, v4b/v3, original af_heart and WORKNOVA Library archive untouched; 50s v4d downloadable privately.
+5. **Private bundle:** `WORKNOVA_Part2_v4d_PRIVATE_Review_Kit_20261108.zip` 8,581,729B, SHA `237b57f03738455c534661f3f4ef06feb64e1643e4695b54c5eaf4d7f79eef27`, 8 entries, ZIP test PASS; not in Library/GitHub.
+6. **Next:** Locate owner-local hash-pinned Kokoro, generate five actual cues + timed SRT, improve active transitions, produce/fully review 170s final, owner approve before public submission.
+7. **State:** Project 79/100, RELEASE HOLD. No PayPal/Gemini requests, payments, production or Devpost.
+8. **Repo/branch:** `hibi89/hibi89-paypal-ai-hackathon` / `lead/paypal`; feature SHA `4e755707`. This is documentation-only, no new feature CI claim.
+9. **Source/security:** All original source/DB/credentials unchanged, no model weights/large media in GitHub; local user model may be elsewhere.
+10. **Updated:** 2026-11-08 KST. No new 170s video, no independent full subjective watch/listen.
+
 ## 2026-11-08 KST — WORKNOVA Part2 v4d / newly added offline audio tools
 
 1. **Goal/requirements:** Complete approved WORKNOVA premium two-part 170s film while preserving v4b/v4c visual and favorite af_heart/click audio style; no unapproved change to provider/release boundaries.
