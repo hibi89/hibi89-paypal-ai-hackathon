@@ -21,3 +21,8 @@ python scripts/worknova_v4m_discovery.py --source PINNED_V4L_170S.mp4 --chapter 
 ```
 
 Fonts resolve from Linux DejaVu or Windows Arial; Windows replay remains **UNVERIFIED**, though updated portable source reproduced identical SHA256 on Linux. No source overwrite, symlinks, unpinned inputs, external payment/provider requests, narration or SRT. All media private; previous owner-liked voice remains backed up in old Library. New video candidate awaits human visual lock. Whole product retained previous estimate **79/100**, public release HOLD. Video-only change is not a Vercel Production deploy.
+
+## Exact-SHA GitHub and Library postflight
+- Feature commit `b1dae1549aca81452f5f8e2b290f4d07c931ad0a` remote source/test/proof blob identities matched local tested contents.
+- GitHub Actions Offline MVP smoke `#42507825117` SUCCESS; Offline payment-contract tests `#42507825115` SUCCESS; optional two jobs SKIPPED, not PASS.
+- Preferred Library v2 backup physically materialized as 34,254,129B, SHA256 `6ffdcded487c03482f289ee3e7fd5a6d188cca2f29ee3bc4a0514e684d5339e9`, 8-entry ZIP CRC PASS and inner film SHA equal. Earlier v1 and v4l are preserved.
