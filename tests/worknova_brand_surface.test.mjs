@@ -51,6 +51,7 @@ test('judge-facing WORKNOVA name and private video provenance match portable rev
   const guide=read('docs/JUDGE_REPRODUCTION_EN.md');
   const builder=read('scripts/pack_offline_reviewer.py');
   const devpost=read('docs/DEVPOST_FINAL_REVIEW_PACKET_EN_20261105.md');
+  const judgeEvidence=read('scripts/build_judge_evidence_report.mjs');
   assert.match(readme,/^# WORKNOVA —/);
   assert.match(readme,/## For judges — WORKNOVA/);
   assert.match(readme,/worknova-offline-reviewer[.]zip/);
@@ -65,4 +66,8 @@ test('judge-facing WORKNOVA name and private video provenance match portable rev
   assert.match(devpost,/private 170-second WORKNOVA v4o visual candidate/);
   assert.match(devpost,/NOT PUBLISHED/);
   assert.match(devpost,/OWNER APPROVAL IS STILL REQUIRED/);
+  assert.match(judgeEvidence,/WORKNOVA — judge evidence classes/);
+  assert.match(judgeEvidence,/reviewerSourceUrl:REVIEWER_SOURCE/);
+  assert.doesNotMatch(judgeEvidence,/proofline-judge-part2-/i);
+  assert.doesNotMatch(judgeEvidence,/^\s*project:'Proofline/m);
 });

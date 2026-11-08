@@ -10,12 +10,27 @@ import {fileURLToPath} from 'node:url';
 import {runOfflineOperatorMvpSmoke} from '../src/offline_operator_mvp_smoke.mjs';
 
 const REPORT_DIR=new URL('../output/submission/',import.meta.url);
+// The reviewer source is public, but this local command never queries GitHub.
+const REVIEWER_PROJECT='WORKNOVA — AI Work + Global Services';
+const REVIEWER_SOURCE='https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/lead/paypal';
+const EXPECTED_EVIDENCE_ROWS=Object.freeze([
+ ['A','REPRODUCIBLE_LOCAL_BROWSER','REQUIRES_SEPARATE_CHROMIUM_TEST',
+  'tests/browser_offline_e2e.py and tests/browser_general_services_e2e.py'],
+ ['B','EXECUTED_SYNTHETIC_ORCHESTRATOR','VERIFIED_WITH_FAKE_INJECTED_TRANSPORT',
+  'src/offline_operator_mvp_smoke.mjs; src/owner_mvp_flow.mjs'],
+ ['C','EXECUTED_PART2_FIVE_SKILL_SQLITE_LAB','VERIFIED_DETERMINISTIC_OFFLINE_NO_PROVIDER',
+  'src/innovation_lab.mjs; src/agentic_a2a_protocol.mjs'],
+ ['D','OWNER_HISTORICAL_PROVIDER_ACTIVITY','OWNER_REPORTED_NOT_INDEPENDENTLY_ATTESTED',
+  'docs/technical/PPL_OWNER_REAL_SANDBOX_LOCAL_RECEIPT_20261028.md'],
+ ['E','PUBLIC_HACKATHON_SUBMISSION','NOT_SUBMITTED',
+  'docs/OWNER_FINAL_SUBMISSION_HANDOFF_20261029.md']
+]);
 
 const requireTrue=(v,code)=>{if(!v)throw Error(code)};
 // Execute the real offline Part 2 SQLite-backed lab, not a fake report.
 // All actions are deterministic and written only to a disposable temporary DB.
 export async function runSyntheticPart2JudgeTrace(){
- const dir=mkdtempSync(join(tmpdir(),'proofline-judge-part2-'));
+ const dir=mkdtempSync(join(tmpdir(),'worknova-judge-part2-'));
  let lab;
  try{
   lab=createInnovationLab({filename:join(dir,'innovation.sqlite')});
@@ -104,7 +119,10 @@ export function summarizeSyntheticJudgeTrace(result,part2){
  return Object.freeze({
    status:'JUDGE_SAFE_OFFLINE_EVIDENCE_READY_NOT_SUBMITTED',
    checkedAtRuntime:'LOCAL_EXECUTION_ONLY_NO_REMOTE_ATTESTATION',
-   project:'Proofline — AI Work + Global Services',
+   project:REVIEWER_PROJECT,
+   reviewerSourceUrl:REVIEWER_SOURCE,
+   reviewerSourceBranch:'lead/paypal',
+   reviewerSourceVerifiedLiveByThisCommand:false,
    evidence:[
      Object.freeze({id:'A',type:'REPRODUCIBLE_LOCAL_BROWSER',status:'REQUIRES_SEPARATE_CHROMIUM_TEST',
        source:'tests/browser_offline_e2e.py and tests/browser_general_services_e2e.py',
@@ -150,12 +168,31 @@ export function summarizeSyntheticJudgeTrace(result,part2){
  });
 }
 export function renderJudgeEvidenceMarkdown(report){
+ // Treat this renderer as a provenance boundary. It must reject forged
+ // provider/publication status and altered source rows even when called directly.
+ const actualRows=report?.evidence?.map(x=>[x.id,x.type,x.status,x.source]);
+ requireTrue(report?.status==='JUDGE_SAFE_OFFLINE_EVIDENCE_READY_NOT_SUBMITTED'&&
+   report.project===REVIEWER_PROJECT&&
+   report.reviewerSourceUrl===REVIEWER_SOURCE&&
+   report.reviewerSourceBranch==='lead/paypal'&&
+   report.reviewerSourceVerifiedLiveByThisCommand===false&&
+   report.verifiedFromThisCommand?.actualProviderCalls===0&&
+   report.verifiedFromThisCommand?.actualPaymentCaptured===false&&
+   report.verifiedFromThisCommand?.publicSubmissionPerformed===false&&
+   report.verifiedFromThisCommand?.part2RealProviderCalls===0&&
+   report.releases?.publicVideoUrl===null&&
+   report.releases?.devpostSubmissionReceipt===null&&
+   report.releases?.publicationAuthorized===false&&
+   JSON.stringify(actualRows)===JSON.stringify(EXPECTED_EVIDENCE_ROWS),
+   'JUDGE_PUBLICATION_OR_PROVIDER_PROVENANCE_INVALID');
  const cells=x=>String(x).replace(/\|/g,'/').replace(/[\r\n]+/g,' ');
  const rows=report.evidence.map(x=>
    '| '+cells(x.id)+' | '+cells(x.type)+' | '+cells(x.status)+' | '+cells(x.source)+' |').join('\n');
- return `# Proofline — judge evidence classes (LOCAL DRAFT ONLY)
+ return `# WORKNOVA — judge evidence classes (LOCAL DRAFT ONLY)
 
 **Do not mistake simulated tests for live provider transactions.** This artifact is locally generated, not uploaded or submitted.
+
+**Public WORKNOVA reviewer source:** ${REVIEWER_SOURCE} (`git switch lead/paypal`). The URL is a reference, **not live-rechecked by this command**. The public default `main` is an earlier Proofline-branded release.
 
 | ID | Evidence class | Current status | Source |
 | --- | --- | --- | --- |
@@ -194,6 +231,9 @@ if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url))
    const report=await buildJudgeEvidenceReport();
    process.stdout.write(JSON.stringify({
       status:report.status,
+      project:report.project,
+      reviewerSourceUrl:report.reviewerSourceUrl,
+      reviewerSourceVerifiedLiveByThisCommand:false,
       evidenceClasses:report.evidence.map(x=>({type:x.type,status:x.status})),
       providerCalls:report.verifiedFromThisCommand.actualProviderCalls,
       part2Skills:report.verifiedFromThisCommand.part2FiveSkillsExecuted,

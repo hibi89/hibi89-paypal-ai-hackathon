@@ -12,6 +12,11 @@ test('evidence classes are strictly separated after fake-provider orchestrator s
  const part2=await runSyntheticPart2JudgeTrace();
  const report=summarizeSyntheticJudgeTrace(raw,part2);
  assert.equal(report.status,'JUDGE_SAFE_OFFLINE_EVIDENCE_READY_NOT_SUBMITTED');
+ assert.equal(report.project,'WORKNOVA — AI Work + Global Services');
+ assert.equal(report.reviewerSourceBranch,'lead/paypal');
+ assert.equal(report.reviewerSourceUrl,
+  'https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/lead/paypal');
+ assert.equal(report.reviewerSourceVerifiedLiveByThisCommand,false);
  assert.equal(report.evidence.length,5);
  assert.equal(report.evidence[1].status,'VERIFIED_WITH_FAKE_INJECTED_TRANSPORT');
  assert.equal(report.evidence[2].status,'VERIFIED_DETERMINISTIC_OFFLINE_NO_PROVIDER');
@@ -26,6 +31,9 @@ test('evidence classes are strictly separated after fake-provider orchestrator s
  const markdown=renderJudgeEvidenceMarkdown(report);
  assert.match(markdown,/FAKE Gemini and PayPal Sandbox/);
  assert.match(markdown,/owner-reported historical activity/i);
+ assert.match(markdown,/^# WORKNOVA — judge evidence classes/);
+ assert.match(markdown,/git switch lead\/paypal/);
+ assert.doesNotMatch(markdown,/^# Proofline/m);
  assert.match(markdown,/NOT_SUBMITTED/);
  assert.doesNotMatch(markdown,/client_secret|access_token|PayerID|checkoutnow/);
 });
@@ -67,6 +75,9 @@ test('one-command judge evidence CLI exits cleanly with no provider claims',()=>
  assert.equal(child.status,0,child.stderr||child.stdout);
  const data=JSON.parse(child.stdout);
  assert.equal(data.providerCalls,0);
+ assert.equal(data.project,'WORKNOVA — AI Work + Global Services');
+ assert.match(data.reviewerSourceUrl,/\/tree\/lead\/paypal$/);
+ assert.equal(data.reviewerSourceVerifiedLiveByThisCommand,false);
  assert.equal(data.paymentCaptured,false);
  assert.equal(data.submitted,false);
  assert.equal(data.evidenceClasses[2].status,'VERIFIED_DETERMINISTIC_OFFLINE_NO_PROVIDER');
@@ -76,4 +87,27 @@ test('one-command judge evidence CLI exits cleanly with no provider claims',()=>
  const markdown=readFileSync(new URL('../output/submission/judge_evidence_report.md',import.meta.url),'utf8');
  assert.match(markdown,/LOCAL DRAFT ONLY/);
  assert.match(markdown,/NOT_SUBMITTED/);
+});
+
+test('judge-facing report rendering rejects forged public/provider states and evidence rows',async()=>{
+ const raw=await runOfflineOperatorMvpSmoke();
+ const part2=await runSyntheticPart2JudgeTrace();
+ const good=summarizeSyntheticJudgeTrace(raw,part2);
+ assert.doesNotThrow(()=>renderJudgeEvidenceMarkdown(good));
+ for(const altered of [
+  {...good,project:'Proofline — fake legacy source'},
+  {...good,reviewerSourceUrl:'https://example.test/pretend-approved'},
+  {...good,reviewerSourceVerifiedLiveByThisCommand:true},
+  {...good,verifiedFromThisCommand:{...good.verifiedFromThisCommand,actualProviderCalls:1}},
+  {...good,verifiedFromThisCommand:{...good.verifiedFromThisCommand,actualPaymentCaptured:true}},
+  {...good,releases:{...good.releases,publicVideoUrl:'https://example.test/watch'}},
+  {...good,releases:{...good.releases,publicationAuthorized:true}},
+  {...good,evidence:good.evidence.map((x,i)=>i===3?
+    {...x,status:'INDEPENDENT_PAYPAL_AND_GEMINI_PROVIDER_VERIFIED'}:x)},
+  {...good,evidence:good.evidence.map((x,i)=>i===3?
+    {...x,source:'secret_provider_receipt.json'}:x)}
+ ]){
+  assert.throws(()=>renderJudgeEvidenceMarkdown(altered),
+   /JUDGE_PUBLICATION_OR_PROVIDER_PROVENANCE_INVALID/);
+ }
 });
