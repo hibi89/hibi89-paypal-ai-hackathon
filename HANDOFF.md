@@ -1,3 +1,8 @@
+## 2026-11-08 KST — v4h exact GitHub source byte parity correction
+
+- GitHub connector text retrieval had dropped the single trailing newline of each four v4h Python source/test files during the first commit. Verified each remote blob SHA matched the locally tested source MINUS the final newline; this is source-byte hygiene, not a functional failure. Restored the final newline in all four files (no logic changes). Verified expected local Git blob SHAs: 2ad8ea97c19f35530d931c9c7f209ad8d5c8c192, 0befb532ea686c01b1925e528c0de5826653c5f8, e322b15c6b9ba33867d85660001c5cf80d7675e1, 97a7dbd808e3e8ed626c84302c68456de5bd809b. Recheck GitHub returned SHAs and Actions on new head separately.
+- No new visual rendering, voice model access, subtitles, external calls or publication. Preferred visual remains v4h SHA dab8036507c3425b306713908241c57a5d3cc0a93de4c606f22c6da0a5742486. Full product 79% and RELEASE HOLD.
+
 ## 2026-11-08 KST — WORKNOVA v4h private 170s DESIGN handoff / voice deferred
 
 1. Goal: WorkNova premium cinematic 170s two-part video; user wants video design locked first, then one af_heart narrator/subtitle pass only. Offline Python/Pillow/FFmpeg editing.
