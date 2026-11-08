@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,mkdirSync,readFileSync,writeFileSync,rmSync} from 'node:fs';
+import {mkdtempSync,mkdirSync,readFileSync,writeFileSync,rmSync,copyFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createHash} from 'node:crypto';
-import {prepareSubmissionCandidate,verifyPrivateSyntheticVideo,verifyPrivateV4oFilm,verifyPrivateV4oZipKit,probePrivateWebmDuration} from '../scripts/prepare_submission_candidate.mjs';
+import {prepareSubmissionCandidate,verifyPrivateSyntheticVideo,verifyPrivateV4oFilm,verifyPrivateV4oZipKit,probePrivateWebmDuration,validateFinalEnglishCopy} from '../scripts/prepare_submission_candidate.mjs';
 
 const fresh=()=>mkdtempSync(join(tmpdir(),'paypal-local-submission-'));
 function makeFixture(dir){
@@ -232,4 +232,72 @@ test('private ZIP explicit path is passed into offline packet without extracting
  assert.equal(packet.externalSubmissionEligible,false);
  assert.equal(packet.authorizedToPublish,false);
  assert.equal(packet.devpostReceipt,'NOT_SUBMITTED');
+});
+
+test('private candidate uses the canonical Devpost validator, not keywords alone',()=>{
+ const draftPath=new URL('../docs/DEVPOST_FINAL_REVIEW_PACKET_EN_20261105.md',import.meta.url);
+ const valid=readFileSync(draftPath,'utf8');
+ assert.equal(validateFinalEnglishCopy(valid),true);
+ for(const changed of [
+  valid.replace('git switch lead/paypal','git switch main'),
+  valid.replace('a main merge is optional','a main merge is mandatory'),
+  valid.replace('OWNER APPROVAL IS STILL REQUIRED BEFORE YOUTUBE AND DEVPOST PUBLICATION.',
+   'OWNER APPROVAL HAS BEEN RECEIVED FOR YOUTUBE AND DEVPOST PUBLICATION.'),
+  valid.replace('default browser performs no PayPal calls',
+   'default browser performs live PayPal calls'),
+  valid.replace('The current WORKNOVA reviewer source is already public',
+   'The current WORKNOVA reviewer source is not yet public')
+ ]){
+  assert.notEqual(changed,valid);
+  assert.equal(validateFinalEnglishCopy(changed),false);
+ }
+});
+
+test('malformed release claims block the private packet even when all keywords remain',()=>{
+ const base=new URL('../',import.meta.url);
+ const root=fresh();
+ const sourcePaths=['LICENSE','README.md','docs/JUDGE_REPRODUCTION_EN.md',
+  'docs/VIDEO_STORYBOARD_EN.md','docs/DEVPOST_ENTRY_AND_VIDEO_COPY_EN_20261029.md',
+  'docs/DEVPOST_FINAL_REVIEW_PACKET_EN_20261105.md','scripts/record_judge_demo.py',
+  'data/paypal_daily_progress.json'];
+ const kit={status:'LOCAL_PRIVATE_V4O_INTEGRITY_VERIFIED',
+  filename:'WORKNOVA_v4o_170s_PRIVATE.mp4',mediaDurationProbed:true,
+  mediaDurationSeconds:170,ownerVisualApproval:false,
+  publiclyUploaded:false,providerCalls:0};
+ try{
+  for(const path of sourcePaths){
+   const dst=join(root,path);
+   mkdirSync(join(dst,'..'),{recursive:true});
+   copyFileSync(new URL('../'+path,import.meta.url),dst);
+  }
+  const create=()=>prepareSubmissionCandidate({
+   root,v4oKitPath:'INJECTED_SYNTHETIC_TEST_PATH',
+   inspectV4oKit:()=>kit
+  });
+  const initial=create();
+  assert.equal(initial.finalEnglishCopy,'OWNER_REVIEW_COPY_VALIDATED_NOT_PUBLISHED');
+  assert.equal(initial.status,'LOCAL_PACKET_PREPARED_NOT_SUBMITTED');
+  const path=join(root,'docs/DEVPOST_FINAL_REVIEW_PACKET_EN_20261105.md');
+  const good=readFileSync(path,'utf8');
+  const bad=good.replace('a main merge is optional','a main merge is mandatory');
+  assert.notEqual(bad,good);
+  // Existing substring-only verifier considered this draft ready: all required
+  // keywords remain. Canonical parser must now block it.
+  for(const word of ['DRAFT — NOT PUBLISHED','OFFLINE_MOCK','RELEASE HOLD.',
+    'OWNER TO ADD AFTER APPROVED PUBLIC YOUTUBE UPLOAD']){
+   assert.ok(bad.includes(word),word);
+  }
+  writeFileSync(path,bad);
+  const rejected=create();
+  assert.equal(rejected.finalEnglishCopy,'OWNER_REVIEW_COPY_MISSING_OR_INVALID');
+  assert.equal(rejected.ownerReviewReady,false);
+  assert.equal(rejected.status,'LOCAL_PACKET_NEEDS_FINAL_ENGLISH_COPY');
+  assert.equal(rejected.authorizedToPublish,false);
+  assert.equal(rejected.externalSubmissionEligible,false);
+  assert.equal(rejected.publicVideoUrl,'NOT_PROVIDED');
+  assert.equal(rejected.devpostReceipt,'NOT_SUBMITTED');
+  const md=readFileSync(join(root,'output/submission/submission_candidate.md'),'utf8');
+  assert.match(md,/FINAL_ENGLISH_COPY_MISSING_OR_INVALID/);
+  assert.doesNotMatch(md,/a main merge is mandatory/);
+ }finally{rmSync(root,{recursive:true,force:true})}
 });

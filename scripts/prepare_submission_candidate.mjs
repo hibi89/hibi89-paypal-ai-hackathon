@@ -8,6 +8,7 @@ import {readFileSync,readdirSync,lstatSync,mkdirSync,writeFileSync,existsSync} f
 import {join,resolve,basename} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {assessSubmissionEvidence} from '../src/submission_evidence_gate.mjs';
+import {buildDevpostFormFields} from './build_devpost_form_fields.mjs';
 
 const ROOT=resolve(fileURLToPath(new URL('../',import.meta.url)));
 const entryPaths=['LICENSE','README.md','docs/JUDGE_REPRODUCTION_EN.md',
@@ -198,6 +199,27 @@ export function verifyPrivateV4oZipKit(kitPath,{root=ROOT,runner=spawnSync}={}){
   note:'ZIP verified without extraction; not approved for public release or payment.'};
 }
 
+// Reuse the canonical Devpost parser, not a weaker independent keyword check.
+// No network, private owner database, publishing, or filesystem writes here.
+export function validateFinalEnglishCopy(copy){
+ if(typeof copy!=='string'||copy.length<5000||copy.length>18000)
+  return false;
+ try{
+  const fields=buildDevpostFormFields(copy);
+  return fields.state==='OWNER_REVIEW_REQUIRED_NOT_SUBMITTED'&&
+   fields.reviewSourceBranch==='lead/paypal'&&
+   fields.sourceRepositoryUrl===
+    'https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/lead/paypal'&&
+   fields.publicYouTubeUrl===null&&fields.devpostReceiptUrl===null&&
+   fields.defaultMainPromotionRequiredForDevpost===false&&
+   fields.ownerAuthorizedPublication===false&&fields.devpostSubmitted===false&&
+   fields.offlineBrowserProviderCalls===0&&
+   fields.actualPaymentAuthorized===false;
+ }catch{
+  return false;
+ }
+}
+
 export function prepareSubmissionCandidate({root=ROOT,v4oKitPath=null,inspectV4oKit=verifyPrivateV4oZipKit}={}){
   root=resolve(root);
   const ledger=JSON.parse(read(root,'data/paypal_daily_progress.json'));
@@ -225,8 +247,8 @@ export function prepareSubmissionCandidate({root=ROOT,v4oKitPath=null,inspectV4o
     'OWNER TO ADD AFTER APPROVED PUBLIC YOUTUBE UPLOAD',
     'NOT SUBMITTED','RELEASE HOLD.'
   ];
-  const finalCopyReady=finalCopy.length>=5000&&finalCopy.length<=18000&&
-    requiredCopy.every(term=>finalCopy.includes(term));
+  const finalCopyReady=requiredCopy.every(term=>finalCopy.includes(term))&&
+    validateFinalEnglishCopy(finalCopy);
   // A local provenance checkpoint only: no GitHub API call or live deploy check.
   // Published main/LICENSE was separately checked by the owner on 2026-11-05.
   // Removing either checkpoint marker must fail closed, not revive a stale claim.
