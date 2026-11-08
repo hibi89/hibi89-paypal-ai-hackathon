@@ -4,13 +4,13 @@
 
 ## Optional read-only private v4o ZIP verification (not submission)
 
-If the owner already has the private, original \`WORKNOVA_v4o_PRIVATE_Review_Kit_20261109.zip\` downloaded locally, it can now be inspected directly **without extracting it** or copying media into the repository:
+If the owner already has the private, original `WORKNOVA_v4o_PRIVATE_Review_Kit_20261109.zip` downloaded locally, it can now be inspected directly **without extracting it** or copying media into the repository:
 
-\`\`\`powershell
+```powershell
 npm run submission:candidate:local -- --v4o-kit "C:\PATH\TO\WORKNOVA_v4o_PRIVATE_Review_Kit_20261109.zip"
-\`\`\`
+```
 
-This one explicit local command uses Python 3 stdlib, installed ffprobe, SHA-pinned archive metadata and an in-memory MP4 format probe. It writes **only** the ignored local submission draft/status under \`output/submission\`, never edits or uploads the original ZIP, and never calls PayPal, Gemini, YouTube or Devpost. An invalid/missing/mismatched ZIP fails closed. The produced private media status **does not mean owner visual approval, new voice/SRT, public YouTube or official submission**. Without \`--v4o-kit\`, the existing local synthetic/V4O flat-file path remains unchanged.
+This one explicit local command uses Python 3 stdlib, installed ffprobe, SHA-pinned archive metadata and an in-memory MP4 format probe. It writes **only** the ignored local submission draft/status under `output/submission`, never edits or uploads the original ZIP, and never calls PayPal, Gemini, YouTube or Devpost. An invalid/missing/mismatched ZIP fails closed. The produced private media status **does not mean owner visual approval, new voice/SRT, public YouTube or official submission**. Without `--v4o-kit`, the existing local synthetic/V4O flat-file path remains unchanged.
 
 ## WORKNOVA two-category walkthrough (current implementation)
 
