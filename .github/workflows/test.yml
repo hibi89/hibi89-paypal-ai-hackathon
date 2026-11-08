@@ -21,6 +21,8 @@ jobs:
         run: python3 render_master_progress.py --check
       - name: WORKNOVA private v4o ZIP verifier synthetic contract tests (no media/network)
         run: python3 -m unittest discover -s tests -p 'test_worknova_v4o_kit_preflight.py' -v
+      - name: WORKNOVA v4o af_heart offline SHA allowlist and negative preflight (no model/network)
+        run: python3 -m unittest discover -s tests -p 'test_worknova_v4d_voice_finish.py' -v
       - name: Offline Node regression tests
         run: npm test
       - name: Read-only local MVP restart preflight (no credentials or provider calls)
