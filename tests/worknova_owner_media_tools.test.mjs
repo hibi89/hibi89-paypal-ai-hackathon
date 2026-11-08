@@ -113,7 +113,7 @@ test('WORKNOVA v4b five neural cues fit each actual 170s scene',()=>{
   }
   assert.match(src,/PART2_CUE_OUTSIDE_ACTUAL_V4B_SCENE/);
   assert.match(src,/REFERENCE_CUT_SHA='abe1b4094f0d11/);
-  assert.match(mux,/VERIFIED_V4B_V4C_VIDEO_SHA_REQUIRED__NEW_CUT_NEEDS_RETIMING/);
+  assert.match(mux,/VERIFIED_VIDEO_SHA_REQUIRED__NEW_CUT_NEEDS_RETIMING/);
   assert.match(mux,/96941f892dc91f4c7508b2d70fdec67ba93acb2738a71b997e781c6dd198d7a8/);
   assert.match(mux,/between\(t,104,154\).*eval=frame/);
   assert.doesNotMatch(mux,/between\(t,108,152\)/);
@@ -126,6 +126,10 @@ test('private v4d 170s final voice preparation only accepts SHA-pinned input',()
   const exact='d74482b77770259a5cf18f4cd81a6e4b15264ce401431ef65d3e21530dbaebdb';
   assert.ok(mux.includes(exact));
   assert.ok(finish.includes(exact));
+  const v4o='219b9e21eba9aa77b473f6cfdcc28e7f7afd36d978e7cf37d970f63094856985';
+  assert.ok(mux.includes(v4o));
+  assert.ok(finish.includes(v4o));
+  assert.match(finish,/VERIFIED_CUTS/);
   assert.match(finish,/--check-model/);
   assert.match(finish,/--render/);
   assert.match(finish,/--check-cues/);
