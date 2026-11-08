@@ -264,6 +264,7 @@ export function prepareSubmissionCandidate({root=ROOT,v4oKitPath=null,inspectV4o
     mainBranchReleaseVerifiedLive:false,
     currentWorknovaReviewerSourceUrl:'https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/lead/paypal',
     currentWorknovaMainReleased:false,
+    defaultMainPromotionRequiredForDevpost:false,
     sourceBranchesLiveRechecked:false,
     externalSubmissionEligible:false,
     externalGates:assessment.externalGates,
@@ -273,6 +274,7 @@ export function prepareSubmissionCandidate({root=ROOT,v4oKitPath=null,inspectV4o
     '**No public YouTube link or Devpost receipt exists in this report. Do not publish without owner review and approval.**\n\n'+
     '- WORKNOVA reviewer source: https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/lead/paypal\n'+
     '- Earlier default-main source (Proofline branding): https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/main\n'+
+    '- Default-main promotion: OPTIONAL, NOT REQUIRED FOR DEVPOST (owner approval still required to change main)\n'+
     '- Local video: '+(video.filename||'NOT RECORDED ON THIS MACHINE')+'\n'+
     '- Private media integrity: '+video.status+'\n'+
     '- Public video URL: NOT PROVIDED\n- Devpost receipt: NOT SUBMITTED\n'+

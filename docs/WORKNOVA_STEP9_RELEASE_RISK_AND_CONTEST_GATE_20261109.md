@@ -1,0 +1,43 @@
+# WORKNOVA Step9 — 22 shared-file release delta and official submission-prerequisite audit
+Date: 2026-11-09 KST. Source comparison is between latest verified base snapshots: public `main@5243295f17cbc770fef35f9a6c0b905a1506e78e` and source `lead/paypal@4ac517f00facfa95aa424da241adb277f1724471`. These SHA values are pre-feature snapshots, **not** the subsequent release candidate. No automatic merge has been performed.
+
+## Official contest requirement and candidate selection
+
+Official rules: https://paypalaihackathon.devpost.com/rules . They require a **public source repository**, detectable open-source license and complete working reproduction instructions or a hosted working demo; public YouTube video under three minutes; PayPal Sandbox + AI project; accurate text and tool descriptions. No requirement that current source reside on the default branch is stated. GitHub repository metadata checked this session: `private=false`, `visibility=public`, `license.spdx_id=MIT`, `default_branch=main`. Source license is therefore recognized on repository root and the WORKNOVA `lead/paypal` is available as a public branch. This is a **source-location eligibility finding**, not an assertion the offline mock independently proves actual PayPal/Gemini integration to judges.
+
+**Two options:** A) Merge diverged `lead/paypal` to `main` before Devpost: default branding improves, but risks integration, requires explicit owner approval and merged-SHA regression rerun, not an official prerequisite. B) Keep `main` unchanged and submit the public `lead/paypal` URL with fully reproducible judge checkout: lower-risk/faster, fully consistent with the published source-location rule. **Selected option B for entry preparation; preserve A as owner-approved optional post-gate work.** Nothing was submitted or published externally.
+
+## Exact common-file delta inventory (22/22)
+
+| Shared changed path | Category | Risk review and release implication |
+| --- | --- | --- |
+| `.github/workflows/test.yml` | CI runner/test safety | Lead pins Ubuntu 24.04 for Playwright 1.56 ffmpeg and adds private no-provider video/ZIP tests. CI at feature `7e3a7198` succeeded; main differs. **Medium: preserve working CI and rerun at any merged SHA.** |
+| `.gitignore` | Build hygiene | Adds Python/cache ignores; no removal of existing ignores observed. Low. |
+| `HANDOFF.md` | Handoff | Public historical progress grew; all current instructions and secrets caveats preserved. Low functional, moderate public-content review burden. |
+| `README.md` | Judge docs | Names WORKNOVA and explicit current `lead/paypal` checkout; old main still Proofline. **Medium for judge correctness** if wrong branch. |
+| `STATUS.md` | Progress record | Large new history, not executable source. Low functional; historic source descriptions not automatically live checked. |
+| `docs/DEVPOST_FINAL_REVIEW_PACKET_EN_20261105.md` | Contest content | WORKNOVA English draft vs old main source; new Step9 says default-main promotion optional, warns live PayPal/Gemini unverified. **Medium for factual accuracy.** |
+| `docs/JUDGE_REPRODUCTION_EN.md` | Judge instructions | Current WORKNOVA brand, local Part1/Part2, no external calls, video ZIP path, explicit lead checkout. Medium. |
+| `package.json` | Entrypoints | Existing scripts retained, new Step2 owner gate and WORKNOVA video actions added. No default payment call. **Medium: judge `npm run demo` and `verify:local` CI.** |
+| `scripts/build_devpost_form_fields.mjs` | Release-copy guard | Current WORKNOVA source URL and unpublished authorization flags, including explicit optional-main status; false main-release claims fail closed. Medium. |
+| `scripts/pack_offline_reviewer.py` | Reviewer ZIP | Prefix/README names switched from Proofline to WORKNOVA; ZIP fresh extraction tested in CI. Medium. |
+| `scripts/prepare_submission_candidate.mjs` | Submission candidate | Recognizes hash-pinned private v4o and ZIP, never uploads/authorizes publication; output remains ignored. **Medium: no source of actual provider attestation.** |
+| `scripts/record_judge_demo.py` | Browser recording | Adds owner-controlled WORKNOVA recorder mode, no claims real provider traffic. **Medium: preserve no-publish and no-provider gates.** |
+| `src/owner_marketplace_ai_service.mjs` | AI authorization | Lead checks trusted actor/merchant again after an in-flight provider returns, marks one-shot UNKNOWN on revoked session, no blind repeat. **High-impact security logic; exact synthetic tests passed. Real provider not retested.** |
+| `src/worker_sandbox_get_transport.mjs` | PayPal Sandbox GET | Lead adds per-request absolute 1–10s deadline and redirect/URL checking for OAuth token read and GET response; guards uncooperative injected fetch/streams, no capture/create route. **High-impact API security logic; exact synthetic tests passed. Real provider not retested.** |
+| `tests/browser_portable_zip_e2e.py` | Browser CI | Reviewer ZIP prefix WORKNOVA; Linux Chromium successfully reproduces both parts. Low. |
+| `tests/devpost_form_draft.test.mjs` | Form regression | Rejects source misinformation and publish claims. Low. |
+| `tests/owner_marketplace_ai_service.test.mjs` | Authorization regression | New revoked-during-provider test ensures no persisted model result, no automatic rerun. Low. |
+| `tests/portable_reviewer_bundle_test.py` | Portable reviewer CI | Checks zip prefix and visible WORKNOVA name. Low. |
+| `tests/submission_candidate_local.test.mjs` | Evidence regression | Extended private v4o/ZIP integrity and source guard; no actual video in CI. Low. |
+| `web/innovation_dashboard.html` | Part2 browser UI | Changes WORKNOVA branding/CSS, adds visible editorial presentation; functional browser journeys CI PASS. **Medium UI regression surface; no production.** |
+| `web/offline_demo.html` | Part1 browser UI | WORKNOVA heading and logo styling, keeps offline-only messaging; Chromium CI PASS. Medium. |
+| `web/private_host_marketplace.html` | Private host UI | WORKNOVA branding rather than Proofline, signed-identity/CSRF/payment-not-authorized UI retained; auth and origin need real-host validation if ever deployed. Medium. |
+
+## Coverage, remaining risk and stop conditions
+
+- Exact common-file count 22; in the pre-feature tree there were 1 main-only file (`docs/ROLE_COORDINATION.md`), 76 lead-only files and 22 shared changed files; this inventory is **not** an audit of every line of the 76 new files or historic logs. Existing source tests/CI, not a new speculative whole-tree scanner, are the available content security baseline.
+- Prior feature `7e3a7198780315b270b88728e1319460f381917f` CI: [smoke #42521974381](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42521974381) SUCCESS and [contract #42521974331](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42521974331) SUCCESS, Linux Node 1224 PASS / 0 FAIL / 0 SKIP, Windows and Chromium both parts SUCCESS, optional Wrangler and default-speed video SKIPPED. New Step9 copy checks require new exact-feature CI before marking tested.
+- The prior no-ref 589-file preview tree was built before later documentation updates and must **not** be treated as current head. New snapshot/merged-SHA proof only if owner later authorizes main promotion. Existing [Draft PR #30](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/30) source SHA is stale; do not merge.
+- Remaining independent Devpost gates: current PayPal Sandbox + AI provider proof suitable for judges (historical owner-run evidence only), accurate actual functioning demo narration, 170s v4o owner visual signoff/final voice/SRT, public owner-approved YouTube, English Devpost owner-approved submission and receipt. No payments, service deployment, account permission or publication changed in this task.
+- Source/Devpost readiness is **NOT final project 100%**; estimated full-product score remains 79/100 until its evidence-weighted gate changes. Default-main promotion is **optional**, so it should not be a compulsory user task before submitting. Public GitHub and license verified via GitHub metadata; independently unauthenticated full-source download and external judging environment remain unverified.

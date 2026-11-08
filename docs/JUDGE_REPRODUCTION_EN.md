@@ -4,7 +4,7 @@
 
 ## Source branch for current WORKNOVA reviewer (public, not latest-main release)
 
-The latest WORKNOVA code and this guide live on the public `lead/paypal` branch. The public default `main@5243295f` continues to display the previous Proofline-branded README, even though it contains an earlier runnable two-part synthetic prototype and MIT root LICENSE. **For WORKNOVA review, explicitly `git switch lead/paypal`** as shown below. Do not claim that PR #28 released the later WORKNOVA code to `main`, or that a local offline judge demo verifies live PayPal/Gemini. Updating `main` is a separate owner-controlled release gate.
+The latest WORKNOVA code and this guide live on the public `lead/paypal` branch. The public default `main@5243295f` continues to display the previous Proofline-branded README, even though it contains an earlier runnable two-part synthetic prototype and MIT root LICENSE. **For WORKNOVA review, explicitly `git switch lead/paypal`** as shown below. Do not claim that PR #28 released the later WORKNOVA code to `main`, or that a local offline judge demo verifies live PayPal/Gemini. The official contest rules do **not** require the current source to be on the default branch: the project is public, the repository license is detected as MIT, and the current lead branch includes the judge setup steps. Updating `main` is optional source maintenance requiring separate owner approval, not a prerequisite for a Devpost entry. This does not waive the PayPal+AI functional project, video, or submission requirements.
 
 ## Optional read-only private v4o ZIP verification (not submission)
 

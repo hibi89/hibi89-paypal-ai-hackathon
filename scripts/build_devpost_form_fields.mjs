@@ -87,6 +87,8 @@ export function buildDevpostFormFields(source){
  if(!sourceAndDemo?.includes('**WORKNOVA reviewer source (public lead/paypal branch):** https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/lead/paypal')||
     !sourceAndDemo.includes('**Earlier public default source (main, Proofline-branded):** https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/main')||
     !sourceAndDemo.includes('the current WORKNOVA changes are not released to main')||
+    !sourceAndDemo.includes('Official rules do not require the latest WORKNOVA source on default main.')||
+    !sourceAndDemo.includes('GitHub identifies the repository as public with a root MIT license.')||
     !sourceAndDemo.includes('merged PR #28')||
     !sourceAndDemo.includes('NOT SUBMITTED'))
   fail('RELEASE_PREVIEW_PROVENANCE_REQUIRED');
@@ -103,6 +105,7 @@ export function buildDevpostFormFields(source){
   reviewSourceBranch:'lead/paypal',
   previousDefaultMainSourceUrl:'https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/main',
   currentWorknovaMainReleased:false,
+  defaultMainPromotionRequiredForDevpost:false,
   sourceBranchesLiveRechecked:false,
   hostedDemoUrl:null,publicYouTubeUrl:null,devpostReceiptUrl:null,
   reviewerInstructions:demo,
@@ -110,7 +113,7 @@ export function buildDevpostFormFields(source){
   historicalProviderEvidence:'OWNER_REPORTED_NOT_INDEPENDENTLY_REPRODUCED',
   offlineBrowserProviderCalls:0,actualPaymentAuthorized:false,
   ownerAuthorizedPublication:false,devpostSubmitted:false,
-  reviewNotice:'Editable LOCAL DRAFT. Earlier main source/LICENSE released via PR #28, but reviewer uses public lead/paypal WORKNOVA source. Latest main release, provider actions, YouTube and Devpost still require separate approval.'
+  reviewNotice:'Editable LOCAL DRAFT. Earlier main source/LICENSE via PR #28, current public lead/paypal WORKNOVA reviewer. Default-main promotion is optional for this contest, not a submission prerequisite. Actual provider, video and Devpost actions remain separately gated.'
  });
 }
 export function generateLocalDevpostDraft({root=ROOT,write=true}={}){

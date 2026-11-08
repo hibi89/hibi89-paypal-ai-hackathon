@@ -67,6 +67,7 @@ test('owner packet never claims official submission or provider verification',()
  assert.equal(packet.mainBranchRelease,'PUBLIC_MAIN_SOURCE_LICENSE_RECORDED_NOT_LIVE_RECHECKED');
  assert.equal(packet.mainBranchReleaseVerifiedLive,false);
  assert.equal(packet.currentWorknovaMainReleased,false);
+ assert.equal(packet.defaultMainPromotionRequiredForDevpost,false);
  assert.equal(packet.sourceBranchesLiveRechecked,false);
  assert.match(packet.currentWorknovaReviewerSourceUrl,/\/tree\/lead\/paypal$/);
  assert.equal(packet.finalEnglishCopy,'OWNER_REVIEW_COPY_VALIDATED_NOT_PUBLISHED');
@@ -75,6 +76,7 @@ test('owner packet never claims official submission or provider verification',()
  assert.match(md,/tree\/main/);
  assert.match(md,/tree\/lead\/paypal/);
  assert.match(md,/Earlier default-main source \(Proofline branding\)/);
+ assert.match(md,/Default-main promotion: OPTIONAL, NOT REQUIRED FOR DEVPOST/);
  assert.doesNotMatch(md,/Main branch release: OWNER APPROVAL REQUIRED/);
  assert.match(md,/NOT a live lookup/);
  assert.match(md,/owner-reported historical test, not the synthetic video/);

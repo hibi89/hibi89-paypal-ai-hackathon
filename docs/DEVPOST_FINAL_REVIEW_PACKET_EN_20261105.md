@@ -13,6 +13,8 @@ Help newcomers find an opportunity, agree on a clear scope, and keep AI agents u
 ## Source and demo
 - **WORKNOVA reviewer source (public lead/paypal branch):** https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/lead/paypal
 - **Earlier public default source (main, Proofline-branded):** https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/main
+- **Public repository / license:** GitHub identifies the repository as public with a root MIT license. The official submission rules require public source, a visible open-source license and a runnable judge build, but do not require the latest code on the default branch. Current WORKNOVA is available from the public lead/paypal branch using the explicit checkout below.
+- **Optional main promotion:** Official rules do not require the latest WORKNOVA source on default main. Promoting current WORKNOVA to main remains a separately authorized optional source-maintenance decision, not a Devpost submission blocker.
 - **Default-branch history:** merged PR #28 at `28a370fd` published runnable two-part source and root MIT LICENSE to main, with all 514 release-preview blobs matched. However, the current WORKNOVA changes are not released to main: the default branch retains its earlier Proofline-branded README while `lead/paypal` has the current WORKNOVA UI and reviewer guide. This previous source publication is **not** a hosted application, live provider action, public video or Devpost submission.
 - **Website / hosted production:** NOT DEPLOYED. The current demo runs on a loopback-only address on the reviewer's computer. The source README and `docs/JUDGE_REPRODUCTION_EN.md` describe the exact local route.
 - **Public demonstration video:** OWNER TO ADD AFTER APPROVED PUBLIC YOUTUBE UPLOAD.
@@ -91,7 +93,8 @@ Open the printed `http://127.0.0.1:PORT` on that computer; visit `/demo/innovati
 - [ ] Latest exact-source Linux/Windows/local-browser and video media-length verification completed
 - [ ] Owner confirms accurate provider-evidence boundaries and final wording
 - [x] Earlier default-main source/license release: PR #28 merged at `28a370fd` (Proofline-era, not the latest WORKNOVA reviewer build or Production deployment)
-- [ ] Owner approves releasing the exact tested WORKNOVA `lead/paypal` source to default `main`; no stale PR merge or force-push
+- [x] Current WORKNOVA code is on the public `lead/paypal` branch with reproducible local judge instructions; GitHub reports public repository and root MIT license
+- [ ] Optional only, not a Devpost submission prerequisite: owner may separately approve promoting the exact tested WORKNOVA source to default `main`; no stale PR merge or force-push
 - [ ] Owner visually approves and publishes the accurate public YouTube video **under 180 seconds**
 - [ ] Owner explicitly approves and submits the English Devpost form; real confirmation URL recorded
 

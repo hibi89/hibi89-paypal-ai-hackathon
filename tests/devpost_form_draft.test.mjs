@@ -23,6 +23,8 @@ test('real English draft extracts full editable Devpost fields while remaining u
  assert.match(r.previousDefaultMainSourceUrl,/\/tree\/main$/);
  assert.equal(r.reviewSourceBranch,'lead/paypal');
  assert.equal(r.currentWorknovaMainReleased,false);
+ assert.equal(r.defaultMainPromotionRequiredForDevpost,false);
+ assert.match(r.reviewNotice,/Default-main promotion is optional/);
  assert.equal(r.sourceBranchesLiveRechecked,false);
  assert.equal(r.ownerAuthorizedPublication,false);
  assert.equal(r.offlineBrowserProviderCalls,0);
@@ -50,6 +52,8 @@ test('cannot transform tampered or prematurely published copy into an owner-read
   draft.replace('git switch lead/paypal','git switch main'),
   draft.replace('main still presents the older Proofline branding','main now shows final WORKNOVA'),
   draft.replace('the current WORKNOVA changes are not released to main','the current WORKNOVA changes are released to main'),
+  draft.replace('Official rules do not require the latest WORKNOVA source on default main.','Official rules require the latest WORKNOVA source on default main.'),
+  draft.replace('GitHub identifies the repository as public with a root MIT license.','GitHub identifies the repository as private without a license.'),
   draft.replace('**WORKNOVA reviewer source (public lead/paypal branch):**','**Working source (public default branch):**'),
   draft.replace('merged PR #28','published production')
  ])assert.throws(()=>buildDevpostFormFields(altered));
