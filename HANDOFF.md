@@ -1,3 +1,16 @@
+## 2026-11-08 KST — WORKNOVA v4c private visual recut / voice gate still open
+
+1. **Goal:** Correct Churn scene in premium v4b while preserving all approved source footage/voice and preparing five Part2 af_heart cues.
+2. **Done:** New separate 170s v4c film from private ZIP: Churn film 135–144s now uses actual offline retention proposal UI at source 101.5–105.6s; source MP4/ZIP/v3/owner-liked WebM unmodified. Exact new film SHA256 `96941f892dc91f4c7508b2d70fdec67ba93acb2738a71b997e781c6dd198d7a8` 39,744,015 bytes; Part2 SRT still DRAFT. Private mux allowlist can accept v4b/v4c, same scene boundaries.
+3. **Tests:** v4c ffprobe 170.000s, 1920x1080 25fps 4,250 frames, whole ffmpeg decode PASS; original AAC packet MD5 identical `2959cc9c1f5ee996edaefb3b06a147ea`; 13 visual transition samples checked. Prior cue/CI SHA `97d5259c` Actions #42432027612 + #42432027538 SUCCESS; this follow-up script change requires CI verification separately. No full ears-on owner listening.
+4. **Status:** New private video technically verified, **NOT FINAL**, new 5-scene Kokoro narration still BLOCKED by absent pinned model/voicepack; bilingual transcript timing not voice-aligned. Overall 79/100, RELEASE HOLD.
+5. **Errors:** First stream-copy `-t 135` gave 3377 instead of 3375 frames, resulting 170.08s. Fixed with `-frames:v 3375`; no re-run of bad extraction. Previous v4b Churn showed Invoice pixels, now corrected. No external TTS substitution.
+6. **Repo/branch:** `hibi89/hibi89-paypal-ai-hackathon`/`lead/paypal`; prev `97d5259cf24a1b97c310e7d29703d6994ac60afd`, new commit SHA check. Source/edit spec `docs/WORKNOVA_V4C_CHURN_RECUT.md`, `docs/WORKNOVA_PART2_V4B_AUDIO_PLAN.md`.
+7. **Runtime:** v4c generated private in ChatGPT FFmpeg scratch. Public Production/YouTube/Devpost not verified or run. Pinned Kokoro model remains owner-local requirement; no downloads.
+8. **Backup:** Private Library `/WORKNOVA PayPal Hackathon/2026-11-08 Handoff/WORKNOVA_Handoff_20261108.zip` (original ZIP immutable). New v4c downloadable separate editor delta; media not pushed to GitHub, no secrets/model/DB included.
+9. **Next:** Check new CI; on owner Windows confirm Kokoro hash-pinned model/voicepack, render five new cues, private mux onto exact v4c, align subtitles from actual audio, full ears-on and pixel QA, require owner signoff and separate approval before publishing.
+10. **KST/source evidence:** 2026-11-08. User requested iterative premium video work; no third-party API calls/payment/publication/deployment. Confirm current branch head after GitHub write.
+
 ## 2026-11-08 KST — WORKNOVA v4b Part2 audio-plan correction / new chat continuation
 
 1. **Goal:** Resume Part2 Kokoro af_heart speech from owner-approved WORKNOVA v4b without touching original 170s video or older voice.

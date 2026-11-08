@@ -19,3 +19,8 @@
 4. Re-time subtitles from the actual voice, inspect/fully listen all 170s, confirm all five authentic offline UI scenes, visual transitions, safe evidence labels. Never claim Playwright interactions are human clicks.
 
 **Release:** 79/100 previous verified weighted completion, no new external provider checks, production or payment; YouTube/Devpost/public release HOLD. Existing functional CI at `c75b51f5` 1203/1203 applies to code before this audio change, not to a new synthesis/render.
+
+## 2026-11-08 KST — v4c Churn visual correction completed
+- New private v4c 170.000s/4,250-frame H.264/AAC film, SHA256 `96941f892dc91f4c7508b2d70fdec67ba93acb2738a71b997e781c6dd198d7a8`, **not stored in GitHub**. The old v4b cut SHA `abe1...` and original owner voice retained.
+- Only Churn scene 135–144s replaced from original offline WorkNova capture 101.5–105.6s. Full decoder PASS, clip/contact-sheet sampling PASS, entire AAC packet MD5 unchanged `2959cc9c1f5ee996edaefb3b06a147ea`. Visual edit does not add neural speech or alter actual PayPal subscription.
+- Mux accepts SHA-pinned v4b **or** v4c because same five scene windows; rejects all unverified 170s files. No audio render or owner ears-on QA claimed. See `docs/WORKNOVA_V4C_CHURN_RECUT.md`.

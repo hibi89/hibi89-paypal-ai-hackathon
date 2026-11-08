@@ -113,7 +113,8 @@ test('WORKNOVA v4b five neural cues fit each actual 170s scene',()=>{
   }
   assert.match(src,/PART2_CUE_OUTSIDE_ACTUAL_V4B_SCENE/);
   assert.match(src,/REFERENCE_CUT_SHA='abe1b4094f0d11/);
-  assert.match(mux,/V4B_REFERENCE_VIDEO_SHA_REQUIRED__NEW_CUT_NEEDS_RETIMING/);
+  assert.match(mux,/VERIFIED_V4B_V4C_VIDEO_SHA_REQUIRED__NEW_CUT_NEEDS_RETIMING/);
+  assert.match(mux,/96941f892dc91f4c7508b2d70fdec67ba93acb2738a71b997e781c6dd198d7a8/);
   assert.match(mux,/between\(t,104,154\).*eval=frame/);
   assert.doesNotMatch(mux,/between\(t,108,152\)/);
 });

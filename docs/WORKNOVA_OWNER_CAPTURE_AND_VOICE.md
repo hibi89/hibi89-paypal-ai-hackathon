@@ -31,7 +31,8 @@ Source model/voicepack in output/voice-models/ must pass pinned hashes, else STO
 This writes a new 24kHz/170-second WAV with five scene-aligned voice cues at
 104.40-153.50 seconds for the exact v4b reference cut (SHA256 `abe1b409...`).
 It includes a pinned scene-plan ID and reference SHA in the sidecar. The mux
-rejects a different 170s cut rather than silently shifting voice; retime the
+rejects all but the exact SHA-verified v4b or v4c cut (which has identical scene
+bounds) rather than silently shifting voice; retime the
 five cues explicitly when editing a new version. Never claim draft subtitles
 are an independently verified speech transcript.
 New footage requires final retiming and editor mix. No robotic eSpeak fallback,

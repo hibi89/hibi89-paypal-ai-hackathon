@@ -1,3 +1,9 @@
+## 2026-11-08 KST — WORKNOVA private v4c Churn recut verified, old v4b untouched
+
+- Original WorkNova v4b/auto capture in private Library was hash checked. Replaced inaccurate Churn Saver visual at film 135–144s with actual original OFFLINE-synthetic retention proposal UI 101.5–105.6s. New private v4c (not in GitHub): **170.000s, 1920x1080, 4,250 frames, H.264/AAC, SHA256 `96941f892dc91f4c7508b2d70fdec67ba93acb2738a71b997e781c6dd198d7a8`**. Full ffmpeg decode exit0, several transition/frame samples PASS; AAC packet MD5 identical to v4b `2959cc9c1f5ee996edaefb3b06a147ea`. Initial splice erroneously added 2 frames (3377 instead of 3375 before cut); corrected after direct frame-count audit. Source original/v4b/v3/backups untouched. See `docs/WORKNOVA_V4C_CHURN_RECUT.md`.
+- Exact code SHA `97d5259cf24a1b97c310e7d29703d6994ac60afd` audio cue alignment CI: full offline tests Actions #42432027612 SUCCESS, smoke #42432027538 SUCCESS. Follow-up mux input allowlist supports hash-pinned v4b/v4c (same 5 scene windows); this follow-up commit needs its own CI check.
+- No new af_heart Part2 voice: required pinned local model files absent. Existing AAC retained; SRT is only a narrative DRAFT. Full ears-on/video/subtitle owner QA NOT VERIFIED, production/payment/public release NOT PERFORMED. Prior 79/100 overall evidence completion unchanged, RELEASE HOLD. New v4c binary available as downloadable private artifact, not GitHub media.
+
 ## 2026-11-08 KST — WORKNOVA v4b Part2 voice-timing correction (source only, private)
 
 - Recovered and independently SHA-checked persistent v4b source archive (27 entries). Found that prior five Kokoro cues started at 108.35/116.35/125.35/134.35/143.35s, inconsistent with actual v4b scene windows 104/112/123/135/144s. Updated local-only narration plan to 104.40/112.45/123.45/135.35/144.45s, concise truthful demo text and bilingual SRT DRAFT.
