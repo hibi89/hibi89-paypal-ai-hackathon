@@ -101,3 +101,19 @@ test('Windows WORKNOVA single-run script only records offline footage and local 
   assert.doesNotMatch(commands,/npm publish|gh release|git push|youtube|devpost\.com|--live|--capture-payment/i);
   assert.ok(script.includes('RELEASE HOLD'));
 });
+
+// v4b regression: scene starts and narration were previously ~4s out of sync.
+test('WORKNOVA v4b five neural cues fit each actual 170s scene',()=>{
+  const src=read('scripts/worknova_part2_neural.py');
+  const mux=read('scripts/worknova_private_voice_mux.py');
+  for(const [name,start,stop] of [['delegate',104.4,111.6],['a2a',112.45,122.5],
+                                  ['gift',123.45,134.5],['churn',135.35,143.5],
+                                  ['invoice',144.45,153.5]]){
+    assert.ok(src.includes("('"+name+"',"+start+","+stop+","),'cue missing/outdated: '+name);
+  }
+  assert.match(src,/PART2_CUE_OUTSIDE_ACTUAL_V4B_SCENE/);
+  assert.match(src,/REFERENCE_CUT_SHA='abe1b4094f0d11/);
+  assert.match(mux,/V4B_REFERENCE_VIDEO_SHA_REQUIRED__NEW_CUT_NEEDS_RETIMING/);
+  assert.match(mux,/between\(t,104,154\).*eval=frame/);
+  assert.doesNotMatch(mux,/between\(t,108,152\)/);
+});

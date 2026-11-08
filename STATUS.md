@@ -1,3 +1,10 @@
+## 2026-11-08 KST — WORKNOVA v4b Part2 voice-timing correction (source only, private)
+
+- Recovered and independently SHA-checked persistent v4b source archive (27 entries). Found that prior five Kokoro cues started at 108.35/116.35/125.35/134.35/143.35s, inconsistent with actual v4b scene windows 104/112/123/135/144s. Updated local-only narration plan to 104.40/112.45/123.45/135.35/144.45s, concise truthful demo text and bilingual SRT DRAFT.
+- Mux now rejects wrong video hash/cue-plan to prevent silently adding speech to a different cut; bed duck window now 104–154s with per-frame evaluation. Existing model/voice SHA pin and no-network/no-publish guards preserved. Contact-sheet/source sampling identified a possible Churn/Invoice visual mismatch at ~138s; visual refinement pending independent review.
+- **Voice status:** NO NEW AUDIO GENERATED (pinned Kokoro FP16 af_heart model and voicepack not available in Library ZIP). Speech timing is a script/cue plan only; synthesis, transcript-based subtitles, full ears-on QA, owner approval and external release NOT VERIFIED. Overall 79/100, RELEASE HOLD. New code Node/CI result must be checked separately after commit; previous 1203/1203 PASS belongs to c75b51f5 only.
+- Source of truth: `docs/WORKNOVA_PART2_V4B_AUDIO_PLAN.md`, `docs/WORKNOVA_PART2_V4B_CUES_DRAFT_en_ko.srt`; original v4b, v3, original owner-approved WebM remain intact in private Library.
+
 ## 2026-11-08 KST — WORKNOVA full media handoff archived in persistent Library
 
 - Saved complete private film handoff ZIP (27 entries, 131,806,056 bytes, SHA256 `b9b2bdeafeaed5ab9c06a4432e3d12f38c1ab8beeab99b44102d5cd76fb0987a`) to **`/WORKNOVA PayPal Hackathon/2026-11-08 Handoff/WORKNOVA_Handoff_20261108.zip`**. Both upload and Library re-list SUCCESS; archive `ZipFile.testzip=None`. Includes v4b reference, v3 fallback, owner-liked Kokoro original, WorkNova auto source+manifest, SVG brand, subtitles drafts, editing scripts, README and hashes. Earlier v4b/v3 and auto WebM also already stored as individual Library files at root.

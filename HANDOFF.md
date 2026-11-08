@@ -1,3 +1,16 @@
+## 2026-11-08 KST — WORKNOVA v4b Part2 audio-plan correction / new chat continuation
+
+1. **Goal:** Resume Part2 Kokoro af_heart speech from owner-approved WORKNOVA v4b without touching original 170s video or older voice.
+2. **Done:** Read latest handoff & original 131.8MB private Library pack, checked SHA/ZIP and v4b manifesto. Rewrote five concise source narration cues to current v4b scenes (104.40,112.45,123.45,135.35,144.45s), drafted bilingual SRT. Mux now rejects stale cue/video combinations and uses 104–154s per-frame bed ducking. See `docs/WORKNOVA_PART2_V4B_AUDIO_PLAN.md`.
+3. **Validation:** Source archive ZIP integrity PASS, original archive SHA matches `b9b2bdea...`; v4b metadata verified 170s/1920x1080 H264/AAC. FFmpeg per-frame duck expression smoke PASS; code/CI verification for this change separate after commit. Actual new speech, subtitle-to-voice alignment, full auditory and Production validation NOT VERIFIED.
+4. **Status:** Part2 voice **plan prepared only**; pinned owner's Kokoro model/voicepack missing, so rendering blocked. Independent inspection found Churn scene near 138s likely using Invoice pixels; visual recut candidate pending. Product 79/100, RELEASE HOLD.
+5. **Decisions/errors:** Old cues were attached to earlier cut, not v4b; no blind speech mux. Preserve approved af_heart/click style, no OS/eSpeak substitute or model downloads; no provider calls/payments/publication.
+6. **Repo:** `hibi89/hibi89-paypal-ai-hackathon` / `lead/paypal`; base `f5982d888514f7460960add6fc3983b3b353fa3e`; actual new SHA to check after commit. Main/PR release untouched.
+7. **Runtime:** Windows local pinned model/voicepack + ffmpeg required for new output; v4b private preview and original sources in Library `/WORKNOVA PayPal Hackathon/2026-11-08 Handoff/WORKNOVA_Handoff_20261108.zip`; Production SHA/URL NOT VERIFIED.
+8. **Backups/security:** Immutable original source ZIP, v4b, v3, favorite 179.48s WebM; no media/model/secret embedded in GitHub. Outputs unique private files under ignored output/videos.
+9. **Next:** Verify code CI; recover locally hash-pinned Kokoro files (no download without consent), generate five new WAV cues, check model/audio SHA, mux exact v4b, retime subtitles; fix Churn visuals in a separate new version; full 170s ears-on QA before any public upload.
+10. **Updated:** 2026-11-08 KST. Only source/script/docs edits at the commit for this note; publication, provider, deploy and real user test not part of this work.
+
 ## 2026-11-08 KST — WORKNOVA new-chat persistent Library media archive SAVED
 
 1. **Goal/scope:** Preserve the owner-approved WORKNOVA premium film treatment and every critical media/editor source when opening a new chat, without committing large media or secrets to GitHub. Final PayPal AI Hackathon entry <3m, WorkNova identity, two-part product.

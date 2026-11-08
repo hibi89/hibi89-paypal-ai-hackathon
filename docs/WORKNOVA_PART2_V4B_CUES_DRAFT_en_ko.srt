@@ -1,0 +1,24 @@
+1
+00:01:44,400 --> 00:01:51,600
+Delegate a limited task with consent and an expiry. No payment authority is granted.
+범위와 만료 시점을 지정해 작업을 위임합니다. 결제 권한은 부여되지 않습니다.
+
+2
+00:01:52,450 --> 00:02:02,500
+Buyer and seller agents exchange fictional offers, counteroffers and terms. Human review stays in control.
+구매자·판매자 에이전트가 가상 제안과 역제안을 교환합니다. 최종 통제권은 사람에게 있습니다.
+
+3
+00:02:03,450 --> 00:02:14,500
+Gift Finder checks a sample catalog against the budget and constraints. Recommendations remain local demonstrations.
+기프트 파인더가 예산과 조건에 맞춰 샘플 상품을 비교합니다. 추천은 로컬 데모입니다.
+
+4
+00:02:15,350 --> 00:02:23,500
+Churn Saver drafts a retention offer for review. No live PayPal subscription is changed.
+이탈 방지 제안을 검토용으로 작성합니다. 실제 PayPal 구독은 변경하지 않습니다.
+
+5
+00:02:24,450 --> 00:02:33,500
+Invoice and Dispute Copilot organizes local evidence into a draft. A person reviews before any action.
+인보이스·분쟁 코파일럿이 로컬 증거를 초안으로 정리합니다. 실행 전 사람이 검토합니다.

@@ -28,8 +28,12 @@ output/videos/. No existing file is overwritten.
 Generate five new offline neural narration scenes with approved Kokoro FP16 af_heart:
   npm run worknova:video:voice:part2
 Source model/voicepack in output/voice-models/ must pass pinned hashes, else STOP.
-This writes a new 24kHz/170-second WAV with voice at 108.35-152.00 seconds
-aligned with the PRIOR 170s PRIVATE REVIEW CUT ONLY, plus SHA256 report.
+This writes a new 24kHz/170-second WAV with five scene-aligned voice cues at
+104.40-153.50 seconds for the exact v4b reference cut (SHA256 `abe1b409...`).
+It includes a pinned scene-plan ID and reference SHA in the sidecar. The mux
+rejects a different 170s cut rather than silently shifting voice; retime the
+five cues explicitly when editing a new version. Never claim draft subtitles
+are an independently verified speech transcript.
 New footage requires final retiming and editor mix. No robotic eSpeak fallback,
 model download, new provider calls, PayPal Capture, new cost or cloud upload.
 

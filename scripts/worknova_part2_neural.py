@@ -22,25 +22,36 @@ ROOT=Path(__file__).resolve().parents[1]
 MAX_FILM_SECONDS=170.0
 MODEL_SHA='f3a290d384fbb27966d462905c71a46cef9e5fd00516b40df32a0b4afe77ac96'
 VOICE_SHA='bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d'
+VOICE_PLAN_ID='worknova-v4b-part2-20261108'
+REFERENCE_CUT_SHA='abe1b4094f0d11b526a5c467a1b79939c18a45c9f6adab4524ac66d8337c2494'
+# These windows are from the verified v4b 170s scene manifest, not the older cut.
+SCENE_WINDOWS={'delegate':(104.0,112.0),'a2a':(112.0,123.0),
+               'gift':(123.0,135.0),'churn':(135.0,144.0),'invoice':(144.0,154.0)}
 CUES=(
-    ('delegate',108.35,116.0,'A person delegates a specific task. Their consent expires and never authorizes payment.'),
-    ('a2a',116.35,125.0,'Buyer and seller agents negotiate fictional terms. Every offer and counteroffer is recorded.'),
-    ('gift',125.35,134.0,'Gift Finder compares sample or owner-provided items against the requested budget.'),
-    ('churn',134.35,143.0,'Churn Saver proposes a retention offer. It cannot change an actual PayPal subscription.'),
-    ('invoice',143.35,152.0,'Invoice and Dispute Copilot drafts a case from local evidence for human review.'),
+    ('delegate',104.4,111.6,'Delegate a limited task with consent and an expiry. No payment authority is granted.'),
+    ('a2a',112.45,122.5,'Buyer and seller agents exchange fictional offers, counteroffers and terms. Human review stays in control.'),
+    ('gift',123.45,134.5,'Gift Finder checks a sample catalog against the budget and constraints. Recommendations remain local demonstrations.'),
+    ('churn',135.35,143.5,'Churn Saver drafts a retention offer for review. No live PayPal subscription is changed.'),
+    ('invoice',144.45,153.5,'Invoice and Dispute Copilot organizes local evidence into a draft. A person reviews before any action.'),
 )
 
 
 def check_cues():
     prior=0.0
+    if tuple(x[0] for x in CUES)!=tuple(SCENE_WINDOWS):
+        raise ValueError('V4B_SCENE_COUNT_OR_ORDER_DRIFT')
     for name,start,end,words in CUES:
         if not name or not 0<=prior<=start<end<=MAX_FILM_SECONDS or not 25<=len(words)<=120:
             raise ValueError('INVALID_PART2_CUE_SEQUENCE')
         if end-start<6.0:
             raise ValueError('PART2_CUE_TOO_SHORT')
+        scene_start,scene_end=SCENE_WINDOWS[name]
+        if not (scene_start+0.25<=start<end<=scene_end-0.25):
+            raise ValueError('PART2_CUE_OUTSIDE_ACTUAL_V4B_SCENE__'+name)
         prior=end
     return {'status':'WORKNOVA_FIVE_AGENT_CUES_VALID','count':len(CUES),
         'film_seconds':MAX_FILM_SECONDS,'scenes':[x[0] for x in CUES],
+        'cue_plan_id':VOICE_PLAN_ID,'reference_cut_sha256':REFERENCE_CUT_SHA,
         'provider_calls':0,'published':False}
 
 
@@ -137,6 +148,7 @@ def render(model_dir:Path,out_dir:Path):
     body={'status':'PRIVATE_WORKNOVA_PART2_KOKORO_READY__NOT_MIXED',
           'voice':'af_heart','engine':'local Kokoro ONNX FP16','audio_seconds':170.0,
           'sample_rate':sr,'cue_count':len(cue_report),'cues':cue_report,
+          'cue_plan_id':VOICE_PLAN_ID,'reference_cut_sha256':REFERENCE_CUT_SHA,
           'sha256':file_hash(dest),'bytes':dest.stat().st_size,
           'source_model_sha256':MODEL_SHA,'source_voicepack_sha256':VOICE_SHA,
           'provider_calls':0,'payments':0,'uploaded':False,'owner_approved_for_release':False,

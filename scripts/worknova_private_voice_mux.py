@@ -51,6 +51,10 @@ def validate(video:Path,wav:Path):
         [x.get('scene') for x in report.get('cues',[]) if isinstance(x,dict)]!=
           ['delegate','a2a','gift','churn','invoice'] or
         report.get('status')!='PRIVATE_WORKNOVA_PART2_KOKORO_READY__NOT_MIXED' or
+        report.get('cue_plan_id')!='worknova-v4b-part2-20261108' or
+        report.get('reference_cut_sha256')!='abe1b4094f0d11b526a5c467a1b79939c18a45c9f6adab4524ac66d8337c2494' or
+        [x.get('at_seconds') for x in report.get('cues',[]) if isinstance(x,dict)]!=
+          [104.4,112.45,123.45,135.35,144.45] or
         report.get('voice')!='af_heart' or report.get('audio_seconds')!=170.0 or
         report.get('sample_rate')!=24000 or report.get('cue_count')!=5 or
         report.get('provider_calls')!=0 or report.get('payments')!=0 or
@@ -58,6 +62,8 @@ def validate(video:Path,wav:Path):
         report.get('owner_approved_for_release') is not False or
         report.get('sha256')!=sha256(wav)):
         raise ValueError('PART2_KOKORO_PROVENANCE_OR_SHA_MISMATCH')
+    if sha256(video)!='abe1b4094f0d11b526a5c467a1b79939c18a45c9f6adab4524ac66d8337c2494':
+        raise ValueError('V4B_REFERENCE_VIDEO_SHA_REQUIRED__NEW_CUT_NEEDS_RETIMING')
     v=probe(video);a=probe(wav)
     vd=float(v['format']['duration']);ad=float(a['format']['duration'])
     if abs(vd-170)>0.10 or abs(ad-170)>0.10:
@@ -83,10 +89,10 @@ def mux(video:Path,wav:Path,out_dir:Path):
     if dest.exists() or sidecar.exists() or dest.resolve() in (video.resolve(),wav.resolve()):
         raise FileExistsError('OUTPUT_SOURCE_COLLISION_STOP')
     # The existing 170s cut has original ambient music and Part1 voice. Part2
-    # scenes currently have no voice; duck bed for 108s..152s and add speech.
+    # scenes currently have no voice; duck bed for 104s..154s and add speech.
     # A limiter avoids introducing digital clipping without increasing speech speed.
     filters=("[0:a]aresample=48000,aformat=channel_layouts=stereo,"
-             "volume='if(between(t,108,152),0.60,1)'[bed];"
+             "volume='if(between(t,104,154),0.60,1)':eval=frame[bed];"
              "[1:a]aresample=48000,aformat=channel_layouts=stereo,volume=1.0[narr];"
              "[bed][narr]amix=inputs=2:duration=first:dropout_transition=0:normalize=0,"
              "alimiter=limit=0.90[out]")
