@@ -21,8 +21,6 @@ jobs:
         run: python3 render_master_progress.py --check
       - name: Offline Node regression tests
         run: npm test
-      - name: Git-tracked public-release source and secret-pattern scan (offline only)
-        run: npm run preflight:release:source
       - name: Read-only local MVP restart preflight (no credentials or provider calls)
         run: npm run mvp:status
       - name: One-command full marketplace to payment mock MVP (no provider calls)

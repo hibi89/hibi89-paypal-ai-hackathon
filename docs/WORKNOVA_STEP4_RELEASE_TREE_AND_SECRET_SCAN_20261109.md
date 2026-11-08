@@ -1,27 +1,28 @@
-# WORKNOVA Step4 — Public release read-only source tree and credentials scan (2026-11-09 KST)
+# WORKNOVA Step4 — source release audit and Stop/Pivot result (2026-11-09 KST)
 
-## Grounded branch trees
-- Checked `main@5243295f17cbc770fef35f9a6c0b905a1506e78e`: **514 Git blobs**.
-- Checked `lead/paypal@6c064de96e2e8e880668ddf04f61b4400922e048`: **584 Git blobs / 5,253,483 Git-reported bytes**; recursive tree `truncated=false`.
-- Exact Git tree path/blob SHA comparison (not ahead/behind commits): **1 main-only path `docs/ROLE_COORDINATION.md`**; **71 lead-only paths**, **20 same-path changed blob SHAs**; no unauthorized main update. This is more precise than prior Git compare's 117 merge-base changed paths.
-- No tracked filename with `.env` (except documented safe `.env.example` if present), `.sqlite`, `.db`, private key extensions, mp4/WebM/WAV or ZIP in lead tree. This is filename-only, not a secret content guarantee.
+## Verified Git tree comparison
 
-## Alternatives and implementation
-A. Manually inspect 584 files in chat: expensive, unrepeatable, hard to regression test.
-B. **Selected:** no-network tracked source scan in CI using `git ls-files -z --cached`, checking path traversal/symlink/size/binary and high-confidence credential signatures plus explicitly named secret literal assignments. Scans Git-tracked files including docs, source, tests, fixtures; never prints matched values, only file path and classification. New `scripts/release_source_safety.mjs`, `tests/release_source_safety.test.mjs`, `npm run preflight:release:source` and CI step in existing Linux offline workflow.
+- Public `main@5243295f17cbc770fef35f9a6c0b905a1506e78e`: **514 tracked blobs**.
+- Previously green development `lead/paypal@6c064de96e2e8e880668ddf04f61b4400922e048`: **584 tracked blobs**, GitHub tree `truncated=false`, **5,253,483 bytes**.
+- Exact path/blob SHA comparison: `main`-only **1 path** `docs/ROLE_COORDINATION.md`; lead-only **71** paths, common paths with different blobs **20**. Merge histories diverge, so Draft PR #30 `00616ee6` cannot be assumed current.
+- Tracked filename inventory contained **no** .env, SQLite DB, private-key extensions, MP4/WebM/WAV, ZIP or binary secret artifact paths. **This filename inventory does NOT prove all source contents are free of secrets.**
+- Public `main` remains unchanged and root MIT LICENSE continues to exist. No public deployment, PayPal/Gemini provider call, payment, video publish or Devpost submit in this step.
 
-## Scope and limits
-- Detects PEM private keys, GitHub/Google/AWS/Stripe/npm/Slack tokens, long bearer credentials, named provider secret string literals; allows obvious synthetic fake fixture tokens. Flagged path/classification never authorizes publication or overrides private human review.
-- Does **not** inspect historical Git commits, GitHub Actions secrets, owner private Windows files, actual account billing, third-party current access, business/personal data semantics, or guarantee detection of every possible secret string. False positives require code/data review, never suppress unverified real credentials.
-- Tests construct disposable fake token shapes in temporary directories; no real credentials. The script takes no CLI flags, performs no network, no provider requests, no deployment, no payment, no tracked file mutations, and returns exit code 2 on failure.
-- Isolated Node safety tests locally 8/8 PASS before GitHub commit. Full-branch 584 tracked-file content scan must run under exact GitHub SHA CI and report separate result: **pending at this pre-commit checkpoint**.
-- Existing public `main` and stale Draft PR #30 unchanged. Never auto-merge, force push, create branch, deploy, publish YouTube or submit Devpost without user approval.
-- Owner actions are batched at final gate per explicit instruction. Existing private v4o 170s video and original approved af_heart remain unchanged. Full product previously estimated **79%**; no automatic increase without observed completion.
+## Security scan experiments and observed outcomes
 
-## Next
-After exact-SHA scan, reconcile findings without echoing secret content. If zero high-confidence findings, mark only `CI_TRACKED_SOURCE_HIGH_CONFIDENCE_SCAN_PASS` (NOT a comprehensive audit). Continue safe release-preview scope/security review and Devpost English evidence alignment before requesting batched owner action.
+Compared (A) manual review of 584 blobs, slow and not repeatable, against (B) a new read-only Git-tracked content scanner (predictable, CI driven). Selected experimental (B), but **not released**:
 
-## First CI failure and bounded correction
+1. First feature `d5f1dae04364706d0b24f355021c219455f804e2`: `npm run preflight:release:source` scanned **587 tracked files, 5,265,117 bytes** in Linux CI; it blocked **3 existing tests** as `HARD_CODED_API_SECRET_LITERAL` because their values were intentionally synthetic PRIVATE_/NEVER_ fixtures. Ordinary Node regression tests passed; [CI #42518066661](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42518066661) Linux `test` FAILURE at newly added scan; smoke [#42518066586](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42518066586) SUCCESS. No secret value printed.
+2. One improved retry `4bf37cb079db496ccf4569aed5eb7660b9683e2c`: exempted only explicit fake PRIVATE_/NEVER_ strings under `tests/`, preserving production fail-close; isolated 9/9 PASS and source SHA verified. But newly added test literal was in turn flagged by the project's **pre-existing public-source credential scanner** in both Windows and Linux Node CI. [CI #42518346736](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42518346736) `test` and Windows jobs FAIL at existing `public source has no recognizable embedded secret signatures` / `Windows public-source secret scan regression`. The detected string was a **synthetic test fixture**, not established as a real exposed key.
+3. **STOP & PIVOT:** do not repeat the same scanner/fixture approach for a third CI run. Restore the earlier verified application tree with a **new normal forward commit** (no force-push or rewritten Git history). The experimental scanner, package command, workflow addition and scanner tests are NOT included in the restored tree. Retain this evidence-only report, STATUS and HANDOFF to prevent repeated failures.
 
-- Initial scan at feature `d5f1dae04364706d0b24f355021c219455f804e2`: existing GitHub Actions **Offline MVP smoke SUCCESS** but `test` workflow failed at the new scan after the ordinary Node tests completed. Real output was `RELEASE_SOURCE_SCAN_BLOCKED` with **3 test-only paths**, code `HARD_CODED_API_SECRET_LITERAL` in `tests/owner_mvp_flow.test.mjs`, `tests/owner_step2_evidence_cli.test.mjs` and `tests/p0_provider_readiness.test.mjs`. The values were deliberately fake PRIVATE_/NEVER_ fixtures, not verified real credentials. The scanner did not echo values.
-- Minimal improvement: skip those *two clearly labelled fixture prefixes only within `tests/`*, while keeping the same names **blocked under `src/`** and retaining private-key/token high-confidence patterns unconditionally. Added regression asserting both branches. Local isolated updated scanner tests **9/9 PASS**. Retry exactly one improved candidate; any second unchanged root-cause failure triggers stop-and-pivot, not repeated blind reruns. Do not claim full-tree content scan PASS before second exact-SHA CI.
+## Current safe status and alternative
+
+- **Selected alternative:** rely on existing unchanged repository public-source secret scan (the last exact functional source [#42516644309](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42516644309) and smoke [#42516644286](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42516644286) both SUCCESS at `934189e5a6da777d7e16b4a9ee24ef4c3f224ebe`), preserve previous good source code, and defer any new whole-tree content scanner until a separately reasoned design avoids fixture collisions. Existing tests already protect against recognizable tokens; they do not certify all secret types.
+- The restored source is the `6c064de96e2e8e880668ddf04f61b4400922e048` Git tree **plus this report and checkpoint markdown**; functional source/package/workflows/fixtures equal the previously green tree. **This fresh documentation-only SHA itself is NOT a provider/Production test.**
+- Owner interventions remain batched at final gate. Do **not** request the owner to execute `mvp:step2:safe` now; owner video visual approval, original audio/subtitles, permission to release main, public YouTube and Devpost all remain pending.
+- Whole-project prior estimate 79/100 unchanged; Step4 `PARTIAL_AUDIT_STOP_PIVOT`; no public release, no media/DB originals touched.
+
+## Next independent tasks
+
+Review release candidate file-by-file where required, using exact tree delta (main-only role doc must be preserved), and prepare truthfully limited English Devpost payload. Do not create/merge a release branch or update public `main` without separate user approval. Owner only at final batched gates. Source verification URL is the older good feature CI, NOT the failed scanner experiment.
