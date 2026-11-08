@@ -18,12 +18,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
-# Verified local 170s films; v4o preserves five Part2 windows and old AAC.
+# Verified 170s films; v4p6 edits only 0-22s, preserving Part2 bounds and AAC.
 ALLOWED_CUT_SHA256=frozenset({
     'abe1b4094f0d11b526a5c467a1b79939c18a45c9f6adab4524ac66d8337c2494',  # v4b
     '96941f892dc91f4c7508b2d70fdec67ba93acb2738a71b997e781c6dd198d7a8',  # v4c
     'd74482b77770259a5cf18f4cd81a6e4b15264ce401431ef65d3e21530dbaebdb',  # v4d
     '219b9e21eba9aa77b473f6cfdcc28e7f7afd36d978e7cf37d970f63094856985',  # v4o
+    'a8cb8b4c811672972d68f362dd45e74a471577f62a1945cd4b499c103dcb897d',  # v4p6 exact original-approved intro recut
 })
 
 

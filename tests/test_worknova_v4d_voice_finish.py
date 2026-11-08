@@ -1,4 +1,4 @@
-"""No-network negative and preflight tests for private WorkNova v4d/v4o narration flow."""
+"""No-network negative and preflight tests for private WorkNova v4d/v4o/v4p6 narration flow."""
 import importlib.util
 from pathlib import Path
 import tempfile
@@ -14,7 +14,9 @@ class PrivateVoiceTests(unittest.TestCase):
     def test_requires_exact_v4d_sha(self):
         self.assertEqual(len(m.V4D_SHA),64)
         self.assertEqual(len(m.V4O_SHA),64)
+        self.assertEqual(len(m.V4P6_SHA),64)
         self.assertNotEqual(m.V4D_SHA,m.V4O_SHA)
+        self.assertNotIn(m.V4P6_SHA,(m.V4D_SHA,m.V4O_SHA))
         with tempfile.TemporaryDirectory() as d:
             p=Path(d)/'wrong.mp4';p.write_bytes(b'fake')
             with self.assertRaisesRegex(ValueError,'SHA256_MISMATCH'):
@@ -72,8 +74,9 @@ class PrivateVoiceTests(unittest.TestCase):
         spec=importlib.util.spec_from_file_location('worknova_private_voice_mux',p)
         mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(mod)
         self.assertIn(m.V4O_SHA,mod.ALLOWED_CUT_SHA256)
+        self.assertIn(m.V4P6_SHA,mod.ALLOWED_CUT_SHA256)
         self.assertIn(m.V4D_SHA,mod.ALLOWED_CUT_SHA256)
-        self.assertEqual(len(mod.ALLOWED_CUT_SHA256),4)
+        self.assertEqual(len(mod.ALLOWED_CUT_SHA256),5)
         self.assertNotIn('0'*64,mod.ALLOWED_CUT_SHA256)
 
 if __name__=='__main__':unittest.main()
