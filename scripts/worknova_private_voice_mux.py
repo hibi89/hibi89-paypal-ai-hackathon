@@ -24,7 +24,8 @@ ALLOWED_CUT_SHA256=frozenset({
     '96941f892dc91f4c7508b2d70fdec67ba93acb2738a71b997e781c6dd198d7a8',  # v4c
     'd74482b77770259a5cf18f4cd81a6e4b15264ce401431ef65d3e21530dbaebdb',  # v4d
     '219b9e21eba9aa77b473f6cfdcc28e7f7afd36d978e7cf37d970f63094856985',  # v4o
-    'a8cb8b4c811672972d68f362dd45e74a471577f62a1945cd4b499c103dcb897d',  # v4p6 exact original-approved intro recut
+    'a8cb8b4c811672972d68f362dd45e74a471577f62a1945cd4b499c103dcb897d',  # v4p6 fast scroll
+    '82fdd313a6b7e49c96706ad529d130a757f2a5bfd886f8698657040488c8c046',  # v4q3 private premium BGM+concept, exact unchanged Part2 frames
 })
 
 

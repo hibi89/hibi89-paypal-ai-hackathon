@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Offline WORKNOVA verified v4d/v4o/v4p6 Part2 voice/subtitle/mux orchestration, never publishes.
+"""Offline WORKNOVA verified v4d/v4o/v4p6/v4q3 Part2 voice/subtitle/mux orchestration, never publishes.
 
 Default --check-only validates the pinned private 170s film and local voice
 assets without creating files. --render explicitly creates NEW local files.
@@ -20,9 +20,10 @@ SCRIPT_DIR=Path(__file__).resolve().parent
 V4D_SHA='d74482b77770259a5cf18f4cd81a6e4b15264ce401431ef65d3e21530dbaebdb'
 V4O_SHA='219b9e21eba9aa77b473f6cfdcc28e7f7afd36d978e7cf37d970f63094856985'
 V4P6_SHA='a8cb8b4c811672972d68f362dd45e74a471577f62a1945cd4b499c103dcb897d'
-# All three are SHA-verified 170s private cuts with identical five Part2 time windows.
-# v4p6 changes only 0-22s intro; voice scene bounds remain 104-154s.
-VERIFIED_CUTS={'v4d':V4D_SHA,'v4o':V4O_SHA,'v4p6':V4P6_SHA}
+V4Q3_SHA='82fdd313a6b7e49c96706ad529d130a757f2a5bfd886f8698657040488c8c046'
+# All four are SHA-verified private 170s cuts; Part2 voice windows are 104-154s.
+# v4q3 keeps 10-161s video packets, remixes original AAC with original instrumental.
+VERIFIED_CUTS={'v4d':V4D_SHA,'v4o':V4O_SHA,'v4p6':V4P6_SHA,'v4q3':V4Q3_SHA}
 
 def sha256(path:Path):
     h=hashlib.sha256()
@@ -90,7 +91,7 @@ def finish(video:Path,model_dir:Path,output_base:Path,render=False):
     return {**report,'output_folder':str(session)}
 
 def main():
-    p=argparse.ArgumentParser(description='WORKNOVA v4d/v4o/v4p6 private local Part2 Kokoro synthesis')
+    p=argparse.ArgumentParser(description='WORKNOVA v4d/v4o/v4p6/v4q3 private local Part2 Kokoro synthesis')
     p.add_argument('--video',required=True,type=Path)
     p.add_argument('--model-dir',required=True,type=Path)
     p.add_argument('--output-dir',type=Path,default=ROOT/'output'/'videos')
