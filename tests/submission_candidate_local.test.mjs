@@ -4,7 +4,7 @@ import {mkdtempSync,mkdirSync,readFileSync,writeFileSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createHash} from 'node:crypto';
-import {prepareSubmissionCandidate,verifyPrivateSyntheticVideo,verifyPrivateV4oFilm,probePrivateWebmDuration} from '../scripts/prepare_submission_candidate.mjs';
+import {prepareSubmissionCandidate,verifyPrivateSyntheticVideo,verifyPrivateV4oFilm,verifyPrivateV4oZipKit,probePrivateWebmDuration} from '../scripts/prepare_submission_candidate.mjs';
 
 const fresh=()=>mkdtempSync(join(tmpdir(),'paypal-local-submission-'));
 function makeFixture(dir){
@@ -177,4 +177,52 @@ test('missing WORKNOVA v4o film keeps prior synthetic candidate behavior',()=>{
  const root=fresh();
  try{assert.equal(verifyPrivateV4oFilm(root),null)}
  finally{rmSync(root,{recursive:true,force:true})}
+});
+
+test('read-only v4o kit bridge accepts only pinned private status, never publication',()=>{
+ const path='C:\\offline\\PRIVATE.zip';
+ const valid={status:'LOCAL_PRIVATE_V4O_ZIP_VERIFIED_NOT_APPROVED',
+  filename:'WORKNOVA_v4o_170s_PRIVATE.mp4',
+  sha256:'219b9e21eba9aa77b473f6cfdcc28e7f7afd36d978e7cf37d970f63094856985',
+  bytes:25494944,mediaDurationProbed:true,mediaDurationSeconds:170,
+  frames:4250,memberCount:7,resolution:'1920x1080',
+  ownerVisualApproval:false,publiclyUploaded:false,providerCalls:0,
+  newVoice:false,newSubtitles:false,releaseHold:true};
+ const calls=[];
+ const mock=(cmd,args,options)=>{calls.push({cmd,args,options});
+  return {status:0,stdout:JSON.stringify(valid)}};
+ const v=verifyPrivateV4oZipKit(path,{runner:mock});
+ assert.equal(v.source,'LOCAL_READ_ONLY_PRIVATE_ZIP');
+ assert.equal(v.ownerVisualApproval,false);
+ assert.equal(v.publiclyUploaded,false);
+ assert.equal(v.mediaDurationProbed,true);
+ assert.equal(calls.length,1);
+ assert.equal(calls[0].args.at(-1),path);
+ assert.equal(calls[0].options.shell,false);
+ for(const invalid of [
+  {...valid,ownerVisualApproval:true},{...valid,publiclyUploaded:true},
+  {...valid,mediaDurationSeconds:180},{...valid,sha256:'a'.repeat(64)}
+ ]){
+  assert.throws(()=>verifyPrivateV4oZipKit(path,{
+   runner:()=>({status:0,stdout:JSON.stringify(invalid)})}),/V4O_PRIVATE_ZIP_CONTRACT_INVALID/);
+ }
+ assert.throws(()=>verifyPrivateV4oZipKit(path,{
+  runner:()=>({status:2,stdout:'',stderr:'rejected'})}),
+  /V4O_PRIVATE_ZIP_VERIFICATION_FAILED/);
+});
+test('private ZIP explicit path is passed into offline packet without extracting',()=>{
+ const path='PRIVATE_WORKNOVA.zip';
+ const packet=prepareSubmissionCandidate({
+  v4oKitPath:path,inspectV4oKit:(given)=>{
+   assert.equal(given,path);
+   return {status:'LOCAL_PRIVATE_V4O_INTEGRITY_VERIFIED',
+    filename:'WORKNOVA_v4o_170s_PRIVATE.mp4',mediaDurationProbed:true,
+    ownerVisualApproval:false,publiclyUploaded:false};
+  }});
+ assert.equal(packet.privateVideo.filename,'WORKNOVA_v4o_170s_PRIVATE.mp4');
+ assert.equal(packet.privateVideo.ownerVisualApproval,false);
+ assert.equal(packet.ownerVisualApproval,false);
+ assert.equal(packet.externalSubmissionEligible,false);
+ assert.equal(packet.authorizedToPublish,false);
+ assert.equal(packet.devpostReceipt,'NOT_SUBMITTED');
 });

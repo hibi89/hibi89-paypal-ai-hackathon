@@ -165,13 +165,47 @@ export function verifyPrivateV4oFilm(dir,{probeDuration=probePrivateWebmDuration
   note:'Private visual candidate only, not final voice, subtitles or public release.'};
 }
 
-export function prepareSubmissionCandidate({root=ROOT}={}){
+
+export function verifyPrivateV4oZipKit(kitPath,{root=ROOT,runner=spawnSync}={}){
+ requireValue(typeof kitPath==='string'&&kitPath.trim().length>0,
+  'V4O_PRIVATE_KIT_PATH_REQUIRED');
+ const program=join(root,'scripts','worknova_v4o_kit_preflight.py');
+ const executable=process.platform==='win32'?'python':'python3';
+ const result=runner(executable,[program,'--kit',kitPath],{
+  cwd:root,encoding:'utf8',shell:false,windowsHide:true,
+  timeout:60000,maxBuffer:8192,
+  env:{PATH:process.env.PATH||'',SystemRoot:process.env.SystemRoot||''}
+ });
+ requireValue(!result?.error&&result?.status===0,'V4O_PRIVATE_ZIP_VERIFICATION_FAILED');
+ let v;
+ try{v=JSON.parse(result.stdout)}catch{throw Error('V4O_PRIVATE_ZIP_RESPONSE_INVALID')}
+ requireValue(v.status==='LOCAL_PRIVATE_V4O_ZIP_VERIFIED_NOT_APPROVED'&&
+  v.filename===V4O_PRIVATE_PROOF.filename&&
+  v.sha256===V4O_PRIVATE_PROOF.sha256&&
+  v.bytes===V4O_PRIVATE_PROOF.bytes&&
+  v.mediaDurationProbed===true&&v.mediaDurationSeconds===170&&
+  v.frames===4250&&v.memberCount===7&&v.resolution==='1920x1080'&&
+  v.ownerVisualApproval===false&&v.publiclyUploaded===false&&
+  v.providerCalls===0&&v.newVoice===false&&v.newSubtitles===false&&
+  v.releaseHold===true,'V4O_PRIVATE_ZIP_CONTRACT_INVALID');
+ return {status:'LOCAL_PRIVATE_V4O_INTEGRITY_VERIFIED',
+  filename:v.filename,sha256:v.sha256,bytes:v.bytes,
+  storyboardVersion:'WORKNOVA_V4O_PRIVATE_170S',
+  mediaDurationProbed:true,mediaDurationSeconds:170,
+  mediaDurationStatus:'MEDIA_DURATION_UNDER_180_VERIFIED',
+  source:'LOCAL_READ_ONLY_PRIVATE_ZIP',ownerVisualApproval:false,
+  publiclyUploaded:false,providerCalls:0,
+  note:'ZIP verified without extraction; not approved for public release or payment.'};
+}
+
+export function prepareSubmissionCandidate({root=ROOT,v4oKitPath=null,inspectV4oKit=verifyPrivateV4oZipKit}={}){
   root=resolve(root);
   const ledger=JSON.parse(read(root,'data/paypal_daily_progress.json'));
   const files=Object.fromEntries(entryPaths.map(path=>[path,read(root,path)]));
   const assessment=assessSubmissionEvidence({ledger,files});
   const videoDir=join(root,'output','videos');
-  const video=verifyPrivateV4oFilm(videoDir)??verifyPrivateSyntheticVideo(videoDir);
+  const video=v4oKitPath?inspectV4oKit(v4oKitPath,{root}):
+    (verifyPrivateV4oFilm(videoDir)??verifyPrivateSyntheticVideo(videoDir));
   const videoIntegrityVerified=['LOCAL_SYNTHETIC_WEBM_INTEGRITY_VERIFIED',
    'LOCAL_PRIVATE_V4O_INTEGRITY_VERIFIED'].includes(video.status);
   const localSource=assessment.localAssets.every(a=>!a.status.includes('MISSING')&&!a.status.includes('INVALID'));
@@ -228,13 +262,13 @@ export function prepareSubmissionCandidate({root=ROOT}={}){
     mainBranchReleaseVerifiedLive:false,
     externalSubmissionEligible:false,
     externalGates:assessment.externalGates,
-    note:'This packet is local, synthetic and unpublished. ffprobe checks WebM duration only when available; hash or media length does not verify providers, publication approval or Devpost submission.'
+    note:'This packet is local, synthetic and unpublished. ffprobe checks private media duration only when available; hash or media length does not verify providers, publication approval or Devpost submission.'
   };
   const md='# WORKNOVA — PRIVATE SUBMISSION CANDIDATE (NOT SUBMITTED)\n\n'+
     '**No public YouTube link or Devpost receipt exists in this report. Do not publish without owner review and approval.**\n\n'+
     '- Source: https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/main\n'+
     '- Local video: '+(video.filename||'NOT RECORDED ON THIS MACHINE')+'\n'+
-    '- Private WebM integrity: '+video.status+'\n'+
+    '- Private media integrity: '+video.status+'\n'+
     '- Public video URL: NOT PROVIDED\n- Devpost receipt: NOT SUBMITTED\n'+
     '- Main branch source/license release: '+mainReleaseStatus+
       ' (PR #28, previously verified 2026-11-05; NOT a live lookup)\n'+
@@ -248,7 +282,10 @@ export function prepareSubmissionCandidate({root=ROOT}={}){
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   try{
-    const report=prepareSubmissionCandidate();
+    const args=process.argv.slice(2);
+    if(args.length!==0&&(args.length!==2||args[0]!=='--v4o-kit'||!args[1]?.trim()))
+      throw Error('SUBMISSION_CANDIDATE_FLAGS_REJECTED');
+    const report=prepareSubmissionCandidate({v4oKitPath:args.length?args[1]:null});
     console.log(JSON.stringify(report,null,2));
     console.log('PRIVATE_SUBMISSION_PACKET output/submission/ (gitignored; no uploads)');
     // An incomplete private packet is expected, not a failed script.
