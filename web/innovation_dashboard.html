@@ -29,6 +29,35 @@ button:disabled{opacity:.5;cursor:not-allowed}
 #a2a-history-tools p{font-size:.85rem;margin-bottom:0}
 pre{white-space:pre-wrap;word-break:break-word;background:#132643;color:#d9edff;border-radius:11px;padding:14px;max-height:230px;overflow:auto}
 @media(max-width:680px){body{padding:15px}.grid{grid-template-columns:1fr}.wide{grid-column:auto}}
+
+/* WORKNOVA_P2_VISUAL_REFINEMENT_20261109: CSS-only review surface; no state/API changes. */
+:root{--wn-ink:#122944;--wn-line:#d6e5f2}
+body{background:radial-gradient(760px 330px at 92% -90px,#d7e9f9 0,transparent 78%),#f4f7fc;color:var(--wn-ink)}
+header{padding:8px 4px 20px;border-bottom:1px solid var(--wn-line)}
+header nav{align-items:center;gap:8px}
+header nav a{border-radius:10px;padding:9px 12px;color:#425b79;transition:background-color .16s,color .16s}
+header nav a:hover,header nav a:focus-visible{background:#e9f2fa;color:#14588b}
+header nav a[aria-current="page"]{background:#e1f1f9;color:#12547a;border:1px solid #aedced}
+.hero{position:relative;isolation:isolate;overflow:hidden;margin:24px 0 18px;padding:35px 40px 31px;border-radius:24px;border:1px solid #275071;background:radial-gradient(circle at 88% 14%,#1c5270 0,#0a2d49 39%,transparent 73%),linear-gradient(135deg,#061626,#0b2945);box-shadow:0 24px 40px #0d33551f}
+.hero:before{content:"";pointer-events:none;position:absolute;z-index:0;top:-160px;right:-105px;width:440px;height:440px;border-radius:50%;border:1px solid #75d9ff26;box-shadow:0 0 0 55px #75d9ff0b,0 0 0 110px #75d9ff07}
+.hero>*{position:relative;z-index:1}
+.hero .badge{color:#81d9ff}
+.hero h1{max-width:850px;color:#f6fbff;font-size:clamp(2.1rem,4.6vw,3.45rem);letter-spacing:-.052em;line-height:1.13;margin:12px 0 15px}
+.hero p{max-width:810px;color:#c6dced;font-size:1.02rem;line-height:1.65}
+.hero .warning{max-width:100%;margin-top:24px;background:#102e47df;border:1px solid #427392;color:#deecf6;padding:15px 18px;box-shadow:inset 3px 0 #e6bd62}
+.hero .warning strong{color:#fff5d2}
+.grid{gap:18px;margin-top:18px}
+.card{border-color:#d7e4f0;border-top:3px solid #dbeaf5;box-shadow:0 10px 24px #17395b0a;border-radius:18px}
+.card.wide{border-top-color:#4fc1e5}
+.card .badge{color:#24719d}
+.card h2{color:#173250;letter-spacing:-.024em}
+input,select,textarea{background:#fbfdff;border-color:#b9cfe0;color:#152c47}
+button{background:#215c96;box-shadow:0 3px 8px #113a6220;transition:background-color .16s,box-shadow .16s}
+button:hover:not(:disabled){background:#174c7b;box-shadow:0 5px 14px #113a622c}
+:is(a,button,input,select,textarea,summary):focus-visible{outline:3px solid #56b9ed;outline-offset:3px}
+pre{background:#112a43;border:1px solid #274968;color:#e2f1ff}
+@media(max-width:680px){header{align-items:flex-start;gap:10px}header nav{width:100%;gap:4px}header nav a{font-size:.85rem;padding:8px 10px}.hero{padding:25px 20px 22px;border-radius:19px;margin-top:19px}.hero h1{font-size:clamp(2rem,8vw,2.55rem)}.hero .warning{padding:13px 14px}.grid{gap:14px}.card{padding:19px}}
+@media(prefers-reduced-motion:reduce){header nav a,button{transition:none}}
 </style></head><body>
 <header><strong class="worknova-brand"><span class="worknova-mark" aria-hidden="true">W</span><span>WORK<span class="worknova-accent">NOVA</span></span></strong><nav aria-label="Product parts"><a href="/demo">Part 1 · Freelancer platform</a><a href="/demo/innovation" aria-current="page">Part 2 · AI Innovation Lab</a></nav></header>
 <div class="hero"><span class="badge">Part 2 / Innovative PayPal AI Technology</span>

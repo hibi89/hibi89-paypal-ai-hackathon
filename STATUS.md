@@ -1,3 +1,9 @@
+## 2026-11-09 KST — Part 2 frontend visual-only polish + v4l film QA
+
+- Branch parent HEAD `b41f2936c26e403b7e3e916ff2c2dd35715950e1`; additive premium Part 2 CSS-only treatment in `web/innovation_dashboard.html`, new offline source-contract test `tests/worknova_p2_visual_review.test.mjs`, proof `docs/WORKNOVA_P2_VISUAL_REVIEW_20261109.md`. Original HTML/JS logic, endpoints, warning and 5 agent IDs kept. No payments/provider calls or frontend production deployment.
+- v4l Library ZIP 37,110,426B SHA `a99a486ce017f33c540ea1f7c28df7f08f271bc22a419d152e15f892b04d0815` CRC PASS. Read-only film sampling at 5s cadence + 31 selected frames; FFmpeg `blackdetect` 0 spans at >=0.20s criterion. Existing video v4l SHA `6e869be80d3a63e335527b90b18bcdd24237ab660aea258067e0794423e3511c` unchanged.
+- Chromium browser preview in scratch blocked `ERR_BLOCKED_BY_ADMINISTRATOR` at file:// and localhost (2 distinct methods). Browser-pixel QA **UNVERIFIED**; no further blind browser retries. New source-level CI test awaits exact commit verification. No actual video modification, no voice/SRT; **79%** carried forward without invented gain. `RELEASE HOLD`.
+
 ## 2026-11-09 KST — New-chat verified snapshot (no feature change)
 
 - Re-read HEAD `675c5ca20a9cbf6ed593a7742b4a74721c78d27b` on `hibi89/hibi89-paypal-ai-hackathon/lead/paypal` and its Actions **#42502320787 Offline MVP smoke SUCCESS**, **#42502320862 Offline payment-contract tests SUCCESS**. Local v4l editor unit tests 8/8 PASS at original design run; CI success is code/test evidence, not real provider or video ears-on certification.
