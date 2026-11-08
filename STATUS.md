@@ -1,3 +1,8 @@
+## 2026-11-09 KST — WORKNOVA Step2 safe evidence projection added (local owner execution pending)
+
+- Audited 2026-10-28 owner-reported Sandbox $1.50 capture/get and real Gemini skill classification vs existing immutable read-only inspectors; Part2 owner A2A proof cannot establish the same PayPal transaction or fresh real model activity. No private owner DB accessible in this turn. `npm run mvp:step2:safe` added as no-flags, no-network, allowlisted one-line result using existing read-only code; does not print secret IDs/paths/hashes. `src/owner_step2_evidence_projection.mjs` unit **9/9 PASS** isolated locally; new integrated CLI test/whole CI requires exact-SHA Actions verification. Report: `docs/WORKNOVA_STEP2_PRIVATE_PROVIDER_EVIDENCE_AUDIT_20261109.md`.
+- Single unavoidable owner-local step after verified code: `npm run mvp:step2:safe` from current checked-out `lead/paypal`, share one JSON status line only; no provider GET/CREATE/CAPTURE/Gemini, no file deletion/WAL reset. Whole product previous **79/100 unchanged**; real local receipt unread in this assistant environment, RELEASE HOLD.
+
 ## 2026-11-09 KST — Submission step 1 source baseline audit (RELEASE HOLD)
 
 - Baseline `004e197565698993a1b61473198e99a417dc5d70`, latest independently CI-verified functional code `67b5cf8338bac47469b385215965085e0c08ae0b` (smoke #42512943612 SUCCESS; contracts #42512943667 SUCCESS; 2 optional jobs skipped). Baseline differs from verified feature by only 3 Markdown documents. Public `main@5243295f` MIT, `lead/paypal` ahead 93/behind 208 diverged, compare reports 110 changed paths relative to merge base. Draft PR #30 `00616ee6` is stale and not fit for direct release. No code or release change executed in this step.
