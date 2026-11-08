@@ -192,7 +192,7 @@ export function renderJudgeEvidenceMarkdown(report){
 
 **Do not mistake simulated tests for live provider transactions.** This artifact is locally generated, not uploaded or submitted.
 
-**Public WORKNOVA reviewer source:** ${REVIEWER_SOURCE} (`git switch lead/paypal`). The URL is a reference, **not live-rechecked by this command**. The public default `main` is an earlier Proofline-branded release.
+**Public WORKNOVA reviewer source:** ${REVIEWER_SOURCE} (\`git switch lead/paypal\`). The URL is a reference, **not live-rechecked by this command**. The public default \`main\` is an earlier Proofline-branded release.
 
 | ID | Evidence class | Current status | Source |
 | --- | --- | --- | --- |
