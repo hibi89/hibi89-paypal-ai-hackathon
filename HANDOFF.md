@@ -1,3 +1,16 @@
+## 2026-11-08 KST — WORKNOVA full 170s v4d visual integration / no new neural voice
+
+1. **Goal/requirements/stack:** Resume approved WorkNova premium 165–175s film, keeping 1920×1080 cinematic navy/cyan identity, owner-preferred Kokoro FP16 af_heart voice/clicks, both marketplace and five-agent parts; FFmpeg/Python offline editing; original media immutable.
+2. **Completed:** From SHA-verified v4c and v4d 50s, assembled first full 170s v4d visual-only private reference, exact 4250 frames and AAC bitstream preserved. A reproducible SHA-pinned FFmpeg script, safety regression tests and technical proof added to GitHub without uploading video/model.
+3. **Tests:** Whole resulting 170s FFmpeg H264/AAC decode exit0; 12 frame/boundary samples verified; source and result 7970 AAC packets MD5 equal `2959cc9c1f5ee996edaefb3b06a147ea`. Result SHA256 `d74482b77770259a5cf18f4cd81a6e4b15264ce401431ef65d3e21530dbaebdb` (45,576,653B). Same binary reproduced separately with script. Local Python 14/14 PASS. New remote CI remains separate/unverified until readback.
+4. **State:** Full visual-only review READY; final Part2 speech, true bilingual transcript/subtitles, owner full auditory QA, production/public judging compliance still PENDING. 79/100 whole-project verified score unchanged; RELEASE HOLD.
+5. **Errors/pivots:** Whole-film reencode timed out and partial discarded; switched to lossless stream splice. Input-side seek at 154s yielded only 150/400 actual packets; output-side `-ss 154` yielded complete 400. Full decoding must be separate from fast packet validation; no repeated failed encode route.
+6. **Repo/branch/SHA:** `hibi89/hibi89-paypal-ai-hackathon` / `lead/paypal`, prior HEAD `9939f26c5a83a7c856b6cd64f55d7002d4b55008`. This change adds `scripts/worknova_v4d_fullcut.py`, `tests/test_worknova_v4d_fullcut.py`, proof doc and STATUS/HANDOFF. Check new SHA after commit.
+7. **Runtime/Production:** Offline local FFmpeg/Python scratch, not Windows Production. No Vercel Production SHA/URL verified and no public upload or Devpost.
+8. **Backup/security:** Original Library `/WORKNOVA PayPal Hackathon/2026-11-08 Handoff/WORKNOVA_Handoff_20261108.zip` remains immutable; v3/v4b/v4c, favorite Kokoro original, automated UI source and GitHub assets unchanged. New film only conversation download; not Library/GitHub. No credentials, database, models or customer data uploaded.
+9. **Next/acceptance:** On owner machine hash-find pinned model+voicepack (read-only), synthesize five Part2 af_heart cues, update private mux SHA allowlist for new 170s film, generate actual audio-aligned bilingual SRT, do full ears-on review and negative/privacy QA. Request separate explicit approval before PayPal/provider actions, public YouTube/Devpost and any paid services.
+10. **Updated:** 2026-11-08 KST, actual scope offline video + local safety tests; new GitHub Actions outcome and service production unverified at writing. Docs source commit must be verified after push.
+
 ## 2026-11-08 KST — v4d QA / CI result since last handoff
 
 1. **Goal:** Avoid declaring the private Part2 50s v4d preview final without playback-risk testing.
