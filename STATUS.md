@@ -1,3 +1,11 @@
+## 2026-11-08 KST — WORKNOVA v4h visual-only final-design candidate
+
+- Per owner: NO new TTS/audio/EN-KO voice subtitle work until final design approved. Original af_heart sound, v4c/earlier films untouched. Worked exclusively on scene layout, visual QA and offline cut assembly.
+- v4d Gift leaked Invoice; rejected intermediate v4f mixed Churn and v4g rapid source scroll. v4h uses 3 real prerecorded OFFLINE Gift keyframes (90.5/96.5/99.5s), labeled editorial keyframe replay, 15 explanatory visual beats across five agents. No invented PayPal/Gemini/browser actions.
+- 50s v4h SHA 70525df7a240fe8d08bbb02bb4ed8feca8401f93980491b90ba9f94440659a44 (1250 frames). Full 170s v4h SHA dab8036507c3425b306713908241c57a5d3cc0a93de4c606f22c6da0a5742486 (44,571,949B, 4250 frames, 1920x1080); FFmpeg full AV decode PASS and AAC MD5 2959cc9c1f5ee996edaefb3b06a147ea identical. 23 frames sampled, full subjective owner QA not verified. Eight new local offline tests PASS.
+- GitHub: 2 scripts, 2 tests, docs/WORKNOVA_V4H_DESIGN_20261108.md, STATUS/HANDOFF only; no media/models/secrets. New CI status to check after actual commit.
+- Persisted privately in Library folder /WORKNOVA PayPal Hackathon/2026-11-08 Handoff/v4h-design-20261108/ : 48,403,669B ZIP SHA f344a533288b11a6e23afd1b4701c3ad873da01a8ed5c00fae39a39c9bdee14e plus four files. Old media/archive intact. No live provider/payment/public upload/production. 79/100 verified whole project, RELEASE HOLD.
+
 ## 2026-11-08 KST — WORKNOVA v4d 170s Part2 local audio finish contract
 
 - **Implemented** SHA-pinned v4d full 170s addition to existing private voice mux allowlist (old v4b/v4c still supported); new offline `scripts/worknova_v4d_offline_voice_finish.py` handles read-only check then explicit `--render` five `af_heart` cues, SRT generation and separate private voice mux. Exact full visual-only v4d SHA `d74482b77770259a5cf18f4cd81a6e4b15264ce401431ef65d3e21530dbaebdb`. Model+voicepack **MISSING in this runtime**: actual synthesis still BLOCKED.

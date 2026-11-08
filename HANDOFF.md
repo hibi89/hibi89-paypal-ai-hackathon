@@ -1,3 +1,16 @@
+## 2026-11-08 KST — WORKNOVA v4h private 170s DESIGN handoff / voice deferred
+
+1. Goal: WorkNova premium cinematic 170s two-part video; user wants video design locked first, then one af_heart narrator/subtitle pass only. Offline Python/Pillow/FFmpeg editing.
+2. Done: Fix Gift mixed Invoice/Churn/Delegate/A2A leakage by using 3 genuine synthetic Playwright-recording keyframes from 90.5/96.5/99.5s, with explicit storyboard replay labeling. 15 editorial beats across five agent skills. Original voice/click/music untouched.
+3. Tests: Full v4h SHA dab8036507c3425b306713908241c57a5d3cc0a93de4c606f22c6da0a5742486, 44,571,949 bytes, 170s, 4250 1080p frames, FFmpeg whole video+audio decode PASS; audio MD5 matches v4c 2959cc9c1f5ee996edaefb3b06a147ea. 50s v4h SHA 70525df7a240fe8d08bbb02bb4ed8feca8401f93980491b90ba9f94440659a44. 23 frame QA samples, 8/8 new local safety tests PASS; new remote CI and owner full subjective viewing pending.
+4. State: visual private preview ready; voice/subtitles intentionally NOT RUN by owner decision; Production and public judging still unverified. 79/100 whole-product estimate, RELEASE HOLD.
+5. Failure: v4d Gift leaked Invoice, v4f Gift leaked Churn, v4g transient Delegate/A2A source scroll; all replaced. Never claim still keyframe replay is human clicking or live AI execution. Do not repeat failed whole-movie reencode.
+6. Repo/branch: hibi89/hibi89-paypal-ai-hackathon lead/paypal, previous HEAD e87a6d7195f7a8b244d52f5be62c5efc800282b9. New scripts/worknova_part2_v4h_storyboard.py and scripts/worknova_v4h_fullcut.py, 2 new test files and docs. Verify new GitHub SHA.
+7. Runtime: Offline tools only, no Vercel/Cloudflare Production SHA/URL verification, no public deployment.
+8. Backup/security: Old ZIP/v3/v4b/v4c unchanged. Private new Library folder /WORKNOVA PayPal Hackathon/2026-11-08 Handoff/v4h-design-20261108/ contains 48,403,669B kit SHA f344a533288b11a6e23afd1b4701c3ad873da01a8ed5c00fae39a39c9bdee14e and 4 code/test files; no credentials, model weights or original media binary on GitHub.
+9. Next: Owner visually reviews v4h, improves remaining scenes if needed. Only after VISUAL LOCK, one approved af_heart and true bilingual cue sync, full owner listening; then separate explicit approval for external provider/payment/public YouTube/Devpost steps.
+10. Updated 2026-11-08 KST; verified private AV, 8 local tests, Library persistence. Pending new CI, owner perception and Production.
+
 ## 2026-11-08 KST — WORKNOVA full 170s v4d offline voice finalizer
 
 1. **Goal/technical scope:** Finish approved 170s premium WORKNOVA v4d visual film by adding genuine owner-approved Kokoro FP16 `af_heart` narration to Part2 five scenes, then bilingual cue-aligned subtitles; all offline and no original media overwrite.
