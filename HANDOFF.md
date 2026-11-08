@@ -1,3 +1,16 @@
+## 2026-11-09 KST — Step2 postflight CI confirmed; owner-PC evidence still pending
+
+1. **Goal:** Validate a private, safe way to review previously recorded PayPal Sandbox/Gemini evidence for WORKNOVA submission, no new provider API or payment.
+2. **Outcome:** Feature SHA `89b630255f638df04f84962d50cb7b3b6c6c235c` adds `npm run mvp:step2:safe` and two tests to existing immutable SQLite inspectors; only fixed status labels and booleans printed. Historical Sandbox $1.50/skills `web,payments,qa` remain owner-reported.
+3. **Tests:** Isolated local pure-projection 9/9 PASS; at exact feature SHA GitHub [Offline MVP smoke #42515686813](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42515686813) **SUCCESS**, [Offline payment-contract #42515682907](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42515682907) **SUCCESS**, integrated Node test + Windows first-run SUCCESS; optional Wrangler/D1 and default-speed video jobs SKIPPED.
+4. **Status:** Step2 code `VERIFIED_OFFLINE`, owner-original SQLite source `NOT_INSPECTED`; owner must produce sanitized status once. Historical owner evidence NOT independently rechecked via PayPal/Gemini. Full product prior 79%, RELEASE HOLD.
+5. **Failed/pivot:** No external attempts. Local-only archive lacks the owner private data, not a code bug. Never reset SQLite, remove WAL or rerun consumed Capture; exit 2 for missing/invalid file is expected review outcome. No unsupported real-payment claim.
+6. **Repo/branch/SHA:** `hibi89/hibi89-paypal-ai-hackathon` `lead/paypal` feature `89b630255f638df04f84962d50cb7b3b6c6c235c`, `src/owner_step2_evidence_projection.mjs`, `scripts/check_owner_step2_submission_evidence.mjs`, 2 tests, `package.json`, `docs/WORKNOVA_STEP2_PRIVATE_PROVIDER_EVIDENCE_AUDIT_20261109.md`. This docs-only checkpoint is next commit; read final head SHA after push.
+7. **Runtime/production:** Node22.5+ Windows owner PC reads two private SQLite directories. No Vercel, Cloudflare Production, authenticated remote reviewer, public provider call or media release in this step.
+8. **Security/backup:** Existing immutable owner DB not uploaded/copied/modified, no keys/transaction IDs printed. Previous WORKNOVA v4o video Library ZIP and approved af_heart audio remain untouched.
+9. **Next:** Owner runs `git status -sb` / `git pull --ff-only origin lead/paypal` only on clean correct checkout, then `npm run mvp:step2:safe`; paste ONLY JSON line. Step3 new reviewer package and brand verification can follow without external access; owner approval required before source release/public submission/provider requests.
+10. **Checkpoint:** 2026-11-09 KST; new code CI two workflows verified against exact SHA `89b630255f638df04f84962d50cb7b3b6c6c235c`, local pure projection PASS 9; private receipt, current Free Tier, PayPal fresh GET/PRODUCTION still NOT VERIFIED.
+
 ## 2026-11-09 KST — WORKNOVA step 2: safe immutable evidence audit (10-part handoff)
 
 1. **Goal:** Reconcile genuine owner-attested 2026-10-28 private PayPal Sandbox $1.50 approval/capture/GET and Gemini classification with offline two-part demo, safely and without repeating API calls. Node22.5+ SQLite, source `hibi89/hibi89-paypal-ai-hackathon@lead/paypal`.

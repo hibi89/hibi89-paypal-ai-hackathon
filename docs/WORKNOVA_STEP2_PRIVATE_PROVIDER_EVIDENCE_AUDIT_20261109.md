@@ -30,3 +30,9 @@ This script takes **no flags**, never authorizes a purchase, Gemini, PayPal GET 
 - This new command **does not fetch PayPal orders, run Gemini, validate account Free Tier, verify remote identities or PayPal transactions**, and makes no fresh provider attestation; as such the global evidence score remains previously estimated **79/100**, without increment.
 - After the owner supplies the single safe status JSON, reconcile the historical owner report and decide whether the judge can rely on a disclosed historical demonstration plus a credential-free synthetic two-part run. If contest acceptance truly requires another external step, request separate explicit approval first.
 - Public `main`, old PR #30, video v4o, earlier af_heart, Devpost/YouTube, Production remain **RELEASE HOLD**. Step3 reviewer source/package/test can begin independently; no need to wait for new provider.
+
+## Exact-SHA source postflight (2026-11-09 KST)
+
+- Feature `89b630255f638df04f84962d50cb7b3b6c6c235c`: GitHub Actions [Offline MVP smoke #42515686813](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42515686813) **completed SUCCESS**; [Offline payment-contract tests #42515682907](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42515682907) **completed SUCCESS**. Payment-contract `test` + Windows first-run jobs SUCCESS. Optional Wrangler D1 and default-speed video jobs SKIPPED, not counted as pass.
+- New pure projection 9/9 local PASS; npm test job includes the new 9 projection + 2 CLI tests and passed integrated CI. No owner-private actual SQLite was present or read in CI, and no actual Gemini/PayPal network call is claimed.
+- GitHub original `src/owner_step2_evidence_projection.mjs` blob `79d79a615480bedc13e8d948aef656e5d63da6f1` and runner blob `4392b6aee959bbf7fc61b8f8ba3f2a4a1233a09f` match local tested files. Public/Production release remains HOLD; owner only executes the safe status command next.
