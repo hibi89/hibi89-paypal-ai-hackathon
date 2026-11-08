@@ -1,3 +1,15 @@
+# WORKNOVA — Owner-only final gate (2026-11-09 instruction supersedes timing below)
+
+**Owner decision:** Minimize owner intervention. Do not request local commands, account access, media review, main merge or publication piecemeal. Continue all safe independent development, tests, candidate preparation, branding, security review and Devpost drafting first. **Batch strictly unavoidable owner tasks at the final submission gate**, except when a specific prerequisite makes every next independent task impossible. This rule does **not** authorize actual PayPal/Gemini requests, changing billing/accounts, releasing main, production deployment, YouTube publication or Devpost submission.
+
+**Current completed independent facts:** Working `lead/paypal` features and offline WORKNOVA reviewer ZIP at `934189e5a6da777d7e16b4a9ee24ef4c3f224ebe` have exact SHA CI 2/2 SUCCESS (smoke #42516644286 / contracts #42516644309), Linux/Windows and fresh portable Chromium tests PASS. Public main exists with MIT but is older than lead; Draft PR #30 is outdated. Private v4o 170s film exists but is not visually owner-approved. Historical PayPal Sandbox/Gemini test is owner-observed; no new API call required just for this preparation.
+
+**One final combined owner batch (do only when requested after independent tasks complete):** (A) check any still-necessary local historical receipt once using `npm run mvp:step2:safe` on a clean, verified branch without exporting DB/keys; (B) watch v4o and give one definitive `VISUAL LOCK` or actionable timestamps, then approve the finished af_heart/original voice and subtitles once; (C) approve exact reviewed `main` release candidate, final public YouTube upload, English Devpost form and receipt. These are *distinct approvals* even if collected in one sitting.
+
+**Never:** rerun consumed Sandbox Orders CREATE/Capture or Gemini quotas without new explicit permission, edit/erase original SQLite, upload private files or tokens, public release without separate approval. Older 2026-11-06 step-by-step checklist below is retained as historic detailed runbook; not a request to start it now.
+
+---
+
 # Proofline — 집에서만 마무리할 최종 체크리스트 (2026-11-06 KST)
 
 **현재 최종 완성률 79/100. 남은 21은 실제 외부 증거 및 공개 제출 승인 게이트다.** PC 밖에서 가능한 개발 검증은 마쳤다. 아래는 계정·로컬 비밀 데이터 접근 또는 소유자 공개 판단 때문에 ChatGPT가 원격에서 대신 실행할 수 없는 작업만 모았다.
