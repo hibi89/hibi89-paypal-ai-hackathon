@@ -1,3 +1,16 @@
+## 2026-11-08 KST — WORKNOVA premium visual tuning v4b handoff
+
+1. **Goal:** Owner requested design iteration until submission using already-approved premium WorkNova front-end, native GitHub SVG and favorite recovered Kokoro af_heart narration/click effects.
+2. **Deliverable/decision:** Private 170s v4b MP4 assembled with new moving intro/bridge/end, active real quote journey instead of 12s freeze, corrected and enlarged Agent footage cut ranges. Do not change approved audio voice without user sign-off.
+3. **Test evidence:** SHA256 `abe1b4094f0d11b526a5c467a1b79939c18a45c9f6adab4524ac66d8337c2494`, 39,781,110 bytes, H.264 1920x1080, AAC stereo 48kHz, 170.000s. ffmpeg full decode exit0/no stderr. Original v3 AAC bitstream MD5 identical (`2959cc9c1f5ee996edaefb3b06a147ea`). 17 frame visual contact checked; full ears-on audio and word-for-word text sync NOT VERIFIED.
+4. **Status:** Visual review cut CREATED/VERIFIED technically; final Part2 narration + true bilingual subtitles + human review PENDING. No Production verification, YouTube/Devpost RELEASE HOLD. 79/100 unchanged.
+5. **Errors/pivots:** Early v4 A2A segment showed subsequent Gift UI at 120s; fixed by isolating 82.2–89.7s and slowing to 11s, Gift 93.2–103.9s slowed to 12s. No reruns of faulty source-time offsets. Previous static quote cut replaced.
+6. **Repo/branch/SHA:** `hibi89/hibi89-paypal-ai-hackathon`, `lead/paypal`, pre-doc SHA `8a0055acf78f2d3445754cb4df4ad1839822ea84`; no application code change. Original automated capture functional test SHA `c75b51f5`. Paths brand SVG and `docs/WORKNOVA_PREMIUM_PRIVATE_CUT_20261108.md`.
+7. **Runtime/Production:** FFmpeg+Pillow scratch editor in ChatGPT container, no cloud deployment. Vercel Production SHA/URL not checked or applicable to edited film.
+8. **Original/backup/security:** V3 private video SHA `895b83f...` remains, owner's WorkNova auto source SHA `4dc5c...` remains; earlier approved recovered narrator also unchanged. No raw film, secrets, SQLite, voice model uploaded to GitHub. v4b is temporary artifact; download mandatory for retention.
+9. **Next:** User reviews v4b compared to v3; secure approved pinned Kokoro voice assets for Part2 or keep voice gate blocked; transcript and synchronize subtitles; full owner sound and pixel QA; then separately verify provider/production and release approvals. No auto-publication.
+10. **Time and scope:** 2026-11-08 KST. Media export technically checked; user approval, voice, final publication and service functionality not newly verified. Documentation-only commit `[skip ci]`.
+
 ## 2026-11-08 KST — Premium private WorkNova v3 editor handoff
 
 1. **Goal and requirements:** Owner expressly prefers the earlier Premium narrated source `proofline-premium-narrated-recovered-20261107-233338-c6315d99.webm`; reuse its Kokoro af_heart narration/click aesthetics, with **WorkNova** GitHub logo, hero and navy/cyan premium concept, Part1+Part2.

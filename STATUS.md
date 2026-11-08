@@ -1,3 +1,9 @@
+## 2026-11-08 KST — WORKNOVA premium v4b design pass (private, no app changes)
+
+- v3 reference preserved; new `WORKNOVA_Premium_Design_Audio_Private_170s_1080p_v4b.mp4` 170.000s, 1920×1080 H264/AAC, 39,781,110 bytes, SHA256 `abe1b4094f0d11b526a5c467a1b79939c18a45c9f6adab4524ac66d8337c2494`. Full ffmpeg decode PASS; 17-point visual contact-sheet check PASS. Original v3 AAC stream unchanged (MD5 `2959cc9c1f5ee996edaefb3b06a147ea`).
+- Major visible gains: intro/bridge/end now gently animated, quote no longer freezes for 12 seconds, five Agent cut titles more closely match real recorded UI; A2A/Gift offset corrected in final v4b. Original UI/browser source, voice files, DB and approved v3 kept. Synthetic automated clicks are not human-verified clicks.
+- Critical remaining blocker: no newly generated Part2 af_heart voice, no complete narration transcript/full listening QA, no approval to publish. Do not mistake the media decode PASS for final video release. Overall project verified 79/100 unchanged. See `docs/WORKNOVA_PREMIUM_PRIVATE_CUT_20261108.md` for SHA and editing steps. GitHub has docs only, not 38MB video. Production unverified, RELEASE HOLD.
+
 ## 2026-11-08 KST — WORKNOVA owner-preferred premium reference v3 rendered (PRIVATE HOLD)
 
 - Owner clarified that **GitHub-approved WORKNOVA SVG/design direction and the strongly liked older af_heart narrated/click video** are the editorial source of truth; no generic silent cut, OS/eSpeak TTS or new theme substitution.
