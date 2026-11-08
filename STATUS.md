@@ -1,3 +1,10 @@
+## 2026-11-08 KST — WORKNOVA owner-preferred premium reference v3 rendered (PRIVATE HOLD)
+
+- Owner clarified that **GitHub-approved WORKNOVA SVG/design direction and the strongly liked older af_heart narrated/click video** are the editorial source of truth; no generic silent cut, OS/eSpeak TTS or new theme substitution.
+- New **170s 1920×1080 H.264/AAC private reference MP4** generated in the ChatGPT temporary workspace from the Nov 8 WorkNova auto capture and the approved prior narration source. SHA256 `895b83f3689598e1fef29514f772f6cbf80a4ec64baf399b079e0b4a3d28c078`, size 59,223,539 bytes. Video decode and frame samples checked; independent human auditory/text alignment **NOT VERIFIED**.
+- Existing approval sequence cross-contamination was corrected with an actual quote frame. The edited movie is **not final**: Part 2 new neural voice absent; product spoken brand and detailed subtitle alignment require review. User's earlier original and new auto WebM remain untouched.
+- Work is **media editing only**, no product code changes, real provider APIs, deployment or public upload. Automated visual pointer is not human clicking. Overall project verified completion **79/100 unchanged**, RELEASE HOLD. [Editorial sources/limitations](docs/WORKNOVA_PREMIUM_PRIVATE_CUT_20261108.md). GitHub stores only documentation, not the temporary media.
+
 ## 2026-11-08 KST — WORKNOVA no-click automatic browser capture VERIFIED (offline)
 
 - **Verified functional SHA:** `c75b51f5fac3ecf17a6094d28d81f0c956dc5451` / `lead/paypal`. [Linux full CI #42427154097](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42427154097) SUCCESS, [offline smoke #42427154161](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42427154161) SUCCESS. Node `1203/1203 PASS, 0 FAIL`.

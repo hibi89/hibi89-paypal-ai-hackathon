@@ -1,3 +1,16 @@
+## 2026-11-08 KST — Premium private WorkNova v3 editor handoff
+
+1. **Goal and requirements:** Owner expressly prefers the earlier Premium narrated source `proofline-premium-narrated-recovered-20261107-233338-c6315d99.webm`; reuse its Kokoro af_heart narration/click aesthetics, with **WorkNova** GitHub logo, hero and navy/cyan premium concept, Part1+Part2.
+2. **Delivered/decision:** Temporary chat artifact `WORKNOVA_Premium_Design_Audio_Private_170s_1080p_v3.mp4` assembled (170s, 1080p H264/AAC) from fresh WorkNova Playwright footage and selected original Part1 af_heart voice segments. Brand intro/outro visual is WorkNova and obsolete opening/closing voice excluded; quote scene bug repaired.
+3. **Verification:** MP4 170.0s, 1920×1080, H.264/AAC 48kHz stereo; SHA256 `895b83f3689598e1fef29514f772f6cbf80a4ec64baf399b079e0b4a3d28c078`, 59,223,539 bytes, FFmpeg full decode no errors and multiple frames inspected. Not fully listened, no independent narrated transcript, Part2 neural speech still absent. Earlier functional auto CI 1203/1203 PASS at `c75b51f5` is a different test.
+4. **State:** Brand/auto filmed and provisional private editor v3 DONE; final voice, scene/narration sync, subtitle, full AV QA, owner approval PENDING; RELEASE HOLD and overall 79/100 unchanged.
+5. **Problems / don't retry:** Prior silent v1 cut used wrong input range in approval scene; fixed with a quote screenshot hold. First repair mistakenly read through to evidence slide because `-t` limited output, corrected with FFmpeg `trim=duration=5` before `tpad`. Do not confuse old Proofline spoken introduction with WorkNova. Do not fabricate Part2 neural voice from empty pinned model.
+6. **Repo/branch/SHA:** `hibi89/hibi89-paypal-ai-hackathon` / `lead/paypal`; functional validated SHA `c75b51f5fac3ecf17a6094d28d81f0c956dc5451`, last pre-doc head `373a0946b759173c306de68213c8c0c395c80f9a`; brand assets `assets/brand`, source direction `docs/WORKNOVA_BRAND_AND_VIDEO_CONCEPT.md`. This status/docs edit is not functional CI verified.
+7. **Runtime/Production:** Temporary ChatGPT FFmpeg editor only, not the Windows user checkout. No verified Vercel production SHA/URL; release not applicable.
+8. **Source/backup/security:** Owner-approved 179.48s recovered WebM and newer Nov 8 auto 117.36s WebM preserved; only cut private audio excerpts. No raw media/weights/private receipts/DB/secrets uploaded to GitHub. Chat artifact is temporary: user must download.
+9. **Next:** User reviews private 170s preview, report visual/audio issues; use existing local Kokoro model/voicepack if available for Part2 otherwise keep voice missing status. Verify full final speech/click/subtitles and compliance, approval before public release/Devpost.
+10. **KST and evidence:** 2026-11-08. Media metrics checked this turn; full auditory playback and production test NOT VERIFIED. Documentation change is not a service launch.
+
 ## 2026-11-08 KST — WORKNOVA no-click capture CI PASS and handoff
 
 1. **Goal/constraints:** Owner requested no repeated manual clicking. Official PayPal Hackathon rules require a functioning sub-3-minute video but not physical operator clicks. Preserve previous manual recordings and mark automatic browser actions as synthetic.
