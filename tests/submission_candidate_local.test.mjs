@@ -4,7 +4,7 @@ import {mkdtempSync,mkdirSync,readFileSync,writeFileSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createHash} from 'node:crypto';
-import {prepareSubmissionCandidate,verifyPrivateSyntheticVideo,probePrivateWebmDuration} from '../scripts/prepare_submission_candidate.mjs';
+import {prepareSubmissionCandidate,verifyPrivateSyntheticVideo,verifyPrivateV4oFilm,probePrivateWebmDuration} from '../scripts/prepare_submission_candidate.mjs';
 
 const fresh=()=>mkdtempSync(join(tmpdir(),'paypal-local-submission-'));
 function makeFixture(dir){
@@ -136,4 +136,45 @@ test('missing ffprobe uses already-present recorder FFmpeg metadata without down
   {error:{code:'ENOENT'}}:{status:1,stderr:'Invalid data'},
   {findBundled:()=>'/existing/playwright/ffmpeg'});
  assert.equal(bad.status,'MEDIA_DURATION_NOT_VERIFIED');
+});
+
+test('hash-pinned WORKNOVA v4o preview stays private and checks sidecar and duration',()=>{
+ const root=fresh();
+ try{
+  const filename='WORKNOVA_v4o_170s_PRIVATE.mp4';
+  const fake=Buffer.concat([Buffer.from([0,0,0,16]),Buffer.from('ftypmp42'),
+   Buffer.from('UNIT TEST ARTIFICIAL BYTES, NOT A VIDEO')]);
+  const sha256=createHash('sha256').update(fake).digest('hex');
+  const proof={status:'V4O_PRIVATE_VISUAL_REVIEW_NOT_APPROVED',
+   film_sha256:sha256,bytes:fake.length,duration_seconds:170,frames:4250,
+   audio_md5:'MD5=2959cc9c1f5ee996edaefb3b06a147ea',
+   full_av_decode:'PASS',provider_calls:0,release_hold:true,
+   new_voice:false,new_srt:false,preserved_frames:3825};
+  const expected={filename,sha256,bytes:fake.length,seconds:170,frames:4250,
+   audioMd5:proof.audio_md5};
+  const film=join(root,filename),sidecar=join(root,'WORKNOVA_v4o_170s_PRIVATE.json');
+  writeFileSync(film,fake);writeFileSync(sidecar,JSON.stringify(proof));
+  const check=()=>verifyPrivateV4oFilm(root,{expected,probeDuration:()=>
+   ({status:'MEDIA_DURATION_UNDER_180_VERIFIED',durationSeconds:170})});
+  const checked=check();
+  assert.equal(checked.status,'LOCAL_PRIVATE_V4O_INTEGRITY_VERIFIED');
+  assert.equal(checked.mediaDurationProbed,true);
+  assert.equal(checked.ownerVisualApproval,false);
+  assert.equal(checked.publiclyUploaded,false);
+  assert.equal(checked.providerCalls,0);
+  assert.equal(verifyPrivateV4oFilm(root,{expected,probeDuration:()=>
+   ({status:'MEDIA_DURATION_UNDER_180_VERIFIED',durationSeconds:169.8})}).mediaDurationProbed,false);
+  writeFileSync(sidecar,JSON.stringify({...proof,release_hold:false}));
+  assert.throws(check,/V4O_PROOF_CONTRACT_MISMATCH/);
+  writeFileSync(sidecar,JSON.stringify(proof));
+  writeFileSync(film,Buffer.concat([fake,Buffer.from('X')]));
+  assert.throws(check,/V4O_MEDIA_BYTES_MISMATCH/);
+  rmSync(sidecar);
+  assert.throws(check,/V4O_MEDIA_OR_PROOF_MISSING/);
+ }finally{rmSync(root,{recursive:true,force:true})}
+});
+test('missing WORKNOVA v4o film keeps prior synthetic candidate behavior',()=>{
+ const root=fresh();
+ try{assert.equal(verifyPrivateV4oFilm(root),null)}
+ finally{rmSync(root,{recursive:true,force:true})}
 });

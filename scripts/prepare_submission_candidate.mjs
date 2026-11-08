@@ -120,15 +120,63 @@ export function verifyPrivateSyntheticVideo(dir,{probeDuration=probePrivateWebmD
       duration?.status==='MEDIA_DURATION_TOO_LONG'?'MEDIA_DURATION_TOO_LONG':'MEDIA_DURATION_NOT_VERIFIED',
     publiclyUploaded:false};
 }
+
+export const V4O_PRIVATE_PROOF=Object.freeze({
+ filename:'WORKNOVA_v4o_170s_PRIVATE.mp4',
+ sha256:'219b9e21eba9aa77b473f6cfdcc28e7f7afd36d978e7cf37d970f63094856985',
+ bytes:25494944,seconds:170,frames:4250,
+ audioMd5:'MD5=2959cc9c1f5ee996edaefb3b06a147ea'
+});
+// This checks private visual footage integrity only, never owner visual approval.
+export function verifyPrivateV4oFilm(dir,{probeDuration=probePrivateWebmDuration,
+ expected=V4O_PRIVATE_PROOF}={}){
+ const film=join(dir,expected.filename);
+ const proof=join(dir,expected.filename.replace(/\.mp4$/,'.json'));
+ if(!existsSync(film)&&!existsSync(proof))return null;
+ requireValue(existsSync(film)&&existsSync(proof),'V4O_MEDIA_OR_PROOF_MISSING');
+ for(const path of [film,proof])
+  requireValue(lstatSync(path).isFile()&&!lstatSync(path).isSymbolicLink(),
+   'V4O_REGULAR_FILES_REQUIRED');
+ const r=JSON.parse(readFileSync(proof,'utf8'));
+ requireValue(r.status==='V4O_PRIVATE_VISUAL_REVIEW_NOT_APPROVED'&&
+  r.film_sha256===expected.sha256&&r.bytes===expected.bytes&&
+  r.duration_seconds===expected.seconds&&r.frames===expected.frames&&
+  r.audio_md5===expected.audioMd5&&r.full_av_decode==='PASS'&&
+  r.provider_calls===0&&r.release_hold===true&&
+  r.new_voice===false&&r.new_srt===false&&r.preserved_frames===3825,
+  'V4O_PROOF_CONTRACT_MISMATCH');
+ requireValue(lstatSync(film).size===expected.bytes&&
+  expected.bytes>0&&expected.bytes<250*1024*1024,'V4O_MEDIA_BYTES_MISMATCH');
+ const media=readFileSync(film);
+ requireValue(media.subarray(4,8).toString('ascii')==='ftyp','V4O_MP4_HEADER_INVALID');
+ const sha256=createHash('sha256').update(media).digest('hex');
+ requireValue(sha256===expected.sha256,'V4O_MEDIA_SHA256_MISMATCH');
+ const duration=probeDuration(film);
+ const measured=duration?.status==='MEDIA_DURATION_UNDER_180_VERIFIED'&&
+  Number.isFinite(duration.durationSeconds)&&
+  Math.abs(duration.durationSeconds-expected.seconds)<=0.01;
+ return {status:'LOCAL_PRIVATE_V4O_INTEGRITY_VERIFIED',
+  filename:expected.filename,sha256,bytes:media.length,
+  storyboardVersion:'WORKNOVA_V4O_PRIVATE_170S',mediaDurationProbed:measured,
+  mediaDurationSeconds:Number.isFinite(duration?.durationSeconds)?duration.durationSeconds:null,
+  mediaDurationStatus:measured?'MEDIA_DURATION_UNDER_180_VERIFIED':
+   duration?.status==='MEDIA_DURATION_TOO_LONG'?'MEDIA_DURATION_TOO_LONG':'MEDIA_DURATION_NOT_VERIFIED',
+  ownerVisualApproval:false,publiclyUploaded:false,providerCalls:0,
+  note:'Private visual candidate only, not final voice, subtitles or public release.'};
+}
+
 export function prepareSubmissionCandidate({root=ROOT}={}){
   root=resolve(root);
   const ledger=JSON.parse(read(root,'data/paypal_daily_progress.json'));
   const files=Object.fromEntries(entryPaths.map(path=>[path,read(root,path)]));
   const assessment=assessSubmissionEvidence({ledger,files});
-  const video=verifyPrivateSyntheticVideo(join(root,'output','videos'));
+  const videoDir=join(root,'output','videos');
+  const video=verifyPrivateV4oFilm(videoDir)??verifyPrivateSyntheticVideo(videoDir);
+  const videoIntegrityVerified=['LOCAL_SYNTHETIC_WEBM_INTEGRITY_VERIFIED',
+   'LOCAL_PRIVATE_V4O_INTEGRITY_VERIFIED'].includes(video.status);
   const localSource=assessment.localAssets.every(a=>!a.status.includes('MISSING')&&!a.status.includes('INVALID'));
   const ownerReviewReady=localSource&&
-    video.status==='LOCAL_SYNTHETIC_WEBM_INTEGRITY_VERIFIED'&&video.mediaDurationProbed&&
+    videoIntegrityVerified&&video.mediaDurationProbed&&
     // Assigned below after reading the new final copy.
     true;
   const copy=files['docs/DEVPOST_ENTRY_AND_VIDEO_COPY_EN_20261029.md'];
@@ -162,7 +210,7 @@ export function prepareSubmissionCandidate({root=ROOT}={}){
   mkdirSync(dest,{recursive:true});
   const report={
     status:copyAndVideoReviewReady?'LOCAL_PACKET_PREPARED_NOT_SUBMITTED':
-      localSource&&video.status==='LOCAL_SYNTHETIC_WEBM_INTEGRITY_VERIFIED'&&
+      localSource&&videoIntegrityVerified&&
        !video.mediaDurationProbed?
         'LOCAL_PACKET_NEEDS_INDEPENDENT_MEDIA_DURATION_PROOF':
         localSource&&!finalCopyReady?'LOCAL_PACKET_NEEDS_FINAL_ENGLISH_COPY':
@@ -170,6 +218,7 @@ export function prepareSubmissionCandidate({root=ROOT}={}){
     sourceStatus:localSource?'LOCAL_SOURCE_DRAFTS_PRESENT':'LOCAL_SOURCE_MISSING',
     privateVideo:video,
     ownerReviewReady:copyAndVideoReviewReady,
+    ownerVisualApproval:false,
     finalEnglishCopy:finalCopyReady?
       'OWNER_REVIEW_COPY_VALIDATED_NOT_PUBLISHED':'OWNER_REVIEW_COPY_MISSING_OR_INVALID',
     authorizedToPublish:false,
@@ -181,7 +230,7 @@ export function prepareSubmissionCandidate({root=ROOT}={}){
     externalGates:assessment.externalGates,
     note:'This packet is local, synthetic and unpublished. ffprobe checks WebM duration only when available; hash or media length does not verify providers, publication approval or Devpost submission.'
   };
-  const md='# PROOFLINE — PRIVATE SUBMISSION CANDIDATE (NOT SUBMITTED)\n\n'+
+  const md='# WORKNOVA — PRIVATE SUBMISSION CANDIDATE (NOT SUBMITTED)\n\n'+
     '**No public YouTube link or Devpost receipt exists in this report. Do not publish without owner review and approval.**\n\n'+
     '- Source: https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/main\n'+
     '- Local video: '+(video.filename||'NOT RECORDED ON THIS MACHINE')+'\n'+
