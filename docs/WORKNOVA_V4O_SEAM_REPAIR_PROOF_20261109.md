@@ -37,3 +37,10 @@ python scripts/worknova_v4o_seam_fix.py --source /path/to/WORKNOVA_v4n_170s_PRIV
 ```
 
 Inputs are SHA-pinned and outputs refuse overwrites; the ZIP contains the v4o **output**, not a duplicate v4n source. Reproduction requires preserved v4n original. Source/test/proof checked into GitHub, large media only in Library.
+
+## Exact-SHA postflight after GitHub push
+
+- Feature code commit `67b5cf8338bac47469b385215965085e0c08ae0b` author/committer `hibi89`, source/test/proof blobs matched locally validated files.
+- GitHub Actions Offline MVP smoke [#42512943612](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42512943612) **SUCCESS** and Offline payment-contract tests [#42512943667](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42512943667) **SUCCESS** at exact code SHA; test job SUCCESS, Windows first-run SUCCESS, two optional jobs SKIPPED.
+- Full decoded 94–160s Part2 sweep, 1,650 frames: zero central UI frames with mean brightness below 1 in x140:1770, y120:900; this is a focused blank-panel check, not full 170s subjective review.
+- Preferred persistent Library ZIP physically re-materialized and SHA256 `8190001d93b22516c25c20aa8fe9c8762d2f2b7c8029c26e2d8a2b45d0f21684` verified, 7 entries CRC PASS, six inner SHA256 manifests match. Standalone unpacked Python tests 15 PASS. v4n source, prior approved af_heart voice and old Library kits not modified.
