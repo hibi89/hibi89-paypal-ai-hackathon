@@ -23,6 +23,7 @@ test('evidence classes are strictly separated after fake-provider orchestrator s
  assert.equal(report.evidence[2].count,6);
  assert.equal(report.evidence[3].status,'OWNER_REPORTED_NOT_INDEPENDENTLY_ATTESTED');
  assert.equal(report.evidence[4].status,'NOT_SUBMITTED');
+ assert.equal(report.evidence[4].source,'docs/DEVPOST_FINAL_REVIEW_PACKET_EN_20261105.md');
  assert.equal(report.verifiedFromThisCommand.part2FiveSkillsExecuted,5);
  assert.equal(report.verifiedFromThisCommand.part2RealProviderCalls,0);
  assert.equal(report.verifiedFromThisCommand.actualProviderCalls,0);
@@ -35,6 +36,8 @@ test('evidence classes are strictly separated after fake-provider orchestrator s
  assert.match(markdown,/git switch lead\/paypal/);
  assert.doesNotMatch(markdown,/^# Proofline/m);
  assert.match(markdown,/NOT_SUBMITTED/);
+ assert.match(markdown,/docs\/DEVPOST_FINAL_REVIEW_PACKET_EN_20261105[.]md/);
+ assert.doesNotMatch(markdown,/docs\/OWNER_FINAL_SUBMISSION_HANDOFF_20261029[.]md/);
  assert.doesNotMatch(markdown,/client_secret|access_token|PayerID|checkoutnow/);
 });
 test('tampered mock payload or invented real provider proof fails closed',async()=>{
@@ -105,7 +108,9 @@ test('judge-facing report rendering rejects forged public/provider states and ev
   {...good,evidence:good.evidence.map((x,i)=>i===3?
     {...x,status:'INDEPENDENT_PAYPAL_AND_GEMINI_PROVIDER_VERIFIED'}:x)},
   {...good,evidence:good.evidence.map((x,i)=>i===3?
-    {...x,source:'secret_provider_receipt.json'}:x)}
+    {...x,source:'secret_provider_receipt.json'}:x)},
+  {...good,evidence:good.evidence.map((x,i)=>i===4?
+    {...x,source:'docs/OWNER_FINAL_SUBMISSION_HANDOFF_20261029.md'}:x)}
  ]){
   assert.throws(()=>renderJudgeEvidenceMarkdown(altered),
    /JUDGE_PUBLICATION_OR_PROVIDER_PROVENANCE_INVALID/);

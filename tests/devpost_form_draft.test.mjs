@@ -25,6 +25,10 @@ test('real English draft extracts full editable Devpost fields while remaining u
  assert.equal(r.currentWorknovaMainReleased,false);
  assert.equal(r.defaultMainPromotionRequiredForDevpost,false);
  assert.match(r.reviewNotice,/Default-main promotion is optional/);
+ assert.match(r.descriptionMarkdown,/current WORKNOVA reviewer source is already public/);
+ assert.match(r.descriptionMarkdown,/a main merge is optional/);
+ assert.match(r.descriptionMarkdown,/Promoting WORKNOVA to default main is optional/);
+ assert.doesNotMatch(r.descriptionMarkdown,/latest.source release/i);
  assert.equal(r.sourceBranchesLiveRechecked,false);
  assert.equal(r.ownerAuthorizedPublication,false);
  assert.equal(r.offlineBrowserProviderCalls,0);
@@ -55,7 +59,10 @@ test('cannot transform tampered or prematurely published copy into an owner-read
   draft.replace('Official rules do not require the latest WORKNOVA source on default main.','Official rules require the latest WORKNOVA source on default main.'),
   draft.replace('GitHub identifies the repository as public with a root MIT license.','GitHub identifies the repository as private without a license.'),
   draft.replace('**WORKNOVA reviewer source (public lead/paypal branch):**','**Working source (public default branch):**'),
-  draft.replace('merged PR #28','published production')
+  draft.replace('merged PR #28','published production'),
+  draft.replace('a main merge is optional','a main merge is mandatory'),
+  draft.replace('The current WORKNOVA reviewer source is already public','The current WORKNOVA source is not published'),
+  draft.replace('Promoting WORKNOVA to default main is optional','Promoting WORKNOVA to default main is required')
  ])assert.throws(()=>buildDevpostFormFields(altered));
 });
 test('safe local generation only touches ignored output and --check never writes',()=>{

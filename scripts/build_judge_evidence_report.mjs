@@ -23,7 +23,7 @@ const EXPECTED_EVIDENCE_ROWS=Object.freeze([
  ['D','OWNER_HISTORICAL_PROVIDER_ACTIVITY','OWNER_REPORTED_NOT_INDEPENDENTLY_ATTESTED',
   'docs/technical/PPL_OWNER_REAL_SANDBOX_LOCAL_RECEIPT_20261028.md'],
  ['E','PUBLIC_HACKATHON_SUBMISSION','NOT_SUBMITTED',
-  'docs/OWNER_FINAL_SUBMISSION_HANDOFF_20261029.md']
+  'docs/DEVPOST_FINAL_REVIEW_PACKET_EN_20261105.md']
 ]);
 
 const requireTrue=(v,code)=>{if(!v)throw Error(code)};
@@ -143,7 +143,7 @@ export function summarizeSyntheticJudgeTrace(result,part2){
        source:'docs/technical/PPL_OWNER_REAL_SANDBOX_LOCAL_RECEIPT_20261028.md',
        claim:'Owner reported historical Gemini skill classification and PayPal Sandbox buyer approval, capture and provider GET on 2026-10-28; not recontacted in this report.'}),
      Object.freeze({id:'E',type:'PUBLIC_HACKATHON_SUBMISSION',status:'NOT_SUBMITTED',
-       source:'docs/OWNER_FINAL_SUBMISSION_HANDOFF_20261029.md',
+       source:'docs/DEVPOST_FINAL_REVIEW_PACKET_EN_20261105.md',
        claim:'Owner-approved public YouTube video and final Devpost confirmation not established by this command.'})
    ],
    verifiedFromThisCommand:Object.freeze({

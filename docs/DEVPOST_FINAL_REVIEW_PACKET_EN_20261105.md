@@ -62,7 +62,7 @@ The same green status can mean different things: a synthetic browser test, a loc
 
 ## What's next
 
-Seek an explicitly authorized judge-safe real-provider walkthrough, authenticated opt-in users, a live seller/merchant verification process, secure production hosting if later needed, and transparent fee and dispute policy. Those are future work, not current features. The earlier Proofline-era default-main source-only release is completed, but the current WORKNOVA source is not yet promoted to main. The under-three-minute public YouTube video, latest source release and the Devpost form still need separate owner approval.
+Seek an explicitly authorized judge-safe real-provider walkthrough, authenticated opt-in users, a live seller/merchant verification process, secure production hosting if later needed, and transparent fee and dispute policy. Those are future work, not current features. The current WORKNOVA reviewer source is already public on the MIT-licensed `lead/paypal` branch; a main merge is optional and is not required for this contest entry. An earlier Proofline-era version remains on default `main`. The under-three-minute public YouTube video and actual Devpost submission still require separate owner approval.
 
 ## Tools and how used
 
@@ -73,7 +73,7 @@ Seek an explicitly authorized judge-safe real-provider walkthrough, authenticate
 - **GitHub Actions** — Runs Linux/Windows regression and Chromium checks; passing CI verifies the stated offline scope, not external provider availability or a real PayPal payment.
 
 ## Built with
-PayPal Sandbox Orders v2 and OAuth (private owner-operated workflow), Gemini API (private owner-operated workflow), Node.js, SQLite, JavaScript, HTML/CSS, Playwright, Chromium and GitHub Actions. The older default main branch contains the MIT LICENSE and runnable Proofline-era offline source; the latest WORKNOVA reviewer runs from the public lead/paypal branch. Provider, latest-source release, video and Devpost remain separately gated.
+PayPal Sandbox Orders v2 and OAuth (private owner-operated workflow), Gemini API (private owner-operated workflow), Node.js, SQLite, JavaScript, HTML/CSS, Playwright, Chromium and GitHub Actions. The older default main branch contains the MIT LICENSE and runnable Proofline-era offline source; the latest WORKNOVA reviewer runs from the public lead/paypal branch. Promoting WORKNOVA to default main is optional; the current WORKNOVA source is already available on the public `lead/paypal` branch. Real-provider verification, public video and Devpost submission remain separately gated.
 
 ## Reviewer quickstart — synthetic demonstration only
 
@@ -94,7 +94,7 @@ Open the printed `http://127.0.0.1:PORT` on that computer; visit `/demo/innovati
 - [ ] Owner confirms accurate provider-evidence boundaries and final wording
 - [x] Earlier default-main source/license release: PR #28 merged at `28a370fd` (Proofline-era, not the latest WORKNOVA reviewer build or Production deployment)
 - [x] Current WORKNOVA code is on the public `lead/paypal` branch with reproducible local judge instructions; GitHub reports public repository and root MIT license
-- [ ] Optional only, not a Devpost submission prerequisite: owner may separately approve promoting the exact tested WORKNOVA source to default `main`; no stale PR merge or force-push
+**Optional maintenance (not an entry blocker):** Promoting the tested WORKNOVA source to default `main` requires separate owner approval; do not merge the stale PR or force-push.
 - [ ] Owner visually approves and publishes the accurate public YouTube video **under 180 seconds**
 - [ ] Owner explicitly approves and submits the English Devpost form; real confirmation URL recorded
 

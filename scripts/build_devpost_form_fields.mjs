@@ -83,6 +83,13 @@ export function buildDevpostFormFields(source){
   fail('LIVE_PROVIDER_PROOF_NOT_ATTESTED');
  if(!BUILT_WITH_TAGS.every(tag=>builtWith.includes(tag)))
   fail('BUILT_WITH_TOOL_TAGS_MISSING');
+ const whatsNext=blocks.get("What's next");
+ if(!whatsNext?.includes('The current WORKNOVA reviewer source is already public')||
+    !whatsNext.includes('a main merge is optional')||
+    !whatsNext.includes('actual Devpost submission still require separate owner approval')||
+    !builtWith.includes('Promoting WORKNOVA to default main is optional')||
+    !builtWith.includes('Real-provider verification, public video and Devpost submission remain separately gated.'))
+  fail('DEVPOST_SOURCE_AND_RELEASE_GATE_INCONSISTENT');
  const sourceAndDemo=blocks.get('Source and demo');
  if(!sourceAndDemo?.includes('**WORKNOVA reviewer source (public lead/paypal branch):** https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/lead/paypal')||
     !sourceAndDemo.includes('**Earlier public default source (main, Proofline-branded):** https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/main')||
