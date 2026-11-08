@@ -8,16 +8,16 @@ from pathlib import Path
 from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT = ROOT / "output" / "submission" / "proofline-offline-reviewer.zip"
-PREFIX = "proofline-offline-reviewer/"
+DEFAULT = ROOT / "output" / "submission" / "worknova-offline-reviewer.zip"
+PREFIX = "worknova-offline-reviewer/"
 ENTRY = "scripts/run_demo.mjs"
 IMPORT = re.compile(r"(?:\bfrom\s*|\bimport\s*[(]?\s*)['\"](\.[^'\"\r\n]+)['\"]")
 ASSETS = frozenset({".html", ".js", ".css", ".svg"})
-README = """# Proofline — private offline reviewer package
+README = """# WORKNOVA — private offline reviewer package
 
 Node.js 22.5+ is required. No Git, npm install, account, API key or Internet
 access is needed after receiving the ZIP. Extract the entire directory.
-Inside proofline-offline-reviewer, run: npm run demo
+Inside worknova-offline-reviewer, run: npm run demo
 Open the printed http://127.0.0.1:PORT on the same computer.
 Use AI Work and Global Services; /demo/innovation has all five skills.
 Stop with Ctrl+C; local synthetic state is disposable.
@@ -28,7 +28,7 @@ provider evidence is separate and NOT independently reproduced by this bundle.
 This local ZIP is NOT a public release, YouTube video or Devpost submission.
 """
 PACKAGE = {
-    "name": "proofline-offline-reviewer", "version": "0.1.0",
+    "name": "worknova-offline-reviewer", "version": "0.1.0",
     "private": True, "type": "module",
     "scripts": {"demo": "node --experimental-sqlite scripts/run_demo.mjs"},
     "engines": {"node": ">=22.5.0"}, "license": "MIT",
@@ -148,7 +148,7 @@ def main():
     mode.add_argument("--check", action="store_true")
     args = parser.parse_args()
     if args.check:
-        with tempfile.TemporaryDirectory(prefix="proofline-reviewer-") as folder:
+        with tempfile.TemporaryDirectory(prefix="worknova-reviewer-") as folder:
             result = build(Path(folder) / "reviewer.zip")
     else:
         result = build(args.out)

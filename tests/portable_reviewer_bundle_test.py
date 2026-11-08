@@ -16,7 +16,7 @@ from zipfile import ZipFile
 
 ROOT = Path(__file__).resolve().parents[1]
 BUILDER = ROOT / "scripts" / "pack_offline_reviewer.py"
-PREFIX = "proofline-offline-reviewer/"
+PREFIX = "worknova-offline-reviewer/"
 OPENER = build_opener(ProxyHandler({}))
 
 
@@ -33,7 +33,7 @@ class ReviewerBundleTest(unittest.TestCase):
         return archive
 
     def test_file_scope_integrity_and_no_overwrite(self):
-        with tempfile.TemporaryDirectory(prefix="proofline-zips-") as tmp:
+        with tempfile.TemporaryDirectory(prefix="worknova-zips-") as tmp:
             archive = self.create(tmp)
             with ZipFile(archive) as z:
                 names = z.namelist()
@@ -46,6 +46,13 @@ class ReviewerBundleTest(unittest.TestCase):
                 self.assertGreater(len(manifest["files"]), 10)
                 self.assertIn("src/offline_demo_server.mjs", manifest["files"])
                 self.assertIn("web/innovation_dashboard.html", manifest["files"])
+                brand = z.read(PREFIX + "REVIEWER_README.md").decode("utf-8")
+                self.assertTrue(brand.startswith("# WORKNOVA"))
+                self.assertIn("SYNTHETIC OFFLINE DEMO ONLY", brand)
+                self.assertIn("No actual PayPal or Gemini calls", brand)
+                self.assertNotIn("Proofline", brand)
+                package = json.loads(z.read(PREFIX + "package.json"))
+                self.assertEqual(package["name"], "worknova-offline-reviewer")
                 for path, digest in manifest["files"].items():
                     self.assertEqual(hashlib.sha256(z.read(PREFIX + path)).hexdigest(), digest)
             again = subprocess.run(
@@ -58,11 +65,11 @@ class ReviewerBundleTest(unittest.TestCase):
             self.assertFalse(json.loads(checked.stdout)["savedLocally"])
 
     def test_fresh_unpack_runs_both_parts_without_install_or_provider(self):
-        with tempfile.TemporaryDirectory(prefix="proofline-run-") as tmp:
+        with tempfile.TemporaryDirectory(prefix="worknova-run-") as tmp:
             archive = self.create(tmp)
             with ZipFile(archive) as z:
                 z.extractall(Path(tmp) / "extract")
-            cwd = Path(tmp) / "extract" / "proofline-offline-reviewer"
+            cwd = Path(tmp) / "extract" / "worknova-offline-reviewer"
             self.assertFalse((cwd / "node_modules").exists())
             self.assertEqual(json.loads((cwd / "package.json").read_text())["scripts"],
                 {"demo": "node --experimental-sqlite scripts/run_demo.mjs"})

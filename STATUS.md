@@ -1,3 +1,8 @@
+## 2026-11-09 KST — Step3 owner-intervention batching + reviewer package WORKNOVA identity
+
+- Owner explicitly directed **minimize owner intervention until unavoidable final gate**, batch owner-only private receipt check + video design lock + final public release/YouTube/Devpost approvals. Independent development/reviewer/test/draft tasks continue without asking for local commands. This does NOT authorize external PayPal/Gemini, cloud deployment, publication or branch release to `main`.
+- Fixed real discrepancy: offline reviewer bundle was labelled Proofline despite WORKNOVA web product. Renamed private ZIP path/prefix/npm/README to WORKNOVA; updated fresh extract Python+Chromium test paths and new Node brand assertions. Updated README and English reviewer guide to show **private 170s v4o candidate**, with owner design/publication HOLD, no new voice/SRT and historical provider separation. Draft Devpost summary wording adjusted without changing guard strings. Source only, no binary uploads. Verification evidence: `docs/WORKNOVA_STEP3_PORTABLE_REVIEWER_BRAND_AUDIT_20261109.md`. Exact feature SHA CI pending at creation. Whole product baseline 79% unchanged.
+
 ## 2026-11-09 KST — Step2 read-only status command exact-SHA CI verified
 
 - Feature commit `89b630255f638df04f84962d50cb7b3b6c6c235c`: **Offline MVP smoke #42515686813 SUCCESS** and **Offline payment-contract tests #42515682907 SUCCESS**. Payment-contract jobs `test` SUCCESS (includes newly added projection and owner-safe CLI tests), `Windows first-run offline video recording` SUCCESS, 2 optional jobs SKIPPED. Locally pure status projection 9/9 PASS. Exact GitHub source and CLI blob SHAs matched locally tested files; CI integrated tests at feature SHA PASS.

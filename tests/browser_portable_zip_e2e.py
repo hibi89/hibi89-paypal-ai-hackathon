@@ -14,7 +14,7 @@ from zipfile import ZipFile
 
 ROOT = Path(__file__).resolve().parents[1]
 BUILDER = ROOT / "scripts" / "pack_offline_reviewer.py"
-PREFIX = "proofline-offline-reviewer/"
+PREFIX = "worknova-offline-reviewer/"
 TESTS = (
     ("tests/browser_offline_e2e.py", "CHROMIUM_BROWSER_E2E_PASS:"),
     ("tests/browser_innovation_e2e.py", "CHROMIUM_INNOVATION_PART2_E2E_PASS:"),
@@ -22,7 +22,7 @@ TESTS = (
 
 
 def main():
-    with tempfile.TemporaryDirectory(prefix="proofline-extracted-chrome-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="worknova-extracted-chrome-") as tmp:
         tmp = Path(tmp)
         archive = tmp / "private-reviewer.zip"
         built = subprocess.run(
@@ -37,7 +37,7 @@ def main():
             if manifest["providerCalls"] != 0 or manifest["paymentAuthorized"]:
                 raise AssertionError("REVIEWER_ZIP_PROVIDER_CLAIM")
             z.extractall(tmp / "extract")
-        reviewer = tmp / "extract" / "proofline-offline-reviewer"
+        reviewer = tmp / "extract" / "worknova-offline-reviewer"
         if (reviewer / "node_modules").exists() or (reviewer / ".env").exists():
             raise AssertionError("REVIEWER_ZIP_HAS_EXTERNAL_DEPENDENCIES")
         if not (reviewer / "scripts" / "run_demo.mjs").is_file():

@@ -1,10 +1,10 @@
-# PayPal Freelancer Agent — Reviewer Reproduction Guide (Draft)
+# WORKNOVA — Two-Part Reviewer Reproduction Guide (Draft)
 
 **This browser demo remains strictly OFFLINE/SYNTHETIC, not a public real-provider application.** Separately, the owner ran one private Windows terminal Gemini skill-classification → Sandbox USD 1.50 buyer approval → Capture → fresh GET on 2026-10-28 and provided output `SANDBOX_PAYMENT_VERIFIED_BY_PROVIDER_GET`. The run is owner-observed evidence, **NOT independently reproduced in GitHub CI**, not a production authenticated marketplace, not a public judge experience, and not a video/Devpost submission. The price was manually approved, **not AI-generated**, and the browser demo still uses offline mock quote drafting. Never confuse localhost synthetic browser outcomes with live third-party payment evidence. The private SQLite receipt can be reviewed safely via `npm run mvp:receipt`, but must NOT be uploaded or reset.
 
-## Proofline two-category walkthrough (current implementation)
+## WORKNOVA two-category walkthrough (current implementation)
 
-Proofline presents **one local synthetic marketplace**, with two selected service categories; the real human freelancer network is not built. Both categories reuse the same versioned quote and contract path. **PayPal and Gemini calls do not run inside this browser.**
+WORKNOVA presents **one local synthetic marketplace**, with two selected service categories; the real human freelancer network is not built. Both categories reuse the same versioned quote and contract path. **PayPal and Gemini calls do not run inside this browser.**
 
 1. Start `npm run demo` from `lead/paypal`. Open the printed 127.0.0.1 address; confirm the banner says **OFFLINE**.
 2. Choose **AI Work**, click **Explore matching specialists**, and review the fictional web/automation/data candidates and their missing skills.
@@ -14,9 +14,9 @@ Proofline presents **one local synthetic marketplace**, with two selected servic
 
 **Automated evidence:** `tests/browser_general_services_e2e.py` reproduces the entire Global Services browser sequence on a fresh local server. `tests/browser_offline_e2e.py` covers AI Work, full delivery/review state changes and responsive Global Services mobile UI. Both run in GitHub Actions without any payment POST.
 
-**Video evidence (current):** The `TWO_PART_FIVE_SKILLS_V3` synthetic recorder exercises both Part1 categories, all five Part2 browser skills and the owner-entered local Gift catalog. Exact-source [CI #41862397878](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41862397878) independently measured the encoded, private, synthetic WebM at **141.40 seconds** and passed Windows/Linux; CI footage is ephemeral, **not** the owner's final reviewed file, a public YouTube video or independent PayPal/Gemini proof.
+**Video evidence (2026-11-09, PRIVATE):** The WORKNOVA **v4o 170-second, 1920×1080** visual candidate exists as a hashed, private Library backup, with Part 1 marketplace and five offline Part 2 skills. Targeted 104s and 154s one-frame flashes were corrected; full video/audio decode and existing AAC preservation were verified. The candidate is **NOT owner-locked, NOT publicly uploaded, and NOT independent Gemini/PayPal provider proof**. Approved original voice is preserved; *no new voice or subtitles until the owner locks the design*. Separately, the older `TWO_PART_FIVE_SKILLS_V3` CI synthetic recorder [#41862397878](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/41862397878) made a **141.40s** ephemeral WebM; do not substitute that older recording for v4o or a public YouTube link.
 
-**Submission caveat (2026-11-05):** Public default `main` now contains the runnable two-part source and MIT root `LICENSE`: [PR #28 MERGED](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/28) at `28a370fd`, with 514/514 release-preview blobs matching. Existing main-only role doc preserved. Previous offline source CI passed; a merged-SHA CI, real provider integration, Production hosting, video publication and Devpost are **NOT VERIFIED**. The entry remains **NOT SUBMITTED**; owner-approved public YouTube and Devpost confirmation are outstanding.
+**Submission caveat (2026-11-09):** Public default `main` now contains the runnable two-part source and MIT root `LICENSE`: [PR #28 MERGED](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/28) at `28a370fd`, with 514/514 release-preview blobs matching. Existing main-only role doc preserved. Previous offline source CI passed; a merged-SHA CI, real provider integration, Production hosting, video publication and Devpost are **NOT VERIFIED**. The entry remains **NOT SUBMITTED**; owner-approved public YouTube and Devpost confirmation are outstanding.
 
 ## Optional owner-supplied local Gift-finder catalog (non-provider)
 
@@ -40,7 +40,7 @@ Actual exact-source test: [#41856162809](https://github.com/hibi89/hibi89-paypal
 
 ## Current verified scope
 
-- Root [MIT LICENSE](../LICENSE) exists in `lead/paypal` and `package.json` says `MIT`; **no owner approval for default-main release** has been granted.
+- Root [MIT LICENSE](../LICENSE) exists in `lead/paypal` and `package.json` says `MIT`; public `main` was already published via merged PR #28. **No approval has been granted to merge the newer `lead/paypal` source** to `main`.
 - `lead/paypal` holds the current working source. The `main` branch is **not** asserted to be equivalent to the current lead.
 - GitHub Actions verifies `npm test`, the 18-day dashboard and an actual Chromium **localhost** UI journey. The CI logs contain the exact SHA/results; they do **not** prove third-party API integration, production authentication or Devpost submission.
 - This demo uses SQLite and a loopback Node server. No npm package installation or developer credentials are needed to run the offline demo.
@@ -116,7 +116,7 @@ The [one-shot owner probe instructions](technical/PPL_P0_OWNER_ONE_SHOT_REAL_API
 | Real PayPal Sandbox OAuth + Business/Personal | OWNER-REPORTED SANDBOX E2E 2026-10-28 | One local Sandbox buyer/create/capture/GET success was owner-observed; independent reviewer-safe confirmation still needed |
 | Genuine AI response | OWNER-REPORTED REAL SKILLS CLASSIFICATION | Real Gemini skill extraction succeeded in private CLI; quote draft UI, actual free billing and judge integration still pending |
 | Public/reviewer authenticated production path | NOT_TESTED | Real identity, data durability, secure roles, restart/refresh and remote browser evidence, **if deployment is chosen** |
-| Final video | NOT_FILMED | Owner-reviewed under-three-minute English video and public link |
+| Final video | PRIVATE_V4O_170S_VISUAL_CANDIDATE_NOT_APPROVED_NOT_PUBLISHED | Owner visual lock, then approved voice/captions, then owner-approved public YouTube link |
 | Devpost entry | NOT_SUBMITTED | Owner-approved submission and receipt/link |
 
 The owner supplied evidence of one real Gemini skill-classification call and one PayPal **Sandbox** checkout/capture/GET, but these were not independently reproduced in CI. There is no evidence of real money movement, Live PayPal, production D1, a public production URL, video publication or completed Devpost entry. A green local CI run is **only** engineering quality evidence. The [submission evidence preflight](../scripts/check_submission_evidence.mjs) keeps this distinction explicit.

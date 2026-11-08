@@ -45,3 +45,24 @@ test('Private host keeps sign-in and protected workflow controls',()=>{
   assert.match(html,/exact origin and a one-time CSRF/);
   assert.match(html,/src="\/private\/marketplace\/app.js"/);
 });
+
+test('judge-facing WORKNOVA name and private video provenance match portable reviewer',()=>{
+  const readme=read('README.md');
+  const guide=read('docs/JUDGE_REPRODUCTION_EN.md');
+  const builder=read('scripts/pack_offline_reviewer.py');
+  const devpost=read('docs/DEVPOST_FINAL_REVIEW_PACKET_EN_20261105.md');
+  assert.match(readme,/^# WORKNOVA —/);
+  assert.match(readme,/## For judges — WORKNOVA/);
+  assert.match(readme,/worknova-offline-reviewer[.]zip/);
+  assert.match(readme,/NOT.*public YouTube/);
+  assert.match(guide,/^# WORKNOVA —/);
+  assert.match(guide,/WORKNOVA.*v4o 170-second/);
+  assert.match(guide,/NOT owner-locked, NOT publicly uploaded/);
+  assert.match(guide,/PRIVATE_V4O_170S_VISUAL_CANDIDATE_NOT_APPROVED_NOT_PUBLISHED/);
+  assert.match(builder,/worknova-offline-reviewer[.]zip/);
+  assert.match(builder,/PREFIX = "worknova-offline-reviewer\/"/);
+  assert.match(builder,/# WORKNOVA — private offline reviewer package/);
+  assert.match(devpost,/private 170-second WORKNOVA v4o visual candidate/);
+  assert.match(devpost,/NOT PUBLISHED/);
+  assert.match(devpost,/OWNER APPROVAL IS STILL REQUIRED/);
+});
