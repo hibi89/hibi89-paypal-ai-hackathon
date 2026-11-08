@@ -18,6 +18,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
+# Verified local 170s films; v4o preserves five Part2 windows and old AAC.
+ALLOWED_CUT_SHA256=frozenset({
+    'abe1b4094f0d11b526a5c467a1b79939c18a45c9f6adab4524ac66d8337c2494',  # v4b
+    '96941f892dc91f4c7508b2d70fdec67ba93acb2738a71b997e781c6dd198d7a8',  # v4c
+    'd74482b77770259a5cf18f4cd81a6e4b15264ce401431ef65d3e21530dbaebdb',  # v4d
+    '219b9e21eba9aa77b473f6cfdcc28e7f7afd36d978e7cf37d970f63094856985',  # v4o
+})
+
+
 def sha256(path:Path) -> str:
     h=hashlib.sha256()
     with path.open('rb') as f:
@@ -62,15 +71,9 @@ def validate(video:Path,wav:Path):
         report.get('owner_approved_for_release') is not False or
         report.get('sha256')!=sha256(wav)):
         raise ValueError('PART2_KOKORO_PROVENANCE_OR_SHA_MISMATCH')
-    # v4c changes only Churn pixels at 135-144s; all five voice scene bounds are identical.
-    # Both originals are owner-private. A different edit must first be independently verified.
-    allowed_cuts={
-        'abe1b4094f0d11b526a5c467a1b79939c18a45c9f6adab4524ac66d8337c2494',  # v4b
-        '96941f892dc91f4c7508b2d70fdec67ba93acb2738a71b997e781c6dd198d7a8',  # v4c
-        'd74482b77770259a5cf18f4cd81a6e4b15264ce401431ef65d3e21530dbaebdb',  # verified 170s v4d
-    }
-    if sha256(video) not in allowed_cuts:
-        raise ValueError('VERIFIED_V4B_V4C_VIDEO_SHA_REQUIRED__NEW_CUT_NEEDS_RETIMING')
+    # Any other edited cut requires independent review and exact SHA pinning.
+    if sha256(video) not in ALLOWED_CUT_SHA256:
+        raise ValueError('VERIFIED_VIDEO_SHA_REQUIRED__NEW_CUT_NEEDS_RETIMING')
     v=probe(video);a=probe(wav)
     vd=float(v['format']['duration']);ad=float(a['format']['duration'])
     if abs(vd-170)>0.10 or abs(ad-170)>0.10:
