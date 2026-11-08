@@ -1,3 +1,16 @@
+## 2026-11-09 KST — Step4 recovery CI confirmed; release preparation next (ten-point handoff)
+
+1. **Goal:** WORKNOVA PayPal+AI 2-part hackathon final verification and submission while minimizing owner involvement until indispensable final approvals.
+2. **Changes/choice:** Compared main/lead Git trees (main-only role doc one, lead-only 71, common differing 20). Two experimental whole-tree scanner attempts failed due fixture source text; STOP & PIVOT, restored tested application state via ordinary forward commit. Scanner/CI addition removed. Failure detail `docs/WORKNOVA_STEP4_RELEASE_TREE_AND_SECRET_SCAN_20261109.md`.
+3. **Tests:** Exact recovery source SHA `f9335385755d17354ac9f7b655756ad45c92a11d`: GitHub [smoke #42518636252](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42518636252) **SUCCESS**, [contracts #42518636272](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42518636272) **SUCCESS**, Linux Node/Chromium and Windows first-run SUCCESS, 2 optional SKIPPED. Existing public-source secret regression PASS. Extra scanner first failed at `d5f1dae0`, improved retry failed at `4bf37cb0`; no claim new whole-tree content scan PASS.
+4. **Status:** Step4 exact-tree audit and restored CI complete; broad new content scan incomplete (STOP/PIVOT). Whole product unchanged at prior **79/100**; no public release, owner review/approval, YouTube or Devpost.
+5. **Failure evidence/retry prohibition:** Original three false-positive historical PRIVATE_/NEVER_ fixture strings; retry introduced one synthetic PayPal-style literal caught by original Windows/Node secret test. Do not add a third scanner heuristic retry. No actual key exposure proven by these findings.
+6. **Repo/branch/SHA:** `hibi89/hibi89-paypal-ai-hackathon@lead/paypal` recovery feature `f9335385755d17354ac9f7b655756ad45c92a11d`; docs-only follow-up will be next head. Previous good tree `6c064de96e2e8e880668ddf04f61b4400922e048`. Public `main@5243295f17cbc770fef35f9a6c0b905a1506e78e` unchanged. Full source path inventory already checked.
+7. **Production/runtimes:** Local credential-free Node/SQLite/Chromium only, no public authenticated Production URL or Vercel/Cloudflare deploy; provider calls not run.
+8. **Backups:** Private v4o 170-second Library backup and prior original af_heart unchanged; no PayPal private DB or keys copied. Source recoverable at known-good SHA and latest successful recovery SHA.
+9. **Next:** Independent English Devpost packet facts, exact-release candidate risk review and publication prerequisites, no new code scanner. Batch owner-only read-only receipt check (if still needed), final v4o VISUAL LOCK then one voice/SRT completion, main release approval, YouTube and Devpost actions at end. Never merge stale PR #30 or public deploy without owner authorization.
+10. **Checkpoint:** 2026-11-09 KST. Exact GitHub branch/ref/tree, two scanner failures, recovery CI status verified. Subsequent doc-only SHA is not a fresh executable source change.
+
 ## 2026-11-09 KST — Step4 security experiment reverted; prior working tree recovered (ten-part handoff)
 
 1. **Goal:** Audit source release delta, avoid private data/leaks, finish WORKNOVA PayPal+AI for Devpost without owner intervention until final approval.

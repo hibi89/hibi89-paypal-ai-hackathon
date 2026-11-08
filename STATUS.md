@@ -1,3 +1,9 @@
+## 2026-11-09 KST — Step4 source restore exact-SHA CI PASS, owner actions still batched
+
+- Recovery commit `f9335385755d17354ac9f7b655756ad45c92a11d` successfully restored all executable source/tests/package/workflow of previously green `6c064de96e2e8e880668ddf04f61b4400922e048`; GitHub tree diff confirmed **only** `HANDOFF.md`, `STATUS.md`, and new Step4 audit document changed. Recovery not a force push. No new security scanner remains enabled.
+- At exact recovery SHA, [Offline MVP smoke #42518636252](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42518636252) **SUCCESS** and [Offline payment-contract tests #42518636272](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42518636272) **SUCCESS**; `test` Linux and Windows first-run SUCCESS, optional Wrangler and default-speed video jobs SKIPPED. Existing public-source secret regression passed. This does **not** mean a new entire 584-file content scan succeeded; attempted scanner is STOP/PIVOT after two failures.
+- Tree audit at prior good SHA: public main 514 blobs, working lead 584 blobs, main-only role document 1, lead-only 71 and common modified 20. RELEASE HOLD: main/PR #30 unchanged, actual provider/Production/YouTube/Devpost not performed. Owner interventions postponed and batched as directed. Product 79/100 previous estimate unchanged.
+
 ## 2026-11-09 KST — Step4 Git-tree audit and security scanner STOP/PIVOT (safe code restored)
 
 - Exact blob comparison: public main `5243295f` has 514 files, last green lead `6c064de96e2e8e880668ddf04f61b4400922e048` has 584; main-only `docs/ROLE_COORDINATION.md` (1), lead-only 71, same-path differing 20. Filename inventory shows no tracked .env, SQLite, private key, media or zip; **not a full content secret guarantee**.

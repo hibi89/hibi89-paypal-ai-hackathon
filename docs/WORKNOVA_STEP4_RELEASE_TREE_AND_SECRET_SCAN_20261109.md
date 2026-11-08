@@ -26,3 +26,9 @@ Compared (A) manual review of 584 blobs, slow and not repeatable, against (B) a 
 ## Next independent tasks
 
 Review release candidate file-by-file where required, using exact tree delta (main-only role doc must be preserved), and prepare truthfully limited English Devpost payload. Do not create/merge a release branch or update public `main` without separate user approval. Owner only at final batched gates. Source verification URL is the older good feature CI, NOT the failed scanner experiment.
+
+## Verified forward recovery postflight (2026-11-09 KST)
+
+- Recovery commit `f9335385755d17354ac9f7b655756ad45c92a11d` is a normal non-force descendant of failing scanner commits, with executable/source/package/workflow bytes restored to the previously green `6c064de9` tree. GitHub exact tree comparison shows **only** STATUS, HANDOFF and this audit document differ from that source tree. Experimental scanner/command/workflow/test do not remain.
+- Exact recovery commit CI: [Offline MVP smoke #42518636252](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42518636252) **completed SUCCESS** and [Offline payment-contract tests #42518636272](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42518636272) **completed SUCCESS**. Both Linux `test` (including existing public-source secrets scanner) and Windows first-run jobs SUCCESS; optional Wrangler and default-speed video SKIPPED.
+- Security outcome: no demonstrated real credential leak; initial and retry failures were synthetic string collisions, not a pass of proposed scanner. **Full current-source secret audit beyond existing high-confidence tests still not established.** No source main merge or Devpost publication. Owner tasks remain deferred.
