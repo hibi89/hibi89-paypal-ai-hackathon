@@ -20,3 +20,8 @@ B. **Selected:** no-network tracked source scan in CI using `git ls-files -z --c
 
 ## Next
 After exact-SHA scan, reconcile findings without echoing secret content. If zero high-confidence findings, mark only `CI_TRACKED_SOURCE_HIGH_CONFIDENCE_SCAN_PASS` (NOT a comprehensive audit). Continue safe release-preview scope/security review and Devpost English evidence alignment before requesting batched owner action.
+
+## First CI failure and bounded correction
+
+- Initial scan at feature `d5f1dae04364706d0b24f355021c219455f804e2`: existing GitHub Actions **Offline MVP smoke SUCCESS** but `test` workflow failed at the new scan after the ordinary Node tests completed. Real output was `RELEASE_SOURCE_SCAN_BLOCKED` with **3 test-only paths**, code `HARD_CODED_API_SECRET_LITERAL` in `tests/owner_mvp_flow.test.mjs`, `tests/owner_step2_evidence_cli.test.mjs` and `tests/p0_provider_readiness.test.mjs`. The values were deliberately fake PRIVATE_/NEVER_ fixtures, not verified real credentials. The scanner did not echo values.
+- Minimal improvement: skip those *two clearly labelled fixture prefixes only within `tests/`*, while keeping the same names **blocked under `src/`** and retaining private-key/token high-confidence patterns unconditionally. Added regression asserting both branches. Local isolated updated scanner tests **9/9 PASS**. Retry exactly one improved candidate; any second unchanged root-cause failure triggers stop-and-pivot, not repeated blind reruns. Do not claim full-tree content scan PASS before second exact-SHA CI.

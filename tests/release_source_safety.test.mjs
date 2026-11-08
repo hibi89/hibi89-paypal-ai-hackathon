@@ -65,3 +65,14 @@ test('same tracked path counted once, with no raw findings text',withTmp(root=>{
  assert.equal(z.filesScanned,1);
  assert.equal(z.trackedPaths,2);
 }));
+
+test('only tests can use historical never/private fixture labels',withTmp(root=>{
+ mkdirSync(join(root,'tests'));mkdirSync(join(root,'src'));
+ const example="PAYPAL_SANDBOX_CLIENT_SECRET = 'PRIVATE_LOCAL_FIXTURE_AAAAAAAAA'";
+ writeFileSync(join(root,'tests','sample.mjs'),example);
+ writeFileSync(join(root,'src','sample.mjs'),example);
+ const t=evaluateTrackedSource(root,['tests/sample.mjs']);
+ const p=evaluateTrackedSource(root,['src/sample.mjs']);
+ assert.equal(t.status,'RELEASE_SOURCE_SCAN_PASS');
+ assert.ok(p.findings.some(f=>f.code==='HARD_CODED_API_SECRET_LITERAL'));
+}));

@@ -19,6 +19,9 @@ const SECRET_PATTERNS=Object.freeze([
 ]);
 const LITERAL_SECRET=/(?:PAYPAL_SANDBOX_CLIENT_SECRET|PAYPAL_CLIENT_SECRET|GEMINI_API_KEY|GOOGLE_API_KEY|OPENAI_API_KEY|AWS_SECRET_ACCESS_KEY)\s*[:=]\s*(['"])([^'"\r\n]{18,})\1/gi;
 const KNOWN_FAKE=/(?:FAKE|TEST|MOCK|DUMMY|SENTINEL|PLACEHOLDER|YOUR_|EXAMPLE|NOT_REAL|REDACTED|DO_NOT_PRINT|<[^>]+>)/i;
+// Historical tests use conspicuously fake private/never-print strings. Scope the
+// extra exemption strictly to tests; production code must still fail closed.
+const TEST_ONLY_FAKE=/(?:NEVER_|PRIVATE_)/i;
 
 function validPath(root, name) {
  if(typeof name!=='string'||name.length===0||name.includes('\\')||name.includes('\0')||isAbsolute(name))return null;
@@ -53,7 +56,8 @@ export function evaluateTrackedSource(root,trackedFiles){
    }
    LITERAL_SECRET.lastIndex=0;
    for(const m of value.matchAll(LITERAL_SECRET)){
-     if(!KNOWN_FAKE.test(m[2])){
+     if(!KNOWN_FAKE.test(m[2])&&
+       !(name.startsWith('tests/')&&TEST_ONLY_FAKE.test(m[2]))){
        findings.push({path:name,code:'HARD_CODED_API_SECRET_LITERAL'});break;
      }
    }
