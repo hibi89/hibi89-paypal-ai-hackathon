@@ -26,6 +26,8 @@ export function buildDevpostFormFields(source){
  const topBanner=source.split(/\r?\n/).slice(0,6)
    .find(line=>line.startsWith('**DRAFT — NOT PUBLISHED.'));
  if(!topBanner||!topBanner.includes('via merged PR #28;')||
+    !topBanner.includes('the current WORKNOVA reviewer build is on the separate public lead/paypal branch')||
+    !topBanner.includes('main still presents the older Proofline branding')||
     !topBanner.includes('OWNER APPROVAL IS STILL REQUIRED BEFORE YOUTUBE AND DEVPOST PUBLICATION.'))
   fail('SOURCE_RELEASE_BANNER_PROVENANCE_REQUIRED');
  const heading=/^## ([^\r\n]+)\r?$/gm;
@@ -53,7 +55,8 @@ export function buildDevpostFormFields(source){
  const builtWith=blocks.get('Built with');
  const demo=blocks.get('Reviewer quickstart — synthetic demonstration only');
  if(!builtWith||builtWith.length<70||!demo||
-    !demo.includes('git switch main')||!demo.includes('npm run demo'))
+    !demo.includes('git switch lead/paypal')||demo.includes('git switch main')||
+    !demo.includes('npm run demo'))
   fail('REPRODUCIBLE_LOCAL_REVIEWER_ROUTE_REQUIRED');
  const toolsText=blocks.get('Tools and how used');
  const lines=typeof toolsText==='string'?toolsText.split(/\r?\n/).filter(Boolean):[];
@@ -81,7 +84,9 @@ export function buildDevpostFormFields(source){
  if(!BUILT_WITH_TAGS.every(tag=>builtWith.includes(tag)))
   fail('BUILT_WITH_TOOL_TAGS_MISSING');
  const sourceAndDemo=blocks.get('Source and demo');
- if(!sourceAndDemo?.includes('https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/main')||
+ if(!sourceAndDemo?.includes('**WORKNOVA reviewer source (public lead/paypal branch):** https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/lead/paypal')||
+    !sourceAndDemo.includes('**Earlier public default source (main, Proofline-branded):** https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/main')||
+    !sourceAndDemo.includes('the current WORKNOVA changes are not released to main')||
     !sourceAndDemo.includes('merged PR #28')||
     !sourceAndDemo.includes('NOT SUBMITTED'))
   fail('RELEASE_PREVIEW_PROVENANCE_REQUIRED');
@@ -94,14 +99,18 @@ export function buildDevpostFormFields(source){
   projectTitle:title,tagline,
   descriptionMarkdown,
   toolsUsed:Object.freeze(toolsUsed),builtWithTags:BUILT_WITH_TAGS,
-  sourceRepositoryUrl:'https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/main',
+  sourceRepositoryUrl:'https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/lead/paypal',
+  reviewSourceBranch:'lead/paypal',
+  previousDefaultMainSourceUrl:'https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/main',
+  currentWorknovaMainReleased:false,
+  sourceBranchesLiveRechecked:false,
   hostedDemoUrl:null,publicYouTubeUrl:null,devpostReceiptUrl:null,
   reviewerInstructions:demo,
   defaultMainSourceReleased:true,
   historicalProviderEvidence:'OWNER_REPORTED_NOT_INDEPENDENTLY_REPRODUCED',
   offlineBrowserProviderCalls:0,actualPaymentAuthorized:false,
   ownerAuthorizedPublication:false,devpostSubmitted:false,
-  reviewNotice:'Editable LOCAL DRAFT. Main source/LICENSE released via merged PR #28; provider actions, video publication and Devpost submission still require separate approval.'
+  reviewNotice:'Editable LOCAL DRAFT. Earlier main source/LICENSE released via PR #28, but reviewer uses public lead/paypal WORKNOVA source. Latest main release, provider actions, YouTube and Devpost still require separate approval.'
  });
 }
 export function generateLocalDevpostDraft({root=ROOT,write=true}={}){

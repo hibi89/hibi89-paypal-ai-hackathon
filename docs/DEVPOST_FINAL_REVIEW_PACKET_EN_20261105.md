@@ -1,6 +1,6 @@
 # WORKNOVA — PayPal AI Hackathon | Final English entry candidate
 
-**DRAFT — NOT PUBLISHED. The source and root MIT LICENSE are already public on main via merged PR #28; OWNER APPROVAL IS STILL REQUIRED BEFORE YOUTUBE AND DEVPOST PUBLICATION.**
+**DRAFT — NOT PUBLISHED. The source and root MIT LICENSE are already public on main via merged PR #28; the current WORKNOVA reviewer build is on the separate public lead/paypal branch, while main still presents the older Proofline branding; OWNER APPROVAL IS STILL REQUIRED BEFORE YOUTUBE AND DEVPOST PUBLICATION.**
 
 This is a concise owner-review copy, not a submitted or independently provider-verified contest entry. All browser actions described as *offline* are fictional/test-data actions. Do not substitute this for the official Devpost submission receipt.
 
@@ -11,8 +11,9 @@ WORKNOVA — AI-Assisted Freelance Opportunities with Human-Controlled Payments
 Help newcomers find an opportunity, agree on a clear scope, and keep AI agents under human payment authority.
 
 ## Source and demo
-- **Working source (public default branch):** https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/main
-- **Default branch:** merged PR #28 at `28a370fd` published runnable source and root MIT LICENSE to main, with all 514 release-preview blobs matched. This is **source publication**, not a hosted application, live provider action, public video or Devpost submission.
+- **WORKNOVA reviewer source (public lead/paypal branch):** https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/lead/paypal
+- **Earlier public default source (main, Proofline-branded):** https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/main
+- **Default-branch history:** merged PR #28 at `28a370fd` published runnable two-part source and root MIT LICENSE to main, with all 514 release-preview blobs matched. However, the current WORKNOVA changes are not released to main: the default branch retains its earlier Proofline-branded README while `lead/paypal` has the current WORKNOVA UI and reviewer guide. This previous source publication is **not** a hosted application, live provider action, public video or Devpost submission.
 - **Website / hosted production:** NOT DEPLOYED. The current demo runs on a loopback-only address on the reviewer's computer. The source README and `docs/JUDGE_REPRODUCTION_EN.md` describe the exact local route.
 - **Public demonstration video:** OWNER TO ADD AFTER APPROVED PUBLIC YOUTUBE UPLOAD.
 - **Devpost confirmation:** NOT SUBMITTED.
@@ -59,7 +60,7 @@ The same green status can mean different things: a synthetic browser test, a loc
 
 ## What's next
 
-Seek an explicitly authorized judge-safe real-provider walkthrough, authenticated opt-in users, a live seller/merchant verification process, secure production hosting if later needed, and transparent fee and dispute policy. Those are future work, not current features. The default-main source-only release is completed; an actual under-three-minute public YouTube video and the Devpost form still need separate owner approval.
+Seek an explicitly authorized judge-safe real-provider walkthrough, authenticated opt-in users, a live seller/merchant verification process, secure production hosting if later needed, and transparent fee and dispute policy. Those are future work, not current features. The earlier Proofline-era default-main source-only release is completed, but the current WORKNOVA source is not yet promoted to main. The under-three-minute public YouTube video, latest source release and the Devpost form still need separate owner approval.
 
 ## Tools and how used
 
@@ -70,14 +71,14 @@ Seek an explicitly authorized judge-safe real-provider walkthrough, authenticate
 - **GitHub Actions** — Runs Linux/Windows regression and Chromium checks; passing CI verifies the stated offline scope, not external provider availability or a real PayPal payment.
 
 ## Built with
-PayPal Sandbox Orders v2 and OAuth (private owner-operated workflow), Gemini API (private owner-operated workflow), Node.js, SQLite, JavaScript, HTML/CSS, Playwright, Chromium and GitHub Actions. The default main branch now contains the MIT LICENSE and runnable local source; provider, video and Devpost remain separately gated.
+PayPal Sandbox Orders v2 and OAuth (private owner-operated workflow), Gemini API (private owner-operated workflow), Node.js, SQLite, JavaScript, HTML/CSS, Playwright, Chromium and GitHub Actions. The older default main branch contains the MIT LICENSE and runnable Proofline-era offline source; the latest WORKNOVA reviewer runs from the public lead/paypal branch. Provider, latest-source release, video and Devpost remain separately gated.
 
 ## Reviewer quickstart — synthetic demonstration only
 
 ```bash
 git clone https://github.com/hibi89/hibi89-paypal-ai-hackathon.git
 cd hibi89-paypal-ai-hackathon
-git switch main
+git switch lead/paypal
 node --version  # Node 22.5 or newer
 npm run verify:local
 npm run demo
@@ -89,7 +90,8 @@ Open the printed `http://127.0.0.1:PORT` on that computer; visit `/demo/innovati
 
 - [ ] Latest exact-source Linux/Windows/local-browser and video media-length verification completed
 - [ ] Owner confirms accurate provider-evidence boundaries and final wording
-- [x] Default-main source/license release: PR #28 merged at `28a370fd` (not Production deployment)
+- [x] Earlier default-main source/license release: PR #28 merged at `28a370fd` (Proofline-era, not the latest WORKNOVA reviewer build or Production deployment)
+- [ ] Owner approves releasing the exact tested WORKNOVA `lead/paypal` source to default `main`; no stale PR merge or force-push
 - [ ] Owner visually approves and publishes the accurate public YouTube video **under 180 seconds**
 - [ ] Owner explicitly approves and submits the English Devpost form; real confirmation URL recorded
 

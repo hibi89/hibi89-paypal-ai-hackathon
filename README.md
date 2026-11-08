@@ -6,12 +6,14 @@
 
 **Concept:** AI should help skilled newcomers get their first freelance opportunity, not only automate existing jobs. WORKNOVA is **one proposed global freelancer marketplace** with two playable categories: **AI Work** (agents, automation, development) and **Global Services** (design, translation, marketing). The current implementation is a working **offline synthetic browser demo**, not a commercial service.
 
-**Run the working browser build (Node.js 22.5+; no API keys or payments):**
+**WORKNOVA reviewer branch:** Use the public `lead/paypal` branch for the current branded two-part product. The default `main` still presents an earlier Proofline-branded release; it is not the source used for the current private WORKNOVA film. Updating `main` requires a separate owner approval and exact-source verification.
+
+**Run the current WORKNOVA browser build (Node.js 22.5+; no API keys or payments):**
 
 ```bash
 git clone https://github.com/hibi89/hibi89-paypal-ai-hackathon.git
 cd hibi89-paypal-ai-hackathon
-git switch main
+git switch lead/paypal
 npm run demo
 ```
 

@@ -19,7 +19,11 @@ test('real English draft extracts full editable Devpost fields while remaining u
  assert.equal(r.devpostReceiptUrl,null);
  assert.equal(r.hostedDemoUrl,null);
  assert.equal(r.defaultMainSourceReleased,true);
- assert.match(r.sourceRepositoryUrl,/\/tree\/main$/);
+ assert.match(r.sourceRepositoryUrl,/\/tree\/lead\/paypal$/);
+ assert.match(r.previousDefaultMainSourceUrl,/\/tree\/main$/);
+ assert.equal(r.reviewSourceBranch,'lead/paypal');
+ assert.equal(r.currentWorknovaMainReleased,false);
+ assert.equal(r.sourceBranchesLiveRechecked,false);
  assert.equal(r.ownerAuthorizedPublication,false);
  assert.equal(r.offlineBrowserProviderCalls,0);
  assert.equal(r.actualPaymentAuthorized,false);
@@ -27,7 +31,8 @@ test('real English draft extracts full editable Devpost fields while remaining u
   assert.ok(r.descriptionMarkdown.includes('### '+heading));
  }
  assert.match(r.descriptionMarkdown,/not independently reproduced in CI/i);
- assert.match(r.reviewerInstructions,/git switch main/);
+ assert.match(r.reviewerInstructions,/git switch lead\/paypal/);
+ assert.doesNotMatch(r.reviewerInstructions,/git switch main/);
  assert.match(r.reviewerInstructions,/npm run demo/);
  assert.equal(r.toolsUsed.length,5);
  assert.equal(r.builtWithTags.length,8);
@@ -42,7 +47,10 @@ test('cannot transform tampered or prematurely published copy into an owner-read
   draft.replaceAll('not independently reproduced in CI','independently reproduced in CI'),
   draft.replace('## Inspiration','## MISSING'),
   draft.replace('## What we learned','## Inspiration'),
-  draft.replace('git switch main','git switch lead/paypal'),
+  draft.replace('git switch lead/paypal','git switch main'),
+  draft.replace('main still presents the older Proofline branding','main now shows final WORKNOVA'),
+  draft.replace('the current WORKNOVA changes are not released to main','the current WORKNOVA changes are released to main'),
+  draft.replace('**WORKNOVA reviewer source (public lead/paypal branch):**','**Working source (public default branch):**'),
   draft.replace('merged PR #28','published production')
  ])assert.throws(()=>buildDevpostFormFields(altered));
 });

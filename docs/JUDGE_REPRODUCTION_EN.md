@@ -2,6 +2,10 @@
 
 **This browser demo remains strictly OFFLINE/SYNTHETIC, not a public real-provider application.** Separately, the owner ran one private Windows terminal Gemini skill-classification → Sandbox USD 1.50 buyer approval → Capture → fresh GET on 2026-10-28 and provided output `SANDBOX_PAYMENT_VERIFIED_BY_PROVIDER_GET`. The run is owner-observed evidence, **NOT independently reproduced in GitHub CI**, not a production authenticated marketplace, not a public judge experience, and not a video/Devpost submission. The price was manually approved, **not AI-generated**, and the browser demo still uses offline mock quote drafting. Never confuse localhost synthetic browser outcomes with live third-party payment evidence. The private SQLite receipt can be reviewed safely via `npm run mvp:receipt`, but must NOT be uploaded or reset.
 
+## Source branch for current WORKNOVA reviewer (public, not latest-main release)
+
+The latest WORKNOVA code and this guide live on the public `lead/paypal` branch. The public default `main@5243295f` continues to display the previous Proofline-branded README, even though it contains an earlier runnable two-part synthetic prototype and MIT root LICENSE. **For WORKNOVA review, explicitly `git switch lead/paypal`** as shown below. Do not claim that PR #28 released the later WORKNOVA code to `main`, or that a local offline judge demo verifies live PayPal/Gemini. Updating `main` is a separate owner-controlled release gate.
+
 ## Optional read-only private v4o ZIP verification (not submission)
 
 If the owner already has the private, original `WORKNOVA_v4o_PRIVATE_Review_Kit_20261109.zip` downloaded locally, it can now be inspected directly **without extracting it** or copying media into the repository:

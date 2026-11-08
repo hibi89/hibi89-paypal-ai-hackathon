@@ -232,7 +232,9 @@ export function prepareSubmissionCandidate({root=ROOT,v4oKitPath=null,inspectV4o
   // Removing either checkpoint marker must fail closed, not revive a stale claim.
   const mainReleaseRecord=files['README.md'].includes('PR #28')&&
     files['README.md'].includes('**MERGED**')&&
+    files['README.md'].includes('git switch lead/paypal')&&
     finalCopy.includes('merged PR #28')&&
+    finalCopy.includes('the current WORKNOVA changes are not released to main')&&
     files.LICENSE.startsWith('MIT License\n');
   const mainReleaseStatus=mainReleaseRecord?
     'PUBLIC_MAIN_SOURCE_LICENSE_RECORDED_NOT_LIVE_RECHECKED':
@@ -260,13 +262,17 @@ export function prepareSubmissionCandidate({root=ROOT,v4oKitPath=null,inspectV4o
     devpostReceipt:'NOT_SUBMITTED',
     mainBranchRelease:mainReleaseStatus,
     mainBranchReleaseVerifiedLive:false,
+    currentWorknovaReviewerSourceUrl:'https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/lead/paypal',
+    currentWorknovaMainReleased:false,
+    sourceBranchesLiveRechecked:false,
     externalSubmissionEligible:false,
     externalGates:assessment.externalGates,
     note:'This packet is local, synthetic and unpublished. ffprobe checks private media duration only when available; hash or media length does not verify providers, publication approval or Devpost submission.'
   };
   const md='# WORKNOVA — PRIVATE SUBMISSION CANDIDATE (NOT SUBMITTED)\n\n'+
     '**No public YouTube link or Devpost receipt exists in this report. Do not publish without owner review and approval.**\n\n'+
-    '- Source: https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/main\n'+
+    '- WORKNOVA reviewer source: https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/lead/paypal\n'+
+    '- Earlier default-main source (Proofline branding): https://github.com/hibi89/hibi89-paypal-ai-hackathon/tree/main\n'+
     '- Local video: '+(video.filename||'NOT RECORDED ON THIS MACHINE')+'\n'+
     '- Private media integrity: '+video.status+'\n'+
     '- Public video URL: NOT PROVIDED\n- Devpost receipt: NOT SUBMITTED\n'+
