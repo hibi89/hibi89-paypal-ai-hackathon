@@ -2,9 +2,9 @@
 
 **Owner decision:** Minimize owner intervention. Do not request local commands, account access, media review, main merge or publication piecemeal. Continue all safe independent development, tests, candidate preparation, branding, security review and Devpost drafting first. **Batch strictly unavoidable owner tasks at the final submission gate**, except when a specific prerequisite makes every next independent task impossible. This rule does **not** authorize actual PayPal/Gemini requests, changing billing/accounts, releasing main, production deployment, YouTube publication or Devpost submission.
 
-**Current completed independent facts:** Working `lead/paypal` features and offline WORKNOVA reviewer ZIP at `934189e5a6da777d7e16b4a9ee24ef4c3f224ebe` have exact SHA CI 2/2 SUCCESS (smoke #42516644286 / contracts #42516644309), Linux/Windows and fresh portable Chromium tests PASS. Public main exists with MIT but is older than lead; Draft PR #30 is outdated. Private v4o 170s film exists but is not visually owner-approved. Historical PayPal Sandbox/Gemini test is owner-observed; no new API call required just for this preparation.
+**Current completed independent facts:** Current public `lead/paypal` WORKNOVA reviewer source at feature `707a7eef8e43bf2f8d6da1206a7a0d3b22302587` has exact SHA CI 2/2 SUCCESS (smoke #42524145824 / contracts #42524145886), Linux Node 1224/1224, Python private-ZIP synthetic 8/8, Windows and Chromium two-part reviewer PASS. Public main exists with MIT but is older than lead; Draft PR #30 is outdated. Private v4o 170s film exists but is not visually owner-approved. Historical PayPal Sandbox/Gemini test is owner-observed; no new API call required just for this preparation.
 
-**One final combined owner batch (do only when requested after independent tasks complete):** (A) check any still-necessary local historical receipt once using `npm run mvp:step2:safe` on a clean, verified branch without exporting DB/keys; (B) watch v4o and give one definitive `VISUAL LOCK` or actionable timestamps, then approve the finished af_heart/original voice and subtitles once; (C) approve exact reviewed `main` release candidate, final public YouTube upload, English Devpost form and receipt. These are *distinct approvals* even if collected in one sitting.
+**One final combined owner batch (do only when requested after independent tasks complete):** (A) check any still-necessary local historical receipt once using `npm run mvp:step2:safe` on a clean, verified branch without exporting DB/keys; (B) watch v4o and give one definitive `VISUAL LOCK` or actionable timestamps, then approve the finished af_heart/original voice and subtitles once; (C) approve the final public YouTube upload and English Devpost submission, then preserve the actual receipts. These are *distinct approvals* even if collected in one sitting. **Current WORKNOVA source is already on the public MIT-licensed `lead/paypal` branch; the official contest rules do not require promotion to default `main`.** A separate main merge is optional later and must never be done without its own approval.
 
 **Never:** rerun consumed Sandbox Orders CREATE/Capture or Gemini quotas without new explicit permission, edit/erase original SQLite, upload private files or tokens, public release without separate approval. Older 2026-11-06 step-by-step checklist below is retained as historic detailed runbook; not a request to start it now.
 
@@ -16,7 +16,7 @@
 
 ## 이미 준비됨 (다시 개발하지 않음)
 
-- GitHub 공개 소스 + MIT LICENSE: `main`의 PR #28에서 공개 완료. 최신 기능을 포함한 병합 **대기** [Draft PR #30](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/30): 자동 병합/Production 배포 없음.
+- GitHub 공개 소스 + MIT LICENSE: 공개 저장소·라이선스 GitHub 메타데이터 확인, 최신 WORKNOVA 소스는 공개 `lead/paypal`에 있고 심사위원 실행 가이드가 있다. 기본 `main`은 과거 Proofline 버전이다. 공식 Devpost 규칙은 기본 브랜치 병합을 요구하지 않으므로 현재 [Draft PR #30](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/30)의 오래된 소스를 **절대 선제 병합하지 않는다**. 추후 `main` 최신화는 별도 선택 작업이다.
 - `lead/paypal` 소스 기능 SHA `7c95d0ccb322d219641e59e3a1e82e0af4f4257f`: [CI #42231932159](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42231932159) Linux Node 1,189/1,189, Windows/Chromium/심사위원 재현 PASS.
 - 실격리 Wrangler D1/workerd 실행 및 인증·권한 철회 [CI #42230510780](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42230510780) PASS. **Cloudflare Production이 아님.**
 - 기본 속도 합성 WebM CI 녹화 무결성/길이 **140.12초** 확인. CI에서 만든 파일은 휘발성이고 업로드되지 않았다. 이 증거는 PayPal/Gemini 실제 호출이 아니다.
@@ -69,7 +69,7 @@ npm run submission:fields:local
 
 `output/videos`의 새 WebM/manifest와 `output/submission`의 후보를 직접 확인한다. 실제 미디어 길이는 **180초 미만**이어야 하며 둘 다 데모/합성임을 표시한다. 앞선 CI의 140.12초는 귀가 후 재녹화 파일의 길이를 보장하지 않는다.
 
-**6. 사용자 승인·수동 외부 게시:** Draft [PR #30](https://github.com/hibi89/hibi89-paypal-ai-hackathon/pull/30) 리뷰 → 원본 `main` 병합 승인 → 영상 최종 검토 후 공개 YouTube 업로드 승인 → 영문 Devpost 폼 제출 승인 → 제출 영수증 URL 보존. 공개 이후에는 실제 공개 URL과 Devpost 수신 상태를 따로 검증한다.
+**6. 사용자 승인·수동 외부 게시:** 현재 공개 MIT 라이선스 `lead/paypal` WORKNOVA 실행 경로 확인 → 영상 최종 승인 후 공개 YouTube 업로드 → 영문 Devpost 폼 승인·제출 → 제출 영수증 URL 보존. **`main` 병합은 대회 제출 필수조건이 아니며 별도 선택 사항**이다. 오래된 Draft PR #30을 병합하지 않는다. 공개 이후 실제 YouTube URL과 Devpost 수신 상태를 따로 검증한다.
 
 ## 완료 판단 및 금지
 
