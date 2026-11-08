@@ -2,7 +2,7 @@
 
 - Branch parent HEAD `b41f2936c26e403b7e3e916ff2c2dd35715950e1`; additive premium Part 2 CSS-only treatment in `web/innovation_dashboard.html`, new offline source-contract test `tests/worknova_p2_visual_review.test.mjs`, proof `docs/WORKNOVA_P2_VISUAL_REVIEW_20261109.md`. Original HTML/JS logic, endpoints, warning and 5 agent IDs kept. No payments/provider calls or frontend production deployment.
 - v4l Library ZIP 37,110,426B SHA `a99a486ce017f33c540ea1f7c28df7f08f271bc22a419d152e15f892b04d0815` CRC PASS. Read-only film sampling at 5s cadence + 31 selected frames; FFmpeg `blackdetect` 0 spans at >=0.20s criterion. Existing video v4l SHA `6e869be80d3a63e335527b90b18bcdd24237ab660aea258067e0794423e3511c` unchanged.
-- Chromium browser preview in scratch blocked `ERR_BLOCKED_BY_ADMINISTRATOR` at file:// and localhost (2 distinct methods). Browser-pixel QA **UNVERIFIED**; no further blind browser retries. New source-level CI test awaits exact commit verification. No actual video modification, no voice/SRT; **79%** carried forward without invented gain. `RELEASE HOLD`.
+- Chromium browser preview in scratch blocked `ERR_BLOCKED_BY_ADMINISTRATOR` at file:// and localhost (2 distinct methods). Browser-pixel QA **UNVERIFIED**; no further blind browser retries. Code SHA `b7af527668ead10ade94dd92d42873f06089f28c` GitHub Actions **Offline MVP smoke #42505990828 SUCCESS** and **Offline payment-contract tests #42505990845 SUCCESS** (exact SHA); Node source-contract and offline Part 2 Chromium steps succeeded. Browser pixel/visual snapshot **NOT VERIFIED**. No actual video modification, no voice/SRT; **79%** carried forward without invented gain. `RELEASE HOLD`.
 
 ## 2026-11-09 KST — New-chat verified snapshot (no feature change)
 
