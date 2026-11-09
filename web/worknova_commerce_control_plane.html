@@ -54,7 +54,7 @@ function draw(s){model=s;token=s.csrfToken||token;
  document.querySelector('#remaining').textContent=money(s.mandate?s.remainingMinor:50000);
  document.querySelector('#provider').textContent=String(s.paypalProviderCalls);
  document.querySelector('#progress').textContent=`${s.step} / 5 STEPS`;
- document.querySelector('#status').textContent=s.step===5?'READY FOR HUMAN REVIEW':s.stage.replaceAll('_',' ');
+ document.querySelector('#status').textContent=s.mandateStatus==='REVOKED'?'MANDATE REVOKED · REVIEW HOLD':s.mandateStatus==='EXPIRED'?'MANDATE EXPIRED · REVIEW HOLD':s.humanReviewReady?'READY FOR HUMAN REVIEW':s.stage.replaceAll('_',' ');
  document.querySelectorAll('[data-action]').forEach((b,i)=>{b.classList.toggle('done',i<s.step);b.disabled=busy||i>s.step;b.querySelector('.actstate').textContent=i<s.step?'✓ DONE':i===s.step?'RUN':'LOCKED'});
  const area=document.querySelector('#audit');area.replaceChildren();
  if(!s.events.length){area.innerHTML='<div class="empty"><div class="orb">◇</div>Run the five-stage transaction simulation.<br>Every result is synthetic, replay-safe and auditable.</div>';return}
