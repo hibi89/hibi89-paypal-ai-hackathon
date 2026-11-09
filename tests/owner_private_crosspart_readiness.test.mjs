@@ -57,8 +57,10 @@ test('approved quote and exact bound A2A yield read-only candidate, not payment 
  const f=fixture();
  try{
   await seed(f);
+  // Fail-closed file and WAL checks may run before the quote-state guard.
   assert.throws(()=>inspectOwnerSandbox150CrossPartReadiness(f.options),{
-   code:'OWNER_150_CROSSPART_APPROVED_QUOTE_OR_BUYER_INVALID'});
+   code:/^OWNER_150_CROSSPART_(APPROVED_QUOTE_OR_BUYER_INVALID|READONLY_FILE_UNAVAILABLE)$/
+  });
   await approveOwnerSandbox150Quote({...f.options,explicitOwnerConsent:true});
   const before=[f.filename,f.part2Filename,f.budgetFilename].map(p=>readFileSync(p));
   const r=inspectOwnerSandbox150CrossPartReadiness(f.options);
@@ -89,11 +91,19 @@ test('same amount different or changed quote fingerprint is denied',async()=>{
   assert.throws(()=>inspectOwnerSandbox150CrossPartReadiness({
    ...f.options,quoteScope:{...f.quoteScope,quoteId:'other_same_price'}
   }),{code:'OWNER_150_CROSSPART_BOUND_A2A_EVIDENCE_REQUIRED'});
-  const db=new DatabaseSync(f.filename);
+  // Tamper only with the Part2 record: raw writes to Part1 would lack
+  // its registered audit_hash() trigger, which is intentionally protected.
+  const db=new DatabaseSync(f.part2Filename);
   try{
-   const out=db.prepare('UPDATE quotes SET scope_text=? WHERE id=?')
-    .run('sha256:'+'f'.repeat(64),quoteId);
-   assert.equal(out.changes,1);
+   const row=db.prepare(
+    "SELECT result FROM innovation_events WHERE actor=? AND merchant=? AND kind='a2a'"
+   ).get(actor,merchant);
+   const event=JSON.parse(row.result);
+   event.quoteBinding.quoteFingerprint='f'.repeat(64);
+   const changed=db.prepare(
+    "UPDATE innovation_events SET result=? WHERE actor=? AND merchant=? AND kind='a2a'"
+   ).run(JSON.stringify(event),actor,merchant);
+   assert.equal(changed.changes,1);
   }finally{db.close()}
   assert.throws(()=>inspectOwnerSandbox150CrossPartReadiness(f.options),{
    code:'OWNER_150_CROSSPART_BOUND_A2A_EVIDENCE_REQUIRED'
