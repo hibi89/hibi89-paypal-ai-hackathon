@@ -54,3 +54,16 @@ test('revoked delegation blocks any later transaction and is replay-safe',()=>{
  assert.equal(e.get().reservedMinor,0);
  }finally{e.close()}
 });
+
+ // A seller must not be recorded as accepting below its explicit floor.
+test('seller floor is enforced when its quoted ask contradicts minimum policy',()=>{
+ const invalid=simulateBoundedAgreement({askMinor:20000,buyerCeilingMinor:30000,sellerFloorMinor:25000});
+ assert.equal(invalid.status,'NO_AGREEMENT');
+ assert.equal(invalid.paymentAuthorized,undefined);
+ assert.equal(invalid.transcript.some(turn=>turn.action==='ACCEPT'),false);
+ const valid=simulateBoundedAgreement({askMinor:26000,buyerCeilingMinor:30000,sellerFloorMinor:25000});
+ assert.equal(valid.status,'AGREED_OFFLINE');
+ assert.equal(valid.amountMinor,26000);
+ assert.ok(valid.amountMinor>=25000);
+ assert.equal(valid.paymentAuthorized,false);
+});
