@@ -51,6 +51,53 @@ const stageNames=['NOT_STARTED','DELEGATION_CREATED','A2A_AGREED','DELIVERY_REVI
 const formatAmount=(n)=>(n/100).toFixed(2);
 const hash=x=>createHash('sha256').update(JSON.stringify(x)).digest('hex');
 const record=(s,type,headline,detail)=>s.events.push({number:s.events.length+1,type,headline,detail,source:'SYNTHETIC_LOCAL',providerCalls:0});
+/** Local synthetic evidence consistency check. A SHA-256 record is not a
+ * signed third-party attestation. It only detects mismatch in this demo DB.
+ */
+export function validateOfflineReviewEvidence(s,{requireGate=false}={}) {
+ const hold=reason=>({ok:false,reason});
+ const m=s?.mandate,j=s?.job,d=s?.delivery,l=s?.license;
+ if(!m||!j||!d||!l)return hold('REQUIRED_EVIDENCE_MISSING');
+ const positive=n=>Number.isSafeInteger(n)&&n>0;
+ if(!positive(j.amountMinor)||!positive(l.amountMinor)||
+    !positive(m.perTradeLimitMinor)||!positive(m.limitMinor)||
+    !Number.isSafeInteger(s.reservedMinor)||s.reservedMinor<0||
+    !Number.isSafeInteger(j.amountMinor+l.amountMinor)||
+    s.reservedMinor!==j.amountMinor+l.amountMinor||
+    s.reservedMinor>m.limitMinor||
+    j.amountMinor>m.perTradeLimitMinor||l.amountMinor>m.perTradeLimitMinor)
+   return hold('RESERVATION_LEDGER_MISMATCH');
+ if(m.currency!=='USD'||!Array.isArray(m.categories)||
+    !m.categories.includes(j.type)||!m.categories.includes(l.type)||
+    !Array.isArray(m.merchants)||!m.merchants.includes(j.merchant)||
+    !m.merchants.includes(l.merchant))
+   return hold('POLICY_SCOPE_MISMATCH');
+ if(j.agreement!=='OFFLINE_AGREED'||j.paymentAuthorized!==false||
+    j.source!=='DETERMINISTIC_AGENT_FIXTURE'||
+    l.provider!=='NOT_CONNECTED'||l.checkout!=='NOT_EXECUTED'||
+    l.source!=='DETERMINISTIC_AGENT_FIXTURE'||
+    d.evidence!=='USER_SUPPLIED_FIXTURE_NOT_GITHUB_VERIFIED'||
+    d.decision!=='READY_FOR_HUMAN_SETTLEMENT_REVIEW'||
+    d.escrowStatus!=='NOT_CREATED'||d.payoutStatus!=='NOT_EXECUTED'||
+    !Array.isArray(d.checks)||d.checks.length<1||
+    d.checks.some(c=>c?.result!=='SUCCESS'))
+   return hold('DELIVERY_EVIDENCE_NOT_CLEAR');
+ if(!Array.isArray(s.events)||s.events.length<(requireGate?5:4)||
+    ['CONSENT','A2A','DELIVERY','PURCHASE'].some((type,i)=>s.events[i]?.type!==type)||
+    s.events.some(event=>event?.source!=='SYNTHETIC_LOCAL'||event.providerCalls!==0))
+   return hold('AUDIT_EVENT_MISMATCH');
+ if(requireGate){
+  const g=s.gate;
+  if(!g||g.status!=='HUMAN_PROVIDER_AUTH_REQUIRED'||
+     g.settlement!=='NOT_EXECUTED'||g.providerCalls!==0||
+     g.payableMinor!==s.reservedMinor||
+     g.remainingMinor!==m.limitMinor-s.reservedMinor||
+     s.events[4]?.type!=='GUARD'||
+     g.policyDigest!==hash({mandate:m,job:j,delivery:d,license:l}))
+   return hold('EVIDENCE_DIGEST_OR_GATE_MISMATCH');
+ }
+ return {ok:true,providerVerified:false,paymentAuthorized:false};
+}
 function apply(s,action,{now=()=>Date.now()}={}) {
  if(action==='reset')return initial();
  if(action==='revoke'){
@@ -117,7 +164,8 @@ function apply(s,action,{now=()=>Date.now()}={}) {
      next.reservedMinor+=amount;
      record(next,'PURCHASE','LICENSE DEAL  $200 → $160','Offline A2A agreement; no checkout, no real charge');
    } else if(action==='review') {
-     if(!next.delivery||!next.license)return {error:'EVIDENCE_MISSING'};
+     const proof=validateOfflineReviewEvidence(next);
+     if(!proof.ok)return {error:'EVIDENCE_INTEGRITY_HOLD',reason:proof.reason};
      next.gate={status:'HUMAN_PROVIDER_AUTH_REQUIRED',settlement:'NOT_EXECUTED',
        payableMinor:next.reservedMinor,remainingMinor:next.mandate.limitMinor-next.reservedMinor,
        providerCalls:0,policyDigest:hash({mandate:next.mandate,job:next.job,delivery:next.delivery,license:next.license})};
@@ -136,9 +184,13 @@ export function createCommerceEngine({filename=':memory:',now=()=>Date.now()}={}
    const mandateStatus=!s.mandate?'NOT_GRANTED':s.mandate.revoked?'REVOKED':
      s.mandate.expiresAt<=now()?'EXPIRED':'ACTIVE';
    // Historical agreement remains auditable, but cannot imply current authority.
+   const evidence=s.step===actions.length?
+     validateOfflineReviewEvidence(s,{requireGate:true}):{ok:false,reason:'REVIEW_NOT_COMPLETE'};
    const humanReviewReady=s.step===actions.length&&mandateStatus==='ACTIVE'&&
-     s.gate?.status==='HUMAN_PROVIDER_AUTH_REQUIRED';
+     evidence.ok===true;
    return {...s,stage:stageNames[s.step],mandateStatus,humanReviewReady,
+     evidenceIntegrity:evidence.ok?'LOCAL_DIGEST_MATCH':'LOCAL_REVIEW_HOLD',
+     evidenceHoldReason:evidence.ok?null:evidence.reason,
      remainingMinor:s.mandate?s.mandate.limitMinor-s.reservedMinor:0,
      genuinePayPalAuthorization:false,disclosure:'SIMULATED / NO PAYPAL API / NO GEMINI API / NO ESCROW / NO CARD'};
  };
