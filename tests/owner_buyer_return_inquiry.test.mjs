@@ -224,8 +224,11 @@ test('buyer logout during awaited provider GET cannot disclose APPROVED or PAID 
   coordinator:{
    mode:'INTERNAL_OWNER_SANDBOX_PILOT_ONLY',publicHttpEnabled:false,
    async refreshOwnerOrder(){
-    reads++;signalGet();
-    await new Promise(resolve=>{releaseGet=resolve});
+    reads++;
+    if(reads===1){
+     signalGet();
+     await new Promise(resolve=>{releaseGet=resolve});
+    }
     return {status:'PAID',paymentState:'VERIFIED_BY_GET'};
    }
   },
