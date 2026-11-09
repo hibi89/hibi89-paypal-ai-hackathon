@@ -43,7 +43,9 @@
     "worknova:video:voice:part2": "node scripts/worknova_owner_video.mjs voice --render",
     "worknova:video:voice:mux": "node scripts/worknova_owner_video.mjs mix",
     "worknova:video:capture:auto:check": "node scripts/worknova_owner_video.mjs auto --check",
-    "worknova:video:capture:auto": "node scripts/worknova_owner_video.mjs auto --run"
+    "worknova:video:capture:auto": "node scripts/worknova_owner_video.mjs auto --run",
+    "worknova:video:commerce:final:check": "node scripts/worknova_owner_video.mjs final --check",
+    "worknova:video:commerce:final": "node scripts/worknova_owner_video.mjs final --run"
   },
   "engines": {
     "node": ">=22.5.0"
