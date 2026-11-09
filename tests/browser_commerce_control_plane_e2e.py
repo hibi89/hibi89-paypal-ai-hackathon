@@ -114,6 +114,7 @@ try:
             assert state["gate"]["status"] == "HUMAN_PROVIDER_AUTH_REQUIRED"
             assert state["gate"]["settlement"] == "NOT_EXECUTED"
             assert state["evidenceIntegrity"] == "LOCAL_DIGEST_MATCH"
+            assert re.fullmatch(r"[0-9a-f]{64}", state["gate"]["auditDigest"])
             assert state["humanReviewReady"] is True
             assert state["realPayments"] == 0
             assert state["paypalProviderCalls"] == 0
