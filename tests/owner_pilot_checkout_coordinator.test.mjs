@@ -356,3 +356,45 @@ test('withdrawn private A2A review during CREATE OAuth prevents Orders POST',
      {code:'OWNER_PILOT_PRIVATE_A2A_REVIEW_REQUIRED'});
    assert.equal(f.count('POST','/v2/checkout/orders'),0);
  }));
+
+
+test('session revoked while CAPTURE private A2A review awaits after OAuth prevents POST',
+ withFixture({},async f=>{
+   let oauthCalls=0,withdrawDuringReview=false,revoked=false,inspections=0;
+   const review=async({quoteId,quoteVersion,amountMinor,currency})=>{
+     inspections++;
+     if(withdrawDuringReview&&!revoked){
+       revoked=true;
+       await f.revoke();
+     }
+     // The reviewer may have read a prior valid link before an await;
+     // this response must never substitute for durable session authority.
+     return {status:'PRIVATE_UNATTESTED_A2A_REVIEW_ONLY',
+       provenanceClass:'PRIVATE_INJECTED_AGENT_NOT_ATTESTED',
+       quoteId,quoteVersion,amountMinor,currency,
+       paymentAuthorized:false,paypalOrderCreated:false,
+       paypalCapturePerformed:false,realProviderEvidence:false,
+       modelProviderAttested:false,agentCalls:'NOT_ATTESTED'};
+   };
+   const service=f.service(undefined,review);
+   await service.openOwnerOrder(f.input());
+   f.state.buyerApproved=true;
+   f.state.onOauth=async()=>{
+     oauthCalls++;
+     // During CAPTURE: refresh GET OAuth, transport GET OAuth, final
+     // capture OAuth. Revoke only in the final post-OAuth review await.
+     if(oauthCalls===3){
+       withdrawDuringReview=true;
+       f.state.onOauth=null;
+     }
+   };
+   const result=await service.captureOwnerOrder(f.input());
+   assert.equal(oauthCalls,3);
+   assert.equal(revoked,true);
+   assert.ok(inspections>=1);
+   assert.equal(result.status,'UNKNOWN');
+   assert.equal(result.retryPost,false);
+   assert.equal(f.count('POST','/v2/checkout/orders/OWNERPILOT1/capture'),0);
+   const attempts=await f.ledger.listAttempts('owner-pilot');
+   assert.equal(attempts.find(x=>x.operation==='capture').state,'UNKNOWN');
+ }));

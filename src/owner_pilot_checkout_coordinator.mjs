@@ -171,6 +171,9 @@ export function createOwnerPilotCheckoutCoordinator({ledger,transport,authorizeA
       if(bound.actorId!==ctx.actorId||bound.merchantId!==ctx.merchantId)
         deny('OWNER_PILOT_SCOPE_REQUIRED');
       await checkLinkedReview(current);
+      // The private review callback can yield to another owner action.
+      // A revocation during that await must not reach CAPTURE POST.
+      boundServerSessionFromStoredProof(input.sessionProof,current);
     };
     // Provider APPROVED GET is still mandatory; UNKNOWN never re-POSTs.
     return payment.captureApproved(ctx,{beforeCapturePost});
