@@ -96,6 +96,48 @@ export function createPrivateOidcMarketplaceHost({
   adapter=createMarketplaceHttpsRequestAdapter({
    expectedOrigin:publicOrigin,ledger,loginFlow,sessionStore:sessions
   });
+  // The signed OIDC session is the source of buyer identity for the internal
+  // $1.50 host checkout; no actor, merchant or role from caller JSON is used.
+  // This capability is never registered as a public browser/payment route.
+  const privateCheckoutHandles=new WeakMap();
+  async function beginCheckoutLogin(request){
+   alive();
+   if(!(request instanceof Request))fail('PRIVATE_CHECKOUT_AUTH_REQUIRED');
+   let url;
+   try{url=new URL(request.url)}catch{}
+   if(request.method!=='GET'||url?.origin!==publicOrigin||
+      url.pathname!=='/api/auth/oidc/session'||url.search||url.hash||
+      url.username||url.password)
+    fail('PRIVATE_CHECKOUT_AUTH_REQUIRED');
+   const principal=await sessions.resolveRequest(request);
+   if(principal?.verified!==true||principal.role!=='buyer'||
+      !Number.isSafeInteger(principal.membershipRevision))
+    fail('PRIVATE_CHECKOUT_VERIFIED_BUYER_REQUIRED');
+   const handle=Object.freeze(Object.create(null));
+   privateCheckoutHandles.set(handle,Object.freeze({
+    originalRequest:request,actorId:principal.actorId,
+    merchantId:principal.merchantId,role:principal.role,
+    membershipRevision:principal.membershipRevision
+   }));
+   return handle;
+  }
+  async function resolveCheckoutPrincipal(handle){
+   alive();
+   const pinned=handle&&typeof handle==='object'?
+    privateCheckoutHandles.get(handle):null;
+   if(!pinned)return null;
+   let current;
+   try{current=await sessions.resolveRequest(pinned.originalRequest)}
+   catch{return null}
+   if(current?.verified!==true||current.role!=='buyer'||
+      current.actorId!==pinned.actorId||
+      current.merchantId!==pinned.merchantId||
+      current.membershipRevision!==pinned.membershipRevision)
+    return null;
+   return Object.freeze({verified:true,actorId:pinned.actorId,
+    merchantId:pinned.merchantId,role:'buyer',
+    membershipRevision:pinned.membershipRevision});
+  }
   const config=inspectOidcHostReadiness({
    publicOrigin,startUri:publicOrigin+'/api/auth/oidc/start',
    redirectUri:publicOrigin+'/api/auth/oidc/callback',
@@ -151,6 +193,7 @@ export function createPrivateOidcMarketplaceHost({
  }
  return Object.freeze({
   handle,inspectReadiness,close,
+  beginCheckoutLogin,resolveCheckoutPrincipal,
   // These methods must remain reachable by trusted operator processes only.
   // They are deliberately NOT HTTP routes.
   operator:Object.freeze({stagePublicKeys:trust.stage,
