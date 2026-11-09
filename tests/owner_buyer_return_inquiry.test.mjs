@@ -214,3 +214,58 @@ test('refresh callback can observe PAID only after separate authorized capture w
  assert.equal(b.capturePerformedByCallback,false);
  assert.equal(f.postCount(),posts); // callback never POSTs
 }));
+
+test('buyer logout during awaited provider GET cannot disclose APPROVED or PAID state',async()=>{
+ let loginActive=true,releaseGet,signalGet;
+ const entered=new Promise(resolve=>{signalGet=resolve});
+ let reads=0,providerPosts=0;
+ const gateway=createOwnerBuyerReturnInquiry({
+  publicOrigin:origin,
+  coordinator:{
+   mode:'INTERNAL_OWNER_SANDBOX_PILOT_ONLY',publicHttpEnabled:false,
+   async refreshOwnerOrder(){
+    reads++;signalGet();
+    await new Promise(resolve=>{releaseGet=resolve});
+    return {status:'PAID',paymentState:'VERIFIED_BY_GET'};
+   }
+  },
+  resolveTrustedCheckout:async handle=>
+   handle==='SERVER_ONLY'&&loginActive?
+    {verified:true,quoteId,actorId:'owner',merchantId,
+     sessionProof:{privateProof:'INJECTED_NO_REAL_TOKEN'}}:null
+ });
+ const request=()=>new Request(url+'return?status=COMPLETED');
+ const pending=gateway.handle({request:request(),serverSessionHandle:'SERVER_ONLY'});
+ await entered;
+ loginActive=false;releaseGet();
+ const rejected=await pending;
+ assert.equal(rejected.status,401);
+ assert.equal((await rejected.json()).error,'TRUSTED_CHECKOUT_SESSION_NOT_VERIFIED');
+ assert.equal(reads,1);assert.equal(providerPosts,0);
+ loginActive=true;
+ const again=await gateway.handle({request:request(),serverSessionHandle:'SERVER_ONLY'});
+ const body=await again.json();
+ assert.equal(again.status,200);
+ assert.equal(body.paymentVerifiedByTrustedGet,true);
+ assert.equal(reads,2);assert.equal(providerPosts,0);
+});
+
+test('buyer principal switch after GET denies stale order read even if session remains verified',async()=>{
+ let actor='owner',calls=0;
+ const gateway=createOwnerBuyerReturnInquiry({
+  publicOrigin:origin,
+  coordinator:{
+   mode:'INTERNAL_OWNER_SANDBOX_PILOT_ONLY',publicHttpEnabled:false,
+   async refreshOwnerOrder(){actor='otherBuyer';return {status:'ORDER_APPROVED'}}
+  },
+  resolveTrustedCheckout:async()=>{calls++;
+   return {verified:true,quoteId,actorId:actor,merchantId,sessionProof:{}}
+  }
+ });
+ const result=await gateway.handle({
+  request:new Request(url+'return'),serverSessionHandle:'SERVER_ONLY'
+ });
+ assert.equal(result.status,401);
+ assert.equal(calls,2);
+ assert.equal((await result.json()).error,'TRUSTED_CHECKOUT_SESSION_NOT_VERIFIED');
+});

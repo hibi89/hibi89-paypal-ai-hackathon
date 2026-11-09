@@ -75,6 +75,14 @@ export function createOwnerBuyerReturnInquiry({
         quoteId:ctx.quoteId,actorId:ctx.actorId,merchantId:ctx.merchantId,
         publicOrigin:origin,sessionProof:ctx.sessionProof
       });
+      // The provider GET may finish after logout or principal reassignment.
+      // Re-resolve the *same* trusted server capability before returning any
+      // buyer/order state. Browser callback/query strings remain untrusted.
+      const latest=await resolveTrustedCheckout(serverSessionHandle);
+      if(latest?.verified!==true||latest.quoteId!==ctx.quoteId||
+         latest.actorId!==ctx.actorId||latest.merchantId!==ctx.merchantId||
+         !latest.sessionProof)
+        deny('TRUSTED_CHECKOUT_SESSION_NOT_VERIFIED');
     }catch{
       return response(401,{error:'TRUSTED_CHECKOUT_SESSION_NOT_VERIFIED'});
     }

@@ -129,6 +129,12 @@ export function createTrustedMarketplaceGateway({
   let result;
   try{result=await api(internal)}
   catch{return response(503,'HOST_BACKEND_UNAVAILABLE')}
+  // Data reads and workflow writes can await after the last policy check.
+  // A revoked/reassigned host login must never receive the stale response.
+  // For a completed POST, the durable eventId still prevents replay; the host
+  // must reauthenticate and read state rather than blindly repeat a mutation.
+  const current=await resolveSession(internal);
+  if(current?.verified!==true)return response(401,'HOST_AUTHENTICATION_REQUIRED');
   // No PayPal or AI endpoints, cookies, token/session values or redirects.
   const headers=new Headers(result.headers);
   for(const [k,v] of Object.entries(defaultHeaders))headers.set(k,v);

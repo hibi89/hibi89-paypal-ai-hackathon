@@ -196,3 +196,68 @@ test('trusted host session revoked or switched after first check blocks contract
   assert.equal((await db.listAttempts('projectA')).length,0);
  }
 }));
+
+test('late logout during quote payload read prevents stale response disclosure',
+ fixture(async({db})=>{
+  let loginActive=true,logoutOnGet=true,authReads=0;
+  const guarded={
+   ...db,
+   async get(id){
+    const quote=await db.get(id);
+    if(logoutOnGet){logoutOnGet=false;loginActive=false;}
+    return quote;
+   }
+  };
+  const gateway=createTrustedMarketplaceGateway({
+   ledger:guarded,expectedOrigin:origin,
+   resolveVerifiedHostSession:async()=>{
+    authReads++;
+    return loginActive?{verified:true,actorId:'buyerA',
+     merchantId:'tenantA'}:null;
+   }
+  });
+  const req=()=>new Request(origin+'/api/marketplace/quotes/projectA');
+  const stale=await gateway.handle(req());
+  assert.equal(stale.status,401);
+  assert.equal((await stale.json()).error,'HOST_AUTHENTICATION_REQUIRED');
+  assert.ok(authReads>=4);
+  loginActive=true;
+  const fresh=await gateway.handle(req());
+  assert.equal(fresh.status,200);
+  assert.equal((await fresh.json()).quote.id,'projectA');
+ }));
+
+test('after completed durable workflow a revoked host cannot receive stale result',
+ fixture(async({db})=>{
+  let loginActive=true,logoutOnWrite=true;
+  const guarded={
+   ...db,
+   async transitionMarketplaceMilestone(detail){
+    const result=await db.transitionMarketplaceMilestone(detail);
+    if(logoutOnWrite){logoutOnWrite=false;loginActive=false;}
+    return result;
+   }
+  };
+  const gateway=createTrustedMarketplaceGateway({
+   ledger:guarded,expectedOrigin:origin,
+   resolveVerifiedHostSession:async()=>loginActive?
+    {verified:true,actorId:'sellerA',merchantId:'tenantA',
+     csrfToken:csrf}:null
+  });
+  const req=()=>new Request(origin+
+   '/api/marketplace/contracts/contractA/milestones/stepA/submit',{
+    method:'POST',headers:{origin,'content-type':'application/json',
+     'x-csrf-token':csrf},
+    body:JSON.stringify({eventId:'late-logout-submit',expectedVersion:1,
+     expectedState:'PENDING',detail:task})
+   });
+  const after=await gateway.handle(req());
+  assert.equal(after.status,401);
+  assert.equal((await after.json()).error,'HOST_AUTHENTICATION_REQUIRED');
+  // Never retry a potentially completed financial or workflow mutation.
+  const status=await db.getContract({
+   contractId:'contractA',actorId:'buyerA',merchantId:'tenantA'
+  });
+  assert.equal(status.version,2);
+  assert.equal(status.milestones[0].state,'SUBMITTED');
+ }));
