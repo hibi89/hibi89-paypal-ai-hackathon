@@ -93,7 +93,8 @@ export function validateOfflineReviewEvidence(s,{requireGate=false}={}) {
      g.payableMinor!==s.reservedMinor||
      g.remainingMinor!==m.limitMinor-s.reservedMinor||
      s.events[4]?.type!=='GUARD'||
-     g.policyDigest!==hash({mandate:m,job:j,delivery:d,license:l}))
+     g.policyDigest!==hash({mandate:m,job:j,delivery:d,license:l})||
+     g.auditDigest!==hash(s.events))
    return hold('EVIDENCE_DIGEST_OR_GATE_MISMATCH');
  }
  return {ok:true,providerVerified:false,paymentAuthorized:false};
@@ -170,6 +171,9 @@ function apply(s,action,{now=()=>Date.now()}={}) {
        payableMinor:next.reservedMinor,remainingMinor:next.mandate.limitMinor-next.reservedMinor,
        providerCalls:0,policyDigest:hash({mandate:next.mandate,job:next.job,delivery:next.delivery,license:next.license})};
      record(next,'GUARD','BOTH TRADES READY FOR GATED REVIEW','PayPal Sandbox Order/Capture would require verified merchant + separate owner approval');
+     // Seal the complete five-event synthetic audit trail after the final event.
+     // This is not an external signature or provider-issued receipt.
+     next.gate.auditDigest=hash(next.events);
    }
  }
  next.step++;
