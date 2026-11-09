@@ -123,3 +123,41 @@ test('revocation after final review removes current readiness while preserving e
   assert.equal(e.step('reset').mandateStatus,'NOT_GRANTED');
  }finally{e.close()}
 });
+
+test('real localhost HTTP API completes five-stage journey then revokes reviewed authority',async()=>{
+ const app=await startCommerceControlPlane();try{
+  const base=app.url;
+  const state=async()=>{const r=await fetch(base+'/api/state');assert.equal(r.status,200);return r.json()};
+  const initial=await state();
+  assert.equal(initial.mandateStatus,'NOT_GRANTED');
+  const post=async(action,token=initial.csrfToken)=>{
+   const res=await fetch(base+'/api/action',{method:'POST',headers:{'content-type':'application/json','origin':base,'x-csrf-token':token},body:JSON.stringify({action})});
+   return {status:res.status,body:await res.json()};
+  };
+  for(const [index,action] of ['grant','negotiate','verify','license','review'].entries()){
+   const result=await post(action);assert.equal(result.status,200);assert.equal(result.body.step,index+1);
+   assert.equal(result.body.paypalProviderCalls,0);
+   assert.equal(result.body.realPayments,0);
+  }
+  const finished=await state();
+  assert.equal(finished.humanReviewReady,true);
+  assert.equal(finished.mandateStatus,'ACTIVE');
+  assert.equal(finished.reservedMinor,46000);
+  assert.equal(finished.events.length,5);
+  const historical=finished.gate.policyDigest;
+  const unauthorized=await post('reset','not-the-csrf-token');
+  assert.equal(unauthorized.status,403);
+  assert.equal((await state()).step,5);
+  const revoked=await post('revoke');
+  assert.equal(revoked.status,200);
+  assert.equal(revoked.body.mandateStatus,'REVOKED');
+  assert.equal(revoked.body.humanReviewReady,false);
+  assert.equal(revoked.body.gate.policyDigest,historical);
+  assert.equal(revoked.body.reservedMinor,46000);
+  assert.equal(revoked.body.paypalProviderCalls,0);
+  const refreshed=await state();
+  assert.equal(refreshed.humanReviewReady,false);
+  assert.equal(refreshed.events.length,6);
+  assert.equal((await post('reset')).body.mandateStatus,'NOT_GRANTED');
+ }finally{await app.close()}
+});
