@@ -89,3 +89,37 @@ test('6,859 bounded policy combinations never accept a trade below seller floor'
  assert.equal(checked,6859);
  assert.equal(agreed,2470);
 });
+
+test('readiness is invalidated immediately by expiration without modifying audited trade history',()=>{
+ let now=10000;const e=createCommerceEngine({now:()=>now});try{
+  for(const a of ['grant','negotiate','verify','license','review'])assert.equal(e.step(a).status,200);
+  const before=e.get();assert.equal(before.mandateStatus,'ACTIVE');
+  assert.equal(before.humanReviewReady,true);assert.equal(before.reservedMinor,46000);
+  const historicalGate=before.gate.policyDigest;
+  now=before.mandate.expiresAt;const expired=e.get();
+  assert.equal(expired.mandateStatus,'EXPIRED');assert.equal(expired.humanReviewReady,false);
+  assert.equal(expired.gate.policyDigest,historicalGate);
+  assert.equal(expired.step,5);assert.equal(expired.reservedMinor,46000);
+  assert.equal(expired.events.length,5);
+  assert.equal(e.step('review').paypalProviderCalls,0);
+  assert.equal(e.get().humanReviewReady,false);
+ }finally{e.close()}
+});
+test('revocation after final review removes current readiness while preserving evidence',()=>{
+ const e=createCommerceEngine();try{
+  assert.equal(e.get().mandateStatus,'NOT_GRANTED');
+  assert.equal(e.get().humanReviewReady,false);
+  for(const a of ['grant','negotiate','verify','license','review'])assert.equal(e.step(a).status,200);
+  const digest=e.get().gate.policyDigest;
+  assert.equal(e.get().humanReviewReady,true);
+  assert.equal(e.step('revoke').status,200);
+  const revoked=e.get();
+  assert.equal(revoked.mandateStatus,'REVOKED');assert.equal(revoked.humanReviewReady,false);
+  assert.equal(revoked.events.length,6);assert.equal(revoked.reservedMinor,46000);
+  assert.equal(revoked.gate.policyDigest,digest);
+  assert.equal(revoked.paypalProviderCalls,0);assert.equal(revoked.realPayments,0);
+  assert.equal(e.step('license').status,200);
+  assert.equal(e.get().humanReviewReady,false);
+  assert.equal(e.step('reset').mandateStatus,'NOT_GRANTED');
+ }finally{e.close()}
+});
