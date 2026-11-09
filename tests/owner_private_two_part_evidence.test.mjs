@@ -7,6 +7,7 @@ import {createSqliteLedger} from '../src/sqlite_ledger.mjs';
 import {createPilotCheckoutSessionStore} from '../src/pilot_checkout_session_store.mjs';
 import {createMarketplaceAiBudgetStore} from '../src/marketplace_ai_budget.mjs';
 import {createOwnerPrivateGeminiInnovationLab} from '../src/owner_private_gemini_innovation_lab.mjs';
+import {inspectOwnerProposedA2AQuote} from '../src/owner_private_a2a_quote_binding.mjs';
 import {createA2ABudgetStore,hashEvidence} from '../src/gemini_a2a_budget_store.mjs';
 import {inspectPrivatePart2A2A,inspectOwnerTwoPartEvidence}
  from '../src/owner_private_two_part_evidence.mjs';
@@ -189,4 +190,124 @@ test('crash between durable Gemini quota claim and Part2 event refuses clean ret
   assert.equal(out.quotaClaims,1);
   assert.equal(out.amountMinor,null);
  }finally{rmSync(directory,{recursive:true,force:true})}
+});
+
+
+async function seedQuoteBoundSandboxPart2(directory){
+ const quoteId='one_sandbox_quote';
+ const pilotScope={actor:'private_buyer',merchant,job:'part2_sandbox_150_once'};
+ const part1Filename=join(directory,'sandbox-quote.sqlite');
+ const ledger=createSqliteLedger({filename:part1Filename});
+ let app,calls=0;
+ const filename=join(directory,'part2-sandbox.sqlite');
+ const budgetFilename=join(directory,'sandbox-quota.sqlite');
+ try{
+  await ledger.insertQuote({id:quoteId,ownerId:pilotScope.actor,
+   merchantId:pilotScope.merchant});
+  const binding=inspectOwnerProposedA2AQuote({
+   filename:part1Filename,actorId:pilotScope.actor,
+   merchantId:pilotScope.merchant,quoteId
+  });
+  app=createOwnerPrivateGeminiInnovationLab({
+   filename,budgetFilename,scope:pilotScope,quoteBinding:binding,
+   sandboxPilotSellerFloorMinor:150,
+   apiKey:'FICTIONAL_SANDBOX_MODEL_KEY',ownerAuthorized:true,
+   freeTierConfirmed:true,operatorConfirmed:true,
+   fetchImpl:async()=>{
+    calls++;
+    return reply(calls===1?'OFFER':'ACCEPT',150);
+   }
+  });
+  const consent=app.delegate({key:'pilot_once',maxMinor:150,
+   expiresInMinutes:15});
+  const result=await app.negotiate({key:'pilot_agreement_once',
+   consentId:consent.consentId});
+  assert.equal(result.status,'SYNTHETIC_AGREEMENT');
+  assert.equal(result.agreedMinor,150);
+  assert.equal(calls,2);
+  return {filename,budgetFilename,scope:pilotScope,quoteId,binding};
+ }finally{app?.close();ledger.close()}
+}
+test('explicit $1.50 quote-bound private A2A receipt is readable but never provider attested',async()=>{
+ const dir=path();
+ try{
+  const pilot=await seedQuoteBoundSandboxPart2(dir);
+  const old=inspectPrivatePart2A2A({
+   filename:pilot.filename,budgetFilename:pilot.budgetFilename,
+   scope:pilot.scope
+  });
+  // The existing $270-only reader must not silently change its policy.
+  assert.equal(old.status,'PART2_EVIDENCE_REVIEW_REQUIRED');
+  const before=readFileSync(pilot.filename);
+  const proof=inspectPrivatePart2A2A({
+   filename:pilot.filename,budgetFilename:pilot.budgetFilename,
+   scope:pilot.scope,sandboxPilotQuoteId:pilot.quoteId
+  });
+  assert.equal(proof.status,'PRIVATE_A2A_SQLITE_RESULT_NOT_GEMINI_ATTESTED');
+  assert.equal(proof.amountMinor,150);
+  assert.equal(proof.quotaClaims,2);
+  assert.equal(proof.boundQuoteId,pilot.quoteId);
+  assert.equal(proof.boundQuoteVersion,pilot.binding.quoteVersion);
+  assert.equal(proof.boundQuoteFingerprint,pilot.binding.quoteFingerprint);
+  assert.equal(proof.quoteHumanApprovedByThisReadOnlyCheck,false);
+  assert.equal(proof.source,'PRIVATE_SQLITE_UNATTESTED');
+  assert.deepEqual(readFileSync(pilot.filename),before);
+  const two=inspectOwnerTwoPartEvidence({
+   ownerDirectory:dir,part2Filename:pilot.filename,
+   budgetFilename:pilot.budgetFilename,scope:pilot.scope,
+   sandboxPilotQuoteId:pilot.quoteId
+  });
+  assert.equal(two.status,'PART1_NOT_VERIFIED');
+  assert.equal(two.part2.amountMinor,150);
+  assert.equal(two.sameTransactionProven,false);
+  assert.equal(two.paymentAuthorized,false);
+  assert.equal(two.networkRequests,0);
+  assert.equal(two.liveGeminiVerifiedNow,false);
+  assert.equal(two.livePayPalVerifiedNow,false);
+ }finally{rmSync(dir,{recursive:true,force:true})}
+});
+test('wrong pre-model quote ID denies private $1.50 evidence without mutation',async()=>{
+ const dir=path();
+ try{
+  const pilot=await seedQuoteBoundSandboxPart2(dir);
+  const source=readFileSync(pilot.filename);
+  const invalid=inspectPrivatePart2A2A({
+   filename:pilot.filename,budgetFilename:pilot.budgetFilename,
+   scope:pilot.scope,sandboxPilotQuoteId:'other_same_price'
+  });
+  assert.equal(invalid.status,'PART2_EVIDENCE_REVIEW_REQUIRED');
+  assert.equal(invalid.amountMinor,null);
+  assert.deepEqual(readFileSync(pilot.filename),source);
+ }finally{rmSync(dir,{recursive:true,force:true})}
+});
+test('read-only $1.50 CLI requires exact quote scope without touching disk or keys',async()=>{
+ const dir=path();
+ try{
+  const {spawnSync}=await import('node:child_process');
+  const {fileURLToPath}=await import('node:url');
+  const entry=fileURLToPath(new URL('../scripts/check_owner_two_part_evidence.mjs',import.meta.url));
+  const before=readdirSync(dir).sort();
+  for(const flags of [['--sandbox-pilot-150'],
+   ['--sandbox-pilot-150','--extra']]){
+   const r=spawnSync(process.execPath,['--no-warnings',
+    '--experimental-sqlite',entry,...flags],{
+    encoding:'utf8',timeout:10000,
+    env:{...process.env,HOME:dir,USERPROFILE:dir,
+     WORKNOVA_OWNER_ACTOR_ID:'',
+     WORKNOVA_SANDBOX_MERCHANT_ID:'',
+     WORKNOVA_PILOT_QUOTE_ID:'',
+     GEMINI_API_KEY:'PRIVATE_TEST_SENTINEL'}
+   });
+   assert.equal(r.status,2,r.stderr);
+   const result=JSON.parse(r.stdout);
+   assert.equal(result.networkRequests,0);
+   assert.equal(result.fileWritesPerformed,false);
+   assert.equal(result.paymentAuthorized,false);
+   assert.doesNotMatch(r.stdout,/PRIVATE_TEST_SENTINEL/);
+   assert.equal(result.status,flags.length===1
+    ?'PRIVATE_SANDBOX_QUOTE_SCOPE_REQUIRED'
+    :'READ_ONLY_UNSUPPORTED_ARGUMENTS');
+  }
+  assert.deepEqual(readdirSync(dir).sort(),before);
+ }finally{rmSync(dir,{recursive:true,force:true})}
 });

@@ -34,12 +34,16 @@ const summary=(status,more={})=>Object.freeze({
  status,amountMinor:null,quotaClaims:0,transcriptSha256:null,
  source:'PRIVATE_SQLITE_UNATTESTED',...more
 });
-export function inspectPrivatePart2A2A({filename,budgetFilename,scope}={}){
+export function inspectPrivatePart2A2A({
+ filename,budgetFilename,scope,sandboxPilotQuoteId=null
+}={}){
  if(!scope||!['actor','merchant','job'].every(k=>ID.test(scope[k]??''))||
     typeof filename!=='string'||typeof budgetFilename!=='string'||
     !isAbsolute(filename)||!isAbsolute(budgetFilename)||
-    resolve(filename)===resolve(budgetFilename))
+    resolve(filename)===resolve(budgetFilename)||
+    (sandboxPilotQuoteId!==null&&!ID.test(sandboxPilotQuoteId)))
   error('PRIVATE_A2A_EVIDENCE_SCOPE_REQUIRED');
+ const sandboxPilot=sandboxPilotQuoteId!==null;
  try{
   // Make no side effects even for missing paths, foreign SQLite or active WAL.
   const part=safeDb(filename,db=>{
@@ -77,6 +81,18 @@ export function inspectPrivatePart2A2A({filename,budgetFilename,scope}={}){
   const messages=event?.messages;
   const hash=Array.isArray(messages)?createHash('sha256')
    .update(JSON.stringify(messages)).digest('hex'):null;
+  // The original $270 evidence contract stays exactly as before.
+  // The optional $1.50 pilot must carry the original, pre-model quote
+  // identity into its durable A2A record. Local checksums are NOT provider proof.
+  const amountAndBindingValid=sandboxPilot
+   ?event?.agreedMinor===150&&event?.sellerFloorMinor===150&&
+     event?.quoteBinding?.quoteId===sandboxPilotQuoteId&&
+     Number.isSafeInteger(event?.quoteBinding?.quoteVersion)&&
+     event.quoteBinding.quoteVersion>=1&&
+     event?.quoteBinding?.amountMinor===150&&
+     SHA.test(event?.quoteBinding?.quoteFingerprint??'')
+   :Number.isSafeInteger(event?.agreedMinor)&&event.agreedMinor>=27000&&
+     event.agreedMinor<=1000000;
   const valid=event?.mode==='PRIVATE_INJECTED_AGENT_NOT_ATTESTED'&&
    event?.agentMode==='PRIVATE_INJECTED_ROLES'&&
    event?.providerCalls==='NOT_ATTESTED'&&event?.realGemini===false&&
@@ -84,8 +100,7 @@ export function inspectPrivatePart2A2A({filename,budgetFilename,scope}={}){
    event?.paymentState==='NOT_PAID'&&event?.checkout==='DISABLED'&&
    event?.status==='SYNTHETIC_AGREEMENT'&&event?.accepted===true&&
    event?.protocolStatus==='AGREED_OFFLINE_CONTRACT'&&
-   Number.isSafeInteger(event?.agreedMinor)&&event.agreedMinor>=27000&&
-   event.agreedMinor<=1000000&&event.reservedMinor===event.agreedMinor&&
+   amountAndBindingValid&&event.reservedMinor===event.agreedMinor&&
    attempt?.state==='DONE'&&attempt?.consent_id===event?.consentId&&
    grant&&grant.used===event.agreedMinor&&grant.cap>=event.agreedMinor&&
    grant.revoked===0&&SHA.test(event?.transcriptSha256??'')&&
@@ -105,21 +120,28 @@ export function inspectPrivatePart2A2A({filename,budgetFilename,scope}={}){
   return summary('PRIVATE_A2A_SQLITE_RESULT_NOT_GEMINI_ATTESTED',{
    amountMinor:event.agreedMinor,quotaClaims:claims.length,
    transcriptSha256:event.transcriptSha256,
-   delegationStillValidNow:grant.expires>Date.now()
+   delegationStillValidNow:grant.expires>Date.now(),
+   ...(sandboxPilot?{
+    boundQuoteId:event.quoteBinding.quoteId,
+    boundQuoteVersion:event.quoteBinding.quoteVersion,
+    boundQuoteFingerprint:event.quoteBinding.quoteFingerprint,
+    quoteHumanApprovedByThisReadOnlyCheck:false
+   }:{})
   });
  }catch{
   return summary('PART2_EVIDENCE_REVIEW_REQUIRED');
  }
 }
 export function inspectOwnerTwoPartEvidence({
- ownerDirectory,part2Filename,budgetFilename,scope
+ ownerDirectory,part2Filename,budgetFilename,scope,
+ sandboxPilotQuoteId=null
 }={}){
  if(typeof ownerDirectory!=='string'||ownerDirectory.length===0)
   error('PRIVATE_OWNER_RECEIPT_DIRECTORY_REQUIRED');
  // This receipt is inspected by the existing read-only first-party verifier.
  const first=inspectOwnerMvpReceipt({directory:ownerDirectory});
  const second=inspectPrivatePart2A2A({
-  filename:part2Filename,budgetFilename,scope
+  filename:part2Filename,budgetFilename,scope,sandboxPilotQuoteId
  });
  const part1Recorded=first.status==='LOCAL_PROVIDER_RESULT_RECORDED_NOT_FRESH_GET';
  const part2Recorded=second.status==='PRIVATE_A2A_SQLITE_RESULT_NOT_GEMINI_ATTESTED';
