@@ -1,6 +1,10 @@
+import {DatabaseSync} from 'node:sqlite';
+import {mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createCommerceEngine,simulateBoundedAgreement} from '../src/worknova_agentic_commerce_mvp.mjs';
+import {createCommerceEngine,simulateBoundedAgreement,authorizeDelegatedReservation} from '../src/worknova_agentic_commerce_mvp.mjs';
 import {startCommerceControlPlane} from '../scripts/run_commerce_control_plane.mjs';
 
 test('true five-stage offline lifecycle and financial claims stay disabled',()=>{
@@ -160,4 +164,82 @@ test('real localhost HTTP API completes five-stage journey then revokes reviewed
   assert.equal(refreshed.events.length,6);
   assert.equal((await post('reset')).body.mandateStatus,'NOT_GRANTED');
  }finally{await app.close()}
+});
+
+
+test('delegated budget enforces merchant, category, currency and both amount limits',()=>{
+ const mandate={currency:'USD',expiresAt:20000,revoked:false,
+  limitMinor:50000,perTradeLimitMinor:30000,
+  categories:['AI_SERVICES','SOFTWARE_LICENSE'],
+  merchants:['mock-freelancer','mock-software']};
+ const base={mandate,category:'AI_SERVICES',merchant:'mock-freelancer',currency:'USD',
+  amountMinor:30000,reservedMinor:0,nowMs:1000};
+ assert.deepEqual(authorizeDelegatedReservation(base),{ok:true,paymentAuthorized:false});
+ const cases=[
+  [{category:'EXTERNAL_SERVICE'},'CATEGORY_NOT_ALLOWED'],
+  [{merchant:'untrusted-merchant'},'MERCHANT_NOT_ALLOWED'],
+  [{currency:'EUR'},'CURRENCY_NOT_ALLOWED'],
+  [{amountMinor:30001},'PER_TRADE_CAP_EXCEEDED'],
+  [{amountMinor:30000,reservedMinor:21000},'TOTAL_BUDGET_EXCEEDED'],
+  [{amountMinor:0},'INVALID_POLICY_AMOUNT'],
+  [{amountMinor:-1},'INVALID_POLICY_AMOUNT'],
+  [{amountMinor:1.5},'INVALID_POLICY_AMOUNT'],
+  [{reservedMinor:50001},'INVALID_POLICY_AMOUNT'],
+  [{amountMinor:Number.MAX_SAFE_INTEGER},'PER_TRADE_CAP_EXCEEDED'],
+  [{nowMs:20000},'MANDATE_NOT_ACTIVE'],
+  [{mandate:{...mandate,revoked:true}},'MANDATE_NOT_ACTIVE'],
+  [{mandate:{...mandate,expiresAt:1999},nowMs:2000},'MANDATE_NOT_ACTIVE'],
+  [{mandate:{...mandate,merchants:undefined}},'MERCHANT_NOT_ALLOWED'],
+  [{mandate:{...mandate,categories:null}},'CATEGORY_NOT_ALLOWED'],
+  [{mandate:null},'MANDATE_NOT_ACTIVE'],
+  [{mandate:{...mandate,limitMinor:0}},'INVALID_POLICY_AMOUNT'],
+  [{mandate:{...mandate,perTradeLimitMinor:NaN}},'INVALID_POLICY_AMOUNT'],
+  [{amountMinor:30000,reservedMinor:20000},null],
+ ];
+ for(const [overrides,reason] of cases){
+  const actual=authorizeDelegatedReservation({...base,...overrides});
+  if(reason)assert.deepEqual(actual,{ok:false,error:'PAYMENT_GUARD_DENIED',reason});
+  else assert.deepEqual(actual,{ok:true,paymentAuthorized:false});
+ }
+});
+
+test('real SQLite policy cannot reserve against non-allowlisted merchant or category',()=>{
+ const folder=mkdtempSync(join(tmpdir(),'worknova-guard-test-'));
+ const filename=join(folder,'synthetic.sqlite');
+ const e=createCommerceEngine({filename});
+ const db=new DatabaseSync(filename);
+ try{
+  assert.equal(e.step('grant').status,200);
+  const mutate=(update)=>{
+   const row=JSON.parse(db.prepare('SELECT payload FROM demo_state WHERE id=1').get().payload);
+   update(row.mandate);
+   db.prepare('UPDATE demo_state SET payload=? WHERE id=1').run(JSON.stringify(row));
+  };
+  const deny=(action,reason,step,reserved)=>{
+   const response=e.step(action);
+   assert.equal(response.status,409);
+   assert.equal(response.error,'PAYMENT_GUARD_DENIED');
+   assert.equal(response.reason,reason);
+   const state=e.get();
+   assert.equal(state.step,step);assert.equal(state.reservedMinor,reserved);
+   assert.equal(state.events.length,step);
+   assert.equal(state.paypalProviderCalls,0);
+  };
+  mutate(p=>p.merchants=[]);
+  deny('negotiate','MERCHANT_NOT_ALLOWED',1,0);
+  mutate(p=>{p.merchants=['mock-freelancer','mock-software'];p.categories=['SOFTWARE_LICENSE']});
+  deny('negotiate','CATEGORY_NOT_ALLOWED',1,0);
+  mutate(p=>{p.categories=['AI_SERVICES','SOFTWARE_LICENSE'];p.currency='EUR'});
+  deny('negotiate','CURRENCY_NOT_ALLOWED',1,0);
+  mutate(p=>p.currency='USD');
+  assert.equal(e.step('negotiate').status,200);
+  assert.equal(e.step('verify').status,200);
+  mutate(p=>p.merchants=['mock-freelancer']);
+  deny('license','MERCHANT_NOT_ALLOWED',3,30000);
+  mutate(p=>p.merchants=['mock-freelancer','mock-software']);
+  assert.equal(e.step('license').status,200);
+  assert.equal(e.step('review').status,200);
+  assert.equal(e.get().reservedMinor,46000);
+  assert.equal(e.get().humanReviewReady,true);
+ }finally{db.close();e.close();rmSync(folder,{recursive:true,force:true})}
 });
