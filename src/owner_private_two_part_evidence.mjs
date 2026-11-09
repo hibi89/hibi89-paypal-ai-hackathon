@@ -106,6 +106,17 @@ export function inspectPrivatePart2A2A({
    grant.revoked===0&&SHA.test(event?.transcriptSha256??'')&&
    hash===event.transcriptSha256&&
    Array.isArray(messages)&&messages.length>=2&&messages.length<=4&&
+   // A locally rehashed transcript without a true final ACCEPT must never
+   // become owner-approved, even when the event's summary says "accepted".
+   (!sandboxPilot||(
+    messages[0]?.action==='OFFER'&&
+    messages.at(-1)?.action==='ACCEPT'&&
+    messages.at(-1)?.amountMinor===150&&
+    messages.at(-2)?.amountMinor===150&&
+    messages.every((m,i)=>m.action!=='REJECT'&&
+     (i===0?m.action==='OFFER':['COUNTER','ACCEPT'].includes(m.action))&&
+     (m.role==='seller'?m.amountMinor>=150:m.amountMinor<=150))
+   ))&&
    messages.length===claims.length&&
    messages.every((m,i)=>m?.role===(i%2===0?'seller':'buyer')&&
     ['OFFER','COUNTER','ACCEPT','REJECT'].includes(m.action)&&
