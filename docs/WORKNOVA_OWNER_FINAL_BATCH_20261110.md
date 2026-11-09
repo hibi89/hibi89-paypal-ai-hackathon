@@ -14,6 +14,8 @@
 - Maintain focused full-source and Chromium tests. A live end-to-end operator/hosting integration using a **real** authenticated OIDC or equivalent buyer remains UNVERIFIED, and cannot be declared complete from this host-only library.
 - Preserve final English Devpost draft and existing user-liked private film; final render, visual review and upload still have separate provenance gates. Do not change narration/music/film originals without a verified editable master and approval.
 
+- **Critical login revocation security gate (Step44):** A real host must recheck the authenticated buyer identity AFTER owner consent and AGAIN immediately before Sandbox Orders/Capture POST, including during long-lived OAuth/GET waits. The host-only library does this when supplied an authoritative login resolver (offline CI proven); fake `verified:true` test identity is not sufficient as real provider proof. Payment POST must stop without retry when login disappears.
+
 ## One consolidated owner session — only when specifically authorized
 
 1. **One-time account/security setup and informed approvals:** Owner confirms PayPal Sandbox Business merchant ID and OAuth app ownership, distinct Sandbox Personal buyer, Google AI Studio Free Tier/model availability, local protected credentials, trusted OIDC identity and exact HTTPS callback origin. Secrets and private SQLite NEVER sent to chat, GitHub, screenshots or public video. Identity provider, user role provisioning and public deployment require their own approval; no implicit security changes.
