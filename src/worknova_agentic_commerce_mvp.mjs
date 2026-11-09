@@ -98,7 +98,13 @@ export function createCommerceEngine({filename=':memory:',now=()=>Date.now()}={}
  db.prepare('INSERT OR IGNORE INTO demo_state(id,payload) VALUES (1,?)').run(JSON.stringify(initial()));
  const get=()=>{
    const s=JSON.parse(db.prepare('SELECT payload FROM demo_state WHERE id=1').get().payload);
-   return {...s,stage:stageNames[s.step],remainingMinor:s.mandate?s.mandate.limitMinor-s.reservedMinor:0,
+   const mandateStatus=!s.mandate?'NOT_GRANTED':s.mandate.revoked?'REVOKED':
+     s.mandate.expiresAt<=now()?'EXPIRED':'ACTIVE';
+   // Historical agreement remains auditable, but cannot imply current authority.
+   const humanReviewReady=s.step===actions.length&&mandateStatus==='ACTIVE'&&
+     s.gate?.status==='HUMAN_PROVIDER_AUTH_REQUIRED';
+   return {...s,stage:stageNames[s.step],mandateStatus,humanReviewReady,
+     remainingMinor:s.mandate?s.mandate.limitMinor-s.reservedMinor:0,
      genuinePayPalAuthorization:false,disclosure:'SIMULATED / NO PAYPAL API / NO GEMINI API / NO ESCROW / NO CARD'};
  };
  const step=(action)=>{
