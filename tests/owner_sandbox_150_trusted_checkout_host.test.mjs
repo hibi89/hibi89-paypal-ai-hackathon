@@ -90,6 +90,7 @@ test('host-only A2A review + private checkout requires verified login and separa
      return {status:201,json:async()=>({
       id:'OWNER150ORDER',status:'COMPLETED'
      })};
+    }
     throw Error('DISALLOWED_INJECTED_PROVIDER_PATH');
    }
   });
