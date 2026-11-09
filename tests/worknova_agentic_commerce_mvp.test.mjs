@@ -329,3 +329,46 @@ test('synthetic delivery-check failure blocks review commit and keeps reservatio
   assert.equal(e.get().humanReviewReady,true);
  }finally{db.close();e.close();rmSync(folder,{recursive:true,force:true})}
 });
+
+test('post-review audit edits invalidate local digest without modifying payment state',()=>{
+ const folder=mkdtempSync(join(tmpdir(),'worknova-audit-tamper-'));
+ const filename=join(folder,'synthetic.sqlite');
+ const e=createCommerceEngine({filename});const db=new DatabaseSync(filename);
+ try{
+  for(const a of ['grant','negotiate','verify','license','review'])assert.equal(e.step(a).status,200);
+  const valid=e.get();
+  assert.equal(valid.humanReviewReady,true);
+  assert.equal(valid.evidenceIntegrity,'LOCAL_DIGEST_MATCH');
+  assert.match(valid.gate.auditDigest,/^[a-f0-9]{64}$/);
+  const read=()=>JSON.parse(db.prepare('SELECT payload FROM demo_state WHERE id=1').get().payload);
+  const write=s=>db.prepare('UPDATE demo_state SET payload=? WHERE id=1').run(JSON.stringify(s));
+  const original=read();
+  const doctored=structuredClone(original);
+  doctored.events[2].headline='REAL PAYPAL CAPTURE APPROVED';write(doctored);
+  const denied=e.get();
+  assert.equal(denied.humanReviewReady,false);
+  assert.equal(denied.evidenceIntegrity,'LOCAL_REVIEW_HOLD');
+  assert.equal(denied.evidenceHoldReason,'EVIDENCE_DIGEST_OR_GATE_MISMATCH');
+  assert.equal(denied.step,5);
+  assert.equal(denied.events[2].headline,'REAL PAYPAL CAPTURE APPROVED');
+  assert.equal(denied.realPayments,0);
+  assert.equal(denied.paypalProviderCalls,0);
+  assert.equal(read().events[2].headline,'REAL PAYPAL CAPTURE APPROVED');
+  write(original);
+  assert.equal(e.get().humanReviewReady,true);
+  const appended=structuredClone(original);
+  appended.events.push({number:6,type:'CAPTURE',headline:'FAKE PAID',detail:'not genuine',source:'SYNTHETIC_LOCAL',providerCalls:0});
+  write(appended);
+  assert.equal(e.get().evidenceHoldReason,'EVIDENCE_DIGEST_OR_GATE_MISMATCH');
+  write(original);
+  const badDigest=structuredClone(original);badDigest.gate.auditDigest='0'.repeat(64);
+  write(badDigest);
+  assert.equal(e.get().humanReviewReady,false);
+  assert.equal(e.get().evidenceHoldReason,'EVIDENCE_DIGEST_OR_GATE_MISMATCH');
+  write(original);
+  assert.equal(e.get().humanReviewReady,true);
+  assert.equal(e.step('review').status,200);
+  assert.equal(e.get().gate.auditDigest,valid.gate.auditDigest);
+  assert.equal(e.get().events.length,5);
+ }finally{db.close();e.close();rmSync(folder,{recursive:true,force:true})}
+});
