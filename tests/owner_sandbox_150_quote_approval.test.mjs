@@ -160,13 +160,16 @@ test('sandbox evidence denies locally rehashed transcript missing final ACCEPT',
   await seed(f);
   const db=new DatabaseSync(f.part2Filename);
   try{
-   const row=db.prepare("SELECT rowid,result FROM innovation_events WHERE kind='a2a'").get();
+   const row=db.prepare("SELECT result FROM innovation_events WHERE actor=? AND merchant=? AND kind='a2a'")
+    .get(actorId,merchantId);
    const body=JSON.parse(row.result);
    body.messages.at(-1).action='COUNTER';
    body.transcriptSha256=createHash('sha256').update(JSON.stringify(body.messages))
     .digest('hex');
-   db.prepare('UPDATE innovation_events SET result=? WHERE rowid=?')
-    .run(JSON.stringify(body),row.rowid);
+   const updated=db.prepare(
+    "UPDATE innovation_events SET result=? WHERE actor=? AND merchant=? AND kind='a2a'"
+   ).run(JSON.stringify(body),actorId,merchantId);
+   assert.equal(updated.changes,1);
   }finally{db.close()}
   assert.equal(inspectPrivatePart2A2A({
    filename:f.part2Filename,budgetFilename:f.budgetFilename,
