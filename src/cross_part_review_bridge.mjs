@@ -6,6 +6,7 @@
 import {DatabaseSync} from 'node:sqlite';
 import {createHash} from 'node:crypto';
 import {approvedAmount} from './payment_contract.mjs';
+import {fingerprintOwnerQuoteContract} from './owner_private_a2a_quote_binding.mjs';
 
 const ID=/^[A-Za-z0-9_-]{1,64}$/;
 const HASH=/^[a-f0-9]{64}$/;
@@ -30,7 +31,8 @@ const resultView=x=>Object.freeze({
 
 export function createCrossPartReviewBridge({
  filename,ledger,innovationStore,identityPolicy,authorizeLink,now=Date.now,
- allowUnattestedPrivateA2A=false,trustedSandboxPilotSellerFloorMinor=null
+ allowUnattestedPrivateA2A=false,trustedSandboxPilotSellerFloorMinor=null,
+ trustedProposedQuoteBinding=null
 }={}){
  if(typeof filename!=='string'||!filename||filename===':memory:'||
   typeof ledger?.get!=='function'||
@@ -39,8 +41,18 @@ export function createCrossPartReviewBridge({
   typeof identityPolicy?.authorize!=='function'||
   typeof authorizeLink!=='function'||typeof now!=='function'||
   typeof allowUnattestedPrivateA2A!=='boolean'||
+  (trustedProposedQuoteBinding!==null&&trustedSandboxPilotSellerFloorMinor===null)||
   (trustedSandboxPilotSellerFloorMinor!==null&&
    (!allowUnattestedPrivateA2A||
+    !trustedProposedQuoteBinding||
+    !valid(trustedProposedQuoteBinding.quoteId)||
+    !Number.isSafeInteger(trustedProposedQuoteBinding.quoteVersion)||
+    trustedProposedQuoteBinding.quoteVersion<1||
+    !valid(trustedProposedQuoteBinding.actorId)||
+    !valid(trustedProposedQuoteBinding.merchantId)||
+    trustedProposedQuoteBinding.currency!=='USD'||
+    trustedProposedQuoteBinding.amountMinor!==trustedSandboxPilotSellerFloorMinor||
+    !HASH.test(trustedProposedQuoteBinding.quoteFingerprint??'')||
     !Number.isSafeInteger(trustedSandboxPilotSellerFloorMinor)||
     trustedSandboxPilotSellerFloorMinor<100||
     trustedSandboxPilotSellerFloorMinor>200)))
@@ -151,6 +163,22 @@ async function evidence(hostHandle,quoteId,consentId){
      a2a.requiredExternalFundingAuthorization===true&&
      a2a.sellerFloorMinor===sellerFloorMinor&&
      (trustedSandboxPilotSellerFloorMinor===null||amountMinor<=200);
+  // An A2A message with matching price alone must never be reused for a
+  // different approved quote, even within one buyer/merchant tenancy.
+  // Require the immutable contract snapshot that existed BEFORE model calls.
+  if(privateUnattested&&trustedSandboxPilotSellerFloorMinor!==null){
+   const binding=a2a.quoteBinding;
+   if(!binding||binding.quoteId!==quote.id||
+      binding.quoteVersion!==quote.version||
+      binding.quoteFingerprint!==trustedProposedQuoteBinding.quoteFingerprint||
+      binding.amountMinor!==amountMinor||
+      quote.id!==trustedProposedQuoteBinding.quoteId||
+      quote.ownerId!==trustedProposedQuoteBinding.actorId||
+      quote.merchantId!==trustedProposedQuoteBinding.merchantId||
+      quote.version!==trustedProposedQuoteBinding.quoteVersion||
+      fingerprintOwnerQuoteContract(quote)!==binding.quoteFingerprint)
+    fail('CROSS_PART_PRIVATE_QUOTE_BINDING_MISMATCH');
+  }
   if(!provenanceValid||a2a.status!=='SYNTHETIC_AGREEMENT'||
      a2a.protocolStatus!=='AGREED_OFFLINE_CONTRACT'||
      a2a.accepted!==true||a2a.agreedMinor!==amountMinor||

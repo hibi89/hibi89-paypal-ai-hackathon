@@ -16,6 +16,22 @@ const outside=(path,base)=>{
 const fingerprint=value=>createHash('sha256')
  .update(JSON.stringify(value)).digest('hex');
 
+// Quote contract fields are unchanged by a normal human approval.
+// Exclude status and approval fields so a PRE-APPROVED negotiation can be
+// checked against the later APPROVED view without assuming approval authority.
+export function fingerprintOwnerQuoteContract(quote){
+ if(!quote||!ID.test(quote.id??'')||!ID.test(quote.ownerId??'')||
+    !MERCHANT.test(quote.merchantId??'')||
+    !Number.isSafeInteger(quote.version)||quote.version<1||
+    quote.currency!=='USD')
+  fail('OWNER_A2A_CONTRACT_FINGERPRINT_INVALID');
+ return fingerprint({
+  id:quote.id,owner:quote.ownerId,merchant:quote.merchantId,
+  version:quote.version,currency:quote.currency,
+  scope:quote.scope??null,draft:quote.aiSuggestedMinor??null
+ });
+}
+
 /**
  * Local quote identity is NOT proof that a PayPal Business merchant owns an
  * OAuth app or that the Gemini output came from Google. Human approval and
@@ -57,10 +73,10 @@ export function inspectOwnerProposedA2AQuote({
  const binding={
   actorId,merchantId,quoteId,quoteVersion:row.version,
   currency:'USD',amountMinor:150,
-  quoteFingerprint:fingerprint({
-   id:row.id,owner:row.owner_id,merchant:row.merchant_id,
-   version:row.version,currency:row.currency,status:row.status,
-   scope:row.scope_text,draft:row.ai_suggested_minor
+  quoteFingerprint:fingerprintOwnerQuoteContract({
+   id:row.id,ownerId:row.owner_id,merchantId:row.merchant_id,
+   version:row.version,currency:row.currency,
+   scope:row.scope_text,aiSuggestedMinor:row.ai_suggested_minor
   }),
   quoteStatus:'PROPOSED_NOT_PAYMENT_AUTHORITY'
  };

@@ -14,7 +14,7 @@ const inside=(file,cwd)=>{
 export function createOwnerPrivateGeminiInnovationLab({
  filename,budgetFilename,scope,apiKey,fetchImpl,
  ownerAuthorized=false,freeTierConfirmed=false,operatorConfirmed=false,
- sandboxPilotSellerFloorMinor=27000,cwd=process.cwd()
+ sandboxPilotSellerFloorMinor=27000,quoteBinding=null,cwd=process.cwd()
 }={}){
  // All consent signals belong to the trusted operator, never to a browser body.
  if(ownerAuthorized!==true||freeTierConfirmed!==true||operatorConfirmed!==true)
@@ -29,6 +29,18 @@ export function createOwnerPrivateGeminiInnovationLab({
     resolve(filename)===resolve(budgetFilename)||
     inside(filename,cwd)||inside(budgetFilename,cwd))
   deny('OWNER_PRIVATE_GEMINI_A2A_SCOPE_AND_FILES_REQUIRED');
+ // A private binding must originate in the owner host's existing Part1 quote
+ // preflight. The injected proof itself is local consistency, not remote identity.
+ if(quoteBinding!==null&&
+   (sandboxPilotSellerFloorMinor!==150||quoteBinding.actorId!==scope.actor||
+    quoteBinding.merchantId!==scope.merchant||
+    !ID.test(quoteBinding.quoteId??'')||
+    !Number.isSafeInteger(quoteBinding.quoteVersion)||
+    quoteBinding.quoteVersion<1||quoteBinding.amountMinor!==150||
+    quoteBinding.currency!=='USD'||
+    !/^[a-f0-9]{64}$/.test(quoteBinding.quoteFingerprint??'')||
+    quoteBinding.quoteStatus!=='PROPOSED_NOT_PAYMENT_AUTHORITY'))
+  deny('OWNER_PRIVATE_A2A_QUOTE_BINDING_INVALID');
  // The quota database is durable and deliberately distinct from the Part2 state.
  const quota=createA2ABudgetStore({filename:budgetFilename,dayLimit:8,
   attemptLimit:4,dayTokens:20480,reservedPerCall:2560});
@@ -42,7 +54,8 @@ export function createOwnerPrivateGeminiInnovationLab({
   lab=createInnovationLab({filename,agentsFactory:()=>agents,
    agentTransport:'PRIVATE_INJECTED_UNVERIFIED',
    a2aMaxTurns:4,a2aTurnTimeoutMs:8000,
-   a2aSellerFloorMinor:sandboxPilotSellerFloorMinor});
+   a2aSellerFloorMinor:sandboxPilotSellerFloorMinor,
+   a2aQuoteBinding:quoteBinding});
  }catch(e){try{quota.close()}catch{}throw e;}
  let closed=false;
  return Object.freeze({

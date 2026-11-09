@@ -5,7 +5,8 @@ import {mkdtempSync,rmSync,symlinkSync,existsSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {createSqliteLedger} from '../src/sqlite_ledger.mjs';
-import {inspectOwnerProposedA2AQuote} from '../src/owner_private_a2a_quote_binding.mjs';
+import {inspectOwnerProposedA2AQuote,
+ fingerprintOwnerQuoteContract} from '../src/owner_private_a2a_quote_binding.mjs';
 
 const actor='owner',merchant='A1B2C3D4E5F6G',quoteId='real-pilot-proposal';
 function fixture(){
@@ -32,6 +33,7 @@ test('same buyer/merchant PROPOSED quote gives read-only $1.50 A2A binding',asyn
   assert.equal(a.quoteId,quoteId);
   assert.equal(a.quoteVersion,1);
   assert.match(a.quoteFingerprint,/^[a-f0-9]{64}$/);
+  assert.equal(a.quoteFingerprint,fingerprintOwnerQuoteContract(before));
   assert.deepEqual(await f.ledger.get(quoteId),before);
   assert.deepEqual(await f.ledger.listAttempts(quoteId),[]);
  }finally{f.close()}
@@ -63,6 +65,8 @@ test('already approved or revised quote cannot start this pre-approval negotiati
   assert.notEqual(initial.quoteFingerprint,changed.quoteFingerprint);
   await f.ledger.approve({id:quoteId,actorId:actor,
    expectedVersion:2,amountMinor:150});
+  assert.equal(changed.quoteFingerprint,
+   fingerprintOwnerQuoteContract(await f.ledger.get(quoteId)));
   assert.throws(()=>inspectOwnerProposedA2AQuote(f.args),
    {code:'OWNER_A2A_UNAPPROVED_UNPAID_QUOTE_REQUIRED'});
  }finally{f.close()}

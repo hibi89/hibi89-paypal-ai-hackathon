@@ -54,7 +54,7 @@ export function prepareInvoiceDispute(input){
 }
 export function createInnovationLab({filename,now=Date.now,agentsFactory=createOfflineRoleAgents,
  agentTransport='OFFLINE_POLICY',a2aMaxTurns=8,a2aTurnTimeoutMs=1000,
- a2aSellerFloorMinor=27000}={}){
+ a2aSellerFloorMinor=27000,a2aQuoteBinding=null}={}){
  if(typeof agentsFactory!=='function'||typeof now!=='function')throw new TypeError('AGENTS_FACTORY_REQUIRED');
  if(!['OFFLINE_POLICY','PRIVATE_INJECTED_UNVERIFIED'].includes(agentTransport)||
     !Number.isSafeInteger(a2aMaxTurns)||a2aMaxTurns<2||a2aMaxTurns>8||
@@ -70,6 +70,21 @@ export function createInnovationLab({filename,now=Date.now,agentsFactory=createO
      (agentTransport!=='PRIVATE_INJECTED_UNVERIFIED'||
       a2aSellerFloorMinor<100||a2aSellerFloorMinor>200)))
   throw new TypeError('INVALID_PRIVATE_A2A_SANDBOX_PILOT_FLOOR');
+ if(a2aQuoteBinding!==null&&(
+     agentTransport!=='PRIVATE_INJECTED_UNVERIFIED'||
+     a2aSellerFloorMinor!==150||
+     !validId(a2aQuoteBinding.quoteId)||
+     !Number.isSafeInteger(a2aQuoteBinding.quoteVersion)||
+     a2aQuoteBinding.quoteVersion<1||
+     !/^[a-f0-9]{64}$/.test(a2aQuoteBinding.quoteFingerprint??'')||
+     a2aQuoteBinding.amountMinor!==150))
+  throw new TypeError('INVALID_PRIVATE_A2A_QUOTE_BINDING');
+ const boundQuote=a2aQuoteBinding===null?null:Object.freeze({
+  quoteId:a2aQuoteBinding.quoteId,
+  quoteVersion:a2aQuoteBinding.quoteVersion,
+  quoteFingerprint:a2aQuoteBinding.quoteFingerprint,
+  amountMinor:a2aQuoteBinding.amountMinor
+ });
  if(typeof filename!=='string'||!filename||filename===':memory:')throw new TypeError('LAB_FILE_REQUIRED');
  const db=new DatabaseSync(filename);
  db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000');
@@ -198,7 +213,7 @@ export function createInnovationLab({filename,now=Date.now,agentsFactory=createO
  function claimA2A({actor,merchant,key,consentId}){
   if(!validId(actor)||!validId(merchant)||!validId(key)||!validId(consentId))err('INVALID_A2A_INPUT');
   return transact(()=>{
-   const fingerprint=hash({consentId});
+   const fingerprint=hash(boundQuote?{consentId,boundQuote}:{consentId});
    const done=query('SELECT fingerprint,result FROM innovation_events WHERE actor=? AND merchant=? AND kind=? AND request_key=?').get(actor,merchant,'a2a',key);
    if(done){
     if(done.fingerprint!==fingerprint)err('REPLAY_CONFLICT',409);
@@ -247,7 +262,8 @@ export function createInnovationLab({filename,now=Date.now,agentsFactory=createO
     Object.assign(record,{mode:'PRIVATE_INJECTED_AGENT_NOT_ATTESTED',
      agentMode:'PRIVATE_INJECTED_ROLES',providerCalls:'NOT_ATTESTED',
      sellerFloorMinor:a2aSellerFloorMinor,
-     realGemini:false,providerEvidence:'EXTERNAL_TRANSPORT_NOT_ATTESTED'});
+     realGemini:false,providerEvidence:'EXTERNAL_TRANSPORT_NOT_ATTESTED',
+     ...(boundQuote?{quoteBinding:boundQuote}:{})});
    }
    query('INSERT INTO innovation_events(actor,merchant,kind,request_key,fingerprint,result,created) VALUES(?,?,?,?,?,?,?)')
     .run(actor,merchant,'a2a',key,attempt.fingerprint,JSON.stringify(record),now());

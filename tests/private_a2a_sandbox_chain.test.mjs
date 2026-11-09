@@ -8,6 +8,7 @@ import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {createSqliteLedger} from '../src/sqlite_ledger.mjs';
 import {createOwnerPrivateGeminiInnovationLab} from '../src/owner_private_gemini_innovation_lab.mjs';
+import {inspectOwnerProposedA2AQuote} from '../src/owner_private_a2a_quote_binding.mjs';
 import {createMarketplaceIdentityPolicy} from '../src/marketplace_identity_policy.mjs';
 import {createCrossPartReviewBridge} from '../src/cross_part_review_bridge.mjs';
 import {createPilotCheckoutSessionStore} from '../src/pilot_checkout_session_store.mjs';
@@ -29,6 +30,12 @@ test('same $1.50 private AI agreement, human approval and fake Sandbox GET-proof
  const remote={buyerApproved:false,captured:false};
  const providerCalls=[];
  try{
+  ledger=createSqliteLedger({filename:join(dir,'part1.sqlite')});
+  await ledger.provisionLocalMember({actorId:actor,merchantId:merchant,role:'buyer'});
+  await ledger.insertQuote({id:quoteId,ownerId:actor,merchantId:merchant});
+  const binding=inspectOwnerProposedA2AQuote({
+   filename:join(dir,'part1.sqlite'),actorId:actor,merchantId:merchant,quoteId
+  });
   lab=createOwnerPrivateGeminiInnovationLab({
    filename:join(dir,'part2.sqlite'),budgetFilename:join(dir,'quota.sqlite'),
    scope:{actor,merchant,job:'sandbox_pilot_job'},
@@ -39,7 +46,7 @@ test('same $1.50 private AI agreement, human approval and fake Sandbox GET-proof
     assert.equal(init.redirect,'error');
     return fakeGemini(aiCalls===1?'OFFER':'ACCEPT',150);
    },ownerAuthorized:true,freeTierConfirmed:true,operatorConfirmed:true,
-   sandboxPilotSellerFloorMinor:150
+   sandboxPilotSellerFloorMinor:150,quoteBinding:binding
   });
   const consent=lab.delegate({key:'single_approved_mandate',
    maxMinor:150,expiresInMinutes:15});
@@ -49,11 +56,11 @@ test('same $1.50 private AI agreement, human approval and fake Sandbox GET-proof
   assert.equal(deal.paymentAuthorized,false);
   assert.equal(deal.realGemini,false);
   assert.equal(deal.providerCalls,'NOT_ATTESTED');
+  assert.equal(deal.quoteBinding.quoteId,quoteId);
+  assert.equal(deal.quoteBinding.quoteVersion,1);
+  assert.equal(deal.quoteBinding.quoteFingerprint,binding.quoteFingerprint);
   assert.equal(aiCalls,2);
 
-  ledger=createSqliteLedger({filename:join(dir,'part1.sqlite')});
-  await ledger.provisionLocalMember({actorId:actor,merchantId:merchant,role:'buyer'});
-  await ledger.insertQuote({id:quoteId,ownerId:actor,merchantId:merchant});
   await ledger.approve({id:quoteId,actorId:actor,expectedVersion:1,
    amountMinor:deal.agreedMinor});
   const sessionHandle=Object.freeze(Object.create(null));
@@ -72,6 +79,7 @@ test('same $1.50 private AI agreement, human approval and fake Sandbox GET-proof
    }},
    identityPolicy,allowUnattestedPrivateA2A:true,
    trustedSandboxPilotSellerFloorMinor:150,
+   trustedProposedQuoteBinding:binding,
    authorizeLink:async x=>
     x.action==='LINK_UNATTESTED_PRIVATE_A2A_TO_APPROVED_QUOTE'&&
     x.quoteId===quoteId&&x.amountMinor===150&&
@@ -148,6 +156,9 @@ test('same $1.50 private AI agreement, human approval and fake Sandbox GET-proof
   assert.equal(linked.amountMinor,deal.agreedMinor);
   assert.equal(linked.paymentAuthorized,false);
   assert.equal(linked.modelProviderAttested,false);
+  // The eventual approval did not mutate the original quote contract digest.
+  const quoteNow=await ledger.get(quoteId);
+  assert.equal(quoteNow.version,binding.quoteVersion);
 
   // No human consent: still no outbound provider activity.
   await assert.rejects(coordinator.openOwnerOrder(input),{

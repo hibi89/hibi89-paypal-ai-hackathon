@@ -71,7 +71,8 @@ if(!exact){
      job:sandboxPilot?'part2_sandbox_150_once':'part2_demo_once'},
     apiKey:env.GEMINI_API_KEY,fetchImpl:(...args)=>globalThis.fetch(...args),
     ownerAuthorized:true,freeTierConfirmed:true,operatorConfirmed:true,
-    sandboxPilotSellerFloorMinor:sandboxPilot?150:27000
+    sandboxPilotSellerFloorMinor:sandboxPilot?150:27000,
+    quoteBinding:binding
    });
    // Fixed request keys are irreversible: a second execution reads persisted
    // state; it NEVER silently spends an additional Gemini budget.
