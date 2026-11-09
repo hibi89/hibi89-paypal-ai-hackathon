@@ -34,6 +34,7 @@
     "pilot:gemini:part2": "node --experimental-sqlite scripts/run_owner_private_gemini_innovation.mjs",
     "pilot:quote:prepare": "node --experimental-sqlite scripts/prepare_owner_sandbox_150_quote.mjs",
     "pilot:quote:approve": "node --experimental-sqlite scripts/approve_owner_sandbox_150_quote.mjs",
+    "pilot:crosspart:review": "node --experimental-sqlite scripts/check_owner_sandbox_150_crosspart.mjs",
     "mvp:two-part:evidence": "node --experimental-sqlite scripts/check_owner_two_part_evidence.mjs",
     "mvp:reconcile:get": "node --experimental-sqlite scripts/reconcile_existing_sandbox_get_only.mjs",
     "submission:fields:local": "node scripts/build_devpost_form_fields.mjs",
