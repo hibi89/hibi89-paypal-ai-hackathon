@@ -96,6 +96,23 @@ export function createPrivateOidcMarketplaceHost({
   adapter=createMarketplaceHttpsRequestAdapter({
    expectedOrigin:publicOrigin,ledger,loginFlow,sessionStore:sessions
   });
+  const config=inspectOidcHostReadiness({
+   publicOrigin,startUri:publicOrigin+'/api/auth/oidc/start',
+   redirectUri:publicOrigin+'/api/auth/oidc/callback',
+   issuer,authorizationEndpoint,tokenEndpoint,jwksUri,
+   approvedProviderOrigins,clientId,clientSecretPresent:false,
+   challengeKeyPresent:true,bindingPepperPresent:true,
+   components:{challengeStore:challenge,codeTransport,jwksTrust:trust,
+    accountBindings:bindings,sessionStore:sessions,ledger},
+   hostPolicy
+  });
+  if(config.issues.some(x=>x!=='OIDC_PINNED_JWKS_NOT_ACTIVE'&&
+     x!=='OIDC_PRIVATE_CLIENT_CREDENTIAL_UNAVAILABLE'))
+   fail('PRIVATE_OIDC_HOST_CONFIGURATION_REJECTED');
+ }catch(e){
+  for(const x of connected.reverse())try{x.close()}catch{}
+  throw e;
+ }
   // The signed OIDC session is the source of buyer identity for the internal
   // $1.50 host checkout; no actor, merchant or role from caller JSON is used.
   // This capability is never registered as a public browser/payment route.
@@ -138,23 +155,6 @@ export function createPrivateOidcMarketplaceHost({
     merchantId:pinned.merchantId,role:'buyer',
     membershipRevision:pinned.membershipRevision});
   }
-  const config=inspectOidcHostReadiness({
-   publicOrigin,startUri:publicOrigin+'/api/auth/oidc/start',
-   redirectUri:publicOrigin+'/api/auth/oidc/callback',
-   issuer,authorizationEndpoint,tokenEndpoint,jwksUri,
-   approvedProviderOrigins,clientId,clientSecretPresent:false,
-   challengeKeyPresent:true,bindingPepperPresent:true,
-   components:{challengeStore:challenge,codeTransport,jwksTrust:trust,
-    accountBindings:bindings,sessionStore:sessions,ledger},
-   hostPolicy
-  });
-  if(config.issues.some(x=>x!=='OIDC_PINNED_JWKS_NOT_ACTIVE'&&
-     x!=='OIDC_PRIVATE_CLIENT_CREDENTIAL_UNAVAILABLE'))
-   fail('PRIVATE_OIDC_HOST_CONFIGURATION_REJECTED');
- }catch(e){
-  for(const x of connected.reverse())try{x.close()}catch{}
-  throw e;
- }
  async function handle(request){
   alive();
   // Refuse to initiate or complete login while operator JWKS trust is
