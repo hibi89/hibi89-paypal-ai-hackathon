@@ -11,8 +11,38 @@ const deny=code=>{const e=new Error(code);e.code=code;throw e;};
 const validId=value=>typeof value==='string'&&/^[A-Za-z0-9_-]{1,64}$/.test(value);
 const unknown=detail=>Object.freeze({status:'UNKNOWN',paymentState:'NOT_CONFIRMED',
   detail,retryPost:false});
-export function createOwnerPilotCheckoutCoordinator({ledger,transport,authorizeAction}={}){
+export function createOwnerPilotCheckoutCoordinator({ledger,transport,authorizeAction,
+ verifyPrivateA2AReview}={}){
   if(typeof authorizeAction!=='function')deny('TRUSTED_OWNER_AUTHORIZER_REQUIRED');
+  // Optional private-only prerequisite. The callback must be bound to the
+  // verified host; caller-supplied request JSON is NEVER a review receipt.
+  if(verifyPrivateA2AReview!==undefined&&
+     typeof verifyPrivateA2AReview!=='function')
+   deny('TRUSTED_PRIVATE_A2A_REVIEW_CALLBACK_REQUIRED');
+  async function checkLinkedReview(quote){
+   if(verifyPrivateA2AReview===undefined)return;
+   let view;
+   try{
+    view=await verifyPrivateA2AReview(Object.freeze({
+     quoteId:quote.id,quoteVersion:quote.version,
+     actorId:quote.ownerId,merchantId:quote.merchantId,
+     amountMinor:approvedAmount(quote),currency:quote.currency
+    }));
+   }catch{deny('OWNER_PILOT_PRIVATE_A2A_REVIEW_REQUIRED')}
+   if(view?.status!=='PRIVATE_UNATTESTED_A2A_REVIEW_ONLY'||
+      view?.provenanceClass!=='PRIVATE_INJECTED_AGENT_NOT_ATTESTED'||
+      view?.quoteId!==quote.id||view?.quoteVersion!==quote.version||
+      view?.amountMinor!==approvedAmount(quote)||
+      view?.currency!==quote.currency||
+      view?.amountMinor<100||view.amountMinor>200||
+      view?.paymentAuthorized!==false||
+      view?.paypalOrderCreated!==false||
+      view?.paypalCapturePerformed!==false||
+      view?.realProviderEvidence!==false||
+      view?.modelProviderAttested!==false||
+      view?.agentCalls!=='NOT_ATTESTED')
+    deny('OWNER_PILOT_PRIVATE_A2A_REVIEW_REQUIRED');
+  }
   if(transport?.mode!=='SANDBOX_ONLY'||
     typeof transport.createOwnerPilotOrderOnce!=='function'||
     typeof transport.getOrder!=='function'||
@@ -40,6 +70,7 @@ export function createOwnerPilotCheckoutCoordinator({ledger,transport,authorizeA
       quote,serverSession:bound,publicOrigin:input.publicOrigin
     });
     const cents=approvedAmount(quote);
+    await checkLinkedReview(quote);
     if(operation){
       // The injected verifier MUST obtain/verify explicit human approval through
       // the trusted host. Do not use request body booleans, query params or headers.
@@ -62,6 +93,7 @@ export function createOwnerPilotCheckoutCoordinator({ledger,transport,authorizeA
         deny('OWNER_PILOT_APPROVAL_CHANGED_DURING_AUTHORIZATION');
       // The branded SQLite proof also checks revocation and TTL AFTER consent.
       boundServerSessionFromStoredProof(input.sessionProof,current);
+      await checkLinkedReview(current);
     }
     return {quote,bound,ctx:{quoteId:quote.id,actorId:input.actorId,
       merchantId:input.merchantId}};
@@ -78,6 +110,7 @@ export function createOwnerPilotCheckoutCoordinator({ledger,transport,authorizeA
       // Recheck the proof after first-claim. A revoked/expired token consumes
       // the claim (safe UNKNOWN), never results in provider activity.
       boundServerSessionFromStoredProof(input.sessionProof,quote);
+      await checkLinkedReview(quote);
       const created=await transport.createOwnerPilotOrderOnce(quote,claim,{
         publicOrigin:input.publicOrigin,sessionProof:input.sessionProof
       });
@@ -117,6 +150,7 @@ export function createOwnerPilotCheckoutCoordinator({ledger,transport,authorizeA
       const bound=boundServerSessionFromStoredProof(input.sessionProof,current);
       if(bound.actorId!==ctx.actorId||bound.merchantId!==ctx.merchantId)
         deny('OWNER_PILOT_SCOPE_REQUIRED');
+      await checkLinkedReview(current);
     };
     // Provider APPROVED GET is still mandatory; UNKNOWN never re-POSTs.
     return payment.captureApproved(ctx,{beforeCapturePost});
@@ -128,5 +162,6 @@ export function createOwnerPilotCheckoutCoordinator({ledger,transport,authorizeA
   return Object.freeze({openOwnerOrder,refreshOwnerOrder,captureOwnerOrder,
     reconcileOwnerCapture,mode:'INTERNAL_OWNER_SANDBOX_PILOT_ONLY',
     publicHttpEnabled:false,implicitProviderAccess:false,
+    privateA2AReviewRequired:verifyPrivateA2AReview!==undefined,
     productionAuthConfigured:false});
 }
