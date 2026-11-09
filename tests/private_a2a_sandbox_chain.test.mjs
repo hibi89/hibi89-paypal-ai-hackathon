@@ -7,6 +7,12 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {createSqliteLedger} from '../src/sqlite_ledger.mjs';
+import {prepareFreshOwnerSandbox150Quote}
+ from '../src/owner_sandbox_150_quote_prepare.mjs';
+import {approveOwnerSandbox150Quote}
+ from '../src/owner_sandbox_150_quote_approval.mjs';
+import {inspectOwnerSandbox150CrossPartReadiness}
+ from '../src/owner_private_crosspart_readiness.mjs';
 import {createOwnerPrivateGeminiInnovationLab} from '../src/owner_private_gemini_innovation_lab.mjs';
 import {inspectOwnerProposedA2AQuote} from '../src/owner_private_a2a_quote_binding.mjs';
 import {createMarketplaceIdentityPolicy} from '../src/marketplace_identity_policy.mjs';
@@ -27,18 +33,27 @@ test('same $1.50 private AI agreement, human approval and fake Sandbox GET-proof
  const dir=mkdtempSync(join(tmpdir(),'worknova-same-quote-pilot-'));
  let ledger,lab,bridge,sessions;
  let aiCalls=0,authorizationCalls=0,allowed=false;
+ const privateDirectory=join(dir,'owner-private');
+ const filename=join(privateDirectory,'owner-sandbox150-part1.sqlite');
+ const part2Filename=join(privateDirectory,'part2-owner-sandbox150.sqlite');
+ const budgetFilename=join(privateDirectory,'part2-owner-sandbox150-quota.sqlite');
+ const quoteScope={filename,actorId:actor,merchantId:merchant,quoteId};
+ const ownerArgs={privateDirectory,quoteScope,part2Filename,budgetFilename};
  const remote={buyerApproved:false,captured:false};
  const providerCalls=[];
  try{
-  ledger=createSqliteLedger({filename:join(dir,'part1.sqlite')});
-  await ledger.provisionLocalMember({actorId:actor,merchantId:merchant,role:'buyer'});
-  await ledger.insertQuote({id:quoteId,ownerId:actor,merchantId:merchant});
-  const binding=inspectOwnerProposedA2AQuote({
-   filename:join(dir,'part1.sqlite'),actorId:actor,merchantId:merchant,quoteId
+  // Exercise the owner-only proposal creator, not a manually seeded quote
+  // followed by an implicit local approval shortcut.
+  const prepared=await prepareFreshOwnerSandbox150Quote({
+   privateDirectory,actorId:actor,merchantId:merchant,quoteId
   });
-  lab=createOwnerPrivateGeminiInnovationLab({
-   filename:join(dir,'part2.sqlite'),budgetFilename:join(dir,'quota.sqlite'),
-   scope:{actor,merchant,job:'sandbox_pilot_job'},
+  assert.equal(prepared.quoteHumanApproved,false);
+  assert.equal(prepared.networkRequests,0);
+  const binding=inspectOwnerProposedA2AQuote(quoteScope);
+  assert.equal(binding.quoteFingerprint,prepared.quoteFingerprint);
+  const labOptions={
+   filename:part2Filename,budgetFilename,
+   scope:{actor,merchant,job:'part2_sandbox_150_once'},
    apiKey:'FICTIONAL_KEY_NOT_REAL_PROVIDER',
    fetchImpl:async(_url,init)=>{
     aiCalls++;
@@ -47,7 +62,8 @@ test('same $1.50 private AI agreement, human approval and fake Sandbox GET-proof
     return fakeGemini(aiCalls===1?'OFFER':'ACCEPT',150);
    },ownerAuthorized:true,freeTierConfirmed:true,operatorConfirmed:true,
    sandboxPilotSellerFloorMinor:150,quoteBinding:binding
-  });
+  };
+  lab=createOwnerPrivateGeminiInnovationLab(labOptions);
   const consent=lab.delegate({key:'single_approved_mandate',
    maxMinor:150,expiresInMinutes:15});
   const deal=await lab.negotiate({key:'single_agreement',consentId:consent.consentId});
@@ -61,8 +77,28 @@ test('same $1.50 private AI agreement, human approval and fake Sandbox GET-proof
   assert.equal(deal.quoteBinding.quoteFingerprint,binding.quoteFingerprint);
   assert.equal(aiCalls,2);
 
-  await ledger.approve({id:quoteId,actorId:actor,expectedVersion:1,
-   amountMinor:deal.agreedMinor});
+  // Complete Part2 durable writes before the owner's isolated read-only
+  // proof verifier; a mock "Gemini succeeded" claim is never approval.
+  lab.close();lab=null;
+  const localApproval=await approveOwnerSandbox150Quote({
+   ...ownerArgs,explicitOwnerConsent:true
+  });
+  assert.equal(localApproval.localOwnerApprovalRecorded,true);
+  assert.equal(localApproval.paymentAuthorized,false);
+  // Read-only readiness does not mint a real buyer identity or a review link.
+  const candidate=inspectOwnerSandbox150CrossPartReadiness(ownerArgs);
+  assert.equal(candidate.status,
+   'OWNER_PRIVATE_150_LOCAL_CROSSPART_CANDIDATE_NOT_LINKED');
+  assert.equal(candidate.consentId,consent.consentId);
+  assert.equal(candidate.quoteFingerprint,binding.quoteFingerprint);
+  assert.equal(candidate.trustedBuyerSessionVerified,false);
+  assert.equal(candidate.crossPartReviewLinked,false);
+  assert.equal(candidate.paymentAuthorized,false);
+  assert.equal(candidate.networkRequests,0);
+  assert.equal(aiCalls,2);
+  // Reopen persisted databases to simulate a process restart.
+  ledger=createSqliteLedger({filename});
+  lab=createOwnerPrivateGeminiInnovationLab(labOptions);
   const sessionHandle=Object.freeze(Object.create(null));
   const trusted=new WeakMap([[sessionHandle,{verified:true,actorId:actor,
    merchantId:merchant}]]);
