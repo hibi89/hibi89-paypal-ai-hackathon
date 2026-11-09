@@ -107,6 +107,7 @@ def record(destination, head):
     blocked = []
     posts = []
     video = None
+    video_path = None
     report_state = None
     start = time.monotonic()
     try:
@@ -204,6 +205,10 @@ def record(destination, head):
                     video = page.video
                 finally:
                     context.close()
+                    # Video.path() must be queried while Playwright's event loop
+                    # is alive, after context.close() flushes the WebM stream.
+                    if video is not None:
+                        video_path = Path(video.path())
             finally:
                 browser.close()
         if len(posts) != 7 or any(path != "/api/action" for path in posts):
@@ -212,7 +217,9 @@ def record(destination, head):
             raise ValueError("EXTERNAL_BROWSER_REQUEST_BLOCKED__NO_FILM")
         if video is None:
             raise ValueError("VIDEO_CAPTURE_NOT_AVAILABLE")
-        tmp = Path(video.path())
+        tmp = video_path
+        if tmp is None:
+            raise ValueError("VIDEO_PATH_NOT_FLUSHED")
         if not tmp.is_file() or tmp.stat().st_size < 10_000:
             raise ValueError("CAPTURED_VIDEO_EMPTY")
         if verify_source() != head:
