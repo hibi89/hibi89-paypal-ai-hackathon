@@ -16,6 +16,8 @@
 
 - **Critical login revocation security gate (Step44):** A real host must recheck the authenticated buyer identity AFTER owner consent and AGAIN immediately before Sandbox Orders/Capture POST, including during long-lived OAuth/GET waits. The host-only library does this when supplied an authoritative login resolver (offline CI proven); fake `verified:true` test identity is not sufficient as real provider proof. Payment POST must stop without retry when login disappears.
 
+- **Step45 independent security verification:** A genuine authenticated buyer principal must still be active not only before PayPal Orders/Capture POST but also when **read-only GET results and receipts return**, even if logout happened while OAuth/approval GET was in flight. Offline host-only fixture now tests this. If a real host session is lost, do not disclose order details or retry a possible remote POST; reauthenticate for GET-only reconciliation under separate owner approval.
+
 ## One consolidated owner session — only when specifically authorized
 
 1. **One-time account/security setup and informed approvals:** Owner confirms PayPal Sandbox Business merchant ID and OAuth app ownership, distinct Sandbox Personal buyer, Google AI Studio Free Tier/model availability, local protected credentials, trusted OIDC identity and exact HTTPS callback origin. Secrets and private SQLite NEVER sent to chat, GitHub, screenshots or public video. Identity provider, user role provisioning and public deployment require their own approval; no implicit security changes.
