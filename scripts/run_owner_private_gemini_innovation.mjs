@@ -6,7 +6,8 @@ import {join} from 'node:path';
 import {createInterface} from 'node:readline/promises';
 import {argv,env,stdin,stderr,stdout} from 'node:process';
 import {createOwnerPrivateGeminiInnovationLab} from '../src/owner_private_gemini_innovation_lab.mjs';
-import {inspectOwnerProposedA2AQuote} from '../src/owner_private_a2a_quote_binding.mjs';
+import {inspectOwnerProposedA2AQuote,resolveOwnerSandbox150QuoteScope}
+ from '../src/owner_private_a2a_quote_binding.mjs';
 
 const flags=['--execute','--owner-authorized','--free-tier-confirmed'];
 const sandboxFlag='--sandbox-pilot-150';
@@ -52,14 +53,10 @@ if(!exact){
    // A $1.50 negotiation must be traceable to an existing same-owner,
    // same-merchant, still-PROPOSED Part1 quote before any Gemini call.
    // Read-only preflight never creates or changes Part1 data.
-   const binding=sandboxPilot?inspectOwnerProposedA2AQuote({
-    filename:env.WORKNOVA_OWNER_LEDGER_PATH||
-     join(dir,'owner-sandbox150-part1.sqlite'),
-    actorId:env.WORKNOVA_OWNER_ACTOR_ID||'operator_owner',
-    merchantId:env.WORKNOVA_SANDBOX_MERCHANT_ID||
-     env.PAYPAL_SANDBOX_MERCHANT_ID,
-    quoteId:env.WORKNOVA_PILOT_QUOTE_ID||'worknova_a2a_150_once'
+   const quoteScope=sandboxPilot?resolveOwnerSandbox150QuoteScope({
+    environment:env,privateDirectory:dir
    }):null;
+   const binding=quoteScope?inspectOwnerProposedA2AQuote(quoteScope):null;
    mkdirSync(dir,{recursive:true,mode:0o700});
    app=createOwnerPrivateGeminiInnovationLab({
     // Separate never-reused scope/DBs protect the existing $270 pilot.
@@ -85,11 +82,7 @@ if(!exact){
    const budget=app.quotaStatus();
    // The quote can change while the LLM answers. Never imply that its result
    // is linked if the original proposal changed during the async calls.
-   const current=sandboxPilot?inspectOwnerProposedA2AQuote({
-    filename:env.WORKNOVA_OWNER_LEDGER_PATH,
-    actorId:binding.actorId,merchantId:binding.merchantId,
-    quoteId:binding.quoteId
-   }):null;
+   const current=quoteScope?inspectOwnerProposedA2AQuote(quoteScope):null;
    if(binding&&current.quoteFingerprint!==binding.quoteFingerprint)
     throw Object.assign(new Error('STALE_QUOTE'),{
      code:'OWNER_A2A_QUOTE_CHANGED_DURING_NEGOTIATION'

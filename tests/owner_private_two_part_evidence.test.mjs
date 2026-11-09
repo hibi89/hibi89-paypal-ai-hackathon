@@ -311,3 +311,30 @@ test('read-only $1.50 CLI requires exact quote scope without touching disk or ke
   assert.deepEqual(readdirSync(dir).sort(),before);
  }finally{rmSync(dir,{recursive:true,force:true})}
 });
+
+test('owner sandbox evidence CLI accepts matching PayPal merchant fallback without provider or disk writes',async()=>{
+ const directory=path();
+ try{
+  const {spawnSync}=await import('node:child_process');
+  const {fileURLToPath}=await import('node:url');
+  const entry=fileURLToPath(new URL('../scripts/check_owner_two_part_evidence.mjs',import.meta.url));
+  const before=readdirSync(directory).sort();
+  const result=spawnSync(process.execPath,['--no-warnings',
+   '--experimental-sqlite',entry,'--sandbox-pilot-150'],{
+   encoding:'utf8',timeout:10000,
+   env:{...process.env,HOME:directory,USERPROFILE:directory,
+    WORKNOVA_OWNER_ACTOR_ID:'',WORKNOVA_SANDBOX_MERCHANT_ID:'',
+    WORKNOVA_PILOT_QUOTE_ID:'',WORKNOVA_OWNER_LEDGER_PATH:'',
+    PAYPAL_SANDBOX_MERCHANT_ID:merchant,
+    GEMINI_API_KEY:'SANDBOX_FAKE_NEVER_USED'}
+  });
+  assert.equal(result.status,2,result.stderr);
+  const report=JSON.parse(result.stdout);
+  assert.equal(report.status,'BOTH_PARTS_NEED_REVIEW');
+  assert.equal(report.networkRequests,0);
+  assert.equal(report.fileWritesPerformed,false);
+  assert.equal(report.paymentAuthorized,false);
+  assert.doesNotMatch(result.stdout,/SANDBOX_FAKE_NEVER_USED/);
+  assert.deepEqual(readdirSync(directory).sort(),before);
+ }finally{rmSync(directory,{recursive:true,force:true})}
+});

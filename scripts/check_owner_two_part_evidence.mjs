@@ -6,27 +6,31 @@ import {join} from 'node:path';
 import {argv,env,stdout} from 'node:process';
 import {inspectOwnerTwoPartEvidence}
  from '../src/owner_private_two_part_evidence.mjs';
+import {resolveOwnerSandbox150QuoteScope}
+ from '../src/owner_private_a2a_quote_binding.mjs';
 
 const args=argv.slice(2);
 const sandbox=args.length===1&&args[0]==='--sandbox-pilot-150';
 const exact=args.length===0||sandbox;
-const ID=/^[A-Za-z0-9_-]{1,64}$/;
-const merchant=/^[A-Za-z0-9]{13}$/;
 const output=(status,fields={})=>stdout.write(JSON.stringify({
  status,networkRequests:0,fileWritesPerformed:false,paymentAuthorized:false,
  ...fields
 })+'\n');
 
+const base=join(homedir(),'.paypal-ai-pilot-private');
+let pilotScope=null;
+if(exact&&sandbox){
+ try{pilotScope=resolveOwnerSandbox150QuoteScope({
+  environment:env,privateDirectory:base
+ })}catch{/* Missing or conflicting private identity: never inspect data. */}
+}
 if(!exact){
  output('READ_ONLY_UNSUPPORTED_ARGUMENTS');
  process.exitCode=2;
-}else if(sandbox&&(!ID.test(env.WORKNOVA_OWNER_ACTOR_ID??'')||
- !merchant.test(env.WORKNOVA_SANDBOX_MERCHANT_ID??'')||
- !ID.test(env.WORKNOVA_PILOT_QUOTE_ID??''))){
+}else if(sandbox&&!pilotScope){
  output('PRIVATE_SANDBOX_QUOTE_SCOPE_REQUIRED');
  process.exitCode=2;
 }else{
- const base=join(homedir(),'.paypal-ai-pilot-private');
  try{
   const result=inspectOwnerTwoPartEvidence({
    ownerDirectory:join(homedir(),'.paypal-ai-mvp-private'),
@@ -35,12 +39,12 @@ if(!exact){
    budgetFilename:join(base,sandbox
     ?'part2-owner-sandbox150-quota.sqlite':'part2-owner-quota.sqlite'),
    scope:sandbox
-    ?{actor:env.WORKNOVA_OWNER_ACTOR_ID,
-      merchant:env.WORKNOVA_SANDBOX_MERCHANT_ID,
+    ?{actor:pilotScope.actorId,
+      merchant:pilotScope.merchantId,
       job:'part2_sandbox_150_once'}
     :{actor:'operator_owner',merchant:'fictional_merchant',
       job:'part2_demo_once'},
-   sandboxPilotQuoteId:sandbox?env.WORKNOVA_PILOT_QUOTE_ID:null
+   sandboxPilotQuoteId:sandbox?pilotScope.quoteId:null
   });
   stdout.write(JSON.stringify(result)+'\n');
   if(['BOTH_PARTS_NEED_REVIEW','PART1_NOT_VERIFIED','PART2_NOT_VERIFIED']

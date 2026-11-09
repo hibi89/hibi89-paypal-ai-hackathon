@@ -4,7 +4,7 @@
 import {DatabaseSync} from 'node:sqlite';
 import {createHash} from 'node:crypto';
 import {lstatSync,realpathSync} from 'node:fs';
-import {isAbsolute,relative,resolve,sep} from 'node:path';
+import {isAbsolute,join,relative,resolve,sep} from 'node:path';
 
 const ID=/^[A-Za-z0-9_-]{1,64}$/;
 const MERCHANT=/^[A-Za-z0-9]{13}$/;
@@ -30,6 +30,27 @@ export function fingerprintOwnerQuoteContract(quote){
   version:quote.version,currency:quote.currency,
   scope:quote.scope??null,draft:quote.aiSuggestedMinor??null
  });
+}
+
+// Resolve the SAME owner-local $1.50 identity for both model preflight and
+// postflight and the read-only evidence command. Never read provider keys.
+export function resolveOwnerSandbox150QuoteScope({
+ environment={},privateDirectory
+}={}){
+ const fromWorknova=environment.WORKNOVA_SANDBOX_MERCHANT_ID;
+ const fromPaypal=environment.PAYPAL_SANDBOX_MERCHANT_ID;
+ if(fromWorknova&&fromPaypal&&fromWorknova!==fromPaypal)
+  fail('OWNER_A2A_MERCHANT_ENV_CONFLICT');
+ const actorId=environment.WORKNOVA_OWNER_ACTOR_ID||'operator_owner';
+ const merchantId=fromWorknova||fromPaypal;
+ const quoteId=environment.WORKNOVA_PILOT_QUOTE_ID||'worknova_a2a_150_once';
+ const filename=environment.WORKNOVA_OWNER_LEDGER_PATH||
+  (typeof privateDirectory==='string'&&isAbsolute(privateDirectory)
+   ?join(privateDirectory,'owner-sandbox150-part1.sqlite'):null);
+ if(!ID.test(actorId)||!MERCHANT.test(merchantId??'')||
+    !ID.test(quoteId)||typeof filename!=='string'||!isAbsolute(filename))
+  fail('OWNER_A2A_LOCAL_QUOTE_SCOPE_REQUIRED');
+ return Object.freeze({filename,actorId,merchantId,quoteId});
 }
 
 /**

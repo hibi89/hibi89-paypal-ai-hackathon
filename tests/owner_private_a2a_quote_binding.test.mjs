@@ -6,7 +6,8 @@ import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {createSqliteLedger} from '../src/sqlite_ledger.mjs';
 import {inspectOwnerProposedA2AQuote,
- fingerprintOwnerQuoteContract} from '../src/owner_private_a2a_quote_binding.mjs';
+ fingerprintOwnerQuoteContract,resolveOwnerSandbox150QuoteScope}
+ from '../src/owner_private_a2a_quote_binding.mjs';
 
 const actor='owner',merchant='A1B2C3D4E5F6G',quoteId='real-pilot-proposal';
 function fixture(){
@@ -88,4 +89,42 @@ test('missing file and symbolic-link ledger fail without creating files',()=>{
    filename:link,actorId:actor,merchantId:merchant,quoteId
   }),{code:'OWNER_A2A_EXISTING_OUTSIDE_REPO_LEDGER_REQUIRED'});
  }finally{rmSync(dir,{recursive:true,force:true})}
+});
+
+test('single private $1.50 scope applies the same default ledger before and after model calls',async()=>{
+ const f=fixture();
+ try{
+  const base=join(f.dir,'pilot-private');
+  const {mkdirSync}=await import('node:fs');
+  mkdirSync(base);
+  const scope=resolveOwnerSandbox150QuoteScope({
+   environment:{PAYPAL_SANDBOX_MERCHANT_ID:merchant},
+   privateDirectory:base
+  });
+  assert.equal(scope.filename,join(base,'owner-sandbox150-part1.sqlite'));
+  assert.equal(scope.actorId,'operator_owner');
+  assert.equal(scope.quoteId,'worknova_a2a_150_once');
+  assert.equal(scope.merchantId,merchant);
+  assert.equal(Object.isFrozen(scope),true);
+  assert.throws(()=>resolveOwnerSandbox150QuoteScope({
+   environment:{WORKNOVA_SANDBOX_MERCHANT_ID:merchant,
+    PAYPAL_SANDBOX_MERCHANT_ID:'B1B2C3D4E5F6G'},
+   privateDirectory:base
+  }),{code:'OWNER_A2A_MERCHANT_ENV_CONFLICT'});
+  await f.seed();
+  const override=resolveOwnerSandbox150QuoteScope({
+   environment:{WORKNOVA_SANDBOX_MERCHANT_ID:merchant,
+    WORKNOVA_OWNER_ACTOR_ID:actor,WORKNOVA_PILOT_QUOTE_ID:quoteId,
+    WORKNOVA_OWNER_LEDGER_PATH:f.filename},
+   privateDirectory:base
+  });
+  const before=inspectOwnerProposedA2AQuote(override);
+  const after=inspectOwnerProposedA2AQuote(override);
+  assert.equal(after.quoteFingerprint,before.quoteFingerprint);
+  await f.ledger.revise({id:quoteId,actorId:actor,
+   expectedVersion:1,scope:'Changed after model start',suggestedMinor:150,
+   suggestionSource:'OFFLINE_MOCK'});
+  assert.notEqual(inspectOwnerProposedA2AQuote(override).quoteFingerprint,
+   before.quoteFingerprint);
+ }finally{f.close()}
 });
