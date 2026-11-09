@@ -9,7 +9,8 @@ const required=['--execute','--owner-authorized','--free-tier-confirmed'];
 function invoke(args=[]){
  const result=spawnSync(process.execPath,['--experimental-sqlite',cli,...args],{
   encoding:'utf8',timeout:15000,windowsHide:true,
-  env:{...process.env,GEMINI_API_KEY:'FAKE_KEY_CI_MUST_NOT_LEAK_OR_POST'}
+  env:{...process.env,NODE_NO_WARNINGS:'1',
+   GEMINI_API_KEY:'FAKE_KEY_CI_MUST_NOT_LEAK_OR_POST'}
  });
  assert.equal(result.error,undefined);
  assert.equal(result.stderr,'');
