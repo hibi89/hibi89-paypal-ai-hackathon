@@ -1,4 +1,5 @@
 import test from 'node:test';
+import {createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync} from 'node:fs';
 import {join} from 'node:path';
@@ -266,5 +267,48 @@ test('a review link expires at exact 15 minute boundary even with valid 30 minut
   await assert.rejects(f.bridge.inspect({hostHandle:f.hostHandle,quoteId}),
    rejectCode('CROSS_PART_LINK_UNAVAILABLE'));
   await assert.rejects(f.bridge.link(args(f)),rejectCode('CROSS_PART_LINK_EXPIRED'));
+ });
+});
+
+test('rejects edited offline A2A transcript and a self-rehashed policy forgery',async()=>{
+ await using(async f=>{
+  const makeStore=mutate=>({state:scope=>{
+   const state=f.lab.state(scope);
+   return {...state,events:state.events.map(event=>event.kind==='a2a'
+    ?{...event,result:mutate(event.result)}:event)};
+  }});
+  const inconsistent=createCrossPartReviewBridge({
+   ...f.options,filename:join(f.dir,'altered-transcript.sqlite'),
+   innovationStore:makeStore(result=>{
+    const messages=result.messages.map((m,i)=>i===0
+     ?{...m,amountMinor:m.amountMinor-100}:m);
+    // A corrupted local transcript must not pass on a well-formed stale hash.
+    return {...result,messages};
+   })
+  });
+  try{
+   await assert.rejects(inconsistent.link(args(f)),
+    rejectCode('CROSS_PART_A2A_EVIDENCE_MISMATCH'));
+   assert.equal(f.count(),0);
+  }finally{inconsistent.close();}
+  const selfRehashed=createCrossPartReviewBridge({
+   ...f.options,filename:join(f.dir,'forged-transcript.sqlite'),
+   innovationStore:makeStore(result=>{
+    const messages=result.messages.map((m,i)=>i===0
+     ?{...m,amountMinor:26000}:m);
+    // Matching an attacker-recomputed *unsigned* SHA is insufficient:
+    // the seller's first OFFER violates its 27000 minimum policy.
+    const transcriptSha256=createHash('sha256')
+     .update(JSON.stringify(messages)).digest('hex');
+    return {...result,messages,transcriptSha256};
+   })
+  });
+  try{
+   await assert.rejects(selfRehashed.link(args(f)),
+    rejectCode('CROSS_PART_A2A_EVIDENCE_MISMATCH'));
+   assert.equal(f.count(),0);
+  }finally{selfRehashed.close();}
+  // These checks never authorize any provider payment.
+  assert.equal(f.bridge.paypalProviderCalls,0);
  });
 });
