@@ -175,7 +175,8 @@ test('host-only A2A review + private checkout requires verified login and separa
   // the subsequent Capture POST must remain impossible.
   revokeDuringOAuth=true;
   await assert.rejects(host.captureOwnerOrder(handle),{
-   code:'TRUSTED_HOST_LOGIN_REQUIRED'
+   // The coordinator deliberately sanitizes trusted review callback faults.
+   code:'OWNER_PILOT_PRIVATE_A2A_REVIEW_REQUIRED'
   });
   assert.equal(capturePosts(),0);
   assert.equal(orderPosts(),originalOrderPosts);
@@ -183,7 +184,7 @@ test('host-only A2A review + private checkout requires verified login and separa
   // Buyer APPROVED GET may also finish after the trusted login is revoked.
   revokeDuringBuyerGet=true;
   await assert.rejects(host.captureOwnerOrder(handle),{
-   code:'TRUSTED_HOST_LOGIN_REQUIRED'
+   code:'OWNER_PILOT_PRIVATE_A2A_REVIEW_REQUIRED'
   });
   assert.equal(capturePosts(),0);
   assert.equal(orderPosts(),originalOrderPosts);
