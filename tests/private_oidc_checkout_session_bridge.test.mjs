@@ -100,7 +100,7 @@ test('genuine signed offline OIDC login -> private same-$1.50 checkout proof -> 
   assert.equal(verified.merchantId,merchant);
   assert.ok(verified.sessionProof);
   assert.equal(requests,2);
-  assert.equal((await oidc.handle(request('/api/paypal/orders',{method:'POST'})).status),404);
+  assert.equal((await oidc.handle(request('/api/paypal/orders',{method:'POST'}))).status,404);
   assert.equal((await ledger.listAttempts(quoteId)).length,0);
   assert.equal((await oidc.operator.revokeIdentity({subject:'external-buyer'})).revoked,true);
   assert.equal(await oidc.resolveCheckoutPrincipal(checkoutHandle),null);
