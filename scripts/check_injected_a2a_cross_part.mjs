@@ -121,6 +121,24 @@ export async function checkInjectedA2ACrossPart(){
     consentId:consent.consentId}),
     e=>e?.code==='CROSS_PART_SYNTHETIC_EVIDENCE_REQUIRED');
   }finally{disabled.close()}
+  // Even with private opt-in, a locally forged provider-attestation claim
+  // must never be accepted as an approved quote's negotiation evidence.
+  const tamperedStore={state:scope=>{
+   const snapshot=lab.state(scope);
+   return {...snapshot,events:snapshot.events.map(event=>
+    event.kind==='a2a'
+     ?{...event,result:{...event.result,providerEvidence:'GEMINI_VERIFIED'}}
+     :event)};
+  }};
+  const tampered=createCrossPartReviewBridge({
+   ...reviewOpts,filename:join(root,'forged-provider-claim.sqlite'),
+   innovationStore:tamperedStore
+  });
+  try{
+   await assert.rejects(tampered.link({hostHandle:host,quoteId,
+    consentId:consent.consentId}),
+    e=>e?.code==='CROSS_PART_A2A_EVIDENCE_MISMATCH');
+  }finally{tampered.close()}
   bridge=createCrossPartReviewBridge(reviewOpts);
   const review=await bridge.link({hostHandle:host,quoteId,
    consentId:consent.consentId});
@@ -159,7 +177,8 @@ export async function checkInjectedA2ACrossPart(){
   assert.equal(blocked.accepted,false);
   assert.equal(blocked.paymentAuthorized,false);
   assert.equal(blocked.paypalCapturePerformed,false);
-  assert.equal(blocked.providerCalls,0);
+  assert.equal(blocked.providerCalls,'NOT_ATTESTED');
+  assert.equal(blocked.realGemini,false);
   assert.equal(rejectedMockCalls,1);
   assert.equal(badQuota.status(quotaScope).records[0].state,'UNKNOWN');
   assert.equal((await badLab.a2a({actor,merchant,key:'fail_deal',
