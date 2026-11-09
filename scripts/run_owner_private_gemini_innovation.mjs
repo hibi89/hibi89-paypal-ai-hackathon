@@ -53,10 +53,12 @@ if(!exact){
    // same-merchant, still-PROPOSED Part1 quote before any Gemini call.
    // Read-only preflight never creates or changes Part1 data.
    const binding=sandboxPilot?inspectOwnerProposedA2AQuote({
-    filename:env.WORKNOVA_OWNER_LEDGER_PATH,
-    actorId:env.WORKNOVA_OWNER_ACTOR_ID,
-    merchantId:env.WORKNOVA_SANDBOX_MERCHANT_ID,
-    quoteId:env.WORKNOVA_PILOT_QUOTE_ID
+    filename:env.WORKNOVA_OWNER_LEDGER_PATH||
+     join(dir,'owner-sandbox150-part1.sqlite'),
+    actorId:env.WORKNOVA_OWNER_ACTOR_ID||'operator_owner',
+    merchantId:env.WORKNOVA_SANDBOX_MERCHANT_ID||
+     env.PAYPAL_SANDBOX_MERCHANT_ID,
+    quoteId:env.WORKNOVA_PILOT_QUOTE_ID||'worknova_a2a_150_once'
    }):null;
    mkdirSync(dir,{recursive:true,mode:0o700});
    app=createOwnerPrivateGeminiInnovationLab({
