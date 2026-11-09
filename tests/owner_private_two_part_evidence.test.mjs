@@ -312,6 +312,73 @@ test('read-only $1.50 CLI requires exact quote scope without touching disk or ke
  }finally{rmSync(dir,{recursive:true,force:true})}
 });
 
+test('sandbox evidence CLI reports SAME NEW local quote rather than historical receipt after owner approval',async()=>{
+ const root=path();
+ const privateDirectory=join(root,'.paypal-ai-pilot-private');
+ const actorId='operator_owner',quoteId='worknova_a2a_150_once';
+ const part1=join(privateDirectory,'owner-sandbox150-part1.sqlite');
+ const part2=join(privateDirectory,'part2-owner-sandbox150.sqlite');
+ const quota=join(privateDirectory,'part2-owner-sandbox150-quota.sqlite');
+ const quoteScope={filename:part1,actorId,merchantId:merchant,quoteId};
+ let app;
+ try{
+  const {prepareFreshOwnerSandbox150Quote}=await import('../src/owner_sandbox_150_quote_prepare.mjs');
+  const {inspectOwnerProposedA2AQuote}=await import('../src/owner_private_a2a_quote_binding.mjs');
+  const {approveOwnerSandbox150Quote}=await import('../src/owner_sandbox_150_quote_approval.mjs');
+  await prepareFreshOwnerSandbox150Quote({privateDirectory,actorId,
+   merchantId:merchant,quoteId});
+  const binding=inspectOwnerProposedA2AQuote(quoteScope);
+  app=createOwnerPrivateGeminiInnovationLab({
+   filename:part2,budgetFilename:quota,
+   scope:{actor:actorId,merchant,job:'part2_sandbox_150_once'},
+   apiKey:'FAKE_ONLY_NO_NETWORK',quoteBinding:binding,
+   sandboxPilotSellerFloorMinor:150,ownerAuthorized:true,
+   freeTierConfirmed:true,operatorConfirmed:true,
+   fetchImpl:async(_url,_init)=>reply('ACCEPT',150)
+  });
+  const granted=app.delegate({key:'once',maxMinor:150,expiresInMinutes:15});
+  const outcome=await app.negotiate({key:'once',consentId:granted.consentId});
+  assert.equal(outcome.accepted,true);
+  app.close();app=null;
+  await approveOwnerSandbox150Quote({
+   privateDirectory,quoteScope,part2Filename:part2,
+   budgetFilename:quota,explicitOwnerConsent:true
+  });
+  const originals=[part1,part2,quota].map(name=>readFileSync(name));
+  const {spawnSync}=await import('node:child_process');
+  const {fileURLToPath}=await import('node:url');
+  const cli=fileURLToPath(new URL('../scripts/check_owner_two_part_evidence.mjs',import.meta.url));
+  const command=spawnSync(process.execPath,['--no-warnings',
+   '--experimental-sqlite',cli,'--sandbox-pilot-150'],{
+    encoding:'utf8',timeout:10000,
+    env:{...process.env,HOME:root,USERPROFILE:root,
+     WORKNOVA_OWNER_ACTOR_ID:actorId,WORKNOVA_SANDBOX_MERCHANT_ID:merchant,
+     PAYPAL_SANDBOX_MERCHANT_ID:'',WORKNOVA_OWNER_LEDGER_PATH:'',
+     WORKNOVA_PILOT_QUOTE_ID:quoteId,
+     GEMINI_API_KEY:'FAKE_SECRET_MUST_NOT_ECHO'}
+  });
+  assert.equal(command.status,0,command.stderr);
+  const result=JSON.parse(command.stdout);
+  assert.equal(result.status,
+   'OWNER_SANDBOX150_LOCAL_SAME_QUOTE_REVIEW_READY_NOT_PAYMENT');
+  assert.equal(result.part1.quoteId,quoteId);
+  assert.equal(result.part1.quoteFingerprint,binding.quoteFingerprint);
+  assert.equal(result.part2.consentId,granted.consentId);
+  assert.equal(result.locallySameQuoteBound,true);
+  assert.equal(result.sameTransactionProven,false);
+  assert.equal(result.livePayPalVerifiedNow,false);
+  assert.equal(result.liveGeminiVerifiedNow,false);
+  assert.equal(result.paymentAuthorized,false);
+  assert.equal(result.networkRequests,0);
+  assert.equal(result.fileWritesPerformed,false);
+  assert.doesNotMatch(command.stdout,/FAKE_SECRET_MUST_NOT_ECHO/);
+  assert.deepEqual([part1,part2,quota].map(name=>readFileSync(name)),originals);
+ }finally{
+  app?.close();
+  rmSync(root,{recursive:true,force:true});
+ }
+});
+
 test('owner sandbox evidence CLI accepts matching PayPal merchant fallback without provider or disk writes',async()=>{
  const directory=path();
  try{
@@ -330,7 +397,8 @@ test('owner sandbox evidence CLI accepts matching PayPal merchant fallback witho
   });
   assert.equal(result.status,2,result.stderr);
   const report=JSON.parse(result.stdout);
-  assert.equal(report.status,'BOTH_PARTS_NEED_REVIEW');
+  assert.equal(report.status,'OWNER_SANDBOX150_LOCAL_REVIEW_NOT_READY');
+  assert.equal(report.locallySameQuoteBound,undefined);
   assert.equal(report.networkRequests,0);
   assert.equal(report.fileWritesPerformed,false);
   assert.equal(report.paymentAuthorized,false);
