@@ -51,7 +51,8 @@ export async function checkInjectedA2ACrossPart(){
    dayLimit:4,attemptLimit:4,dayTokens:10240});
   const roles=makeRoles(quota,fakeFetch);
   const labFile=join(root,'part2.sqlite');
-  lab=createInnovationLab({filename:labFile,agentsFactory:()=>roles});
+  lab=createInnovationLab({filename:labFile,agentsFactory:()=>roles,
+   agentTransport:'PRIVATE_INJECTED_UNVERIFIED',a2aMaxTurns:4,a2aTurnTimeoutMs:1200});
   const consent=lab.delegate({actor,merchant,key:'grant_1',
    category:'services',maxMinor:30000,expiresInMinutes:30});
   const deal=await lab.a2a({actor,merchant,key:'deal_1',consentId:consent.consentId});
@@ -59,7 +60,9 @@ export async function checkInjectedA2ACrossPart(){
   assert.equal(deal.agreedMinor,amountMinor);
   assert.equal(deal.paymentAuthorized,false);
   assert.equal(deal.paypalCapturePerformed,false);
-  assert.equal(deal.providerCalls,0);
+  assert.equal(deal.providerCalls,'NOT_ATTESTED');
+  assert.equal(deal.mode,'PRIVATE_INJECTED_AGENT_NOT_ATTESTED');
+  assert.equal(deal.realGemini,false);
   assert.equal(mockCalls,2);
   const quotaReceipt=quota.status(quotaScope);
   assert.equal(quotaReceipt.requestsClaimed,2);
@@ -73,7 +76,8 @@ export async function checkInjectedA2ACrossPart(){
   // Persisted Part2 state reopens without reinvoking the mock transport.
   lab.close();
   lab=createInnovationLab({filename:labFile,
-   agentsFactory:()=>{throw new Error('REPLAY_MUST_NOT_EXECUTE_AGENTS')}});
+   agentsFactory:()=>{throw new Error('REPLAY_MUST_NOT_EXECUTE_AGENTS')},
+   agentTransport:'PRIVATE_INJECTED_UNVERIFIED',a2aMaxTurns:4,a2aTurnTimeoutMs:1200});
   const restored=await lab.a2a({actor,merchant,key:'deal_1',
    consentId:consent.consentId});
   assert.equal(restored.replayed,true);
@@ -81,7 +85,8 @@ export async function checkInjectedA2ACrossPart(){
   const state=lab.state({actor,merchant});
   assert.equal(state.realPayPal,false);
   assert.equal(state.realGemini,false);
-  assert.equal(state.providerCalls,0);
+  assert.equal(state.providerCalls,'NOT_ATTESTED');
+  assert.equal(state.mode,'PRIVATE_INJECTED_AGENT_NOT_ATTESTED');
   assert.equal(state.consents.find(x=>x.id===consent.consentId)?.usedMinor,
    amountMinor);
 
@@ -98,16 +103,32 @@ export async function checkInjectedA2ACrossPart(){
    resolveMembership:async id=>ledger.getLocalMember(id)
   });
   const reviewOpts={filename:join(root,'review.sqlite'),ledger,
-   innovationStore:lab,identityPolicy,
+   innovationStore:lab,identityPolicy,allowUnattestedPrivateA2A:true,
    authorizeLink:async context=>context.action===
-    'LINK_SYNTHETIC_A2A_TO_APPROVED_QUOTE' &&
+    'LINK_UNATTESTED_PRIVATE_A2A_TO_APPROVED_QUOTE'&&
+    context.provenanceClass==='PRIVATE_INJECTED_AGENT_NOT_ATTESTED'&&
+    context.agentCalls==='NOT_ATTESTED'&&
     context.amountMinor===amountMinor&&context.paymentAuthorized===false
   };
+  // The existing default remains fail-closed. Enabling the private adapter
+  // does not grant a model or a PayPal merchant spending authority.
+  const disabled=createCrossPartReviewBridge({
+   ...reviewOpts,filename:join(root,'default-private-denied.sqlite'),
+   allowUnattestedPrivateA2A:false
+  });
+  try{
+   await assert.rejects(disabled.link({hostHandle:host,quoteId,
+    consentId:consent.consentId}),
+    e=>e?.code==='CROSS_PART_SYNTHETIC_EVIDENCE_REQUIRED');
+  }finally{disabled.close()}
   bridge=createCrossPartReviewBridge(reviewOpts);
   const review=await bridge.link({hostHandle:host,quoteId,
    consentId:consent.consentId});
   assert.equal(review.paymentAuthorized,false);
   assert.equal(review.realProviderEvidence,false);
+  assert.equal(review.status,'PRIVATE_UNATTESTED_A2A_REVIEW_ONLY');
+  assert.equal(review.modelProviderAttested,false);
+  assert.equal(review.provenanceClass,'PRIVATE_INJECTED_AGENT_NOT_ATTESTED');
   bridge.close();
   bridge=createCrossPartReviewBridge(reviewOpts);
   assert.deepEqual(await bridge.inspect({hostHandle:host,quoteId}),review);
@@ -128,7 +149,8 @@ export async function checkInjectedA2ACrossPart(){
    return new Response('fake-quota',{status:429});
   });
   badLab=createInnovationLab({filename:join(root,'fail-part2.sqlite'),
-   agentsFactory:()=>failRoles});
+   agentsFactory:()=>failRoles,agentTransport:'PRIVATE_INJECTED_UNVERIFIED',
+   a2aMaxTurns:4,a2aTurnTimeoutMs:1200});
   const denied=badLab.delegate({actor,merchant,key:'fail_grant',
    category:'services',maxMinor:30000,expiresInMinutes:30});
   const blocked=await badLab.a2a({actor,merchant,key:'fail_deal',

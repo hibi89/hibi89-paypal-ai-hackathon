@@ -1,4 +1,6 @@
-// Read-only cross-part approved quote <-> synthetic A2A transcript bridge.
+// Read-only cross-part approved quote <-> bounded A2A transcript bridge.
+// Default is deterministic only; explicitly trusted hosts may opt into private
+// injected agent records that remain UNATTESTED and have NO payment authority.
 // INTERNAL HOST ONLY. This NEVER creates, authorizes, captures, or verifies a payment.
 // Separate SQLite databases cannot be atomically committed as one provider transaction.
 import {DatabaseSync} from 'node:sqlite';
@@ -12,7 +14,8 @@ const digest=data=>createHash('sha256').update(JSON.stringify(data)).digest('hex
 const TTL=15*60*1000;
 const valid=x=>typeof x==='string'&&ID.test(x);
 const resultView=x=>Object.freeze({
- status:'SYNTHETIC_CROSS_PART_REVIEW_ONLY',
+ status:x.provenanceClass==='PRIVATE_INJECTED_AGENT_NOT_ATTESTED'
+  ?'PRIVATE_UNATTESTED_A2A_REVIEW_ONLY':'SYNTHETIC_CROSS_PART_REVIEW_ONLY',
  quoteId:x.quoteId,consentId:x.consentId,
  amountMinor:x.amountMinor,currency:'USD',
  quoteVersion:x.quoteVersion,
@@ -20,18 +23,22 @@ const resultView=x=>Object.freeze({
  paymentAuthorized:false,paypalOrderCreated:false,
  paypalCapturePerformed:false,merchantOwnershipVerified:false,
  sellerIdentityVerified:false,realProviderEvidence:false,
- mode:'PRIVATE_LOCAL_REVIEW_LINK_NOT_CHECKOUT_AUTHORITY'
+ mode:'PRIVATE_LOCAL_REVIEW_LINK_NOT_CHECKOUT_AUTHORITY',
+ ...(x.provenanceClass?{provenanceClass:x.provenanceClass,
+  modelProviderAttested:false,agentCalls:'NOT_ATTESTED'}:{})
 });
 
 export function createCrossPartReviewBridge({
- filename,ledger,innovationStore,identityPolicy,authorizeLink,now=Date.now
+ filename,ledger,innovationStore,identityPolicy,authorizeLink,now=Date.now,
+ allowUnattestedPrivateA2A=false
 }={}){
  if(typeof filename!=='string'||!filename||filename===':memory:'||
   typeof ledger?.get!=='function'||
   typeof innovationStore?.state!=='function'||
   typeof identityPolicy?.issueProof!=='function'||
   typeof identityPolicy?.authorize!=='function'||
-  typeof authorizeLink!=='function'||typeof now!=='function')
+  typeof authorizeLink!=='function'||typeof now!=='function'||
+  typeof allowUnattestedPrivateA2A!=='boolean')
   fail('CROSS_PART_TRUSTED_DEPENDENCIES_REQUIRED');
  const db=new DatabaseSync(filename);
  db.exec('PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000');
@@ -103,8 +110,16 @@ async function evidence(hostHandle,quoteId,consentId){
    fail('CROSS_PART_APPROVED_QUOTE_REQUIRED');
   }
   const state=innovationStore.state({actor:grant.actorId,merchant:grant.merchantId});
-  if(state?.mode!=='OFFLINE_SYNTHETIC_ONLY'||
-     state?.providerCalls!==0||state?.realPayPal!==false||
+  const synthetic=state?.mode==='OFFLINE_SYNTHETIC_ONLY'&&
+    state?.providerCalls===0;
+  // A private injected role may have contacted Gemini. Its local record
+  // cannot prove any real provider request, payment permission, or settlement.
+  const privateUnattested=allowUnattestedPrivateA2A===true&&
+    state?.mode==='PRIVATE_INJECTED_AGENT_NOT_ATTESTED'&&
+    state?.providerCalls==='NOT_ATTESTED'&&
+    state?.realGemini===false&&
+    state?.providerEvidence==='EXTERNAL_TRANSPORT_NOT_ATTESTED';
+  if((!synthetic&&!privateUnattested)||state?.realPayPal!==false||
      !Array.isArray(state.consents)||!Array.isArray(state.events))
    fail('CROSS_PART_SYNTHETIC_EVIDENCE_REQUIRED');
   const consent=state.consents.find(x=>x.id===consentId);
@@ -115,28 +130,41 @@ async function evidence(hostHandle,quoteId,consentId){
     consent.expiresAt<=clock()||matches.length!==1)
    fail('CROSS_PART_SCOPED_CONSENT_REQUIRED');
   const a2a=matches[0].result;
-  if(a2a.status!=='SYNTHETIC_AGREEMENT'||
+  const provenanceValid=synthetic
+    ?a2a.mode==='OFFLINE_SYNTHETIC_ONLY'&&a2a.providerCalls===0
+    :a2a.mode==='PRIVATE_INJECTED_AGENT_NOT_ATTESTED'&&
+     a2a.providerCalls==='NOT_ATTESTED'&&
+     a2a.agentMode==='PRIVATE_INJECTED_ROLES'&&
+     a2a.realGemini===false&&
+     a2a.providerEvidence==='EXTERNAL_TRANSPORT_NOT_ATTESTED'&&
+     a2a.source==='PLUGGABLE_ROLE_PROTOCOL'&&
+     a2a.requiredExternalFundingAuthorization===true;
+  if(!provenanceValid||a2a.status!=='SYNTHETIC_AGREEMENT'||
      a2a.protocolStatus!=='AGREED_OFFLINE_CONTRACT'||
      a2a.accepted!==true||a2a.agreedMinor!==amountMinor||
      a2a.reservedMinor!==amountMinor||
      a2a.paymentAuthorized!==false||
-     a2a.providerCalls!==0||a2a.paypalCapturePerformed!==false||
+     a2a.paypalCapturePerformed!==false||
      a2a.paymentState!=='NOT_PAID'||a2a.checkout!=='DISABLED'||
-     a2a.mode!=='OFFLINE_SYNTHETIC_ONLY'||!HASH.test(a2a.transcriptSha256??'')||
+     !HASH.test(a2a.transcriptSha256??'')||
      !validA2ATranscript(a2a,consent.maxMinor))
    fail('CROSS_PART_A2A_EVIDENCE_MISMATCH');
   const payload={actorId:grant.actorId,merchantId:grant.merchantId,
    quoteId,quoteVersion:quote.version,amountMinor,consentId,
    transcriptSha256:a2a.transcriptSha256,
-   mandateRevision:consent.revision,expiresAt:consent.expiresAt};
+   mandateRevision:consent.revision,expiresAt:consent.expiresAt,
+   ...(privateUnattested?{provenanceClass:'PRIVATE_INJECTED_AGENT_NOT_ATTESTED'}:{})};
   return {payload,fingerprint:digest(payload)};
  }
  async function link({hostHandle,quoteId,consentId}={}){
   const before=await evidence(hostHandle,quoteId,consentId);
   // The trusted host callback is not an HTTP body flag. Explicit review only.
   const allowed=await authorizeLink(Object.freeze({
-   action:'LINK_SYNTHETIC_A2A_TO_APPROVED_QUOTE',
-   ...before.payload,paymentAuthorized:false,providerCalls:0
+   action:before.payload.provenanceClass
+    ?'LINK_UNATTESTED_PRIVATE_A2A_TO_APPROVED_QUOTE'
+    :'LINK_SYNTHETIC_A2A_TO_APPROVED_QUOTE',
+   ...before.payload,paymentAuthorized:false,providerCalls:0,
+   ...(before.payload.provenanceClass?{agentCalls:'NOT_ATTESTED'}:{})
   }));
   if(allowed!==true)fail('CROSS_PART_EXPLICIT_REVIEW_REQUIRED');
   const after=await evidence(hostHandle,quoteId,consentId);
