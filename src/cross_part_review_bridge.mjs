@@ -53,7 +53,35 @@ export function createCrossPartReviewBridge({
    fail('CROSS_PART_CLOCK_INVALID');
   return ms;
  }
- async function evidence(hostHandle,quoteId,consentId){
+ // Independently validate persisted Part 2 negotiation evidence. Its SHA is
+// only a local consistency checksum; it is NOT a signed model/provider receipt.
+function validA2ATranscript(a2a,buyerCeilingMinor){
+ const messages=a2a?.messages;
+ if(!Array.isArray(messages)||messages.length<2||messages.length>8||
+    !Number.isSafeInteger(buyerCeilingMinor)||buyerCeilingMinor<27000||
+    digest(messages)!==a2a.transcriptSha256)
+  return false;
+ for(let i=0;i<messages.length;i++){
+  const m=messages[i],prev=messages[i-1];
+  if(!m||typeof m!=='object'||Array.isArray(m)||
+     m.role!==(i%2===0?'seller':'buyer')||
+     !Number.isSafeInteger(m.amountMinor)||m.amountMinor<100||
+     m.amountMinor>1_000_000||
+     (m.role==='seller'&&m.amountMinor<27000)||
+     (m.role==='buyer'&&m.amountMinor>buyerCeilingMinor)||
+     (i===0?m.action!=='OFFER':
+       !['COUNTER','ACCEPT'].includes(m.action))||
+     (m.action==='ACCEPT'&&
+       (i!==messages.length-1||!prev||
+        m.amountMinor!==prev.amountMinor))||
+     Object.keys(m).sort().join(',')!=='action,amountMinor,role')
+    return false;
+ }
+ const last=messages.at(-1);
+ return last.action==='ACCEPT'&&last.amountMinor===a2a.agreedMinor&&
+   a2a.agreedMinor>=27000&&a2a.agreedMinor<=buyerCeilingMinor;
+}
+async function evidence(hostHandle,quoteId,consentId){
   if(!valid(quoteId)||!valid(consentId))
    fail('CROSS_PART_IDENTIFIERS_REQUIRED');
   // Trusted session + persistent membership are re-read on every operation.
@@ -94,7 +122,8 @@ export function createCrossPartReviewBridge({
      a2a.paymentAuthorized!==false||
      a2a.providerCalls!==0||a2a.paypalCapturePerformed!==false||
      a2a.paymentState!=='NOT_PAID'||a2a.checkout!=='DISABLED'||
-     a2a.mode!=='OFFLINE_SYNTHETIC_ONLY'||!HASH.test(a2a.transcriptSha256??''))
+     a2a.mode!=='OFFLINE_SYNTHETIC_ONLY'||!HASH.test(a2a.transcriptSha256??'')||
+     !validA2ATranscript(a2a,consent.maxMinor))
    fail('CROSS_PART_A2A_EVIDENCE_MISMATCH');
   const payload={actorId:grant.actorId,merchantId:grant.merchantId,
    quoteId,quoteVersion:quote.version,amountMinor,consentId,
