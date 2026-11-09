@@ -11,16 +11,19 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT = ROOT / "output" / "submission" / "worknova-offline-reviewer.zip"
 PREFIX = "worknova-offline-reviewer/"
 ENTRY = "scripts/run_demo.mjs"
+COMMERCE_ENTRY = "scripts/run_commerce_control_plane.mjs"
 IMPORT = re.compile(r"(?:\bfrom\s*|\bimport\s*[(]?\s*)['\"](\.[^'\"\r\n]+)['\"]")
 ASSETS = frozenset({".html", ".js", ".css", ".svg"})
 README = """# WORKNOVA — private offline reviewer package
 
 Node.js 22.5+ is required. No Git, npm install, account, API key or Internet
 access is needed after receiving the ZIP. Extract the entire directory.
-Inside worknova-offline-reviewer, run: npm run demo
-Open the printed http://127.0.0.1:PORT on the same computer.
-Use AI Work and Global Services; /demo/innovation has all five skills.
-Stop with Ctrl+C; local synthetic state is disposable.
+Inside worknova-offline-reviewer, use these TWO separate offline demos:
+  1. npm run demo           # AI Work + Global Services and five lab skills
+  2. Ctrl+C, then run: npm run demo:commerce  # three-innovation 5-step journey
+Open each printed http://127.0.0.1:PORT on the same computer.
+The two servers use separate synthetic SQLite states; no shared provider
+payment authority exists. Stop with Ctrl+C; all state is disposable.
 
 SYNTHETIC OFFLINE DEMO ONLY. No actual PayPal or Gemini calls; no real sellers,
 paid orders, deployed checkout or autonomous payment. Any earlier owner-reported
@@ -30,7 +33,8 @@ This local ZIP is NOT a public release, YouTube video or Devpost submission.
 PACKAGE = {
     "name": "worknova-offline-reviewer", "version": "0.1.0",
     "private": True, "type": "module",
-    "scripts": {"demo": "node --experimental-sqlite scripts/run_demo.mjs"},
+    "scripts": {"demo": "node --experimental-sqlite scripts/run_demo.mjs",
+                "demo:commerce": "node --experimental-sqlite scripts/run_commerce_control_plane.mjs"},
     "engines": {"node": ">=22.5.0"}, "license": "MIT",
 }
 
@@ -45,12 +49,12 @@ def read_safe(file):
 
 
 def sources():
-    files, seen, pending = {}, set(), [ENTRY]
+    files, seen, pending = {}, set(), [ENTRY, COMMERCE_ENTRY]
     while pending:
         name = pending.pop()
         if name in seen:
             continue
-        if not (name == ENTRY or name.startswith("src/")) or not name.endswith((".mjs", ".js")):
+        if not (name in (ENTRY, COMMERCE_ENTRY) or name.startswith("src/")) or not name.endswith((".mjs", ".js")):
             raise ValueError("REVIEWER_DEPENDENCY_OUT_OF_SCOPE")
         seen.add(name)
         data = read_safe(ROOT / name)
@@ -72,7 +76,10 @@ def sources():
         files[asset.relative_to(ROOT).as_posix()] = read_safe(asset)
     if not any(p.startswith("src/") for p in files) or (
         "web/offline_demo.html" not in files or
-        "web/innovation_dashboard.html" not in files
+        "web/innovation_dashboard.html" not in files or
+        "web/worknova_commerce_control_plane.html" not in files or
+        "src/worknova_agentic_commerce_mvp.mjs" not in files or
+        COMMERCE_ENTRY not in files
     ):
         raise ValueError("REVIEWER_TWO_PART_RUNTIME_MISSING")
     files["LICENSE"] = read_safe(ROOT / "LICENSE")
