@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "demo:commerce": "node --experimental-sqlite scripts/run_commerce_control_plane.mjs",
     "test": "node --experimental-sqlite --test tests/*.test.mjs",
     "demo": "node --experimental-sqlite scripts/run_demo.mjs",
     "preflight:hosting": "node scripts/check_hosting_preflight.mjs",

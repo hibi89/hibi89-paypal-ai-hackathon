@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WORKNOVA — Agentic Commerce Control Plane</title>
+<style>
+:root{font-family:Inter,"Segoe UI",Arial,sans-serif;--base:#071120;--layer:#0b1a30;--card:#10223a;--line:#264058;--txt:#eef7ff;--sub:#a2b9d0;--mint:#57eec4;--cyan:#4bbdfa;--gold:#ffd18a;--danger:#fa9b9b}
+*{box-sizing:border-box}html,body{min-height:100%;margin:0}body{color:var(--txt);background:radial-gradient(ellipse at 69% 3%,#113458 0%,transparent 38%),radial-gradient(ellipse at 15% 80%,#0a3142 0%,transparent 40%),var(--base);overflow-x:hidden}
+body:before{content:"";position:fixed;inset:0;opacity:.11;pointer-events:none;background-image:linear-gradient(90deg,#7bc8ed 1px,transparent 1px),linear-gradient(#7bc8ed 1px,transparent 1px);background-size:80px 80px;mask-image:linear-gradient(to bottom,#0008,transparent 85%)}
+.wrap{max-width:1680px;margin:auto;padding:24px 36px 35px;position:relative}
+.top{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:5px 0 21px;border-bottom:1px solid #294b63}
+.logo{font-size:25px;font-weight:900;letter-spacing:.15em;display:flex;align-items:center;gap:13px}.mark{display:grid;place-items:center;width:40px;height:40px;background:linear-gradient(135deg,#48dcfb,#8bffc5);color:#071322;clip-path:polygon(0 0,100% 0,100% 75%,75% 100%,0 100%)}
+.meta{font-size:11px;letter-spacing:.13em;color:#c3d5e9}.badge{border:1px solid #527c89;background:#0d2738;padding:8px 12px;border-radius:100px;font-weight:750;color:var(--mint);font-size:11px;white-space:nowrap}.right-head{display:flex;align-items:center;gap:10px}
+h1{margin:19px 0 5px;font-size:42px;line-height:1.08;letter-spacing:-.045em;font-weight:780}.shine{background:linear-gradient(100deg,#f5fbff,#6bc9ff 70%,#80f4ca);background-clip:text;color:transparent}
+.lead{color:var(--sub);margin:0 0 18px;max-width:990px;font-size:15px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:0 0 14px}
+.metric{background:linear-gradient(160deg,#17314cbb,#0c1c2ecf);border:1px solid #32506b;padding:17px 21px;border-radius:13px;min-height:102px}
+.metric small{display:block;color:var(--sub);font-size:11px;font-weight:760;letter-spacing:.12em}.metric strong{font-size:31px;display:block;line-height:1.5;font-weight:800;letter-spacing:-.03em}.metric em{display:block;font-size:11px;font-style:normal;color:var(--sub)}.mint{color:var(--mint)}.cyan{color:var(--cyan)}.gold{color:var(--gold)}
+.core{display:grid;grid-template-columns:.91fr 1.09fr;gap:14px}.panel{background:#0b1b30e8;border:1px solid #32536b;border-radius:16px;overflow:hidden;box-shadow:0 15px 40px #01081250}
+.panel-head{display:flex;justify-content:space-between;align-items:center;padding:16px 19px;border-bottom:1px solid #2a465e}.panel-head h2{margin:0;font-size:15px;letter-spacing:.015em}.tag{font-size:10px;color:#a1cfe7;letter-spacing:.09em}
+.flow{padding:15px 20px 12px;display:grid;gap:10px}.action{width:100%;border:1px solid #2d4c65;background:#11263b;color:var(--txt);border-radius:11px;padding:10px 14px;display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:12px;cursor:pointer;text-align:left;min-height:59px;transition:.15s}
+.action:hover:not(:disabled){border-color:#77cfee;background:#12314c;transform:translateY(-1px)}.action:disabled{opacity:.42;cursor:not-allowed}.action.done{border-color:#348f85;background:#103333}.n{display:grid;place-items:center;width:31px;height:31px;border:1px solid #4881a2;border-radius:9px;color:#8be9d7;font-weight:900}.action.done .n{background:#3dcaa4;color:#092033}.acttitle{font-size:13px;font-weight:800}.actsub{font-size:11px;color:#a5c3d4;display:block;margin-top:2px}.actstate{font-size:10px;letter-spacing:.07em;color:#86eac8}.flow-footer{padding:0 20px 15px;display:flex;gap:10px}.btn-secondary{border:1px solid #37627e;background:#142b41;padding:9px 12px;color:#cce2ee;border-radius:9px;cursor:pointer;font-size:11px;font-weight:700}.btn-secondary:hover{background:#24465d}
+.audit{padding:14px 20px;height:351px;overflow:hidden}.trace{display:grid;grid-template-columns:31px 1fr auto;gap:13px;padding:12px 0;border-bottom:1px solid #244056;align-items:center}.trace-num{font-size:10px;color:var(--cyan);font-weight:900}.trace-title{font-size:13px;font-weight:760}.trace-detail{font-size:10.5px;color:var(--sub);margin-top:4px;max-width:570px}.trace-mark{font-size:10px;color:#76e8c0;border:1px solid #2a846d;border-radius:50px;padding:4px 8px}
+.empty{padding:50px 20px;text-align:center;color:#87a3c2;font-size:14px}.empty .orb{width:75px;height:75px;border-radius:50%;border:2px solid #357ca0;margin:0 auto 20px;box-shadow:inset 0 0 24px #2aa9ca55,0 0 30px #2a95aa55;display:grid;place-items:center;font-size:24px;color:#80f3ca}
+.stackbar{margin-top:14px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}.tech{padding:12px 15px;background:#0d2136;border:1px solid #2d5169;border-radius:11px;min-height:67px}.tech b{display:block;font-size:11px;letter-spacing:.04em}.tech span{font-size:10px;color:#9bb9d0;display:block;margin-top:5px}
+.foot{display:flex;justify-content:space-between;margin-top:12px;color:#92b2c8;font-size:10px;letter-spacing:.04em}.vision{color:#bfe2ec}.warn{color:#ffc783}.state-message{color:#f0bfa2;font-size:12px;min-height:18px}
+@media (max-width:980px){.wrap{padding:16px}.stats{grid-template-columns:repeat(2,1fr)}.core{grid-template-columns:1fr}.stackbar{grid-template-columns:repeat(2,1fr)}h1{font-size:32px}}
+</style></head><body><div class="wrap">
+<header class="top"><div class="logo"><span class="mark">W</span><span>WORKNOVA</span></div><div class="right-head"><span class="meta">AGENTIC COMMERCE / CONTROL PLANE</span><span class="badge">● OFFLINE SIMULATION</span></div></header>
+<section><h1><span class="shine">Autonomy with authority.</span><br>Commerce without the blind trust.</h1><p class="lead">One mandate. Two AI-to-AI transactions. Contract evidence. A human-controlled financial boundary.</p></section>
+<section class="stats" aria-label="Control plane metrics">
+ <div class="metric"><small>DELEGATED BUDGET</small><strong class="cyan" id="budget">$500.00</strong><em>Fictional spending policy</em></div>
+ <div class="metric"><small>SIMULATED RESERVATIONS</small><strong id="reserved">$0.00</strong><em>No actual funds reserved</em></div>
+ <div class="metric"><small>POLICY CAP REMAINING</small><strong class="mint" id="remaining">$500.00</strong><em>Not a PayPal balance</em></div>
+ <div class="metric"><small>REAL PROVIDER TRANSACTIONS</small><strong class="gold" id="provider">0</strong><em>No PayPal · No Gemini · No escrow</em></div>
+</section>
+<section class="core"><article class="panel"><div class="panel-head"><h2>01 / EXECUTABLE AGENTIC JOURNEY</h2><span class="tag" id="progress">0 / 5 STEPS</span></div>
+ <div class="flow" id="actions">
+  <button type="button" data-action="grant" class="action"><span class="n">01</span><span><span class="acttitle">Delegate a $500 mission</span><span class="actsub">15-min policy token · $300 maximum per trade</span></span><span class="actstate">RUN</span></button>
+  <button type="button" data-action="negotiate" class="action"><span class="n">02</span><span><span class="acttitle">AI buyer ↔ AI seller negotiation</span><span class="actsub">$360 ask → $300 agreement · no payment</span></span><span class="actstate">RUN</span></button>
+  <button type="button" data-action="verify" class="action"><span class="n">03</span><span><span class="acttitle">Synthetic GitHub PR / CI evidence</span><span class="actsub">Contract checkpoint · settlement remains on HOLD</span></span><span class="actstate">RUN</span></button>
+  <button type="button" data-action="license" class="action"><span class="n">04</span><span><span class="acttitle">Autonomous software deal</span><span class="actsub">$200 listed → $160 negotiated · simulated only</span></span><span class="actstate">RUN</span></button>
+  <button type="button" data-action="review" class="action"><span class="n">05</span><span><span class="acttitle">Consent & financial safety gate</span><span class="actsub">PayPal Sandbox integration requires further authority</span></span><span class="actstate">RUN</span></button>
+ </div><div class="flow-footer"><button type="button" id="runall" class="btn-secondary">▶ RUN ENTIRE OFFLINE JOURNEY</button><button type="button" id="unsafe" class="btn-secondary">TEST $600 BLOCK</button><button type="button" id="revoke" class="btn-secondary">REVOKE MANDATE</button><button type="button" id="reset" class="btn-secondary">RESET</button></div></article>
+ <article class="panel"><div class="panel-head"><h2>02 / CONSENT & EVIDENCE TRACE</h2><span class="tag" id="status">READY · NO ACTIONS</span></div><div class="audit" id="audit"><div class="empty"><div class="orb">◇</div>Run the five-stage transaction simulation.<br>Every result is synthetic, replay-safe and auditable.</div></div><div style="padding:7px 20px 15px"><div class="state-message" id="message"></div><div style="font-size:10px;color:#80bacc">RELEASE HOLD  •  NOT A PAYPAL VIRTUAL CARD  •  NOT ESCROW  •  NOT PRODUCTION</div></div></article></section>
+<section class="stackbar" aria-label="technology stack">
+ <div class="tech"><b>AGENT PROTOCOL</b><span>A2A offers · finite turns · deterministic fixture</span></div>
+ <div class="tech"><b>PERMISSION ENGINE</b><span>Budget · scope · expiration · replay guards</span></div>
+ <div class="tech"><b>CONTRACT EVIDENCE</b><span>Synthetic PR/CI · human settlement gate</span></div>
+ <div class="tech"><b>PAYMENT ADAPTER ROADMAP</b><span>PayPal Sandbox Orders · provider GET · not called here</span></div>
+</section><footer class="foot"><span>RUNS LOCALLY / NODE.JS + SQLITE + JAVASCRIPT + HTML/CSS / NO EXTERNAL API</span><span class="vision">FUTURE VISION: PAYPAL-POWERED GLOBAL AGENTIC COMMERCE</span></footer>
+</div><script>
+let token='',model=null,busy=false;const money=x=>'$'+(x/100).toFixed(2);
+const actions=['grant','negotiate','verify','license','review'];
+function draw(s){model=s;token=s.csrfToken||token;
+ document.querySelector('#reserved').textContent=money(s.reservedMinor);
+ document.querySelector('#remaining').textContent=money(s.mandate?s.remainingMinor:50000);
+ document.querySelector('#provider').textContent=String(s.paypalProviderCalls);
+ document.querySelector('#progress').textContent=`${s.step} / 5 STEPS`;
+ document.querySelector('#status').textContent=s.step===5?'READY FOR HUMAN REVIEW':s.stage.replaceAll('_',' ');
+ document.querySelectorAll('[data-action]').forEach((b,i)=>{b.classList.toggle('done',i<s.step);b.disabled=busy||i>s.step;b.querySelector('.actstate').textContent=i<s.step?'✓ DONE':i===s.step?'RUN':'LOCKED'});
+ const area=document.querySelector('#audit');area.replaceChildren();
+ if(!s.events.length){area.innerHTML='<div class="empty"><div class="orb">◇</div>Run the five-stage transaction simulation.<br>Every result is synthetic, replay-safe and auditable.</div>';return}
+ [...s.events].reverse().forEach(ev=>{let el=document.createElement('div');el.className='trace';let a=document.createElement('div');a.className='trace-num';a.textContent=String(ev.number).padStart(2,'0');let b=document.createElement('div');let t=document.createElement('div');t.className='trace-title';t.textContent=ev.headline;let sub=document.createElement('div');sub.className='trace-detail';sub.textContent=ev.detail;b.append(t,sub);let c=document.createElement('div');c.className='trace-mark';c.textContent=ev.type;el.append(a,b,c);area.append(el)});
+}
+async function refresh(){const r=await fetch('/api/state',{cache:'no-store'});if(!r.ok)throw Error('STATE_UNAVAILABLE');draw(await r.json())}
+async function call(action){if(busy)return;busy=true;const msg=document.querySelector('#message');msg.textContent='';try{const r=await fetch('/api/action',{method:'POST',headers:{'content-type':'application/json','origin':location.origin,'x-csrf-token':token},body:JSON.stringify({action})});const out=await r.json();if(!r.ok){msg.textContent=out.error+': '+(out.reason||out.required||'action denied')}await refresh();}catch(e){msg.textContent='LOCAL_API_ERROR: '+e.message}finally{busy=false; if(model)draw(model)}}
+document.querySelectorAll('[data-action]').forEach(b=>b.addEventListener('click',()=>call(b.dataset.action)));
+document.querySelector('#reset').addEventListener('click',()=>call('reset'));
+document.querySelector('#revoke').addEventListener('click',()=>call('revoke'));
+document.querySelector('#unsafe').addEventListener('click',()=>call('unsafe'));
+document.querySelector('#runall').addEventListener('click',async()=>{for(const a of actions){if(model.step>actions.indexOf(a))continue;await call(a);await new Promise(ok=>setTimeout(ok,650));}});
+refresh().catch(e=>document.querySelector('#message').textContent=e.message);
+</script></body></html>
