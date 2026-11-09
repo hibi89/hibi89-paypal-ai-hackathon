@@ -15,7 +15,7 @@ export function simulateBoundedAgreement({askMinor,buyerCeilingMinor,sellerFloor
  const good=x=>Number.isSafeInteger(x)&&x>0&&x<=100_000_000;
  if(!good(askMinor)||!good(buyerCeilingMinor)||!good(sellerFloorMinor))throw TypeError('INVALID_PRICE');
  const transcript=[{role:'SELLER_AGENT',action:'OFFER',amountMinor:askMinor}];
- if(buyerCeilingMinor<sellerFloorMinor)return {status:'NO_AGREEMENT',transcript};
+ if(buyerCeilingMinor<sellerFloorMinor||askMinor<sellerFloorMinor)return {status:'NO_AGREEMENT',transcript};
  const price=Math.min(buyerCeilingMinor,askMinor);
  if(price!==askMinor)transcript.push({role:'BUYER_AGENT',action:'COUNTER',amountMinor:price});
  const acceptRole=price===askMinor?'BUYER_AGENT':'SELLER_AGENT';
