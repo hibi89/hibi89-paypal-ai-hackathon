@@ -160,6 +160,16 @@ test('same $1.50 private AI agreement, human approval and fake Sandbox GET-proof
   const quoteNow=await ledger.get(quoteId);
   assert.equal(quoteNow.version,binding.quoteVersion);
 
+  // Same buyer, same merchant and same price MUST NOT make a different
+  // approved quote interchangeable with the quote bound before model calls.
+  await ledger.insertQuote({id:'other-same-price',ownerId:actor,merchantId:merchant});
+  await ledger.approve({id:'other-same-price',actorId:actor,
+   expectedVersion:1,amountMinor:150});
+  await assert.rejects(bridge.link({
+   hostHandle:sessionHandle,quoteId:'other-same-price',consentId:consent.consentId
+  }),{code:'CROSS_PART_PRIVATE_QUOTE_BINDING_MISMATCH'});
+  assert.equal(providerCalls.length,0);
+
   // No human consent: still no outbound provider activity.
   await assert.rejects(coordinator.openOwnerOrder(input),{
    code:'OWNER_EXPLICIT_ACTION_AUTHORIZATION_REQUIRED'
