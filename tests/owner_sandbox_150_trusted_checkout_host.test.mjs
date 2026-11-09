@@ -61,6 +61,7 @@ test('host-only A2A review + private checkout requires verified login and separa
   const loginHandle=Object.freeze(Object.create(null));
   const badHandle=Object.freeze(Object.create(null));
   let loginActive=true,allowLink=false,allowSession=false,allowPay=false;
+  let revokeDuringPaymentConsent=false;
   let authCalls=0,sessionApprovals=0,reviewApprovals=0;
   const identities=new WeakMap([[loginHandle,{verified:true,
    actorId:actor,merchantId:merchant}]]);
@@ -104,7 +105,12 @@ test('host-only A2A review + private checkout requires verified login and separa
    authorizeSessionIssue:async()=>{sessionApprovals++;return allowSession},
    authorizePaymentAction:async x=>{authCalls++;
     assert.equal(x.hostLoginHandle,loginHandle);
-    assert.equal(x.amountMinor,150);return allowPay}
+    assert.equal(x.amountMinor,150);
+    if(revokeDuringPaymentConsent){
+     revokeDuringPaymentConsent=false;
+     loginActive=false;
+    }
+    return allowPay}
   });
   assert.equal(host.publicHttpEnabled,false);
   await assert.rejects(host.linkReview({
@@ -137,6 +143,14 @@ test('host-only A2A review + private checkout requires verified login and separa
   });
   assert.equal(calls.length,0);
   allowPay=true;
+  // Login revoked while the independently approved human action is pending:
+  // no OAuth and no Orders POST; the durable session is not authority alone.
+  revokeDuringPaymentConsent=true;
+  await assert.rejects(host.openOwnerOrder(handle),{
+   code:'TRUSTED_HOST_LOGIN_REQUIRED'
+  });
+  assert.equal(calls.length,0);
+  loginActive=true;
   const open=await host.openOwnerOrder(handle);
   assert.equal(open.status,'BUYER_APPROVAL_PENDING');
   assert.equal(calls.filter(x=>x.pathname==='/v2/checkout/orders'&&

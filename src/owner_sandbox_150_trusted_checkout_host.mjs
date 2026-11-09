@@ -88,14 +88,41 @@ export function createOwnerSandbox150TrustedCheckoutHost({
      review.paymentAuthorized!==false)fail('OWNER_150_REVIEW_NOT_VERIFIED');
   const issued=await checkoutHost.issue({hostLoginHandle,quoteId:qid});
   const serverHandle=Object.freeze(Object.create(null));
+  // A login can be withdrawn while the owner authorization dialog or
+  // Sandbox OAuth GET is awaiting. Durable checkout proof alone is NOT a
+  // substitute for a still-authenticated independent buyer principal.
+  const requireLivePrincipal=async req=>{
+   const current=await checkoutHost.resolveTrustedCheckout(issued.handle);
+   if(current.quoteId!==qid||
+      current.actorId!==proposedQuoteBinding.actorId||
+      current.merchantId!==proposedQuoteBinding.merchantId||
+      (req&&(current.quoteId!==req.quoteId||
+       current.actorId!==req.actorId||
+       current.merchantId!==req.merchantId)))
+    fail('OWNER_150_TRUSTED_CHECKOUT_SCOPE_CHANGED');
+  };
   const coordinator=createOwnerPilotCheckoutCoordinator({
    ledger,transport,
-   verifyPrivateA2AReview:async req=>bridge.inspect({
-    hostHandle:hostLoginHandle,quoteId:req.quoteId
-   }),
-   authorizeAction:async detail=>authorizePaymentAction(Object.freeze({
-    ...detail,hostLoginHandle
-   }))
+   verifyPrivateA2AReview:async req=>{
+    await requireLivePrincipal(req);
+    const review=await bridge.inspect({
+     hostHandle:hostLoginHandle,quoteId:req.quoteId
+    });
+    // bridge.inspect may await SQLite/identity. A previously valid login
+    // must not be allowed to survive its revocation during that await.
+    await requireLivePrincipal(req);
+    return review;
+   },
+   authorizeAction:async detail=>{
+    await requireLivePrincipal(detail);
+    const consent=await authorizePaymentAction(Object.freeze({
+     ...detail,hostLoginHandle
+    }));
+    // Re-validate after the independently injected owner-consent callback,
+    // not only once before the human saw its confirmation.
+    await requireLivePrincipal(detail);
+    return consent===true;
+   }
   });
   handles.set(serverHandle,{inner:issued.handle,coordinator});
   return Object.freeze({serverHandle,expiresAtMs:issued.expiresAtMs,
