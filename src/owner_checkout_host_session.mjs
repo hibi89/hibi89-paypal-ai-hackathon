@@ -59,6 +59,12 @@ export function createOwnerCheckoutHostSession({
        currentActor.merchantId!==actor.merchantId)
       deny('TRUSTED_HOST_LOGIN_CHANGED');
     const currentQuote=await quoteFor(quoteId,currentActor);
+    // Quote storage may await while the independent host login is revoked.
+    // Never mint a durable checkout token from an earlier auth snapshot.
+    const finalActor=await principalFor(hostLoginHandle);
+    if(finalActor.actorId!==currentActor.actorId||
+       finalActor.merchantId!==currentActor.merchantId)
+      deny('TRUSTED_HOST_LOGIN_CHANGED');
     if(currentQuote.version!==quote.version||
        currentQuote.approval?.amountMinor!==quote.approval.amountMinor)
       deny('APPROVED_QUOTE_CHANGED_DURING_ISSUANCE');
@@ -80,7 +86,13 @@ export function createOwnerCheckoutHostSession({
     if(actor.actorId!==bound.actorId||actor.merchantId!==bound.merchantId)
       deny('TRUSTED_HOST_LOGIN_CHANGED');
     const quote=await quoteFor(bound.quoteId,actor);
-    const proof=sessionStore.verify({token:bound.token,quote,principal:actor});
+    // A logout during the awaited ledger lookup invalidates this read too.
+    // A previously issued private bearer never replaces current host auth.
+    const finalActor=await principalFor(bound.hostLoginHandle);
+    if(finalActor.actorId!==actor.actorId||
+       finalActor.merchantId!==actor.merchantId)
+      deny('TRUSTED_HOST_LOGIN_CHANGED');
+    const proof=sessionStore.verify({token:bound.token,quote,principal:finalActor});
     const branded=boundServerSessionFromStoredProof(proof,quote);
     if(branded.actorId!==actor.actorId||branded.merchantId!==actor.merchantId)
       deny('CHECKOUT_PROOF_SCOPE_MISMATCH');

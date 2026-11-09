@@ -169,3 +169,59 @@ test('buyer GET inquiry accepts internally minted host capability, no callback c
   assert.equal(logout.status,401);
   assert.equal(refreshes,1);
 }));
+
+test('host logout while async quote GET is pending cannot return a checkout proof',withFixture(async f=>{
+  let holdNext=false,releaseGet,markPaused;
+  const paused=new Promise(resolve=>{markPaused=resolve});
+  const guardedLedger={get:async id=>{
+    const quote=await f.ledger.get(id);
+    if(holdNext){
+      holdNext=false;
+      await new Promise(resolve=>{releaseGet=resolve;markPaused()});
+    }
+    return quote;
+  }};
+  const host=createOwnerCheckoutHostSession({
+    ledger:guardedLedger,sessionStore:f.sessions,
+    resolveTrustedPrincipal:async()=>f.state.login?
+      {verified:true,actorId:'owner1',merchantId}:null,
+    authorizeSessionIssue:async()=>true
+  });
+  const {handle}=await host.issue({
+    hostLoginHandle:'trusted-login',quoteId
+  });
+  holdNext=true;
+  const pending=host.resolveTrustedCheckout(handle);
+  await paused; // first host lookup passed, quote GET has not returned
+  f.state.login=false;
+  releaseGet();
+  await assert.rejects(pending,{code:'TRUSTED_HOST_LOGIN_REQUIRED'});
+  f.state.login=true;
+  assert.equal((await host.resolveTrustedCheckout(handle)).verified,true);
+}));
+
+test('host logout during final quote lookup cannot mint a durable session',withFixture(async f=>{
+  let reads=0,releaseGet,markPaused;
+  const paused=new Promise(resolve=>{markPaused=resolve});
+  const guardedLedger={get:async id=>{
+    const quote=await f.ledger.get(id);
+    if(++reads===2){
+      await new Promise(resolve=>{releaseGet=resolve;markPaused()});
+    }
+    return quote;
+  }};
+  const host=createOwnerCheckoutHostSession({
+    ledger:guardedLedger,sessionStore:f.sessions,
+    resolveTrustedPrincipal:async()=>f.state.login?
+      {verified:true,actorId:'owner1',merchantId}:null,
+    authorizeSessionIssue:async()=>true
+  });
+  const pending=host.issue({hostLoginHandle:'trusted-login',quoteId});
+  await paused; // second (post-consent) quote lookup paused
+  f.state.login=false;
+  releaseGet();
+  await assert.rejects(pending,{code:'TRUSTED_HOST_LOGIN_REQUIRED'});
+  f.state.login=true;
+  const issued=await host.issue({hostLoginHandle:'trusted-login',quoteId});
+  assert.equal(issued.mode,'INTERNAL_SERVER_ONLY_NO_PUBLIC_SESSION');
+}));
