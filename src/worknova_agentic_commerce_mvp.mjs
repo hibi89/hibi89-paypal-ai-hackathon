@@ -23,6 +23,30 @@ export function simulateBoundedAgreement({askMinor,buyerCeilingMinor,sellerFloor
  return {status:'AGREED_OFFLINE',amountMinor:price,transcript,paymentAuthorized:false};
 }
 
+/** A policy hold requires all independent constraints, not only amount caps.
+ * This does not reserve money and grants no provider authorization.
+ */
+export function authorizeDelegatedReservation({mandate,category,merchant,currency,amountMinor,reservedMinor,nowMs}) {
+ const deny=reason=>({ok:false,error:'PAYMENT_GUARD_DENIED',reason});
+ const valid=x=>Number.isSafeInteger(x)&&x>=0;
+ if(!mandate||mandate.revoked||!Number.isSafeInteger(mandate.expiresAt)||
+    !Number.isFinite(nowMs)||mandate.expiresAt<=nowMs)
+   return deny('MANDATE_NOT_ACTIVE');
+ if(currency!==mandate.currency)return deny('CURRENCY_NOT_ALLOWED');
+ if(!Array.isArray(mandate.categories)||!mandate.categories.includes(category))
+   return deny('CATEGORY_NOT_ALLOWED');
+ if(!Array.isArray(mandate.merchants)||!mandate.merchants.includes(merchant))
+   return deny('MERCHANT_NOT_ALLOWED');
+ if(!valid(amountMinor)||amountMinor===0||!valid(reservedMinor)||
+    !valid(mandate.perTradeLimitMinor)||!valid(mandate.limitMinor)||
+    mandate.perTradeLimitMinor===0||mandate.limitMinor===0||
+    reservedMinor>mandate.limitMinor)
+   return deny('INVALID_POLICY_AMOUNT');
+ if(amountMinor>mandate.perTradeLimitMinor)return deny('PER_TRADE_CAP_EXCEEDED');
+ if(amountMinor>mandate.limitMinor-reservedMinor)return deny('TOTAL_BUDGET_EXCEEDED');
+ return {ok:true,paymentAuthorized:false};
+}
+
 const stageNames=['NOT_STARTED','DELEGATION_CREATED','A2A_AGREED','DELIVERY_REVIEWED','SECOND_TRADE_PROPOSED','HUMAN_SETTLEMENT_GATE'];
 const formatAmount=(n)=>(n/100).toFixed(2);
 const hash=x=>createHash('sha256').update(JSON.stringify(x)).digest('hex');
@@ -56,8 +80,10 @@ function apply(s,action,{now=()=>Date.now()}={}) {
      const deal=simulateBoundedAgreement({askMinor:36000,buyerCeilingMinor:30000,sellerFloorMinor:30000});
      if(deal.status!=='AGREED_OFFLINE')return {error:'A2A_NO_AGREEMENT'};
      const amount=deal.amountMinor;
-     if(amount>next.mandate.perTradeLimitMinor||next.reservedMinor+amount>next.mandate.limitMinor)
-       return {error:'PAYMENT_GUARD_DENIED'};
+     const guard=authorizeDelegatedReservation({mandate:next.mandate,
+       category:'AI_SERVICES',merchant:'mock-freelancer',currency:'USD',
+       amountMinor:amount,reservedMinor:next.reservedMinor,nowMs:timestamp});
+     if(!guard.ok)return {error:guard.error,reason:guard.reason};
      next.job={type:'AI_SERVICES',merchant:'mock-freelancer',amountMinor:amount,
       transcript:deal.transcript,
       source:'DETERMINISTIC_AGENT_FIXTURE',agreement:'OFFLINE_AGREED',paymentAuthorized:false};
@@ -74,8 +100,10 @@ function apply(s,action,{now=()=>Date.now()}={}) {
      const deal=simulateBoundedAgreement({askMinor:20000,buyerCeilingMinor:16000,sellerFloorMinor:16000});
      if(deal.status!=='AGREED_OFFLINE')return {error:'LICENSE_NO_AGREEMENT'};
      const amount=deal.amountMinor;
-     if(amount>next.mandate.perTradeLimitMinor||next.reservedMinor+amount>next.mandate.limitMinor)
-       return {error:'PAYMENT_GUARD_DENIED'};
+     const guard=authorizeDelegatedReservation({mandate:next.mandate,
+       category:'SOFTWARE_LICENSE',merchant:'mock-software',currency:'USD',
+       amountMinor:amount,reservedMinor:next.reservedMinor,nowMs:timestamp});
+     if(!guard.ok)return {error:guard.error,reason:guard.reason};
      next.license={type:'SOFTWARE_LICENSE',merchant:'mock-software',askingMinor:20000,amountMinor:16000,
       negotiation:'$200 ask → $160 agreed',transcript:deal.transcript,provider:'NOT_CONNECTED',checkout:'NOT_EXECUTED',
       source:'DETERMINISTIC_AGENT_FIXTURE'};
