@@ -4,7 +4,7 @@
 
 ## Source of truth and safety baseline
 
-- Repository `hibi89/hibi89-paypal-ai-hackathon`, branch `lead/paypal`; latest verified source `1217e56791998a2c226dbd8f54a18fe8781278de`; full offline contract CI #42710458552 SUCCESS: Node 1,286/1,286, Chromium + Windows SUCCESS; smoke #42710458548 SUCCESS. Vercel/Production N/A. Full product 95/100 **provisional**, not real provider proof.
+- Repository `hibi89/hibi89-paypal-ai-hackathon`, branch `lead/paypal`; latest verified source `52d3d7411190b8f3a0c8217a6afae37a4151ed37`; full offline contract CI #42712585821 SUCCESS: Node 1,290/1,290, Chromium + Windows SUCCESS; smoke #42712586029 SUCCESS. Vercel/Production N/A. Full product 95/100 **provisional**, not real provider proof.
 - Steps 37–43 implement safe isolated private new quote preparation, bounded fictional-role A2A pilot, independent exact quote approval, read-only same-quote evidence, host-only authenticated cross-part review and PayPal Sandbox coordination. **Historical** `mvp:operator` uses quote `operator_mvp_01` in a different DB; it MUST NOT be used or described as a new same-quote payment completion.
 - The new `src/owner_sandbox_150_trusted_checkout_host.mjs` is a **host-only library**, not an owner-operable production website or CLI. It requires a real independently verified buyer principal, approved merchant, authorizer callbacks, pinned HTTPS callback origin and Sandbox-only transport. CI used injected fake identity/provider responses. Do not substitute `{verified:true}`, browser request body flags or a fake WeakMap principal as a real authenticated buyer.
 
@@ -21,6 +21,11 @@
 ## Step46 checkout proof login-liveness prerequisite (CI verified, NOT a real OIDC proof)
 
 - Host must re-resolve independent buyer login after any awaited quote read in session issuance and checkout proof lookup, including logout during SQLite I/O. Step46 source `1217e56791998a2c226dbd8f54a18fe8781278de` adds this guard and two regressions. It does **not** configure real buyer identity or authorize PayPal/Gemini calls.
+
+## Step47 no-owner-required final host read-boundary check (CI VERIFIED, not real provider proof)
+
+- Buyer PayPal return inquiry and marketplace quote/contract GET now revalidate trusted host login after all awaited provider/SQLite result generation. On lost login or principal switch, return 401 and disclose no financial/contract result. Post-workflow logout can occur after a durable event has completed; reauthenticate then inspect status, do not blindly resubmit (especially not a PayPal POST).
+- Validated source `52d3d7411190b8f3a0c8217a6afae37a4151ed37`, 1,290 Node tests, full offline Chromium and Windows PASS. **No live OIDC, Gemini, PayPal, Production, public video or Devpost submission was performed.** No more user-free code changes are required for these specific checks; unverified real host integration and external provider proofs remain required.
 
 ## One consolidated owner session — only when specifically authorized
 
