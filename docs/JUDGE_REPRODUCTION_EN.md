@@ -6,6 +6,19 @@
 
 The latest WORKNOVA code and this guide live on the public `lead/paypal` branch. The public default `main@5243295f` continues to display the previous Proofline-branded README, even though it contains an earlier runnable two-part synthetic prototype and MIT root LICENSE. **For WORKNOVA review, explicitly `git switch lead/paypal`** as shown below. Do not claim that PR #28 released the later WORKNOVA code to `main`, or that a local offline judge demo verifies live PayPal/Gemini. The official contest rules do **not** require the current source to be on the default branch: the project is public, the repository license is detected as MIT, and the current lead branch includes the judge setup steps. Updating `main` is optional source maintenance requiring separate owner approval, not a prerequisite for a Devpost entry. This does not waive the PayPal+AI functional project, video, or submission requirements.
 
+## One private ZIP for all three offline reviewer routes (no install)
+
+From the public `lead/paypal` source with Python 3 and Node.js 22.5+:
+
+```bash
+python scripts/pack_offline_reviewer.py --check
+python scripts/pack_offline_reviewer.py
+```
+
+Extract `output/submission/worknova-offline-reviewer.zip` into a fresh directory. In `worknova-offline-reviewer`, run `npm run demo` for the two-category marketplace and all five Agentic Innovation Lab skills. Stop that process with Ctrl+C, then run **`npm run demo:commerce`** for the additional three-innovation delegated-budget/A2A/evidence-gate flow. Open the distinct printed loopback URL for each. The two runtimes have **separate local SQLite files and no cross-part payment authority**. No npm install, Git clone, accounts or provider secrets are required **after extraction**.
+
+This ZIP is private, local, non-overwriting, provenance-hashed, and deliberately **does not include any owner video, API keys, private SQLite database or model output**. It is NOT a public hosted application or a Devpost submission. The fresh extraction tests in `tests/portable_reviewer_bundle_test.py` exercise both servers and synthetic HTTP state transitions, but still cannot prove live PayPal or Gemini integration.
+
 ## New three-innovation commerce control plane (independent offline demo)
 
 The original two-part marketplace and its five lab skills still run with `npm run demo`. To try the **additional** integrated three-innovation flow in a separate local browser, stop that server and run:
