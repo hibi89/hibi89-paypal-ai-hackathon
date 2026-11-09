@@ -67,3 +67,25 @@ test('seller floor is enforced when its quoted ask contradicts minimum policy',(
  assert.ok(valid.amountMinor>=25000);
  assert.equal(valid.paymentAuthorized,false);
 });
+
+test('6,859 bounded policy combinations never accept a trade below seller floor',()=>{
+ let checked=0,agreed=0;
+ for(let ask=500;ask<=5000;ask+=250)
+  for(let ceiling=500;ceiling<=5000;ceiling+=250)
+   for(let floor=500;floor<=5000;floor+=250){
+    const result=simulateBoundedAgreement({askMinor:ask,buyerCeilingMinor:ceiling,sellerFloorMinor:floor});
+    checked++;
+    if(result.status==='AGREED_OFFLINE'){
+     agreed++;
+     assert.ok(result.amountMinor>=floor);
+     assert.ok(result.amountMinor<=ceiling);
+     assert.ok(result.amountMinor<=ask);
+     assert.equal(result.paymentAuthorized,false);
+    }else{
+     assert.equal(result.status,'NO_AGREEMENT');
+     assert.equal(result.transcript.some(turn=>turn.action==='ACCEPT'),false);
+    }
+   }
+ assert.equal(checked,6859);
+ assert.equal(agreed,2470);
+});
