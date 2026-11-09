@@ -113,6 +113,8 @@ try:
             assert state["remainingMinor"] == 4000
             assert state["gate"]["status"] == "HUMAN_PROVIDER_AUTH_REQUIRED"
             assert state["gate"]["settlement"] == "NOT_EXECUTED"
+            assert state["evidenceIntegrity"] == "LOCAL_DIGEST_MATCH"
+            assert state["humanReviewReady"] is True
             assert state["realPayments"] == 0
             assert state["paypalProviderCalls"] == 0
             assert state["escrowCreated"] is False
@@ -159,6 +161,7 @@ try:
             revoked_state = page.evaluate("async () => (await fetch('/api/state')).json()")
             assert revoked_state["mandateStatus"] == "REVOKED"
             assert revoked_state["humanReviewReady"] is False
+            assert revoked_state["evidenceIntegrity"] == "LOCAL_REVIEW_HOLD"
             assert revoked_state["reservedMinor"] == 46000
             assert revoked_state["paypalProviderCalls"] == 0
             assert not external_requests, "BROWSER_EXTERNAL_REQUEST_BLOCKED"
