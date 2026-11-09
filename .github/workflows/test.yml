@@ -48,7 +48,7 @@ jobs:
         run: python3 -m unittest discover -s tests -p 'test_worknova_real_ui_release_hold.py' -v
       - name: WORKNOVA Agentic Commerce real Chromium five-stage reviewer and safety gates
         run: .browser-venv/bin/python tests/browser_commerce_control_plane_e2e.py
-      - name: Capture genuine 30s commerce Chromium UI privately (ephemeral, never upload)
+      - name: Capture genuine 30s commerce Chromium UI locally (upload only on explicitly approved commit)
         run: |
           .browser-venv/bin/python scripts/worknova_commerce_real_capture.py --check
           .browser-venv/bin/python scripts/worknova_commerce_real_capture.py --run --output-dir "$RUNNER_TEMP/worknova-real-commerce-scene"
@@ -75,7 +75,23 @@ jobs:
           assert info["release_hold"] is True and info["published"] is False
           print("WORKNOVA_REAL_COMMERCE_UI_FILM_CI_PASS ACTUAL_CHROMIUM_7_CLICKS_NO_PROVIDER_NO_UPLOAD")
           PY
-          rm -rf "$RUNNER_TEMP/worknova-real-commerce-scene"
+      # One-time explicit owner-approved transfer of SYNTHETIC browser video only.
+      # Future pushes do not upload unless the HEAD commit explicitly opts in.
+      - name: Owner-approved synthetic browser video artifact, one day only
+        if: github.event_name == 'push' && github.ref == 'refs/heads/lead/paypal' && contains(github.event.head_commit.message, '[capture-artifact]')
+        uses: actions/upload-artifact@v4
+        with:
+          name: worknova-approved-synthetic-ui-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/worknova-real-commerce-scene/worknova-commerce-real-browser-*.webm
+            ${{ runner.temp }}/worknova-real-commerce-scene/worknova-commerce-real-browser-*.manifest.json
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+          include-hidden-files: false
+      - name: Purge local synthetic browser clip after approved artifact step
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/worknova-real-commerce-scene"
       - name: Actual Chromium offline UI journey
         run: .browser-venv/bin/python tests/browser_offline_e2e.py
       - name: Synthetic seller browser contract role journey (opt-in only)
