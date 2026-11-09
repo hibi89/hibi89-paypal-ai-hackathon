@@ -27,7 +27,7 @@ The original two-part marketplace and its five lab skills still run with `npm ru
 npm run demo:commerce
 ```
 
-Open the new printed `http://127.0.0.1:PORT` URL on the same computer. The Chromium test is `tests/browser_commerce_control_plane_e2e.py` (linked in GitHub CI as of 2026-11-09, **PASS not claimed until actual runner result is inspected**).
+Open the new printed `http://127.0.0.1:PORT` URL on the same computer. The Chromium test is `tests/browser_commerce_control_plane_e2e.py`. GitHub Actions **actually confirmed PASS** on `145a13a5412b` and the later unified ZIP integration commit `dad389525532`: real browser clicks for all five steps, replay/refresh, policy denial, revoke-after-review and **zero external requests**. These are reproducible **local synthetic browser** tests, not actual Gemini agents, PayPal cards or provider-signed delivery.
 
 1. **Delegate:** click `Delegate a $500 mission`. This is a revocable 15-minute fictional policy token with a USD 300 per-trade limit and scope allowlists. **No card is issued.**
 2. **Negotiate:** click `AI buyer ↔ AI seller negotiation` to see the bounded deterministic USD 360 offer → USD 300 agreement. **No actual LLM or payment runs.**
