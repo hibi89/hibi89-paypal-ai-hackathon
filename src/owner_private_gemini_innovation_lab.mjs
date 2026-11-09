@@ -14,11 +14,15 @@ const inside=(file,cwd)=>{
 export function createOwnerPrivateGeminiInnovationLab({
  filename,budgetFilename,scope,apiKey,fetchImpl,
  ownerAuthorized=false,freeTierConfirmed=false,operatorConfirmed=false,
- cwd=process.cwd()
+ sandboxPilotSellerFloorMinor=27000,cwd=process.cwd()
 }={}){
  // All consent signals belong to the trusted operator, never to a browser body.
  if(ownerAuthorized!==true||freeTierConfirmed!==true||operatorConfirmed!==true)
   deny('OWNER_PRIVATE_GEMINI_A2A_APPROVAL_REQUIRED');
+ if(!Number.isSafeInteger(sandboxPilotSellerFloorMinor)||
+    (sandboxPilotSellerFloorMinor!==27000&&
+     (sandboxPilotSellerFloorMinor<100||sandboxPilotSellerFloorMinor>200)))
+  deny('OWNER_PRIVATE_A2A_SANDBOX_PILOT_FLOOR_REQUIRED');
  if(!scope||!['actor','merchant','job'].every(k=>ID.test(scope[k]??''))||
     typeof filename!=='string'||typeof budgetFilename!=='string'||
     !isAbsolute(filename)||!isAbsolute(budgetFilename)||
@@ -37,7 +41,8 @@ export function createOwnerPrivateGeminiInnovationLab({
   });
   lab=createInnovationLab({filename,agentsFactory:()=>agents,
    agentTransport:'PRIVATE_INJECTED_UNVERIFIED',
-   a2aMaxTurns:4,a2aTurnTimeoutMs:8000});
+   a2aMaxTurns:4,a2aTurnTimeoutMs:8000,
+   a2aSellerFloorMinor:sandboxPilotSellerFloorMinor});
  }catch(e){try{quota.close()}catch{}throw e;}
  let closed=false;
  return Object.freeze({

@@ -30,7 +30,7 @@ const resultView=x=>Object.freeze({
 
 export function createCrossPartReviewBridge({
  filename,ledger,innovationStore,identityPolicy,authorizeLink,now=Date.now,
- allowUnattestedPrivateA2A=false
+ allowUnattestedPrivateA2A=false,trustedSandboxPilotSellerFloorMinor=null
 }={}){
  if(typeof filename!=='string'||!filename||filename===':memory:'||
   typeof ledger?.get!=='function'||
@@ -38,7 +38,12 @@ export function createCrossPartReviewBridge({
   typeof identityPolicy?.issueProof!=='function'||
   typeof identityPolicy?.authorize!=='function'||
   typeof authorizeLink!=='function'||typeof now!=='function'||
-  typeof allowUnattestedPrivateA2A!=='boolean')
+  typeof allowUnattestedPrivateA2A!=='boolean'||
+  (trustedSandboxPilotSellerFloorMinor!==null&&
+   (!allowUnattestedPrivateA2A||
+    !Number.isSafeInteger(trustedSandboxPilotSellerFloorMinor)||
+    trustedSandboxPilotSellerFloorMinor<100||
+    trustedSandboxPilotSellerFloorMinor>200)))
   fail('CROSS_PART_TRUSTED_DEPENDENCIES_REQUIRED');
  const db=new DatabaseSync(filename);
  db.exec('PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000');
@@ -62,10 +67,10 @@ export function createCrossPartReviewBridge({
  }
  // Independently validate persisted Part 2 negotiation evidence. Its SHA is
 // only a local consistency checksum; it is NOT a signed model/provider receipt.
-function validA2ATranscript(a2a,buyerCeilingMinor){
+function validA2ATranscript(a2a,buyerCeilingMinor,sellerFloorMinor=27000){
  const messages=a2a?.messages;
  if(!Array.isArray(messages)||messages.length<2||messages.length>8||
-    !Number.isSafeInteger(buyerCeilingMinor)||buyerCeilingMinor<27000||
+    !Number.isSafeInteger(buyerCeilingMinor)||buyerCeilingMinor<sellerFloorMinor||
     digest(messages)!==a2a.transcriptSha256)
   return false;
  for(let i=0;i<messages.length;i++){
@@ -74,7 +79,7 @@ function validA2ATranscript(a2a,buyerCeilingMinor){
      m.role!==(i%2===0?'seller':'buyer')||
      !Number.isSafeInteger(m.amountMinor)||m.amountMinor<100||
      m.amountMinor>1_000_000||
-     (m.role==='seller'&&m.amountMinor<27000)||
+     (m.role==='seller'&&m.amountMinor<sellerFloorMinor)||
      (m.role==='buyer'&&m.amountMinor>buyerCeilingMinor)||
      (i===0?m.action!=='OFFER':
        !['COUNTER','ACCEPT'].includes(m.action))||
@@ -86,7 +91,7 @@ function validA2ATranscript(a2a,buyerCeilingMinor){
  }
  const last=messages.at(-1);
  return last.action==='ACCEPT'&&last.amountMinor===a2a.agreedMinor&&
-   a2a.agreedMinor>=27000&&a2a.agreedMinor<=buyerCeilingMinor;
+   a2a.agreedMinor>=sellerFloorMinor&&a2a.agreedMinor<=buyerCeilingMinor;
 }
 async function evidence(hostHandle,quoteId,consentId){
   if(!valid(quoteId)||!valid(consentId))
@@ -130,6 +135,11 @@ async function evidence(hostHandle,quoteId,consentId){
     consent.expiresAt<=clock()||matches.length!==1)
    fail('CROSS_PART_SCOPED_CONSENT_REQUIRED');
   const a2a=matches[0].result;
+  // The small-price override is only an owner-trusted, opt-in Sandbox
+  // demonstrator. It does not modify the real payment session's $2 ceiling.
+  const sellerFloorMinor=privateUnattested&&
+    trustedSandboxPilotSellerFloorMinor!==null
+     ?trustedSandboxPilotSellerFloorMinor:27000;
   const provenanceValid=synthetic
     ?a2a.mode==='OFFLINE_SYNTHETIC_ONLY'&&a2a.providerCalls===0
     :a2a.mode==='PRIVATE_INJECTED_AGENT_NOT_ATTESTED'&&
@@ -138,7 +148,9 @@ async function evidence(hostHandle,quoteId,consentId){
      a2a.realGemini===false&&
      a2a.providerEvidence==='EXTERNAL_TRANSPORT_NOT_ATTESTED'&&
      a2a.source==='PLUGGABLE_ROLE_PROTOCOL'&&
-     a2a.requiredExternalFundingAuthorization===true;
+     a2a.requiredExternalFundingAuthorization===true&&
+     a2a.sellerFloorMinor===sellerFloorMinor&&
+     (trustedSandboxPilotSellerFloorMinor===null||amountMinor<=200);
   if(!provenanceValid||a2a.status!=='SYNTHETIC_AGREEMENT'||
      a2a.protocolStatus!=='AGREED_OFFLINE_CONTRACT'||
      a2a.accepted!==true||a2a.agreedMinor!==amountMinor||
@@ -147,13 +159,14 @@ async function evidence(hostHandle,quoteId,consentId){
      a2a.paypalCapturePerformed!==false||
      a2a.paymentState!=='NOT_PAID'||a2a.checkout!=='DISABLED'||
      !HASH.test(a2a.transcriptSha256??'')||
-     !validA2ATranscript(a2a,consent.maxMinor))
+     !validA2ATranscript(a2a,consent.maxMinor,sellerFloorMinor))
    fail('CROSS_PART_A2A_EVIDENCE_MISMATCH');
   const payload={actorId:grant.actorId,merchantId:grant.merchantId,
    quoteId,quoteVersion:quote.version,amountMinor,consentId,
    transcriptSha256:a2a.transcriptSha256,
    mandateRevision:consent.revision,expiresAt:consent.expiresAt,
-   ...(privateUnattested?{provenanceClass:'PRIVATE_INJECTED_AGENT_NOT_ATTESTED'}:{})};
+   ...(privateUnattested?{provenanceClass:'PRIVATE_INJECTED_AGENT_NOT_ATTESTED',
+    sellerFloorMinor}:{} )};
   return {payload,fingerprint:digest(payload)};
  }
  async function link({hostHandle,quoteId,consentId}={}){

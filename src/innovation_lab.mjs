@@ -53,7 +53,8 @@ export function prepareInvoiceDispute(input){
     'Synthetic reviewer decision']},paypalInvoiceCreated:false,source:'SYNTHETIC_SCENARIO'};
 }
 export function createInnovationLab({filename,now=Date.now,agentsFactory=createOfflineRoleAgents,
- agentTransport='OFFLINE_POLICY',a2aMaxTurns=8,a2aTurnTimeoutMs=1000}={}){
+ agentTransport='OFFLINE_POLICY',a2aMaxTurns=8,a2aTurnTimeoutMs=1000,
+ a2aSellerFloorMinor=27000}={}){
  if(typeof agentsFactory!=='function'||typeof now!=='function')throw new TypeError('AGENTS_FACTORY_REQUIRED');
  if(!['OFFLINE_POLICY','PRIVATE_INJECTED_UNVERIFIED'].includes(agentTransport)||
     !Number.isSafeInteger(a2aMaxTurns)||a2aMaxTurns<2||a2aMaxTurns>8||
@@ -62,6 +63,13 @@ export function createInnovationLab({filename,now=Date.now,agentsFactory=createO
     (agentTransport==='PRIVATE_INJECTED_UNVERIFIED'&&
       (agentsFactory===createOfflineRoleAgents||a2aMaxTurns>4||a2aTurnTimeoutMs<1200)))
   throw new TypeError('INVALID_PRIVATE_A2A_EXECUTION_CONFIGURATION');
+ // The public/demo policy remains at $270. A trusted private operator can
+ // explicitly use a $1-$2 agreement ONLY for the existing $2 Sandbox pilot.
+ if(!Number.isSafeInteger(a2aSellerFloorMinor)||
+    (a2aSellerFloorMinor!==27000&&
+     (agentTransport!=='PRIVATE_INJECTED_UNVERIFIED'||
+      a2aSellerFloorMinor<100||a2aSellerFloorMinor>200)))
+  throw new TypeError('INVALID_PRIVATE_A2A_SANDBOX_PILOT_FLOOR');
  if(typeof filename!=='string'||!filename||filename===':memory:')throw new TypeError('LAB_FILE_REQUIRED');
  const db=new DatabaseSync(filename);
  db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000');
@@ -222,7 +230,7 @@ export function createInnovationLab({filename,now=Date.now,agentsFactory=createO
     mandate.expires>now()&&mandate.revision===attempt.revision&&
     mandate.cap===attempt.cap&&mandate.expires===attempt.expires;
    const success=stillValid&&result.status==='AGREED_OFFLINE_CONTRACT'&&
-    Number.isSafeInteger(result.agreedMinor)&&result.agreedMinor>=27000&&
+    Number.isSafeInteger(result.agreedMinor)&&result.agreedMinor>=a2aSellerFloorMinor&&
     result.agreedMinor<=attempt.cap;
    if(success){
     const written=query('UPDATE innovation_delegations SET used=? WHERE id=? AND actor=? AND merchant=? AND revoked=0 AND used=0 AND revision=? AND expires>?')
@@ -238,6 +246,7 @@ export function createInnovationLab({filename,now=Date.now,agentsFactory=createO
     // Injected roles might call Gemini. Never label them zero-provider fixtures.
     Object.assign(record,{mode:'PRIVATE_INJECTED_AGENT_NOT_ATTESTED',
      agentMode:'PRIVATE_INJECTED_ROLES',providerCalls:'NOT_ATTESTED',
+     sellerFloorMinor:a2aSellerFloorMinor,
      realGemini:false,providerEvidence:'EXTERNAL_TRANSPORT_NOT_ATTESTED'});
    }
    query('INSERT INTO innovation_events(actor,merchant,kind,request_key,fingerprint,result,created) VALUES(?,?,?,?,?,?,?)')
@@ -254,7 +263,7 @@ export function createInnovationLab({filename,now=Date.now,agentsFactory=createO
   try{
    const {buyerAgent,sellerAgent}=agentsFactory();
    result=await runBoundedA2A({buyerAgent,sellerAgent,buyerMaxMinor:claimed.cap,
-    sellerMinMinor:27000,maxTurns:a2aMaxTurns,
+    sellerMinMinor:a2aSellerFloorMinor,maxTurns:a2aMaxTurns,
     turnTimeoutMs:a2aTurnTimeoutMs});
   }catch{
    result={status:'BLOCKED',reason:'TRUSTED_AGENT_ADAPTER_FAILED',

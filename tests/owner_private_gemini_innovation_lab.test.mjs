@@ -94,3 +94,44 @@ test('provider quota failure is durable UNKNOWN and cannot repeat Gemini request
   assert.equal(fetches,1);
  }finally{app?.close();rmSync(dir,{recursive:true,force:true});}
 });
+
+test('explicit private $1.50 A2A pilot works without relaxing the default $270 floor',async()=>{
+ const dir=root();let fetches=0,app;
+ const fake=async()=>{
+  fetches++;
+  return reply(fetches===1?'OFFER':'ACCEPT',150);
+ };
+ try{
+  const cfg={...options(dir,fake),sandboxPilotSellerFloorMinor:150};
+  app=createOwnerPrivateGeminiInnovationLab(cfg);
+  const mandate=app.delegate({key:'pilot_1',maxMinor:150,expiresInMinutes:15});
+  const agreement=await app.negotiate({key:'pilot_deal_1',consentId:mandate.consentId});
+  assert.equal(agreement.status,'SYNTHETIC_AGREEMENT');
+  assert.equal(agreement.agreedMinor,150);
+  assert.equal(agreement.sellerFloorMinor,150);
+  assert.equal(agreement.paymentAuthorized,false);
+  assert.equal(agreement.providerCalls,'NOT_ATTESTED');
+  assert.equal(fetches,2);
+  assert.equal((await app.negotiate({key:'pilot_deal_1',
+   consentId:mandate.consentId})).replayed,true);
+  assert.equal(fetches,2);
+  app.close();app=null;
+  app=createOwnerPrivateGeminiInnovationLab(cfg);
+  assert.equal(app.state().consents[0].usedMinor,150);
+  assert.equal(app.state().events.find(x=>x.kind==='a2a').result.sellerFloorMinor,150);
+ }finally{app?.close();rmSync(dir,{recursive:true,force:true})}
+});
+test('private sandbox seller floor must be explicitly bounded to $1-$2',()=>{
+ const dir=root();let fetches=0;
+ try{
+  const fake=async()=>{fetches++;return reply('OFFER',150)};
+  for(const floor of [0,99,201,-1,1.5,'150']){
+   assert.throws(()=>createOwnerPrivateGeminiInnovationLab({
+    ...options(dir,fake),sandboxPilotSellerFloorMinor:floor
+   }),/OWNER_PRIVATE_A2A_SANDBOX_PILOT_FLOOR_REQUIRED/);
+  }
+  assert.equal(fetches,0);
+  assert.equal(existsSync(join(dir,'part2.sqlite')),false);
+  assert.equal(existsSync(join(dir,'quota.sqlite')),false);
+ }finally{rmSync(dir,{recursive:true,force:true})}
+});
