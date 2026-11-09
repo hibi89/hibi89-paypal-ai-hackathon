@@ -46,10 +46,15 @@ class ReviewerBundleTest(unittest.TestCase):
                 self.assertGreater(len(manifest["files"]), 10)
                 self.assertIn("src/offline_demo_server.mjs", manifest["files"])
                 self.assertIn("web/innovation_dashboard.html", manifest["files"])
+                self.assertIn("web/worknova_commerce_control_plane.html", manifest["files"])
+                self.assertIn("src/worknova_agentic_commerce_mvp.mjs", manifest["files"])
+                self.assertIn("scripts/run_commerce_control_plane.mjs", manifest["files"])
                 brand = z.read(PREFIX + "REVIEWER_README.md").decode("utf-8")
                 self.assertTrue(brand.startswith("# WORKNOVA"))
                 self.assertIn("SYNTHETIC OFFLINE DEMO ONLY", brand)
                 self.assertIn("No actual PayPal or Gemini calls", brand)
+                self.assertIn("npm run demo:commerce", brand)
+                self.assertIn("no shared provider", brand)
                 self.assertNotIn("Proofline", brand)
                 package = json.loads(z.read(PREFIX + "package.json"))
                 self.assertEqual(package["name"], "worknova-offline-reviewer")
@@ -72,7 +77,8 @@ class ReviewerBundleTest(unittest.TestCase):
             cwd = Path(tmp) / "extract" / "worknova-offline-reviewer"
             self.assertFalse((cwd / "node_modules").exists())
             self.assertEqual(json.loads((cwd / "package.json").read_text())["scripts"],
-                {"demo": "node --experimental-sqlite scripts/run_demo.mjs"})
+                {"demo": "node --experimental-sqlite scripts/run_demo.mjs",
+                 "demo:commerce": "node --experimental-sqlite scripts/run_commerce_control_plane.mjs"})
             clean_env = {k: v for k, v in os.environ.items()
                          if not re.search(
                             "SECRET|TOKEN|PASSWORD|CREDENTIAL|API_KEY|CLIENT_ID|MERCHANT_ID|"
@@ -120,6 +126,93 @@ class ReviewerBundleTest(unittest.TestCase):
                 except subprocess.TimeoutExpired:
                     proc.kill()
                     proc.wait(timeout=5)
+
+
+    def test_fresh_unpack_runs_third_commerce_demo_and_denies_provider_payment(self):
+        with tempfile.TemporaryDirectory(prefix="worknova-commerce-bundle-") as tmp:
+            archive = self.create(tmp)
+            with ZipFile(archive) as z:
+                z.extractall(Path(tmp) / "extract")
+            cwd = Path(tmp) / "extract" / "worknova-offline-reviewer"
+            self.assertFalse((cwd / "node_modules").exists())
+            clean_env = {k: v for k, v in os.environ.items()
+                         if not re.search(
+                            "SECRET|TOKEN|PASSWORD|CREDENTIAL|API_KEY|CLIENT_ID|MERCHANT_ID|"
+                            "GEMINI|PAYPAL|OPENAI|AUTHORIZATION|PRIVATE_KEY|NODE_OPTIONS",
+                            k, re.I)}
+            proc = subprocess.Popen(["node", "--experimental-sqlite",
+                                     "scripts/run_commerce_control_plane.mjs"],
+                                    cwd=cwd, env=clean_env, stdout=subprocess.PIPE,
+                                    stderr=subprocess.DEVNULL, text=True, bufsize=1)
+            lines = queue.Queue()
+            threading.Thread(target=lambda: [lines.put(line) for line in proc.stdout],
+                             daemon=True).start()
+            try:
+                base = None
+                for _ in range(8):
+                    line = lines.get(timeout=5)
+                    match = re.search(r"http://127[.]0[.]0[.]1:[0-9]{1,5}", line)
+                    if match:
+                        base = match.group()
+                        break
+                self.assertIsNotNone(base, "third review runtime not listening")
+                with OPENER.open(Request(base + "/", method="GET"), timeout=6) as res:
+                    self.assertEqual(res.status, 200)
+                    body = res.read()
+                    self.assertIn(b"Agentic Commerce Control Plane", body)
+                    self.assertIn(b"OFFLINE SIMULATION", body)
+                def state():
+                    with OPENER.open(Request(base + "/api/state", method="GET"),
+                                     timeout=6) as resp:
+                        self.assertEqual(resp.status, 200)
+                        return json.load(resp)
+                original = state()
+                self.assertEqual(original["step"], 0)
+                self.assertEqual(original["paypalProviderCalls"], 0)
+                self.assertEqual(original["realPayments"], 0)
+                def action(name, csrf=None):
+                    request = Request(base + "/api/action",
+                        data=json.dumps({"action": name}).encode("utf-8"),
+                        headers={"Content-Type": "application/json",
+                                 "Origin": base,
+                                 "X-CSRF-Token": csrf if csrf is not None
+                                                  else original["csrfToken"]},
+                        method="POST")
+                    with OPENER.open(request, timeout=6) as resp:
+                        self.assertEqual(resp.status, 200)
+                        return json.load(resp)
+                with self.assertRaises(HTTPError) as denied:
+                    action("grant", csrf="invalid-csrf")
+                self.assertEqual(denied.exception.code, 403)
+                self.assertEqual(state()["step"], 0)
+                for index, name in enumerate(
+                    ("grant", "negotiate", "verify", "license", "review"), start=1
+                ):
+                    result = action(name)
+                    self.assertEqual(result["step"], index)
+                    self.assertEqual(result["paypalProviderCalls"], 0)
+                    self.assertEqual(result["realPayments"], 0)
+                approved = state()
+                self.assertTrue(approved["humanReviewReady"])
+                self.assertEqual(approved["evidenceIntegrity"], "LOCAL_DIGEST_MATCH")
+                self.assertEqual(approved["reservedMinor"], 46000)
+                self.assertEqual(approved["remainingMinor"], 4000)
+                self.assertEqual(len(approved["events"]), 5)
+                self.assertRegex(approved["gate"]["auditDigest"], r"^[0-9a-f]{64}$")
+                self.assertEqual(approved["realPayments"], 0)
+                revoked = action("revoke")
+                self.assertEqual(revoked["mandateStatus"], "REVOKED")
+                self.assertFalse(revoked["humanReviewReady"])
+                self.assertEqual(state()["reservedMinor"], 46000)
+                self.assertEqual(state()["paypalProviderCalls"], 0)
+            finally:
+                proc.terminate()
+                try:
+                    proc.wait(timeout=8)
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+                    proc.wait(timeout=5)
+
 
 
 if __name__ == "__main__":
