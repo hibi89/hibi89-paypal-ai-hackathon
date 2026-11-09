@@ -60,7 +60,14 @@ function apply(s,action,{now=()=>Date.now()}={}) {
   record(next,'REVOKED','DELEGATION REVOKED','All subsequent actions blocked; reservations remain simulated, no funds moved');
   return next;
  }
- if(action==='unsafe')return {error:'GUARDRAIL_BLOCKED',reason:'PROPOSED_600_USD_EXCEEDS_500_USD_MANDATE',paymentAuthorized:false};
+ if(action==='unsafe'){
+  const probe=authorizeDelegatedReservation({mandate:s.mandate,
+    category:'SOFTWARE_LICENSE',merchant:'mock-software',currency:'USD',
+    amountMinor:60000,reservedMinor:s.reservedMinor,nowMs:now()});
+  // An explicit policy probe never creates a transaction, even if limits differ.
+  return {error:'GUARDRAIL_BLOCKED',reason:probe.ok?'TEST_PROPOSAL_NOT_EXECUTABLE':probe.reason,
+    policyEvaluated:true,paymentAuthorized:false};
+ }
  const expected=actions.indexOf(action);
  if(expected===-1)return {error:'UNKNOWN_ACTION'};
  if(expected<s.step)return s; // exact replay: no extra reservation or event
