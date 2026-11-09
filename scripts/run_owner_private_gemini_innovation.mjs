@@ -6,6 +6,7 @@ import {join} from 'node:path';
 import {createInterface} from 'node:readline/promises';
 import {argv,env,stdin,stderr,stdout} from 'node:process';
 import {createOwnerPrivateGeminiInnovationLab} from '../src/owner_private_gemini_innovation_lab.mjs';
+import {inspectOwnerProposedA2AQuote} from '../src/owner_private_a2a_quote_binding.mjs';
 
 const flags=['--execute','--owner-authorized','--free-tier-confirmed'];
 const sandboxFlag='--sandbox-pilot-150';
@@ -46,8 +47,17 @@ if(!exact){
   info('PRIVATE_GEMINI_KEY_REQUIRED');process.exitCode=2;
  }else{
   const dir=join(homedir(),'.paypal-ai-pilot-private');
-  let app;
+  let app,attemptStarted=false;
   try{
+   // A $1.50 negotiation must be traceable to an existing same-owner,
+   // same-merchant, still-PROPOSED Part1 quote before any Gemini call.
+   // Read-only preflight never creates or changes Part1 data.
+   const binding=sandboxPilot?inspectOwnerProposedA2AQuote({
+    filename:env.WORKNOVA_OWNER_LEDGER_PATH,
+    actorId:env.WORKNOVA_OWNER_ACTOR_ID,
+    merchantId:env.WORKNOVA_SANDBOX_MERCHANT_ID,
+    quoteId:env.WORKNOVA_PILOT_QUOTE_ID
+   }):null;
    mkdirSync(dir,{recursive:true,mode:0o700});
    app=createOwnerPrivateGeminiInnovationLab({
     // Separate never-reused scope/DBs protect the existing $270 pilot.
@@ -56,7 +66,8 @@ if(!exact){
      ?'part2-owner-sandbox150.sqlite':'part2-owner-lab.sqlite'),
     budgetFilename:join(dir,sandboxPilot
      ?'part2-owner-sandbox150-quota.sqlite':'part2-owner-quota.sqlite'),
-    scope:{actor:'operator_owner',merchant:'fictional_merchant',
+    scope:{actor:binding?.actorId??'operator_owner',
+     merchant:binding?.merchantId??'fictional_merchant',
      job:sandboxPilot?'part2_sandbox_150_once':'part2_demo_once'},
     apiKey:env.GEMINI_API_KEY,fetchImpl:(...args)=>globalThis.fetch(...args),
     ownerAuthorized:true,freeTierConfirmed:true,operatorConfirmed:true,
@@ -66,12 +77,28 @@ if(!exact){
    // state; it NEVER silently spends an additional Gemini budget.
    const mandate=app.delegate({key:'one_mandate',
     maxMinor:sandboxPilot?150:30000,expiresInMinutes:sandboxPilot?15:30});
+   attemptStarted=true;
    const outcome=await app.negotiate({key:'one_negotiation',consentId:mandate.consentId});
    const budget=app.quotaStatus();
+   // The quote can change while the LLM answers. Never imply that its result
+   // is linked if the original proposal changed during the async calls.
+   const current=sandboxPilot?inspectOwnerProposedA2AQuote({
+    filename:env.WORKNOVA_OWNER_LEDGER_PATH,
+    actorId:binding.actorId,merchantId:binding.merchantId,
+    quoteId:binding.quoteId
+   }):null;
+   if(binding&&current.quoteFingerprint!==binding.quoteFingerprint)
+    throw Object.assign(new Error('STALE_QUOTE'),{
+     code:'OWNER_A2A_QUOTE_CHANGED_DURING_NEGOTIATION'
+    });
    info('PRIVATE_PART2_ATTEMPT_PERSISTED',{
     networkRequests:'NOT_ATTESTED',
     pilotMode:sandboxPilot?'SANDBOX_150_A2A_ONLY':'LEGACY_270_A2A_ONLY',
     sandboxPilotAmountMinor:sandboxPilot?150:null,
+    boundQuoteId:binding?.quoteId??null,
+    boundQuoteVersion:binding?.quoteVersion??null,
+    quoteFingerprint:binding?.quoteFingerprint??null,
+    quoteHumanApproved:false,
     agreementState:outcome.status,accepted:outcome.accepted===true,
     agreedMinor:outcome.agreedMinor??null,
     transcriptSha256:outcome.transcriptSha256??null,
@@ -85,7 +112,10 @@ if(!exact){
    });
   }catch(e){
    // Never output paths, secrets or provider response bodies.
-   info('PRIVATE_PART2_FAILED_NO_AUTO_RETRY',{networkRequests:'NOT_ATTESTED',errorClass:String(e?.code||'UNKNOWN')});
+   info('PRIVATE_PART2_FAILED_NO_AUTO_RETRY',{
+    networkRequests:attemptStarted?'NOT_ATTESTED':0,
+    errorClass:String(e?.code||'UNKNOWN')
+   });
    process.exitCode=2;
   }finally{try{app?.close()}catch{}}
  }
