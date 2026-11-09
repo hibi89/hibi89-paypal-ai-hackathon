@@ -243,3 +243,34 @@ test('real SQLite policy cannot reserve against non-allowlisted merchant or cate
   assert.equal(e.get().humanReviewReady,true);
  }finally{db.close();e.close();rmSync(folder,{recursive:true,force:true})}
 });
+
+
+test('unsafe proposal is actually policy-evaluated but never executable',()=>{
+ const folder=mkdtempSync(join(tmpdir(),'worknova-probe-test-'));
+ const filename=join(folder,'synthetic.sqlite');
+ const e=createCommerceEngine({filename});const db=new DatabaseSync(filename);
+ try{
+  const first=e.step('unsafe');
+  assert.equal(first.error,'GUARDRAIL_BLOCKED');
+  assert.equal(first.reason,'MANDATE_NOT_ACTIVE');
+  assert.equal(first.policyEvaluated,true);
+  assert.equal(first.paymentAuthorized,false);
+  assert.equal(e.step('grant').status,200);
+  const overCap=e.step('unsafe');
+  assert.equal(overCap.error,'GUARDRAIL_BLOCKED');
+  assert.equal(overCap.reason,'PER_TRADE_CAP_EXCEEDED');
+  assert.equal(overCap.policyEvaluated,true);
+  assert.equal(e.get().reservedMinor,0);
+  const row=JSON.parse(db.prepare('SELECT payload FROM demo_state WHERE id=1').get().payload);
+  row.mandate.limitMinor=100000;row.mandate.perTradeLimitMinor=70000;
+  db.prepare('UPDATE demo_state SET payload=? WHERE id=1').run(JSON.stringify(row));
+  const testOnly=e.step('unsafe');
+  assert.equal(testOnly.error,'GUARDRAIL_BLOCKED');
+  assert.equal(testOnly.reason,'TEST_PROPOSAL_NOT_EXECUTABLE');
+  assert.equal(testOnly.paymentAuthorized,false);
+  assert.equal(e.get().reservedMinor,0);
+  assert.equal(e.get().events.length,1);
+  assert.equal(e.step('revoke').status,200);
+  assert.equal(e.step('unsafe').reason,'MANDATE_NOT_ACTIVE');
+ }finally{db.close();e.close();rmSync(folder,{recursive:true,force:true})}
+});
