@@ -46,6 +46,34 @@ jobs:
         run: .browser-venv/bin/python tests/browser_portable_zip_e2e.py
       - name: WORKNOVA Agentic Commerce real Chromium five-stage reviewer and safety gates
         run: .browser-venv/bin/python tests/browser_commerce_control_plane_e2e.py
+      - name: Capture genuine 30s commerce Chromium UI privately (ephemeral, never upload)
+        run: |
+          .browser-venv/bin/python scripts/worknova_commerce_real_capture.py --check
+          .browser-venv/bin/python scripts/worknova_commerce_real_capture.py --run --output-dir "$RUNNER_TEMP/worknova-real-commerce-scene"
+          python3 - <<'PY'
+          import glob,hashlib,json,os
+          from pathlib import Path
+          root=Path(os.environ["RUNNER_TEMP"])/"worknova-real-commerce-scene"
+          reports=list(root.glob("worknova-commerce-real-browser-*.manifest.json"))
+          assert len(reports)==1, "COMMERCE_CAPTURE_MANIFEST_NOT_UNIQUE"
+          info=json.loads(reports[0].read_text(encoding="utf-8"))
+          clip=root/info["clip_filename"]
+          assert clip.is_file() and clip.stat().st_size>=10_000
+          assert hashlib.sha256(clip.read_bytes()).hexdigest()==info["clip_sha256"]
+          assert info["source_sha"]==os.environ["GITHUB_SHA"]
+          assert info["status"]=="PRIVATE_GENUINE_CHROMIUM_COMMERCE_30S_NOT_PUBLISHED"
+          assert info["capture_mode"]=="AUTOMATED_ACTUAL_CHROMIUM_BROWSER"
+          assert info["steps"]==["grant","negotiate","verify","license","review"]
+          assert info["actual_step_clicks"]==5 and info["local_http_post_actions"]==7
+          assert info["reservedMinor"]==46000 and info["remainingMinor"]==4000
+          assert info["review_ready_before_revoke"] is True and info["review_ready_after_revoke"] is False
+          assert info["provider_calls"]==0 and info["payment_posts"]==0
+          assert info["external_requests"]==0
+          assert info["owner_operated_clicks_claimed"] is False
+          assert info["release_hold"] is True and info["published"] is False
+          print("WORKNOVA_REAL_COMMERCE_UI_FILM_CI_PASS ACTUAL_CHROMIUM_7_CLICKS_NO_PROVIDER_NO_UPLOAD")
+          PY
+          rm -rf "$RUNNER_TEMP/worknova-real-commerce-scene"
       - name: Actual Chromium offline UI journey
         run: .browser-venv/bin/python tests/browser_offline_e2e.py
       - name: Synthetic seller browser contract role journey (opt-in only)
