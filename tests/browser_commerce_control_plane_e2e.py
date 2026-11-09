@@ -153,6 +153,14 @@ try:
             expect(page.locator("#reserved")).to_have_text("$460.00")
             expect(page.locator("#remaining")).to_have_text("$40.00")
             expect(page.locator("#audit .trace")).to_have_count(5)
+            expect(page.locator("#status")).to_have_text("READY FOR HUMAN REVIEW")
+            page.locator("#revoke").click()
+            expect(page.locator("#status")).to_have_text("MANDATE REVOKED · REVIEW HOLD")
+            revoked_state = page.evaluate("async () => (await fetch('/api/state')).json()")
+            assert revoked_state["mandateStatus"] == "REVOKED"
+            assert revoked_state["humanReviewReady"] is False
+            assert revoked_state["reservedMinor"] == 46000
+            assert revoked_state["paypalProviderCalls"] == 0
             assert not external_requests, "BROWSER_EXTERNAL_REQUEST_BLOCKED"
             assert not page_errors, "BROWSER_JAVASCRIPT_ERROR:" + repr(page_errors)
             assert all(
