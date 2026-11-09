@@ -1,0 +1,153 @@
+// Host-only orchestration of existing $1.50 A2A -> approved Part1 quote ->
+// independently verified login -> consented private review -> checkout proof ->
+// PayPal Sandbox coordinator. NO listener, identity provider or implicit POST.
+// A real host must supply trusted authentication and THREE distinct authorizers.
+import {createMarketplaceIdentityPolicy} from './marketplace_identity_policy.mjs';
+import {createCrossPartReviewBridge} from './cross_part_review_bridge.mjs';
+import {createOwnerCheckoutHostSession} from './owner_checkout_host_session.mjs';
+import {createOwnerPilotCheckoutCoordinator} from './owner_pilot_checkout_coordinator.mjs';
+
+const ID=/^[A-Za-z0-9_-]{1,64}$/;
+const MERCHANT=/^[A-Za-z0-9]{13}$/;
+const SHA=/^[a-f0-9]{64}$/;
+const fail=code=>{const e=new Error(code);e.code=code;throw e;};
+export function createOwnerSandbox150TrustedCheckoutHost({
+ ledger,innovationStore,sessionStore,transport,reviewFilename,
+ proposedQuoteBinding,publicOrigin,resolveTrustedPrincipal,
+ authorizeReviewLink,authorizeSessionIssue,authorizePaymentAction,
+ now=Date.now
+}={}){
+ if(typeof ledger?.get!=='function'||typeof ledger?.getLocalMember!=='function'||
+    typeof innovationStore?.state!=='function'||
+    typeof sessionStore?.issue!=='function'||typeof sessionStore?.verify!=='function'||
+    typeof sessionStore?.revoke!=='function'||
+    transport?.mode!=='SANDBOX_ONLY'||
+    typeof reviewFilename!=='string'||!reviewFilename||reviewFilename===':memory:'||
+    typeof resolveTrustedPrincipal!=='function'||
+    typeof authorizeReviewLink!=='function'||
+    typeof authorizeSessionIssue!=='function'||
+    typeof authorizePaymentAction!=='function'||typeof now!=='function'||
+    !ID.test(proposedQuoteBinding?.quoteId??'')||
+    !ID.test(proposedQuoteBinding?.actorId??'')||
+    !MERCHANT.test(proposedQuoteBinding?.merchantId??'')||
+    proposedQuoteBinding?.amountMinor!==150||
+    proposedQuoteBinding?.currency!=='USD'||
+    proposedQuoteBinding?.quoteStatus!=='PROPOSED_NOT_PAYMENT_AUTHORITY'||
+    !Number.isSafeInteger(proposedQuoteBinding?.quoteVersion)||
+    proposedQuoteBinding.quoteVersion<1||
+    !SHA.test(proposedQuoteBinding?.quoteFingerprint??''))
+  fail('OWNER_150_TRUSTED_HOST_CONFIG_REQUIRED');
+ let origin;
+ try{origin=new URL(publicOrigin)}catch{fail('OWNER_150_TRUSTED_HTTPS_ORIGIN_REQUIRED')}
+ if(typeof publicOrigin!=='string'||origin.origin!==publicOrigin||
+    origin.protocol!=='https:'||origin.username||origin.password||
+    origin.hostname==='localhost'||origin.hostname.endsWith('.localhost')||
+    origin.hostname.endsWith('.local')||
+    !origin.hostname.includes('.')||/^(?:\d+\.){3}\d+$/.test(origin.hostname))
+  fail('OWNER_150_TRUSTED_HTTPS_ORIGIN_REQUIRED');
+ // Host callback is the ONLY identity source. Request JSON, cookies, query
+ // booleans, and synthetic local user strings never cross this boundary.
+ const identityPolicy=createMarketplaceIdentityPolicy({
+  resolveTrustedSession:resolveTrustedPrincipal,
+  resolveMembership:async actorId=>ledger.getLocalMember(actorId)
+ });
+ const bridge=createCrossPartReviewBridge({
+  filename:reviewFilename,ledger,innovationStore,identityPolicy,now,
+  allowUnattestedPrivateA2A:true,
+  trustedSandboxPilotSellerFloorMinor:150,
+  trustedProposedQuoteBinding:proposedQuoteBinding,
+  authorizeLink:authorizeReviewLink
+ });
+ const checkoutHost=createOwnerCheckoutHostSession({
+  ledger,sessionStore,resolveTrustedPrincipal,authorizeSessionIssue
+ });
+ const handles=new WeakMap();
+ let closed=false;
+ const alive=()=>{if(closed)fail('OWNER_150_TRUSTED_HOST_CLOSED')};
+ const qid=proposedQuoteBinding.quoteId;
+ async function linkReview({hostLoginHandle,consentId}={}){
+  alive();
+  if(!hostLoginHandle||typeof hostLoginHandle!=='object'||
+     !ID.test(consentId??''))fail('OWNER_150_TRUSTED_REVIEW_SCOPE_REQUIRED');
+  const review=await bridge.link({hostHandle:hostLoginHandle,
+   quoteId:qid,consentId});
+  if(review.status!=='PRIVATE_UNATTESTED_A2A_REVIEW_ONLY'||
+     review.paymentAuthorized!==false)fail('OWNER_150_REVIEW_NOT_VERIFIED');
+  return review;
+ }
+ async function inspectReview({hostLoginHandle}={}){
+  alive();
+  return bridge.inspect({hostHandle:hostLoginHandle,quoteId:qid});
+ }
+ async function issueCheckout({hostLoginHandle}={}){
+  alive();
+  // Do not mint a checkout bearer before independently authorized A2A link.
+  const review=await inspectReview({hostLoginHandle});
+  if(review.status!=='PRIVATE_UNATTESTED_A2A_REVIEW_ONLY'||
+     review.quoteId!==qid||review.amountMinor!==150||
+     review.paymentAuthorized!==false)fail('OWNER_150_REVIEW_NOT_VERIFIED');
+  const issued=await checkoutHost.issue({hostLoginHandle,quoteId:qid});
+  const serverHandle=Object.freeze(Object.create(null));
+  const coordinator=createOwnerPilotCheckoutCoordinator({
+   ledger,transport,
+   verifyPrivateA2AReview:async req=>bridge.inspect({
+    hostHandle:hostLoginHandle,quoteId:req.quoteId
+   }),
+   authorizeAction:async detail=>authorizePaymentAction(Object.freeze({
+    ...detail,hostLoginHandle
+   }))
+  });
+  handles.set(serverHandle,{inner:issued.handle,coordinator});
+  return Object.freeze({serverHandle,expiresAtMs:issued.expiresAtMs,
+   trustedCheckoutLocalOnly:true,paymentAuthorized:false,
+   ordersCreatePerformed:false,paypalCapturePerformed:false,
+   providerCalls:0});
+ }
+ async function perform(op,serverHandle){
+  alive();
+  if(!serverHandle||typeof serverHandle!=='object')
+   fail('OWNER_150_TRUSTED_CHECKOUT_HANDLE_REQUIRED');
+  const entry=handles.get(serverHandle);
+  if(!entry)fail('OWNER_150_TRUSTED_CHECKOUT_HANDLE_REQUIRED');
+  // Validates private WeakMap bearer, host principal, membership and TTL
+  // on EVERY operation. The coordinator rechecks the private A2A link.
+  const scope=await checkoutHost.resolveTrustedCheckout(entry.inner);
+  if(scope.quoteId!==qid||
+     scope.actorId!==proposedQuoteBinding.actorId||
+     scope.merchantId!==proposedQuoteBinding.merchantId)
+   fail('OWNER_150_TRUSTED_CHECKOUT_SCOPE_CHANGED');
+  const input={quoteId:qid,actorId:scope.actorId,
+   merchantId:scope.merchantId,sessionProof:scope.sessionProof,publicOrigin};
+  if(op==='open')return entry.coordinator.openOwnerOrder(input);
+  if(op==='refresh')return entry.coordinator.refreshOwnerOrder(input);
+  if(op==='capture')return entry.coordinator.captureOwnerOrder(input);
+  if(op==='reconcile')return entry.coordinator.reconcileOwnerCapture(input);
+  fail('OWNER_150_OPERATION_UNSUPPORTED');
+ }
+ async function revokeCheckout(serverHandle){
+  alive();
+  const entry=handles.get(serverHandle);
+  if(!entry)fail('OWNER_150_TRUSTED_CHECKOUT_HANDLE_REQUIRED');
+  await checkoutHost.revoke(entry.inner);
+  handles.delete(serverHandle);
+  return Object.freeze({status:'LOCAL_CHECKOUT_REVOKED',
+   paymentAuthorized:false,providerCalls:0});
+ }
+ function close(){
+  if(closed)return;
+  closed=true;
+  bridge.close();
+ }
+ return Object.freeze({
+  linkReview,inspectReview,issueCheckout,
+  openOwnerOrder:handle=>perform('open',handle),
+  refreshOwnerOrder:handle=>perform('refresh',handle),
+  captureOwnerOrder:handle=>perform('capture',handle),
+  reconcileOwnerCapture:handle=>perform('reconcile',handle),
+  revokeCheckout,close,
+  mode:'PRIVATE_TRUSTED_AUTHENTICATED_SANDBOX150_HOST_ONLY',
+  publicHttpEnabled:false,productionIdentityProvidedByHostOnly:true,
+  providerNetworkConfiguredByCallerOnly:true,
+  automaticPaymentAuthorized:false
+ });
+}
