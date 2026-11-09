@@ -1,5 +1,19 @@
 # WORKNOVA — Two-Part Reviewer Reproduction Guide (Draft)
 
+## Same-quote private A2A + Sandbox-shaped safety-chain regression (no external calls)
+
+This is the shortest exact **backend-integrated** proof of the two innovations without pretending to be a live transaction. With Node >=22.5 run:
+
+```bash
+node --experimental-sqlite --test tests/private_a2a_sandbox_chain.test.mjs
+```
+
+The test runs a $1.50 agreement between separately invoked buyer/seller **fake Gemini-shaped** responses, binds the exact amount to a human-approved Part1 quote, rechecks private A2A evidence through a scoped, revocable consent, creates an owner-only checkout session, and exercises fake PayPal-shaped CREATE / independent fictional buyer approval / CAPTURE / GET reconciliation through the existing production-shaped backend functions. It denies missing review and missing human authorization before any fake POST; it also asserts no duplicate CAPTURE and denial after linked review revocation. **All provider responses are injected in-process test fixtures; no Gemini or PayPal network request happens, no PayPal delegation token is issued, no customer charged, and no externally verified payment evidence is created.** The default marketplace demo still requires `npm run demo`, and the separate synthetic commerce panel still requires `npm run demo:commerce`; this test does NOT merge them into one public browser application.
+
+The legacy default AI seller floor of $270 and pilot Sandbox session cap of $2 are deliberately unchanged. Only a separately opted-in private experimental A2A mode may use a $1–$2 seller floor, and only an explicitly trusted host callback can let its un-attested agreement enter the owner-only Sandbox checkout prerequisite. This is **not** an autonomous PayPal AI delegated payment authorization. A genuine provider integration requires actual owner-approved Gemini and PayPal Sandbox calls with separate approval, buyer action, and fresh provider GET verification.
+
+
+
 **This browser demo remains strictly OFFLINE/SYNTHETIC, not a public real-provider application.** Separately, the owner ran one private Windows terminal Gemini skill-classification → Sandbox USD 1.50 buyer approval → Capture → fresh GET on 2026-10-28 and provided output `SANDBOX_PAYMENT_VERIFIED_BY_PROVIDER_GET`. The run is owner-observed evidence, **NOT independently reproduced in GitHub CI**, not a production authenticated marketplace, not a public judge experience, and not a video/Devpost submission. The price was manually approved, **not AI-generated**, and the browser demo still uses offline mock quote drafting. Never confuse localhost synthetic browser outcomes with live third-party payment evidence. The private SQLite receipt can be reviewed safely via `npm run mvp:receipt`, but must NOT be uploaded or reset.
 
 ## Source branch for current WORKNOVA reviewer (public, not latest-main release)
