@@ -4,7 +4,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createCommerceEngine,simulateBoundedAgreement,authorizeDelegatedReservation} from '../src/worknova_agentic_commerce_mvp.mjs';
+import {createCommerceEngine,simulateBoundedAgreement,authorizeDelegatedReservation,validateOfflineReviewEvidence} from '../src/worknova_agentic_commerce_mvp.mjs';
 import {startCommerceControlPlane} from '../scripts/run_commerce_control_plane.mjs';
 
 test('true five-stage offline lifecycle and financial claims stay disabled',()=>{
@@ -272,5 +272,60 @@ test('unsafe proposal is actually policy-evaluated but never executable',()=>{
   assert.equal(e.get().events.length,1);
   assert.equal(e.step('revoke').status,200);
   assert.equal(e.step('unsafe').reason,'MANDATE_NOT_ACTIVE');
+ }finally{db.close();e.close();rmSync(folder,{recursive:true,force:true})}
+});
+
+
+test('tampered review evidence fails closed on GET without erasing audit history',()=>{
+ const folder=mkdtempSync(join(tmpdir(),'worknova-evidence-tamper-'));
+ const filename=join(folder,'synthetic.sqlite');
+ const e=createCommerceEngine({filename});const db=new DatabaseSync(filename);
+ try{
+  for(const a of ['grant','negotiate','verify','license','review'])assert.equal(e.step(a).status,200);
+  const original=e.get();assert.equal(original.humanReviewReady,true);
+  assert.equal(original.evidenceIntegrity,'LOCAL_DIGEST_MATCH');
+  const read=()=>JSON.parse(db.prepare('SELECT payload FROM demo_state WHERE id=1').get().payload);
+  const write=s=>db.prepare('UPDATE demo_state SET payload=? WHERE id=1').run(JSON.stringify(s));
+  const altered=read();altered.delivery.checks[0].result='FAILURE';write(altered);
+  const after=e.get();
+  assert.equal(after.humanReviewReady,false);
+  assert.equal(after.evidenceIntegrity,'LOCAL_REVIEW_HOLD');
+  assert.equal(after.evidenceHoldReason,'DELIVERY_EVIDENCE_NOT_CLEAR');
+  assert.equal(after.step,5);assert.equal(after.events.length,5);
+  assert.equal(after.gate.policyDigest,original.gate.policyDigest);
+  assert.equal(after.paypalProviderCalls,0);assert.equal(after.realPayments,0);
+  const still=read();assert.equal(still.delivery.checks[0].result,'FAILURE');
+  const refund=read();refund.delivery.checks[0].result='SUCCESS';write(refund);
+  assert.equal(e.get().humanReviewReady,true);
+  const mismatch=read();mismatch.reservedMinor=40000;write(mismatch);
+  assert.equal(e.get().evidenceHoldReason,'RESERVATION_LEDGER_MISMATCH');
+  assert.equal(e.get().humanReviewReady,false);
+  mismatch.reservedMinor=46000;mismatch.gate.policyDigest='0'.repeat(64);write(mismatch);
+  assert.equal(e.get().evidenceHoldReason,'EVIDENCE_DIGEST_OR_GATE_MISMATCH');
+  assert.equal(e.get().humanReviewReady,false);
+ }finally{db.close();e.close();rmSync(folder,{recursive:true,force:true})}
+});
+
+test('synthetic delivery-check failure blocks review commit and keeps reservations',()=>{
+ const folder=mkdtempSync(join(tmpdir(),'worknova-pre-review-hold-'));
+ const filename=join(folder,'synthetic.sqlite');
+ const e=createCommerceEngine({filename});const db=new DatabaseSync(filename);
+ try{
+  for(const a of ['grant','negotiate','verify','license'])assert.equal(e.step(a).status,200);
+  const row=JSON.parse(db.prepare('SELECT payload FROM demo_state WHERE id=1').get().payload);
+  assert.equal(validateOfflineReviewEvidence(row).ok,true);
+  row.delivery.checks[1].result='FAILURE';
+  db.prepare('UPDATE demo_state SET payload=? WHERE id=1').run(JSON.stringify(row));
+  const blocked=e.step('review');assert.equal(blocked.status,409);
+  assert.equal(blocked.error,'EVIDENCE_INTEGRITY_HOLD');
+  assert.equal(blocked.reason,'DELIVERY_EVIDENCE_NOT_CLEAR');
+  assert.equal(e.get().step,4);assert.equal(e.get().gate,undefined);
+  assert.equal(e.get().events.length,4);assert.equal(e.get().reservedMinor,46000);
+  assert.equal(e.get().paypalProviderCalls,0);
+  row.delivery.checks[1].result='SUCCESS';
+  db.prepare('UPDATE demo_state SET payload=? WHERE id=1').run(JSON.stringify(row));
+  assert.equal(e.step('review').status,200);
+  assert.equal(e.get().evidenceIntegrity,'LOCAL_DIGEST_MATCH');
+  assert.equal(e.get().humanReviewReady,true);
  }finally{db.close();e.close();rmSync(folder,{recursive:true,force:true})}
 });
