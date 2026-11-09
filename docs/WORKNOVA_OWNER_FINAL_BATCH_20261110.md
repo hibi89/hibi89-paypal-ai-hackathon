@@ -4,7 +4,7 @@
 
 ## Source of truth and safety baseline
 
-- Repository `hibi89/hibi89-paypal-ai-hackathon`, branch `lead/paypal`; tested source `0a8ccd60add3e924934e1df1e37ebf7f37b6777c`; full contract CI #42695700679 SUCCESS: Node 1,284/1,284, Chromium + Windows SUCCESS; smoke #42695700826 SUCCESS. Vercel/Production N/A. Full product 95/100 **provisional**, not real provider proof.
+- Repository `hibi89/hibi89-paypal-ai-hackathon`, branch `lead/paypal`; latest verified source `1217e56791998a2c226dbd8f54a18fe8781278de`; full offline contract CI #42710458552 SUCCESS: Node 1,286/1,286, Chromium + Windows SUCCESS; smoke #42710458548 SUCCESS. Vercel/Production N/A. Full product 95/100 **provisional**, not real provider proof.
 - Steps 37–43 implement safe isolated private new quote preparation, bounded fictional-role A2A pilot, independent exact quote approval, read-only same-quote evidence, host-only authenticated cross-part review and PayPal Sandbox coordination. **Historical** `mvp:operator` uses quote `operator_mvp_01` in a different DB; it MUST NOT be used or described as a new same-quote payment completion.
 - The new `src/owner_sandbox_150_trusted_checkout_host.mjs` is a **host-only library**, not an owner-operable production website or CLI. It requires a real independently verified buyer principal, approved merchant, authorizer callbacks, pinned HTTPS callback origin and Sandbox-only transport. CI used injected fake identity/provider responses. Do not substitute `{verified:true}`, browser request body flags or a fake WeakMap principal as a real authenticated buyer.
 
@@ -17,6 +17,10 @@
 - **Critical login revocation security gate (Step44):** A real host must recheck the authenticated buyer identity AFTER owner consent and AGAIN immediately before Sandbox Orders/Capture POST, including during long-lived OAuth/GET waits. The host-only library does this when supplied an authoritative login resolver (offline CI proven); fake `verified:true` test identity is not sufficient as real provider proof. Payment POST must stop without retry when login disappears.
 
 - **Step45 independent security verification:** A genuine authenticated buyer principal must still be active not only before PayPal Orders/Capture POST but also when **read-only GET results and receipts return**, even if logout happened while OAuth/approval GET was in flight. Offline host-only fixture now tests this. If a real host session is lost, do not disclose order details or retry a possible remote POST; reauthenticate for GET-only reconciliation under separate owner approval.
+
+## Step46 checkout proof login-liveness prerequisite (CI verified, NOT a real OIDC proof)
+
+- Host must re-resolve independent buyer login after any awaited quote read in session issuance and checkout proof lookup, including logout during SQLite I/O. Step46 source `1217e56791998a2c226dbd8f54a18fe8781278de` adds this guard and two regressions. It does **not** configure real buyer identity or authorize PayPal/Gemini calls.
 
 ## One consolidated owner session — only when specifically authorized
 
