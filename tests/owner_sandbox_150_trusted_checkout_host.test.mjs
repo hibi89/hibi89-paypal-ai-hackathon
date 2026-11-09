@@ -62,6 +62,7 @@ test('host-only A2A review + private checkout requires verified login and separa
   const badHandle=Object.freeze(Object.create(null));
   let loginActive=true,allowLink=false,allowSession=false,allowPay=false;
   let revokeDuringPaymentConsent=false;
+  let revokeDuringOAuth=false,revokeDuringBuyerGet=false;
   let authCalls=0,sessionApprovals=0,reviewApprovals=0;
   const identities=new WeakMap([[loginHandle,{verified:true,
    actorId:actor,merchantId:merchant}]]);
@@ -70,13 +71,20 @@ test('host-only A2A review + private checkout requires verified login and separa
    async fetchImpl(url,init){
     const pathname=new URL(url).pathname;
     calls.push({pathname,method:init.method});
-    if(pathname==='/v1/oauth2/token')
+    if(pathname==='/v1/oauth2/token'){
+     if(revokeDuringOAuth){
+      revokeDuringOAuth=false;loginActive=false;
+     }
      return {status:200,json:async()=>({access_token:'FAKE_TOKEN',token_type:'Bearer'})};
+    }
     if(pathname==='/v2/checkout/orders'&&init.method==='POST')
      return {status:201,json:async()=>({id:'OWNER150ORDER',
       status:'PAYER_ACTION_REQUIRED',links:[{rel:'payer-action',
        href:'https://www.sandbox.paypal.com/checkoutnow?token=OWNER150ORDER'}]})};
-    if(pathname==='/v2/checkout/orders/OWNER150ORDER'&&init.method==='GET')
+    if(pathname==='/v2/checkout/orders/OWNER150ORDER'&&init.method==='GET'){
+     if(revokeDuringBuyerGet){
+      revokeDuringBuyerGet=false;loginActive=false;
+     }
      return {status:200,json:async()=>({id:'OWNER150ORDER',intent:'CAPTURE',
       status:remote.captured?'COMPLETED':
        remote.buyerApproved?'APPROVED':'PAYER_ACTION_REQUIRED',
@@ -86,6 +94,7 @@ test('host-only A2A review + private checkout requires verified login and separa
         id:'OWNER150CAPTURE',status:'COMPLETED',
         amount:{currency_code:'USD',value:'1.50'}
        }]}}:{})}]})};
+    }
     if(pathname==='/v2/checkout/orders/OWNER150ORDER/capture'&&init.method==='POST'){
      remote.captured=true;
      return {status:201,json:async()=>({
@@ -157,12 +166,50 @@ test('host-only A2A review + private checkout requires verified login and separa
    x.method==='POST').length,1);
   assert.equal((await host.captureOwnerOrder(handle)).status,'BUYER_APPROVAL_PENDING');
   remote.buyerApproved=true;
+  const capturePosts=()=>calls.filter(x=>x.pathname===
+   '/v2/checkout/orders/OWNER150ORDER/capture'&&x.method==='POST').length;
+  const orderPosts=()=>calls.filter(x=>x.pathname==='/v2/checkout/orders'&&
+   x.method==='POST').length;
+  const originalOrderPosts=orderPosts();
+  // PayPal OAuth response may arrive after the buyer logs out. GET is safe;
+  // the subsequent Capture POST must remain impossible.
+  revokeDuringOAuth=true;
+  await assert.rejects(host.captureOwnerOrder(handle),{
+   code:'TRUSTED_HOST_LOGIN_REQUIRED'
+  });
+  assert.equal(capturePosts(),0);
+  assert.equal(orderPosts(),originalOrderPosts);
+  loginActive=true;
+  // Buyer APPROVED GET may also finish after the trusted login is revoked.
+  revokeDuringBuyerGet=true;
+  await assert.rejects(host.captureOwnerOrder(handle),{
+   code:'TRUSTED_HOST_LOGIN_REQUIRED'
+  });
+  assert.equal(capturePosts(),0);
+  assert.equal(orderPosts(),originalOrderPosts);
+  loginActive=true;
+  // Previously a GET-only refresh could return the order state after logout.
+  // Final host auth must guard reads as well as payment writes.
+  revokeDuringOAuth=true;
+  await assert.rejects(host.refreshOwnerOrder(handle),{
+   code:'TRUSTED_HOST_LOGIN_REQUIRED'
+  });
+  assert.equal(capturePosts(),0);
+  assert.equal(orderPosts(),originalOrderPosts);
+  loginActive=true;
   const paid=await host.captureOwnerOrder(handle);
   assert.equal(paid.status,'PAID');
   assert.equal(paid.paymentState,'VERIFIED_BY_GET');
   assert.equal(calls.filter(x=>x.pathname==='/v2/checkout/orders/OWNER150ORDER/capture'&&
    x.method==='POST').length,1);
   assert.equal((await host.captureOwnerOrder(handle)).status,'PAID');
+  // A completed capture GET still cannot expose sensitive receipt details to
+  // an external buyer whose authenticated host principal disappeared.
+  revokeDuringOAuth=true;
+  await assert.rejects(host.reconcileOwnerCapture(handle),{
+   code:'TRUSTED_HOST_LOGIN_REQUIRED'
+  });
+  assert.equal(capturePosts(),1);
   loginActive=false;
   const prev=calls.length;
   await assert.rejects(host.refreshOwnerOrder(handle),{

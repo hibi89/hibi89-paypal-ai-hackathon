@@ -145,11 +145,21 @@ export function createOwnerSandbox150TrustedCheckoutHost({
    fail('OWNER_150_TRUSTED_CHECKOUT_SCOPE_CHANGED');
   const input={quoteId:qid,actorId:scope.actorId,
    merchantId:scope.merchantId,sessionProof:scope.sessionProof,publicOrigin};
-  if(op==='open')return entry.coordinator.openOwnerOrder(input);
-  if(op==='refresh')return entry.coordinator.refreshOwnerOrder(input);
-  if(op==='capture')return entry.coordinator.captureOwnerOrder(input);
-  if(op==='reconcile')return entry.coordinator.reconcileOwnerCapture(input);
-  fail('OWNER_150_OPERATION_UNSUPPORTED');
+  let result;
+  if(op==='open')result=await entry.coordinator.openOwnerOrder(input);
+  else if(op==='refresh')result=await entry.coordinator.refreshOwnerOrder(input);
+  else if(op==='capture')result=await entry.coordinator.captureOwnerOrder(input);
+  else if(op==='reconcile')result=await entry.coordinator.reconcileOwnerCapture(input);
+  else fail('OWNER_150_OPERATION_UNSUPPORTED');
+  // Provider OAuth/GET and durable SQLite inspection can outlive the login.
+  // Even a GET-only result must not be disclosed to a revoked identity.
+  // Orders/Capture POSTs already have separate before-POST proof checks and
+  // persistent one-shot claims. Do not retry a POST if this final check fails.
+  const after=await checkoutHost.resolveTrustedCheckout(entry.inner);
+  if(after.quoteId!==scope.quoteId||after.actorId!==scope.actorId||
+     after.merchantId!==scope.merchantId)
+   fail('OWNER_150_TRUSTED_CHECKOUT_SCOPE_CHANGED');
+  return result;
  }
  async function revokeCheckout(serverHandle){
   alive();
