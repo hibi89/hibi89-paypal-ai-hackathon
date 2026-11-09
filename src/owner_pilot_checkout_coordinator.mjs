@@ -111,8 +111,28 @@ export function createOwnerPilotCheckoutCoordinator({ledger,transport,authorizeA
       // the claim (safe UNKNOWN), never results in provider activity.
       boundServerSessionFromStoredProof(input.sessionProof,quote);
       await checkLinkedReview(quote);
+      // OAuth may await after the earlier owner consent. Never issue Orders
+      // POST for a review withdrawn while the token request was in flight.
+      const beforeOrderPost=async()=>{
+        const current=await ledger.get(quote.id);
+        if(!current||current.id!==quote.id||
+           current.ownerId!==quote.ownerId||
+           current.merchantId!==quote.merchantId||
+           current.status!=='APPROVED'||
+           current.version!==quote.version||
+           current.currency!==quote.currency||
+           current.approval?.actorId!==quote.approval?.actorId||
+           current.approval?.quoteVersion!==quote.approval?.quoteVersion||
+           current.approval?.amountMinor!==quote.approval?.amountMinor)
+          deny('OWNER_PILOT_APPROVAL_CHANGED_BEFORE_ORDER_POST');
+        boundServerSessionFromStoredProof(input.sessionProof,current);
+        await checkLinkedReview(current);
+        // The async review may itself outlast token/session revocation.
+        boundServerSessionFromStoredProof(input.sessionProof,current);
+      };
       const created=await transport.createOwnerPilotOrderOnce(quote,claim,{
-        publicOrigin:input.publicOrigin,sessionProof:input.sessionProof
+        publicOrigin:input.publicOrigin,sessionProof:input.sessionProof,
+        beforeProviderPost:beforeOrderPost
       });
       if(!validId(created?.orderId)||
          !['CREATED','PAYER_ACTION_REQUIRED','APPROVED'].includes(created.orderStatus))

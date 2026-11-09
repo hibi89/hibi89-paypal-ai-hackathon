@@ -71,7 +71,11 @@ function fixture({createLost=false,captureLost=false,badMerchant=false}={}){
   token=sessions.issue({quote,principal}).token;
   proof=sessions.verify({token,quote,principal});
  }
- function service(overrideLedger=ledger){return createOwnerPilotCheckoutCoordinator({ledger:overrideLedger,transport,authorizeAction})}
+ function service(overrideLedger=ledger,verifyPrivateA2AReview){
+  return createOwnerPilotCheckoutCoordinator({
+    ledger:overrideLedger,transport,authorizeAction,verifyPrivateA2AReview
+  });
+ }
  function input(){return {...ctx,sessionProof:proof}}
  function count(method,path){return calls.filter(c=>c.method===method&&c.path===path).length}
  return {ledger,sessions,calls,authorizations,state,seed,service,input,count,
@@ -319,5 +323,36 @@ test('owner session revoked during CREATE OAuth blocks Orders POST after durable
    assert.equal(attempts[0].state,'UNKNOWN');
    await assert.rejects(f.service().openOwnerOrder(f.input()),
      {code:'PILOT_SESSION_NOT_VERIFIED'});
+   assert.equal(f.count('POST','/v2/checkout/orders'),0);
+ }));
+
+test('withdrawn private A2A review during CREATE OAuth prevents Orders POST',
+ withFixture({},async f=>{
+   let reviewActive=true,inspections=0;
+   const review=async({quoteId,quoteVersion,amountMinor,currency})=>{
+     inspections++;
+     if(!reviewActive)throw Error('PRIVATE_REVIEW_WITHDRAWN');
+     return {status:'PRIVATE_UNATTESTED_A2A_REVIEW_ONLY',
+       provenanceClass:'PRIVATE_INJECTED_AGENT_NOT_ATTESTED',
+       quoteId,quoteVersion,amountMinor,currency,
+       paymentAuthorized:false,paypalOrderCreated:false,
+       paypalCapturePerformed:false,realProviderEvidence:false,
+       modelProviderAttested:false,agentCalls:'NOT_ATTESTED'};
+   };
+   f.state.onOauth=async()=>{
+     f.state.onOauth=null;
+     reviewActive=false;
+   };
+   const result=await f.service(undefined,review).openOwnerOrder(f.input());
+   assert.equal(result.status,'UNKNOWN');
+   assert.equal(result.retryPost,false);
+   assert.ok(inspections>=4);
+   assert.equal(f.count('POST','/v1/oauth2/token'),1);
+   assert.equal(f.count('POST','/v2/checkout/orders'),0);
+   const attempts=await f.ledger.listAttempts('owner-pilot');
+   assert.equal(attempts.length,1);
+   assert.equal(attempts[0].state,'UNKNOWN');
+   await assert.rejects(f.service(undefined,review).openOwnerOrder(f.input()),
+     {code:'OWNER_PILOT_PRIVATE_A2A_REVIEW_REQUIRED'});
    assert.equal(f.count('POST','/v2/checkout/orders'),0);
  }));

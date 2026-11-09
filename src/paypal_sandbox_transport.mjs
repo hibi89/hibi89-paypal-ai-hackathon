@@ -212,7 +212,13 @@ export function createSandboxTransport(options={}) {
     claimValidated(quote,claim,'create');
     return createFromPlan(quote,planOrder(quote));
   }
-  async function createOwnerPilotOrderOnce(quote,claim,{publicOrigin,sessionProof}={}) {
+  async function createOwnerPilotOrderOnce(quote,claim,{
+    publicOrigin,sessionProof,beforeProviderPost
+  }={}) {
+    // This callback is injected by trusted owner-only server code, not an
+    // HTTP body. A withdrawn A2A review must block Orders POST after OAuth.
+    reject(beforeProviderPost!==undefined&&typeof beforeProviderPost!=='function',
+      'CREATE_PREPOST_GUARD_INVALID');
     // A caller-supplied {verified:true} JSON is NEVER adequate payment authority.
     // Resolve an opaque, DB-backed branded proof; expiration/revocation are
     // rechecked before any token fetch or Orders POST.
@@ -220,7 +226,11 @@ export function createSandboxTransport(options={}) {
     claimValidated(quote,claim,'create');
     const plan=planOwnerSandboxPilotCheckout({quote,publicOrigin,serverSession});
     return createFromPlan(quote,plan,{
-      beforeProviderPost:()=>boundServerSessionFromStoredProof(sessionProof,quote)
+      beforeProviderPost:async()=>{
+        boundServerSessionFromStoredProof(sessionProof,quote);
+        if(beforeProviderPost)await beforeProviderPost();
+        boundServerSessionFromStoredProof(sessionProof,quote);
+      }
     });
   }
   async function captureOnce(quote,claim,orderId,{beforeProviderPost}={}) {
