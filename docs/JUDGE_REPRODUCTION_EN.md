@@ -6,6 +6,26 @@
 
 The latest WORKNOVA code and this guide live on the public `lead/paypal` branch. The public default `main@5243295f` continues to display the previous Proofline-branded README, even though it contains an earlier runnable two-part synthetic prototype and MIT root LICENSE. **For WORKNOVA review, explicitly `git switch lead/paypal`** as shown below. Do not claim that PR #28 released the later WORKNOVA code to `main`, or that a local offline judge demo verifies live PayPal/Gemini. The official contest rules do **not** require the current source to be on the default branch: the project is public, the repository license is detected as MIT, and the current lead branch includes the judge setup steps. Updating `main` is optional source maintenance requiring separate owner approval, not a prerequisite for a Devpost entry. This does not waive the PayPal+AI functional project, video, or submission requirements.
 
+## New three-innovation commerce control plane (independent offline demo)
+
+The original two-part marketplace and its five lab skills still run with `npm run demo`. To try the **additional** integrated three-innovation flow in a separate local browser, stop that server and run:
+
+```bash
+npm run demo:commerce
+```
+
+Open the new printed `http://127.0.0.1:PORT` URL on the same computer. The Chromium test is `tests/browser_commerce_control_plane_e2e.py` (linked in GitHub CI as of 2026-11-09, **PASS not claimed until actual runner result is inspected**).
+
+1. **Delegate:** click `Delegate a $500 mission`. This is a revocable 15-minute fictional policy token with a USD 300 per-trade limit and scope allowlists. **No card is issued.**
+2. **Negotiate:** click `AI buyer ↔ AI seller negotiation` to see the bounded deterministic USD 360 offer → USD 300 agreement. **No actual LLM or payment runs.**
+3. **Evidence:** click `Synthetic GitHub PR / CI evidence`. PR #42 and green checks are fictional fixtures, moving delivery to `READY_FOR_HUMAN_SETTLEMENT_REVIEW`, **not escrow or release of funds**.
+4. **Second deal:** click `Autonomous software deal` to record a fictional USD 200 → USD 160 license negotiation. **No checkout.**
+5. **Human gate:** click `Consent & financial safety gate`. Confirm USD 460 of *local policy-only reservations*, USD 40 unspent, real provider transactions **0**, and `HUMAN_PROVIDER_AUTH_REQUIRED`. The original marketplace has no shared production payment authority with this new separate dashboard.
+
+Also test `TEST $600 BLOCK`, `REVOKE MANDATE`, `RESET`, replaying a completed step, page reload, and `RUN ENTIRE OFFLINE JOURNEY`. The real backend uses a temporary SQLite file and same-origin CSRF on loopback; it makes no PayPal/Gemini/GitHub provider request. Do not expose this demo server publicly or describe the two scenes as an authenticated unified payment platform.
+
+**Current private media:** Two 170-second v2 review candidates have a 45–75s *editorial reconstruction* of this technology, preserving the source film outside that section. The competitor-named American Express private cut is **not cleared for official public use**. The separate safer cut, authentic pinned Kokoro narration, bilingual subtitle sync, full owner audio/visual review, approved public YouTube video and Devpost receipt remain outstanding. Static film reconstruction is not actual Chromium browser-click footage.
+
 ## Optional read-only private v4o ZIP verification (not submission)
 
 If the owner already has the private, original `WORKNOVA_v4o_PRIVATE_Review_Kit_20261109.zip` downloaded locally, it can now be inspected directly **without extracting it** or copying media into the repository:
