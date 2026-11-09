@@ -334,7 +334,10 @@ test('sandbox evidence CLI reports SAME NEW local quote rather than historical r
    apiKey:'FAKE_ONLY_NO_NETWORK',quoteBinding:binding,
    sandboxPilotSellerFloorMinor:150,ownerAuthorized:true,
    freeTierConfirmed:true,operatorConfirmed:true,
-   fetchImpl:async(_url,_init)=>reply('ACCEPT',150)
+   fetchImpl:(()=>{
+    let call=0;
+    return async(_url,_init)=>reply(++call===1?'OFFER':'ACCEPT',150);
+   })()
   });
   const granted=app.delegate({key:'once',maxMinor:150,expiresInMinutes:15});
   const outcome=await app.negotiate({key:'once',consentId:granted.consentId});
