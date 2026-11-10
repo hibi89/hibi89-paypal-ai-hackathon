@@ -105,7 +105,11 @@ export function createOwnerSandbox150TrustedCheckoutHost({
   // Sandbox OAuth GET is awaiting. Durable checkout proof alone is NOT a
   // substitute for a still-authenticated independent buyer principal.
   const requireLivePrincipal=async req=>{
+   // Closing the host withdraws authority even for an already pending
+   // owner-consent callback. Never send a Sandbox POST after shutdown.
+   alive();
    const current=await checkoutHost.resolveTrustedCheckout(issued.handle);
+   alive();
    if(current.quoteId!==qid||
       current.actorId!==proposedQuoteBinding.actorId||
       current.merchantId!==proposedQuoteBinding.merchantId||
@@ -169,6 +173,7 @@ export function createOwnerSandbox150TrustedCheckoutHost({
   // Orders/Capture POSTs already have separate before-POST proof checks and
   // persistent one-shot claims. Do not retry a POST if this final check fails.
   const after=await checkoutHost.resolveTrustedCheckout(entry.inner);
+  alive();
   if(after.quoteId!==scope.quoteId||after.actorId!==scope.actorId||
      after.merchantId!==scope.merchantId)
    fail('OWNER_150_TRUSTED_CHECKOUT_SCOPE_CHANGED');
