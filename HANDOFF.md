@@ -4,6 +4,13 @@
 > **Final product: 95% provisional; RELEASE HOLD.** Offline tests are not proof of real Google, OIDC or PayPal transactions.
 > This file restores the previously empty root HANDOFF.md. For historical decisions use STATUS.md and docs/WORKNOVA_OWNER_FINAL_BATCH_20261110.md.
 
+## Step58 latest verified checkpoint (2026-11-10 KST)
+
+- **Code:** `9aeaa312c01ef52d21569ad16d72d9617b67bc3b`, `lead/paypal`. Closing the private authenticated checkout host during an awaited approval now blocks subsequent Sandbox POST. The post-operation read path also checks host liveness. Test uses a separate isolated session DB so the original one-shot checkout issuance is preserved.
+- **Test:** [full offline CI #42757240551](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42757240551) SUCCESS, Node **1,311 PASS / 0 FAIL / 0 CANCELLED / 0 SKIPPED**, full Chromium and Windows first-run SUCCESS; [offline MVP smoke #42757240521](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42757240521) SUCCESS. Optional separate Wrangler D1/default-speed video jobs skipped. First fixture failed 1/1,311 from repeated one-shot session issuance; isolated fixture fixed it, without weakening product safety.
+- **Completion:** 95% provisional; RELEASE HOLD. Real OIDC/Google/merchant proof and exact-approved $1.50 sandbox purchase still need discrete owner permission and a genuine external observation. No external API calls or money movement, no Production or video publication. Rollback to pre-step HEAD `f9b27304a8b0373e0a4d61e5a913cced25878d17`. Documentation-only follow-up is not a new tested SHA.
+- **Next:** Only perform real-model/identity/merchant/Sandbox proof after privately provisioned owner environment and separate approvals. Do not auto-retry ambiguous PayPal POST. Then finalize original 170s film, under-3-minute public YouTube and English Devpost submission; official deadline **2026-11-13 05:00 KST**. Preserve source/media/owner SQLite and historical receipts.
+
 ## Mandatory cross-session synchronization
 
 Resume trigger (verbatim): **페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈**.
