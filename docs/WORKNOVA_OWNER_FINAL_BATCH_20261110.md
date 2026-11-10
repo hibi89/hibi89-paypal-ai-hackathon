@@ -4,7 +4,7 @@
 
 ## Source of truth and safety baseline
 
-- Repository `hibi89/hibi89-paypal-ai-hackathon`, branch `lead/paypal`; latest verified source `fbfb439754bd69a269868777e5bdfc05c68adfe1`; full offline contract CI #42728540532 SUCCESS: Node 1,293/1,293, Chromium + Windows SUCCESS; smoke #42728540462 SUCCESS. Vercel/Production N/A. Full product 95/100 **provisional**, not real provider proof.
+- Repository `hibi89/hibi89-paypal-ai-hackathon`, branch `lead/paypal`; latest verified source `dc8684c1718f1be5edb5c6a26d0716b08c342e06`; full offline contract CI #42731895693 SUCCESS: Node 1,293/1,293, Chromium + Windows SUCCESS; smoke #42731895727 SUCCESS. Vercel/Production N/A. Full product 95/100 **provisional**, not real provider proof.
 - Steps 37–43 implement safe isolated private new quote preparation, bounded fictional-role A2A pilot, independent exact quote approval, read-only same-quote evidence, host-only authenticated cross-part review and PayPal Sandbox coordination. **Historical** `mvp:operator` uses quote `operator_mvp_01` in a different DB; it MUST NOT be used or described as a new same-quote payment completion.
 - The new `src/owner_sandbox_150_trusted_checkout_host.mjs` is a **host-only library**, not an owner-operable production website or CLI. It requires a real independently verified buyer principal, approved merchant, authorizer callbacks, pinned HTTPS callback origin and Sandbox-only transport. CI used injected fake identity/provider responses. Do not substitute `{verified:true}`, browser request body flags or a fake WeakMap principal as a real authenticated buyer.
 
@@ -37,6 +37,12 @@
 - Source `fbfb439754bd69a269868777e5bdfc05c68adfe1`, [full CI #42728540532](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42728540532) **Node 1,293/1,293 PASS, Chromium/Windows SUCCESS**, [smoke #42728540462](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42728540462) SUCCESS.
 - New host-only integration `src/signed_oidc_sandbox150_bridge.mjs`: independent signed OIDC buyer / existing consent-bound injected A2A / exact human-approved USD $1.50 quote / explicit checkout, review and payment authorizers / simulated PayPal Sandbox CREATE→GET→buyer APPROVED→CAPTURE→GET are **one tested offline flow**.
 - The injected provider transports and synthetic JWT signing keys are local test fixtures. Still NOT a real external OIDC, Google Gemini, or PayPal transaction; not a hosted application, public YouTube, or official Devpost submission. The owner-session steps below remain required. Do not share secrets or claim real checkout.
+
+## Step50 — trusted OIDC host authenticity and exact-origin guard (OFFLINE CI VERIFIED)
+
+- Source `dc8684c1718f1be5edb5c6a26d0716b08c342e06`, [full CI #42731895693](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42731895693) **Node 1,293/1,293 PASS, Chromium/Windows SUCCESS**, [smoke #42731895727](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42731895727) SUCCESS.
+- Private OIDC host must be a *real* `createPrivateOidcMarketplaceHost` instance, branded by an internal WeakMap, and match the checkout's exact HTTPS origin. Forged duck-typed OIDC objects, copies of authentic host methods, and authentic mismatched-origin host objects cannot be used by the integrated checkout bridge. No public listener, merchant authorization, Gemini/PayPal real HTTP or owner private data activity.
+- This improves offline security only; real provider account/merchant proof and owner approval remain gating steps.
 
 ## One consolidated owner session — only when specifically authorized
 
