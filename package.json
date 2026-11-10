@@ -38,6 +38,7 @@
     "mvp:two-part:evidence": "node --experimental-sqlite scripts/check_owner_two_part_evidence.mjs",
     "mvp:reconcile:get": "node --experimental-sqlite scripts/reconcile_existing_sandbox_get_only.mjs",
     "pilot:150:reconcile:get": "node --experimental-sqlite scripts/reconcile_owner_sandbox150_get_only.mjs",
+    "pilot:150:backend:gate": "node --experimental-sqlite scripts/check_owner_sandbox150_backend_gate.mjs",
     "submission:fields:local": "node scripts/build_devpost_form_fields.mjs",
     "worknova:video:capture:check": "node scripts/worknova_owner_video.mjs capture --check",
     "worknova:video:capture:part1": "node scripts/worknova_owner_video.mjs capture --part 1",
