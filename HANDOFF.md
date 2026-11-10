@@ -4,6 +4,17 @@
 > **Final product: 95% provisional; RELEASE HOLD.** Offline tests are not proof of real Google, OIDC or PayPal transactions.
 > This file restores the previously empty root HANDOFF.md. For historical decisions use STATUS.md and docs/WORKNOVA_OWNER_FINAL_BATCH_20261110.md.
 
+## Mandatory cross-session synchronization
+
+Resume trigger (verbatim): **페이팔 해커톤 깃헙 레포지토리 확인하고 작업하셈**.
+<!-- resume: day_id=PPL-D15; percent=20; est_h=5; safe_h=10 -->
+
+At every task resume, confirm the latest GitHub `lead/paypal` HEAD and follow
+`docs/RESUME_SYNC_CONTRACT.md` (including `expected_sha` guarded writes).
+This *active-day checkpoint 20%* belongs to the historical 18-day ledger,
+and must not be confused with the independently provisional whole-product
+95% completion estimate. Preserve the existing progress ledger.
+
 ## 1. Goal, confirmed scope and stack
 Part 1: freelancer matching, quotes, human approval, roles/contracts/milestones and PayPal Sandbox checkout. Part 2: A2A buyer/seller, scoped delegation, gift finder, subscription churn saver and invoice/dispute copilot. Backend is Node ESM, SQLite/D1-oriented adapters, pinned OIDC, injected Gemini and PayPal Sandbox-only transport. Keep video/public submission last. No LIVE payments, unsolicited network, paid APIs, or public release.
 
