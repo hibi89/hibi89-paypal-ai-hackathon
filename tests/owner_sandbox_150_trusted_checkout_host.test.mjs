@@ -33,7 +33,7 @@ test('host-only A2A review + private checkout requires verified login and separa
  const part2Filename=join(privateDirectory,'part2-owner-sandbox150.sqlite');
  const budgetFilename=join(privateDirectory,'part2-owner-sandbox150-quota.sqlite');
  const quoteScope={filename,actorId:actor,merchantId:merchant,quoteId};
- let lab,ledger,sessions,host;
+ let lab,ledger,sessions,host,closingSessions;
  const calls=[],remote={buyerApproved:false,captured:false};
  try{
   await prepareFreshOwnerSandbox150Quote({privateDirectory,
@@ -115,8 +115,8 @@ test('host-only A2A review + private checkout requires verified login and separa
     throw Error('DISALLOWED_INJECTED_PROVIDER_PATH');
    }
   });
-  const makeHost=()=>createOwnerSandbox150TrustedCheckoutHost({
-   ledger,sessionStore:sessions,transport,
+  const makeHost=(providedSessions=sessions)=>createOwnerSandbox150TrustedCheckoutHost({
+   ledger,sessionStore:providedSessions,transport,
    innovationStore:lab,
    reviewFilename:join(root,'review.sqlite'),
    proposedQuoteBinding:binding,publicOrigin:'https://checkout.example.org',
@@ -175,13 +175,21 @@ test('host-only A2A review + private checkout requires verified login and separa
   });
   assert.equal(calls.length,0);
   loginActive=true;
-  // Terminating the trusted host from inside the asynchronous human
-  // authorization must cancel any pending Orders POST despite true consent.
+  // Terminating a separately isolated trusted host from inside human consent
+  // must cancel its pending Orders POST, without issuing the same quote's
+  // one-shot session twice in the original durable checkout store.
+  const originalHost=host;
+  closingSessions=createPilotCheckoutSessionStore({
+   filename:join(root,'closing-checkout-session.sqlite')
+  });
+  host=makeHost(closingSessions);
+  const abortedHandle=(await host.issueCheckout({
+   hostLoginHandle:loginHandle
+  })).serverHandle;
   closeDuringPaymentConsent=true;
-  await assert.rejects(host.openOwnerOrder(handle));
+  await assert.rejects(host.openOwnerOrder(abortedHandle));
   assert.equal(calls.length,0);
-  host=makeHost();
-  handle=(await host.issueCheckout({hostLoginHandle:loginHandle})).serverHandle;
+  host=originalHost;
   const open=await host.openOwnerOrder(handle);
   assert.equal(open.status,'BUYER_APPROVAL_PENDING');
   assert.equal(calls.filter(x=>x.pathname==='/v2/checkout/orders'&&
@@ -272,7 +280,7 @@ test('host-only A2A review + private checkout requires verified login and separa
     await ledger.get(quoteId),'capture')
   )).state,'PAID');
  }finally{
-  host?.close();sessions?.close();ledger?.close();lab?.close();
+  host?.close();closingSessions?.close();sessions?.close();ledger?.close();lab?.close();
   rmSync(root,{recursive:true,force:true});
  }
 });
