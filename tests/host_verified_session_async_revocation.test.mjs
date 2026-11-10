@@ -95,3 +95,77 @@ test('CSRF rotation during an awaited membership lookup invalidates old write ca
  assert.equal(fresh.verified,true);
  assert.equal(fresh.csrfToken,rotated.csrfToken);
 }));
+
+test('binding awaits during permission revocation: stale session cannot resolve',async()=>{
+ const dir=mkdtempSync(join(tmpdir(),'worknova-binding-membership-race-'));
+ let store;
+ let currentMember={...member};
+ let bindingGate=null;
+ try{
+  store=createHostVerifiedSessionStore({
+   filename:join(dir,'sessions.sqlite'),expectedOrigin:origin,
+   trustedIssuer:issuer,trustedAudience:audience,now:()=>now,
+   verifyExternalIdentity:async proof=>({
+    verified:true,issuer,audience,subject:'external-buyer',
+    assertionId:proof.id,authenticatedAtMs:now
+   }),
+   lookupExternalAccount:async()=>({
+    actorId:member.actorId,merchantId:member.merchantId
+   }),
+   getMembership:async()=>({...currentMember}),
+   isAccountBindingActive:async()=>{
+    const paused=bindingGate;
+    if(paused){bindingGate=null;paused.enter();await paused.hold}
+    return true; // Previously validated subject binding; membership has changed.
+   }
+  });
+  const issued=await store.establish({id:'ASYNC_MEMBERSHIP_RACE_01'});
+  const req=new Request(origin+'/api/auth/oidc/session',{
+   headers:{cookie:issued.setCookie.split(';')[0]}
+  });
+  assert.equal((await store.resolveRequest(req)).verified,true);
+  let enter,release;
+  const entered=new Promise(resolve=>{enter=resolve});
+  const hold=new Promise(resolve=>{release=resolve});
+  bindingGate={enter,hold};
+  const pending=store.resolveRequest(req);
+  await entered;
+  currentMember={...member,active:false,revision:2};
+  release();
+  assert.equal(await pending,null);
+  assert.equal(await store.resolveRequest(req),null);
+ }finally{store?.close();rmSync(dir,{recursive:true,force:true})}
+});
+
+test('final subject binding lookup awaits while membership revoked: no new cookie',async()=>{
+ const dir=mkdtempSync(join(tmpdir(),'worknova-session-issuance-race-'));
+ let store,currentMember={...member};
+ let bindingCalls=0,enter,release;
+ const entered=new Promise(resolve=>{enter=resolve});
+ const hold=new Promise(resolve=>{release=resolve});
+ try{
+  store=createHostVerifiedSessionStore({
+   filename:join(dir,'sessions.sqlite'),expectedOrigin:origin,
+   trustedIssuer:issuer,trustedAudience:audience,now:()=>now,
+   verifyExternalIdentity:async proof=>({
+    verified:true,issuer,audience,subject:'external-buyer',
+    assertionId:proof.id,authenticatedAtMs:now
+   }),
+   lookupExternalAccount:async()=>{
+    if(++bindingCalls===2){enter();await hold}
+    return {actorId:member.actorId,merchantId:member.merchantId};
+   },
+   getMembership:async()=>({...currentMember})
+  });
+  const pending=store.establish({id:'ASYNC_MEMBERSHIP_ISSUE_RACE_01'});
+  await entered;
+  currentMember={...member,active:false,revision:2};
+  release();
+  await assert.rejects(pending,{code:'HOST_CURRENT_MEMBERSHIP_REQUIRED'});
+  assert.equal(bindingCalls,2);
+  // The denied callback must not consume its assertion or mint any bearer.
+  currentMember={...member};
+  const issued=await store.establish({id:'ASYNC_MEMBERSHIP_ISSUE_RACE_01'});
+  assert.equal(issued.paymentAuthorized,false);
+ }finally{store?.close();rmSync(dir,{recursive:true,force:true})}
+});

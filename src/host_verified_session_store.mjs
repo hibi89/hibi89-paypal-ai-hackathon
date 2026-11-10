@@ -105,9 +105,16 @@ export function createHostVerifiedSessionStore({
     if(valid!==true)return null;
    }catch{return null}
   }
-  // Membership/subject lookups can suspend while another request logs out
-  // or rotates CSRF. The original row snapshot cannot remain authority.
-  // Recheck the durable session immediately before returning it.
+  // Account-binding checks can suspend after the FIRST membership read.
+  // A tenant/role suspension during that await must fail closed even if the
+  // local session row and previously checked subject mapping did not change.
+  let freshMember;
+  try{freshMember=await getMembership(row.actor_id)}catch{return null}
+  if(!safeMember(freshMember,{actorId:row.actor_id,merchantId:row.merchant_id})||
+     freshMember.role!==row.role||freshMember.revision!==row.revision)
+   return null;
+  // Membership/subject lookups can also suspend while another request logs
+  // out or rotates CSRF. Re-read the durable session as the final boundary.
   available();
   const latest=fetchRow(token);
   if(!latest||latest.revoked!==0||latest.expires_at_ms<=clock(now)||
@@ -161,6 +168,17 @@ export function createHostVerifiedSessionStore({
   if(freshBinding?.actorId!==bound.actorId||
      freshBinding?.merchantId!==bound.merchantId)
    reject('HOST_PREPROVISIONED_ACCOUNT_REQUIRED');
+  // The second binding lookup may itself await while the trusted account
+  // membership is suspended or reassigned. Do not mint a bearer based on a
+  // stale membership snapshot from before this asynchronous trust check.
+  let finalMember;
+  try{finalMember=await getMembership(bound.actorId)}
+  catch{reject('HOST_CURRENT_MEMBERSHIP_REQUIRED')}
+  available();
+  if(!safeMember(finalMember,bound)||
+     finalMember.role!==member.role||
+     finalMember.revision!==member.revision)
+   reject('HOST_CURRENT_MEMBERSHIP_REQUIRED');
   const token=randomBytes(32).toString('base64url');
   const csrf=randomBytes(32).toString('base64url');
   const assertion=sha(evidence.issuer+'\0'+evidence.subject+'\0'+evidence.assertionId);
