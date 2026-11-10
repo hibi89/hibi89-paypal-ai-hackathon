@@ -105,7 +105,18 @@ export function createHostVerifiedSessionStore({
     if(valid!==true)return null;
    }catch{return null}
   }
-  return {row,member};
+  // Membership/subject lookups can suspend while another request logs out
+  // or rotates CSRF. The original row snapshot cannot remain authority.
+  // Recheck the durable session immediately before returning it.
+  available();
+  const latest=fetchRow(token);
+  if(!latest||latest.revoked!==0||latest.expires_at_ms<=clock(now)||
+     latest.assertion_sha256!==row.assertion_sha256||
+     latest.actor_id!==row.actor_id||latest.merchant_id!==row.merchant_id||
+     latest.role!==row.role||latest.revision!==row.revision||
+     latest.csrf_sha256!==row.csrf_sha256)
+   return null;
+  return {row:latest,member};
  };
  async function establish(externalAssertion){
   available();
