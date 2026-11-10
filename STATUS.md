@@ -1,3 +1,10 @@
+## 2026-11-11 KST — Step60 verified OIDC host shutdown race; 1,312 Node PASS, release HOLD
+
+- Code `lead/paypal@49d9ab462e4d93f14d54d3814b24d775e06e956e`: awaited private OIDC callback/marketplace result now rechecks host liveness before returning after close; added deterministic callback-shutdown regression. No new provider route, token, permission or payment behavior.
+- [Offline MVP smoke #42907115261](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42907115261) SUCCESS, Node **1,312/1,312 PASS**, 0 FAIL/CANCELLED/SKIPPED; [full offline contract #42907115499](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42907115499) SUCCESS with Chromium and Windows first-run PASS. Optional Wrangler D1/default-speed film jobs SKIPPED.
+- **95% provisional / RELEASE HOLD.** Actual external OIDC buyer/merchant proof, Google Gemini same $1.50 A2A, distinct buyer PayPal Sandbox CREATE/APPROVED/CAPTURE/GET, Production/YouTube/Devpost NOT VERIFIED. No real API calls or money movement. `main`, media originals and private SQLite unchanged.
+- Next: consolidate owner-authorized identity and account configuration plus explicitly approved one-shot real provider flow; UNKNOWN POST → manual GET only. This docs update follows tested code; not a new tested product SHA.
+
 ## 2026-11-11 KST — Step59 exact-SHA CI VERIFIED, release remains HOLD
 
 - Tested code `lead/paypal@176da92e0c476948eeb2824c6786c917cd2d729f`: trusted-host shutdown now blocks pending A2A review/checkout session issuance in addition to payment pre-POST; [full offline CI #42759082162](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42759082162) SUCCESS, Node **1,311/1,311 PASS**, 0 FAIL/CANCELLED/SKIPPED, Chromium + Windows SUCCESS; [MVP smoke #42759081937](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42759081937) SUCCESS. Wrangler D1/default-speed film jobs skipped.

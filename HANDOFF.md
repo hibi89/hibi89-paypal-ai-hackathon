@@ -1,8 +1,15 @@
-# WORKNOVA / PayPal lead — active handoff (2026-11-10 KST)
+# WORKNOVA / PayPal lead — active handoff (2026-11-11 KST)
 
 > Operational source: `hibi89/hibi89-paypal-ai-hackathon` · `lead/paypal`.
 > **Final product: 95% provisional; RELEASE HOLD.** Offline tests are not proof of real Google, OIDC or PayPal transactions.
 > This file restores the previously empty root HANDOFF.md. For historical decisions use STATUS.md and docs/WORKNOVA_OWNER_FINAL_BATCH_20261110.md.
+
+## Step60 verified OIDC shutdown boundary — 2026-11-11 KST
+
+- **Tested code:** `49d9ab462e4d93f14d54d3814b24d775e06e956e` on `lead/paypal`. `src/private_oidc_marketplace_host.mjs` now checks trusted-host liveness **after** awaiting an authentication callback or protected router response. A callback that returns after operator shutdown cannot escape as a late identity/session/cookie response. One deterministic injected OIDC callback-shutdown regression was added; no external IdP or PayPal request.
+- **Exact source CI:** [Offline MVP smoke #42907115261](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42907115261) **SUCCESS**, Node **1,312/1,312 PASS, 0 FAIL / CANCELLED / SKIPPED**. [Full offline payment-contract CI #42907115499](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42907115499) **SUCCESS**, full Chromium and Windows first-run SUCCESS; optional independent Wrangler D1 and default-speed synthetic film jobs SKIPPED, not verified.
+- **Completion unchanged:** 95% **provisional / RELEASE HOLD**. Offline fixture tests are not a genuine OIDC/Google/Gemini/PayPal merchant/provider proof. Real same-approved USD $1.50 Gemini A2A → independently authenticated buyer → single Sandbox Orders CREATE → buyer APPROVED → human-authorized CAPTURE → fresh GET remains owner-gated and UNVERIFIED. No real provider API call, payment, production deployment, video publication or Devpost submission was done.
+- **Next P0:** retain one consolidated owner session for real OIDC and merchant account setup, private credentials, explicit separate Gemini/Orders/Capture consent. On uncertain POST perform manual GET-only recovery; NEVER issue automatic retry. Film originals, owner SQLite, old receipts, source `main` preserved. This handoff is a documentation-only follow-up to the tested code SHA.
 
 ## Step59 CI checkpoint — verified 2026-11-11 KST (no new provider operations)
 
