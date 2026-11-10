@@ -128,7 +128,16 @@ export function createPreprovisionedOidcAccountBindings({
    WHERE subject_hmac=? AND issuer=? AND revoked_at_ms IS NULL`)
    .get(hashed,trustedIssuer);
   if(!row||!await bindingMember(row.actor_id,row.merchant_id))return null;
-  return Object.freeze({actorId:row.actor_id,merchantId:row.merchant_id});
+  // The membership lookup can await a separate SQLite/host operation. A
+  // trusted operator may revoke the subject during that await. Never return
+  // a pre-revocation snapshot as an active external identity binding.
+  active();
+  const latest=db.prepare(`SELECT actor_id,merchant_id FROM oidc_account_bindings
+   WHERE subject_hmac=? AND issuer=? AND revoked_at_ms IS NULL`)
+   .get(hashed,trustedIssuer);
+  if(!latest||latest.actor_id!==row.actor_id||
+     latest.merchant_id!==row.merchant_id)return null;
+  return Object.freeze({actorId:latest.actor_id,merchantId:latest.merchant_id});
  }
  // Session-time revocation lookup: a previously verified, immutable
  // subject->actor binding must still be active at EVERY request. A revoked

@@ -149,6 +149,18 @@ export function createHostVerifiedSessionStore({
   }
   if(!safeMember(member,bound))
    reject('HOST_CURRENT_MEMBERSHIP_REQUIRED');
+  // A subject binding can be revoked while getMembership() awaits. Recheck
+  // the exact verified subject immediately before inserting a bearer session;
+  // a revoked account must not receive a fresh usable or dead-end cookie.
+  let freshBinding;
+  try{
+   freshBinding=await lookupExternalAccount(Object.freeze({
+    issuer:evidence.issuer,subject:evidence.subject
+   }));
+  }catch{reject('HOST_PREPROVISIONED_ACCOUNT_REQUIRED')}
+  if(freshBinding?.actorId!==bound.actorId||
+     freshBinding?.merchantId!==bound.merchantId)
+   reject('HOST_PREPROVISIONED_ACCOUNT_REQUIRED');
   const token=randomBytes(32).toString('base64url');
   const csrf=randomBytes(32).toString('base64url');
   const assertion=sha(evidence.issuer+'\0'+evidence.subject+'\0'+evidence.assertionId);
