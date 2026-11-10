@@ -92,8 +92,8 @@ test('untrusted provider proof or malformed child output fails closed without ex
 test('actual local reviewer and draft preflight runs without provider access or publishing',()=>{
  const run=spawnSync(process.execPath,[cmd,'--check'],{
   encoding:'utf8',timeout:90000,maxBuffer:1024*1024,
-  env:{...process.env,PAYPAL_SANDBOX_CLIENT_SECRET:'PRIVATE_SHOULD_NOT_APPEAR',
-   GEMINI_API_KEY:'PRIVATE_SHOULD_NOT_APPEAR'}
+  env:{...process.env,PAYPAL_SANDBOX_CLIENT_SECRET:'MOCK_ONLY',
+   GEMINI_API_KEY:'MOCK_ONLY'}
  });
  assert.equal(run.status,0,run.stderr+'\n'+run.stdout);
  const parsed=JSON.parse(run.stdout);
@@ -103,7 +103,7 @@ test('actual local reviewer and draft preflight runs without provider access or 
  assert.equal(parsed.publicVideoApproved,false);
  assert.equal(parsed.devpostSubmitted,false);
  assert.equal(parsed.providerNetworkCallsByThisCommand,0);
- assert.doesNotMatch(run.stdout,/PRIVATE_SHOULD_NOT_APPEAR/);
+ assert.doesNotMatch(run.stdout,/MOCK_ONLY/);
  assert.equal(parsed.checks[3].id,'HOSTING_RELEASE_HOLD');
  assert.equal(parsed.checks[4].id,'SUBMISSION_RELEASE_HOLD');
 });
