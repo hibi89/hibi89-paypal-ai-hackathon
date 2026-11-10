@@ -5,6 +5,7 @@ import {DatabaseSync} from 'node:sqlite';
 import {createHash} from 'node:crypto';
 import {lstatSync,realpathSync} from 'node:fs';
 import {isAbsolute,join,relative,resolve,sep} from 'node:path';
+import {pathToFileURL} from 'node:url';
 
 const ID=/^[A-Za-z0-9_-]{1,64}$/;
 const MERCHANT=/^[A-Za-z0-9]{13}$/;
@@ -72,17 +73,38 @@ export function inspectOwnerProposedA2AQuote({
   actual=realpathSync(filename);
   if(!outside(actual,resolve(cwd)))throw Error('INSIDE_REPO');
  }catch{fail('OWNER_A2A_EXISTING_OUTSIDE_REPO_LEDGER_REQUIRED');}
+ // Opening a closed WAL-mode SQLite file with ordinary readOnly can itself
+ // leave -wal/-shm files even after close. If no pending WAL frames exist,
+ // use a truly immutable read; retain live WAL-aware reads when an existing
+ // writer has already committed uncheckpointed frames (legacy behavior).
+ // Never discard non-empty WAL, rewrite it, or hide concurrent changes.
+ let pendingWal=false;
+ try{pendingWal=lstatSync(actual+'-wal').size>0}
+ catch(e){if(e?.code!=='ENOENT')fail('OWNER_A2A_LOCAL_LEDGER_READ_FAILED')}
  let db;
  let row,used;
  try{
-  db=new DatabaseSync(actual,{readOnly:true});
+  db=new DatabaseSync(pendingWal?actual:
+   pathToFileURL(actual).href+'?immutable=1',{readOnly:true});
+  db.exec('PRAGMA query_only=ON');
   row=db.prepare('SELECT id,owner_id,merchant_id,version,currency,status,'+
    'scope_text,ai_suggested_minor,approval_actor,approval_version,'+
    'approval_amount_minor,rejection_reason FROM quotes WHERE id=?')
    .get(quoteId);
   used=db.prepare('SELECT 1 AS found FROM payment_attempts WHERE quote_id=? LIMIT 1')
    .get(quoteId);
- }catch{fail('OWNER_A2A_LOCAL_LEDGER_READ_FAILED');}
+  // An immutable snapshot must not be accepted if a concurrent writer
+  // started appending WAL frames after the initial filesystem check.
+  if(!pendingWal){
+   try{
+    if(lstatSync(actual+'-wal').size>0)
+     fail('OWNER_A2A_LEDGER_CHANGED_DURING_INSPECTION');
+   }catch(e){if(e?.code!=='ENOENT')throw e}
+  }
+ }catch(e){
+  if(e?.code==='OWNER_A2A_LEDGER_CHANGED_DURING_INSPECTION')throw e;
+  fail('OWNER_A2A_LOCAL_LEDGER_READ_FAILED');
+ }
  finally{try{db?.close()}catch{}}
  if(!row||row.id!==quoteId||row.owner_id!==actorId||
     row.merchant_id!==merchantId||row.currency!=='USD'||
