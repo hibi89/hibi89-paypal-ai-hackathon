@@ -264,3 +264,27 @@ test('operator subject-binding revocation invalidates already-issued session and
   assert.equal(host.publicListenerEnabled,false);
   assert.equal(host.paymentAuthorized,false);
  }));
+
+test('OIDC host shutdown during pending callback cannot return a late session response',fixture(
+ async({host,activate,bind,options,ledger})=>{
+  await activate();await bind();
+  const started=await host.handle(http('/api/auth/oidc/start',{method:'POST'}));
+  assert.equal(started.status,303);
+  const state=new URL(started.headers.get('location')).searchParams.get('state');
+  const loginCookie=started.headers.getSetCookie()[0].split(';')[0];
+  let exchanges=0;
+  // An asynchronous IdP transport may return after the operator closes the
+  // trusted host. No response (even an error response) may escape that host.
+  options.codeTransport.exchange=async ticket=>{
+   exchanges++;
+   host.close();
+   return {idToken:signed(ticket.expectedNonce,'ext-buyer'),
+    expectedNonce:ticket.expectedNonce};
+  };
+  await assert.rejects(host.handle(http(
+   '/api/auth/oidc/callback?code=FAKE_AUTH_CODE_123456789&state='+state,
+   {cookie:loginCookie}
+  )),{code:'PRIVATE_OIDC_HOST_CLOSED'});
+  assert.equal(exchanges,1);
+  assert.equal((await ledger.listAttempts('projectA')).length,0);
+ }));

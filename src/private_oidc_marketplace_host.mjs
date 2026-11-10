@@ -178,7 +178,12 @@ export function createPrivateOidcMarketplaceHost({
     if(!trusted)return unavailable();
    }
   }
-  return adapter.handle(request);
+  // A pending external code exchange or marketplace read may finish after
+  // the trusted operator shuts down this host. Never return a late identity,
+  // session cookie, or protected response from an already closed host.
+  const answer=await adapter.handle(request);
+  alive();
+  return answer;
  }
  function inspectReadiness({clientSecretPresent=false}={}){
   alive();
