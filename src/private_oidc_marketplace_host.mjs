@@ -13,6 +13,13 @@ import {createMarketplaceHttpsRequestAdapter} from './marketplace_https_request_
 import {inspectOidcHostReadiness} from './oidc_host_readiness_preflight.mjs';
 
 const fail=code=>{const e=new Error(code);e.code=code;throw e};
+// Exact factory origin is bound to the returned object in an unforgeable
+// module-private WeakMap. No caller-supplied mode string grants host authority.
+const PRIVATE_HOST_ORIGINS=new WeakMap();
+export function isPrivateOidcHostForOrigin(host,origin){
+ return host!==null&&typeof host==='object'&&
+    typeof origin==='string'&&PRIVATE_HOST_ORIGINS.get(host)===origin;
+}
 const hostPolicy=Object.freeze({
  trustsUnverifiedForwardedHeaders:false,
  automaticallyReplaysPaymentPost:false,
@@ -191,7 +198,7 @@ export function createPrivateOidcMarketplaceHost({
   closed=true;
   for(const x of connected.reverse())x.close();
  }
- return Object.freeze({
+ const privateHost=Object.freeze({
   handle,inspectReadiness,close,
   beginCheckoutLogin,resolveCheckoutPrincipal,
   // These methods must remain reachable by trusted operator processes only.
@@ -205,4 +212,6 @@ export function createPrivateOidcMarketplaceHost({
   paypalCaptureEnabled:false,merchantOwnershipVerified:false,
   paymentAuthorized:false
  });
+ PRIVATE_HOST_ORIGINS.set(privateHost,publicOrigin);
+ return privateHost;
 }

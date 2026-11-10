@@ -5,6 +5,8 @@
 // Do not use in an untrusted browser; handles remain opaque server capabilities.
 import {createOwnerSandbox150TrustedCheckoutHost}
  from './owner_sandbox_150_trusted_checkout_host.mjs';
+import {isPrivateOidcHostForOrigin}
+ from './private_oidc_marketplace_host.mjs';
 
 const reject=code=>{const error=new Error(code);error.code=code;throw error;};
 export function createSignedOidcSandbox150Bridge({
@@ -12,7 +14,8 @@ export function createSignedOidcSandbox150Bridge({
  proposedQuoteBinding,publicOrigin,authorizeReviewLink,
  authorizeSessionIssue,authorizePaymentAction,now=Date.now
 }={}){
- if(oidcHost?.mode!=='PRIVATE_COMPOSED_OIDC_MARKETPLACE_HOST_NO_LISTENER'||
+ if(!isPrivateOidcHostForOrigin(oidcHost,publicOrigin)||
+    oidcHost?.mode!=='PRIVATE_COMPOSED_OIDC_MARKETPLACE_HOST_NO_LISTENER'||
     oidcHost.publicListenerEnabled!==false||
     typeof oidcHost.beginCheckoutLogin!=='function'||
     typeof oidcHost.resolveCheckoutPrincipal!=='function'||

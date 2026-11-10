@@ -33,11 +33,18 @@ const model=(action,amountMinor)=>new Response(JSON.stringify({
   action,amountMinor
  })}]}}],usageMetadata:{totalTokenCount:40}
 }),{status:200,headers:{'content-type':'application/json'}});
-test('bridge refuses mock identity hosts and cannot instantiate payment without private host',()=>{
- assert.throws(()=>createSignedOidcSandbox150Bridge({oidcHost:{
+test('bridge rejects unbranded fake OIDC host even if it perfectly mimics all method names',()=>{
+ const forged={
   mode:'PRIVATE_COMPOSED_OIDC_MARKETPLACE_HOST_NO_LISTENER',
-  publicListenerEnabled:false
- }}),{code:'SIGNED_OIDC_CHECKOUT_HOST_REQUIRED'});
+  publicListenerEnabled:false,
+  beginCheckoutLogin:async()=>({}),
+  resolveCheckoutPrincipal:async()=>({verified:true,
+   actorId:actor,merchantId:merchant,role:'buyer'}),
+  handle:async()=>new Response(null,{status:404})
+ };
+ assert.throws(()=>createSignedOidcSandbox150Bridge({
+  oidcHost:forged,publicOrigin:origin
+ }),{code:'SIGNED_OIDC_CHECKOUT_HOST_REQUIRED'});
 });
 test('signed OIDC buyer -> injected A2A -> exact approved $1.50 -> private CREATE/GET/APPROVED/CAPTURE/GET; revoke denies replay',async()=>{
  const root=mkdtempSync(join(tmpdir(),'worknova-signed-full-'));
@@ -121,6 +128,14 @@ test('signed OIDC buyer -> injected A2A -> exact approved $1.50 -> private CREAT
   ));
   assert.equal(authenticated.status,200);
   const sessionCookie=authenticated.headers.getSetCookie()[0].split(';')[0];
+  // Even a real signed OIDC host must not issue checkout authority for
+  // another HTTPS origin; cookie scope / callback merchant identity differ.
+  assert.throws(()=>createSignedOidcSandbox150Bridge({
+   oidcHost:oidc,publicOrigin:'https://other-checkout.example.org'
+  }),{code:'SIGNED_OIDC_CHECKOUT_HOST_REQUIRED'});
+  assert.throws(()=>createSignedOidcSandbox150Bridge({
+   oidcHost:{...oidc},publicOrigin:origin
+  }),{code:'SIGNED_OIDC_CHECKOUT_HOST_REQUIRED'});
   let allowLink=false,allowIssue=false,allowPayment=false;
   let actionChecks=0,linkChecks=0,sessionChecks=0;
   const transport=createSandboxTransport({
