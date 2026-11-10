@@ -4,6 +4,14 @@
 > **Final product: 95% provisional; RELEASE HOLD.** Offline tests are not proof of real Google, OIDC or PayPal transactions.
 > This file restores the previously empty root HANDOFF.md. For historical decisions use STATUS.md and docs/WORKNOVA_OWNER_FINAL_BATCH_20261110.md.
 
+## Step61 verified membership revocation race — 2026-11-11 KST
+
+- **Code SHA:** `ab21d67dd699ba7e3c8365abb489d613201ef687` on `lead/paypal`, `src/host_verified_session_store.mjs`. The OIDC-backed session verifier now reloads the current tenant membership **after** awaited external subject-binding validation. Session issuance likewise re-reads active member role/revision **after** the last awaited subject lookup, before minting any bearer cookie. This closes two authorization time-of-check/time-of-use windows where suspension could occur while external binding verification was still in flight. No identity source, payment policy or PayPal SDK behavior was changed.
+- **Two new deterministic regressions:** `tests/host_verified_session_async_revocation.test.mjs` suspends binding lookup while revoking the member and proves the old session cannot resolve and a new session cannot be minted until active membership is valid again.
+- **CI exact-source:** [offline MVP smoke #42908264016](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42908264016) **SUCCESS**, Node **1,314/1,314 PASS**, 0 FAIL/CANCELLED/SKIPPED. [Full payment-contract #42908263928](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42908263928) **SUCCESS** including Chromium, Windows first-run and one-command judge reproduction; isolated Wrangler D1 / default-speed film jobs SKIPPED.
+- **Scope/gates:** product completion **95% provisional**, **RELEASE HOLD**. This is a closed-loop offline authorization regression, not actual issuer/merchant verification or same-quote real Gemini and PayPal Sandbox proof. No accounts changed, no real provider requests, no payment, no production deployment, public video or Devpost submission.
+- **Next P0:** authorize and privately configure a real external buyer OIDC identity, seller merchant and Free-tier Gemini; then human-approve the same-quote USD $1.50 model and PayPal Sandbox stages individually. UNKNOWN provider POST must never auto-retry; recover by GET only. Preserve owner SQLite and media originals, current `main` branch unchanged.
+
 ## Step60 verified OIDC shutdown boundary — 2026-11-11 KST
 
 - **Tested code:** `49d9ab462e4d93f14d54d3814b24d775e06e956e` on `lead/paypal`. `src/private_oidc_marketplace_host.mjs` now checks trusted-host liveness **after** awaiting an authentication callback or protected router response. A callback that returns after operator shutdown cannot escape as a late identity/session/cookie response. One deterministic injected OIDC callback-shutdown regression was added; no external IdP or PayPal request.

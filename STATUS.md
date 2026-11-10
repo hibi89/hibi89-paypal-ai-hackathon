@@ -1,3 +1,10 @@
+## 2026-11-11 KST — Step61 OIDC membership revocation races fixed, Node 1,314 PASS / RELEASE HOLD
+
+- **Source code `lead/paypal@ab21d67dd699ba7e3c8365abb489d613201ef687`:** `host_verified_session_store.mjs` rechecks active actor/merchant membership and role/revision after awaited binding validation before returning an existing session; similarly rechecks active membership after the final subject mapping lookup before issuing a new session cookie. Two deterministic revocation-vs-lookup tests added; no API provider call or payment.
+- **Verified CI:** [MVP Smoke #42908264016](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42908264016) **SUCCESS**, Node **1,314/1,314 PASS**, 0 fail/skip/cancel. [Full payment-contract #42908263928](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42908263928) **SUCCESS**, Chromium + Windows + reviewer reproduction PASS; optional Wrangler D1/default-speed video jobs SKIPPED.
+- **Release remains HOLD, 95% provisional:** real OIDC issuer/buyer, PayPal merchant/business ↔ distinct Sandbox personal buyer, genuine Gemini same-approved $1.50 A2A → Sandbox CREATE/GET/APPROVED/CAPTURE/GET, Production, public video, Devpost still UNVERIFIED. Preserve `main`, originals and private SQLite.
+- **Next:** prepare consolidated owner-approved real account and provider proof. No repeat provider POST on ambiguous outcome. Docs-only handoff does not supersede tested code SHA.
+
 ## 2026-11-11 KST — Step60 verified OIDC host shutdown race; 1,312 Node PASS, release HOLD
 
 - Code `lead/paypal@49d9ab462e4d93f14d54d3814b24d775e06e956e`: awaited private OIDC callback/marketplace result now rechecks host liveness before returning after close; added deterministic callback-shutdown regression. No new provider route, token, permission or payment behavior.
