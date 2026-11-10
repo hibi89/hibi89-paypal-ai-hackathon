@@ -4,7 +4,14 @@
 > **Final product: 95% provisional; RELEASE HOLD.** Offline tests are not proof of real Google, OIDC or PayPal transactions.
 > This file restores the previously empty root HANDOFF.md. For historical decisions use STATUS.md and docs/WORKNOVA_OWNER_FINAL_BATCH_20261110.md.
 
-## Step58 latest verified checkpoint (2026-11-10 KST)
+## Step59 CI checkpoint — verified 2026-11-11 KST (no new provider operations)
+
+- **Latest source SHA:** `176da92e0c476948eeb2824c6786c917cd2d729f` on `lead/paypal`. Host close now cancels already-awaiting private A2A review authorization, buyer identity resolution, and checkout bearer issuance before authority escapes; Step58 previously stopped pending Sandbox payment. Original one-shot payment/SQLite policies and source media remain unchanged.
+- **Exact-source CI SUCCESS:** [offline payment contract #42759082162](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42759082162) — Node **1,311/1,311 PASS, 0 FAIL / 0 CANCELLED / 0 SKIPPED**, Chromium and Windows first-run SUCCESS; [offline MVP smoke #42759081937](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42759081937) SUCCESS. Optional Wrangler D1 and default-speed video jobs skipped.
+- **95% provisional, RELEASE HOLD unchanged.** The tests use locally injected PayPal/OIDC/Gemini substitutes. Independent buyer OIDC, real Gemini $1.50 A2A, merchant/account proof, same-quote Sandbox CREATE → buyer APPROVED → CAPTURE → fresh GET, public YouTube and Devpost are still NOT VERIFIED. No external calls, payments, deployment or submission occurred in this checkpoint.
+- **Next:** real owner-gated identity/merchant provisioning and separately approved Gemini/Sandbox one-shot proof; UNKNOWN provider POST → GET-only inspection, never retry. Then approve final 170-second film/public YouTube and English Devpost. `main` stays unchanged. This is a documentation checkpoint of **already tested** source, not new functional verification.
+
+## Step58 previous verified checkpoint (2026-11-10 KST)
 
 - **Code:** `9aeaa312c01ef52d21569ad16d72d9617b67bc3b`, `lead/paypal`. Closing the private authenticated checkout host during an awaited approval now blocks subsequent Sandbox POST. The post-operation read path also checks host liveness. Test uses a separate isolated session DB so the original one-shot checkout issuance is preserved.
 - **Test:** [full offline CI #42757240551](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42757240551) SUCCESS, Node **1,311 PASS / 0 FAIL / 0 CANCELLED / 0 SKIPPED**, full Chromium and Windows first-run SUCCESS; [offline MVP smoke #42757240521](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42757240521) SUCCESS. Optional separate Wrangler D1/default-speed video jobs skipped. First fixture failed 1/1,311 from repeated one-shot session issuance; isolated fixture fixed it, without weakening product safety.
