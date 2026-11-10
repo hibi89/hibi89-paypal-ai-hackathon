@@ -37,7 +37,7 @@ function checkedDir(dir,cwd){
   deny('OWNER150_A2A_READONLY_PRIVATE_DIRECTORY_REQUIRED');
  return real;
 }
-function checkedFile(file,expected,root,cwd){
+function checkedFile(file,expected,root,cwd,{readSnapshot=true}={}){
  if(typeof file!=='string'||!isAbsolute(file)||
     resolve(file)!==resolve(join(root,expected)))
   deny('OWNER150_A2A_READONLY_EXACT_PATH_REQUIRED');
@@ -47,7 +47,11 @@ function checkedFile(file,expected,root,cwd){
  if(!stat.isFile()||stat.isSymbolicLink()||stat.size>64*1024*1024||
     !outside(real,cwd)||resolve(real)!==resolve(file))
   deny('OWNER150_A2A_READONLY_FILE_UNSAFE');
- noSidecars(file);
+ // The approved Part1 quote is owned by the active checkout ledger, which
+ // legitimately keeps its own SQLite WAL/SHM while serving requests. We only
+ // validate that file's fixed path; do not read it via an immutable snapshot.
+ // The Part2 evidence and quota files *are* read here and must be quiescent.
+ if(readSnapshot)noSidecars(file);
  return file;
 }
 // Completely inert creation: validated config only. No env access, credentials,
@@ -89,7 +93,7 @@ export function createOwnerSandbox150ReadOnlyA2AStore({
   if(actor!==scope.actor||merchant!==scope.merchant)
    deny('OWNER150_A2A_READONLY_ACTOR_SCOPE_REQUIRED');
   const base=checkedDir(privateDirectory,cwd);
-  checkedFile(quoteScope.filename,fileNames.quote,base,cwd);
+  checkedFile(quoteScope.filename,fileNames.quote,base,cwd,{readSnapshot:false});
   const part=checkedFile(part2Filename,fileNames.part2,base,cwd);
   const budget=checkedFile(budgetFilename,fileNames.budget,base,cwd);
   const proof=inspectPrivatePart2A2A({
