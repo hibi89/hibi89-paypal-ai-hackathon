@@ -73,6 +73,7 @@ test('host-only A2A review + private checkout requires verified login and separa
   const badHandle=Object.freeze(Object.create(null));
   let loginActive=true,allowLink=false,allowSession=false,allowPay=false;
   let revokeDuringPaymentConsent=false,closeDuringPaymentConsent=false;
+ let closeDuringReviewConsent=false,closeDuringSessionConsent=false;
   let revokeDuringOAuth=false,revokeDuringBuyerGet=false;
   let authCalls=0,sessionApprovals=0,reviewApprovals=0;
   const identities=new WeakMap([[loginHandle,{verified:true,
@@ -121,8 +122,20 @@ test('host-only A2A review + private checkout requires verified login and separa
    reviewFilename:join(root,'review.sqlite'),
    proposedQuoteBinding:binding,publicOrigin:'https://checkout.example.org',
    resolveTrustedPrincipal:async h=>loginActive?identities.get(h):null,
-   authorizeReviewLink:async()=>{reviewApprovals++;return allowLink},
-   authorizeSessionIssue:async()=>{sessionApprovals++;return allowSession},
+   authorizeReviewLink:async()=>{
+    reviewApprovals++;
+    if(closeDuringReviewConsent){
+     closeDuringReviewConsent=false;host.close();
+    }
+    return allowLink;
+   },
+   authorizeSessionIssue:async()=>{
+    sessionApprovals++;
+    if(closeDuringSessionConsent){
+     closeDuringSessionConsent=false;host.close();
+    }
+    return allowSession;
+   },
    authorizePaymentAction:async x=>{authCalls++;
     assert.equal(x.hostLoginHandle,loginHandle);
     assert.equal(x.amountMinor,150);
@@ -147,6 +160,18 @@ test('host-only A2A review + private checkout requires verified login and separa
   }),{code:'CROSS_PART_EXPLICIT_REVIEW_REQUIRED'});
   assert.equal(reviewApprovals,1);
   allowLink=true;
+  // An already-pending owner's review consent must not commit a link
+  // when its private trusted host was shut down during the await.
+  const preReviewHost=host;
+  host=makeHost();
+  closeDuringReviewConsent=true;
+  await assert.rejects(host.linkReview({
+   hostLoginHandle:loginHandle,consentId:consent.consentId
+  }),{code:'OWNER_150_TRUSTED_HOST_CLOSED'});
+  host=preReviewHost;
+  await assert.rejects(host.inspectReview({hostLoginHandle:loginHandle}),{
+   code:'CROSS_PART_LINK_UNAVAILABLE'
+  });
   const linked=await host.linkReview({
    hostLoginHandle:loginHandle,consentId:consent.consentId
   });
@@ -157,6 +182,21 @@ test('host-only A2A review + private checkout requires verified login and separa
   });
   assert.equal(sessionApprovals,1);
   allowSession=true;
+  // A closed host cannot persist a checkout bearer even if its formerly
+  // trusted human session approval callback returned true.
+  const preIssueHost=host;
+  let canceledIssueCalls=0;
+  host=makeHost({
+   issue:args=>{canceledIssueCalls++;return sessions.issue(args)},
+   verify:args=>sessions.verify(args),
+   revoke:args=>sessions.revoke(args)
+  });
+  closeDuringSessionConsent=true;
+  await assert.rejects(host.issueCheckout({hostLoginHandle:loginHandle}),{
+   code:'OWNER_150_TRUSTED_HOST_CLOSED'
+  });
+  assert.equal(canceledIssueCalls,0);
+  host=preIssueHost;
   const issued=await host.issueCheckout({hostLoginHandle:loginHandle});
   let handle=issued.serverHandle;
   await assert.rejects(host.openOwnerOrder({}),{

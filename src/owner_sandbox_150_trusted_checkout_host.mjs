@@ -47,8 +47,18 @@ export function createOwnerSandbox150TrustedCheckoutHost({
   fail('OWNER_150_TRUSTED_HTTPS_ORIGIN_REQUIRED');
  // Host callback is the ONLY identity source. Request JSON, cookies, query
  // booleans, and synthetic local user strings never cross this boundary.
+ // Close is an immediate authorization cancellation, including for callbacks
+ // that were already awaiting independent buyer/owner decisions.
+ let closed=false;
+ const alive=()=>{if(closed)fail('OWNER_150_TRUSTED_HOST_CLOSED')};
+ const livePrincipal=async handle=>{
+  alive();
+  const principal=await resolveTrustedPrincipal(handle);
+  alive();
+  return principal;
+ };
  const identityPolicy=createMarketplaceIdentityPolicy({
-  resolveTrustedSession:resolveTrustedPrincipal,
+  resolveTrustedSession:livePrincipal,
   resolveMembership:async actorId=>ledger.getLocalMember(actorId)
  });
  const bridge=createCrossPartReviewBridge({
@@ -56,14 +66,31 @@ export function createOwnerSandbox150TrustedCheckoutHost({
   allowUnattestedPrivateA2A:true,
   trustedSandboxPilotSellerFloorMinor:150,
   trustedProposedQuoteBinding:proposedQuoteBinding,
-  authorizeLink:authorizeReviewLink
+  authorizeLink:async detail=>{
+   alive();
+   const allowed=await authorizeReviewLink(detail);
+   alive();
+   return allowed;
+  }
  });
  const checkoutHost=createOwnerCheckoutHostSession({
-  ledger,sessionStore,resolveTrustedPrincipal,authorizeSessionIssue
+  ledger,resolveTrustedPrincipal:livePrincipal,
+  // The last SQLite issue() operation is synchronous. Checking liveness
+  // right there prevents token creation if the host closed during one of the
+  // preceding asynchronous principal/quote validation steps.
+  sessionStore:Object.freeze({
+   issue:args=>{alive();return sessionStore.issue(args)},
+   verify:args=>sessionStore.verify(args),
+   revoke:args=>sessionStore.revoke(args)
+  }),
+  authorizeSessionIssue:async detail=>{
+   alive();
+   const allowed=await authorizeSessionIssue(detail);
+   alive();
+   return allowed;
+  }
  });
  const handles=new WeakMap();
- let closed=false;
- const alive=()=>{if(closed)fail('OWNER_150_TRUSTED_HOST_CLOSED')};
  const qid=proposedQuoteBinding.quoteId;
  async function linkReview({hostLoginHandle,consentId}={}){
   alive();
@@ -71,13 +98,16 @@ export function createOwnerSandbox150TrustedCheckoutHost({
      !ID.test(consentId??''))fail('OWNER_150_TRUSTED_REVIEW_SCOPE_REQUIRED');
   const review=await bridge.link({hostHandle:hostLoginHandle,
    quoteId:qid,consentId});
+  alive();
   if(review.status!=='PRIVATE_UNATTESTED_A2A_REVIEW_ONLY'||
      review.paymentAuthorized!==false)fail('OWNER_150_REVIEW_NOT_VERIFIED');
   return review;
  }
  async function inspectReview({hostLoginHandle}={}){
   alive();
-  return bridge.inspect({hostHandle:hostLoginHandle,quoteId:qid});
+  const review=await bridge.inspect({hostHandle:hostLoginHandle,quoteId:qid});
+  alive();
+  return review;
  }
  // A verified buyer may withdraw the durable Part1/Part2 review at any time
  // while the link is active. Withdrawal does NOT cancel a prior capture or
@@ -87,6 +117,7 @@ export function createOwnerSandbox150TrustedCheckoutHost({
   if(!hostLoginHandle||typeof hostLoginHandle!=='object')
    fail('OWNER_150_TRUSTED_REVIEW_SCOPE_REQUIRED');
   const revoked=await bridge.revoke({hostHandle:hostLoginHandle,quoteId:qid});
+  alive();
   if(revoked?.status!=='SYNTHETIC_REVIEW_REVOKED'||
      revoked.paymentAuthorized!==false)
    fail('OWNER_150_REVIEW_REVOKE_NOT_CONFIRMED');
@@ -96,10 +127,12 @@ export function createOwnerSandbox150TrustedCheckoutHost({
   alive();
   // Do not mint a checkout bearer before independently authorized A2A link.
   const review=await inspectReview({hostLoginHandle});
+  alive();
   if(review.status!=='PRIVATE_UNATTESTED_A2A_REVIEW_ONLY'||
      review.quoteId!==qid||review.amountMinor!==150||
      review.paymentAuthorized!==false)fail('OWNER_150_REVIEW_NOT_VERIFIED');
   const issued=await checkoutHost.issue({hostLoginHandle,quoteId:qid});
+  alive();
   const serverHandle=Object.freeze(Object.create(null));
   // A login can be withdrawn while the owner authorization dialog or
   // Sandbox OAuth GET is awaiting. Durable checkout proof alone is NOT a
@@ -156,6 +189,7 @@ export function createOwnerSandbox150TrustedCheckoutHost({
   // Validates private WeakMap bearer, host principal, membership and TTL
   // on EVERY operation. The coordinator rechecks the private A2A link.
   const scope=await checkoutHost.resolveTrustedCheckout(entry.inner);
+  alive();
   if(scope.quoteId!==qid||
      scope.actorId!==proposedQuoteBinding.actorId||
      scope.merchantId!==proposedQuoteBinding.merchantId)
@@ -184,6 +218,7 @@ export function createOwnerSandbox150TrustedCheckoutHost({
   const entry=handles.get(serverHandle);
   if(!entry)fail('OWNER_150_TRUSTED_CHECKOUT_HANDLE_REQUIRED');
   await checkoutHost.revoke(entry.inner);
+  alive();
   handles.delete(serverHandle);
   return Object.freeze({status:'LOCAL_CHECKOUT_REVOKED',
    paymentAuthorized:false,providerCalls:0});
