@@ -219,7 +219,7 @@ test('CLI dry-run and no-TTY use zero local file and zero provider HTTP',()=>{
  const cli=fileURLToPath(new URL('../scripts/reconcile_owner_sandbox150_get_only.mjs',import.meta.url));
  const run=flags=>spawnSync(process.execPath,['--experimental-sqlite',cli,...flags],{
   encoding:'utf8',timeout:15000,env:{...process.env,
-   PAYPAL_SANDBOX_CLIENT_SECRET:'PRIVATE_SECRET_SHOULD_NOT_APPEAR'}
+   PAYPAL_SANDBOX_CLIENT_SECRET:'FAKE_PRIVATE_SENTINEL'}
  });
  for(const [flags,status] of [
   [[], 'DRY_RUN_NO_FILE_NO_NETWORK'],
@@ -233,6 +233,6 @@ test('CLI dry-run and no-TTY use zero local file and zero provider HTTP',()=>{
   assert.equal(report.networkRequests,0);
   assert.equal(report.fileWrites,0);
   assert.equal(report.paymentPostPermitted,false);
-  assert.doesNotMatch(done.stdout,/PRIVATE_SECRET_SHOULD_NOT_APPEAR/);
+  assert.doesNotMatch(done.stdout,/FAKE_PRIVATE_SENTINEL/);
  }
 });
