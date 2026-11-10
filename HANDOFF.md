@@ -4,6 +4,13 @@
 > **Final product: 95% provisional; RELEASE HOLD.** Offline tests are not proof of real Google, OIDC or PayPal transactions.
 > This file restores the previously empty root HANDOFF.md. For historical decisions use STATUS.md and docs/WORKNOVA_OWNER_FINAL_BATCH_20261110.md.
 
+## Step64 synced editorial caption review — 2026-11-11 KST
+
+- **New private candidate:** `WORKNOVA_PRIVATE_FILM_SYNCED_EN_KO_REVIEW_20261111.zip`, 17,625,799 bytes, SHA-256 `0a364bac57471574aeccf676e1923622a240484448510b85946db0eec44eff50`. Original 170.000s MP4 preserved with exact SHA `2cd375dde37c914c62f8c92906f09919943c37da055a7cc1793c11471af74dc6`. Includes separate EN/KO 24-cue time-mapped **editorial summaries**, SRT/VTT drafts, scene CSV/QA, and new HTML below-video bilingual synced text. This is NOT speech transcription. A small caption-only ZIP is also generated; the files are **chat-only downloadable**, not uploaded to public GitHub, private Library, YouTube or Devpost. See `docs/review/WORKNOVA_CAPTION_EDITORIAL_REVIEW_20261111.md`.
+- **Actual tests:** SRT 0–170s with no gaps/overlaps, <=22 chars/second; unchanged MP4 SHA verified; 15 original chapter controls/8 unchecked owner gates retained; new inline JavaScript `node --check` PASS and no new browser fetch. **Browser playback/seek/unified caption synchronization UNVERIFIED**. Temporary FFmpeg subtitle-overlay test at 117s obscured buyer/seller UI, so no burn-in. Real narration transcription, full listening/subtitle sync, music/brand rights, owner visual release approval outstanding.
+- **Source stays as previously verified:** `lead/paypal@5c4f0ba5b5cd5042caea99e3853acd7ab692a7a3`, Node 1,319/1,319 PASS and Chromium/Windows via CI #42910551828. No app source change, no new source CI; this is a documentation-only checkpoint. No provider requests, real order, payment, public uploads or submission.
+- **Critical owner gate unchanged:** real buyer OIDC + approved merchant binding + Gemini A2A + PayPal Sandbox same-approved $1.50 proof and final audible/rights approval, public YouTube and Devpost receipt remain **UNVERIFIED**; 95% provisional / RELEASE HOLD. Deadline Nov 13 05:00 KST; do not auto-retry any ambiguous provider POST.
+
 ## Step63 private film technical QC — 2026-11-11 KST
 
 - **Highest-urgency release evidence review**: the previously stored Library `WORKNOVA_170s_ACTUAL_BROWSER_PRIVATE_REVIEW_20261109.mp4` was inspected; 170.000s, 1920×1080, 25fps, 4,250 frames, H.264 and AAC stereo 48kHz; full ffmpeg decode PASS, no black interval ≥0.1s. MP4 hash `2cd375dde37c914c62f8c92906f09919943c37da055a7cc1793c11471af74dc6` exactly matches the prior private Step27 archive. The 23s short near-black is part of a brief fade; original untouched.

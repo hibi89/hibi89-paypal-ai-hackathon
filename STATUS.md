@@ -1,3 +1,9 @@
+## 2026-11-11 KST — Step64 synced caption review ZIP, no provider/payment/publication, RELEASE HOLD
+
+- Private synced caption owner review ZIP `WORKNOVA_PRIVATE_FILM_SYNCED_EN_KO_REVIEW_20261111.zip` (17,625,799 bytes, SHA-256 `0a364bac57471574aeccf676e1923622a240484448510b85946db0eec44eff50`) produced as **chat-only** download. Source MP4 unchanged SHA `2cd375dde37c914c62f8c92906f09919943c37da055a7cc1793c11471af74dc6`. Added 24 scene-editorial EN/KO captions and below-video synced review area while retaining 15 chapter controls and 8 unchecked checks. Small optional caption-only ZIP SHA `d3bad3542b1c9f513ec05a3005c2673f9b6c8484b7727511b1a57e978233c81f`. Neither ZIP published to GitHub or Library.
+- Mechanical SRT timing 0–170s PASS/no overlaps; `node --check` JS PASS; 15 chapter/8 box static checks PASS. Direct FFmpeg burned subtitles at 117s obscured important UI, so **no rendered burn-in**. Actual browser user playback, audio transcription/listening, legal rights/subtitle alignment **UNVERIFIED**. All provider/payment/upload/Devpost actions **NOT PERFORMED**.
+- Source code unchanged from `lead/paypal@5c4f0ba5b5cd5042caea99e3853acd7ab692a7a3` (previous 1,319/1,319 Node + Chromium/Windows CI #42910551828). 95% provisional / RELEASE HOLD, real authenticated OIDC/Gemini/Sandbox same quote and final public video/submission still gated. See `docs/review/WORKNOVA_CAPTION_EDITORIAL_REVIEW_20261111.md`. This docs-only commit is not a new CI validation.
+
 ## 2026-11-11 KST — Step63 private 170s video QC and release-blocker audit; 95% provisional, RELEASE HOLD
 
 - Independently checked Library private 170s actual-Chromium-insert MP4: H.264 1920×1080 25fps 4,250 frames, AAC stereo, full decode PASS, no black intervals ≥0.1s, byte-identical to archived private Step27 MP4. SHA-256 `2cd375dde37c914c62f8c92906f09919943c37da055a7cc1793c11471af74dc6`. Original source/master preserved.
