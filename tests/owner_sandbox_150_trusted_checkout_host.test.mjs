@@ -72,7 +72,7 @@ test('host-only A2A review + private checkout requires verified login and separa
   const loginHandle=Object.freeze(Object.create(null));
   const badHandle=Object.freeze(Object.create(null));
   let loginActive=true,allowLink=false,allowSession=false,allowPay=false;
-  let revokeDuringPaymentConsent=false;
+  let revokeDuringPaymentConsent=false,closeDuringPaymentConsent=false;
   let revokeDuringOAuth=false,revokeDuringBuyerGet=false;
   let authCalls=0,sessionApprovals=0,reviewApprovals=0;
   const identities=new WeakMap([[loginHandle,{verified:true,
@@ -115,7 +115,7 @@ test('host-only A2A review + private checkout requires verified login and separa
     throw Error('DISALLOWED_INJECTED_PROVIDER_PATH');
    }
   });
-  host=createOwnerSandbox150TrustedCheckoutHost({
+  const makeHost=()=>createOwnerSandbox150TrustedCheckoutHost({
    ledger,sessionStore:sessions,transport,
    innovationStore:lab,
    reviewFilename:join(root,'review.sqlite'),
@@ -126,12 +126,16 @@ test('host-only A2A review + private checkout requires verified login and separa
    authorizePaymentAction:async x=>{authCalls++;
     assert.equal(x.hostLoginHandle,loginHandle);
     assert.equal(x.amountMinor,150);
+    if(closeDuringPaymentConsent){
+     closeDuringPaymentConsent=false;host.close();
+    }
     if(revokeDuringPaymentConsent){
      revokeDuringPaymentConsent=false;
      loginActive=false;
     }
     return allowPay}
   });
+  host=makeHost();
   assert.equal(host.publicHttpEnabled,false);
   await assert.rejects(host.linkReview({
    hostLoginHandle:badHandle,consentId:consent.consentId
@@ -154,7 +158,7 @@ test('host-only A2A review + private checkout requires verified login and separa
   assert.equal(sessionApprovals,1);
   allowSession=true;
   const issued=await host.issueCheckout({hostLoginHandle:loginHandle});
-  const handle=issued.serverHandle;
+  let handle=issued.serverHandle;
   await assert.rejects(host.openOwnerOrder({}),{
    code:'OWNER_150_TRUSTED_CHECKOUT_HANDLE_REQUIRED'
   });
@@ -171,6 +175,13 @@ test('host-only A2A review + private checkout requires verified login and separa
   });
   assert.equal(calls.length,0);
   loginActive=true;
+  // Terminating the trusted host from inside the asynchronous human
+  // authorization must cancel any pending Orders POST despite true consent.
+  closeDuringPaymentConsent=true;
+  await assert.rejects(host.openOwnerOrder(handle));
+  assert.equal(calls.length,0);
+  host=makeHost();
+  handle=(await host.issueCheckout({hostLoginHandle:loginHandle})).serverHandle;
   const open=await host.openOwnerOrder(handle);
   assert.equal(open.status,'BUYER_APPROVAL_PENDING');
   assert.equal(calls.filter(x=>x.pathname==='/v2/checkout/orders'&&
