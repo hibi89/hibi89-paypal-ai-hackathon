@@ -312,3 +312,57 @@ test('rejects edited offline A2A transcript and a self-rehashed policy forgery',
   assert.equal(f.bridge.paypalProviderCalls,0);
  });
 });
+
+test('inspect rejects review withdrawn while cross-part evidence lookup is suspended',async()=>{
+ await using(async f=>{
+  await f.bridge.link(args(f));
+  let reads=0,signal,release;
+  const entered=new Promise(resolve=>{signal=resolve});
+  const held=new Promise(resolve=>{release=resolve});
+  const delayedLedger={get:async id=>{
+   const quote=await f.ledger.get(id);
+   if(++reads===2){signal();await held}
+   return quote;
+  }};
+  const inspecting=createCrossPartReviewBridge({
+   ...f.options,ledger:delayedLedger,filename:f.filename
+  });
+  try{
+   const pending=inspecting.inspect({hostHandle:f.hostHandle,quoteId});
+   await entered; // row was read, now second ledger lookup is awaiting
+   const revoked=await f.bridge.revoke({hostHandle:f.hostHandle,quoteId});
+   assert.equal(revoked.status,'SYNTHETIC_REVIEW_REVOKED');
+   release();
+   await assert.rejects(pending,rejectCode('CROSS_PART_LINK_UNAVAILABLE'));
+  }finally{release?.();inspecting.close()}
+ });
+});
+
+test('link cannot report success after withdrawal during post-persist verification',async()=>{
+ await using(async f=>{
+  let reads=0,signal,release;
+  const entered=new Promise(resolve=>{signal=resolve});
+  const held=new Promise(resolve=>{release=resolve});
+  const delayedLedger={get:async id=>{
+   const quote=await f.ledger.get(id);
+   if(++reads===3){signal();await held}
+   return quote;
+  }};
+  const linking=createCrossPartReviewBridge({
+   ...f.options,ledger:delayedLedger,filename:f.filename
+  });
+  try{
+   const pending=linking.link(args(f));
+   await entered; // association is persisted; final read is awaiting
+   assert.equal((await f.bridge.revoke({
+    hostHandle:f.hostHandle,quoteId
+   })).status,'SYNTHETIC_REVIEW_REVOKED');
+   release();
+   await assert.rejects(pending,rejectCode('CROSS_PART_LINK_REVOKED'));
+   await assert.rejects(f.bridge.inspect({hostHandle:f.hostHandle,quoteId}),
+    rejectCode('CROSS_PART_LINK_UNAVAILABLE'));
+   await assert.rejects(f.bridge.link(args(f)),
+    rejectCode('CROSS_PART_LINK_REVOKED'));
+  }finally{release?.();linking.close()}
+ });
+});

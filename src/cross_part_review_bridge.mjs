@@ -245,8 +245,17 @@ async function evidence(hostHandle,quoteId,consentId){
   const last=await evidence(hostHandle,quoteId,consentId);
   if(last.fingerprint!==after.fingerprint)
    fail('CROSS_PART_EVIDENCE_CHANGED');
-  // The final cross-DB recheck may itself await past the persisted TTL.
-  if(clock()>=row.expires_at)fail('CROSS_PART_LINK_EXPIRED');
+  // A buyer may revoke the review while the final external evidence read
+  // is suspended. The snapshot written before the await is not authoritative:
+  // check the durable review tombstone again before reporting link success.
+  const live=q("SELECT consent_id,review_fingerprint,expires_at,revoked_at "+
+   "FROM cross_part_review_links WHERE actor=? AND merchant=? AND quote_id=?")
+   .get(after.payload.actorId,after.payload.merchantId,quoteId);
+  if(!live||live.revoked_at!==null||
+     live.consent_id!==consentId||
+     live.review_fingerprint!==after.fingerprint)
+   fail('CROSS_PART_LINK_REVOKED');
+  if(clock()>=live.expires_at)fail('CROSS_PART_LINK_EXPIRED');
   return resultView({...after.payload,reviewFingerprint:after.fingerprint});
  }
  async function inspect({hostHandle,quoteId}={}){
@@ -267,12 +276,19 @@ async function evidence(hostHandle,quoteId,consentId){
   if(!row||row.revoked_at!==null||row.expires_at<=clock())
    fail('CROSS_PART_LINK_UNAVAILABLE');
   const current=await evidence(hostHandle,quoteId,row.consent_id);
-  // Evidence reads can await across DBs; expiration must be checked again
-  // after those reads, not only before them.
-  if(row.expires_at<=clock())fail('CROSS_PART_LINK_UNAVAILABLE');
-  if(row.review_fingerprint!==current.fingerprint||
-    row.quote_version!==current.payload.quoteVersion||
-    row.amount_minor!==current.payload.amountMinor)
+  // The evidence lookup can suspend while a second trusted process
+  // revokes this review. Read the persisted tombstone AFTER the await:
+  // checking the original snapshot's TTL is not sufficient.
+  const live=q("SELECT * FROM cross_part_review_links "+
+   "WHERE actor=? AND merchant=? AND quote_id=?").get(
+     grant.actorId,grant.merchantId,quoteId);
+  if(!live||live.revoked_at!==null||live.expires_at<=clock()||
+     live.consent_id!==row.consent_id)
+   fail('CROSS_PART_LINK_UNAVAILABLE');
+  if(live.review_fingerprint!==current.fingerprint||
+    live.review_fingerprint!==row.review_fingerprint||
+    live.quote_version!==current.payload.quoteVersion||
+    live.amount_minor!==current.payload.amountMinor)
    fail('CROSS_PART_LINK_STALE');
   return resultView({...current.payload,reviewFingerprint:row.review_fingerprint});
  }
