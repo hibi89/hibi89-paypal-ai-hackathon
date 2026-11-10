@@ -53,6 +53,7 @@ export function createSignedOidcSandbox150Bridge({
   beginBuyer,
   linkReview:forward('linkReview'),
   inspectReview:forward('inspectReview'),
+  revokeReview:forward('revokeReview'),
   issueCheckout:forward('issueCheckout'),
   openOwnerOrder:forward('openOwnerOrder'),
   refreshOwnerOrder:forward('refreshOwnerOrder'),

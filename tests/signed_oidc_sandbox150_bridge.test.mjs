@@ -246,6 +246,19 @@ test('signed OIDC buyer -> injected A2A -> exact approved $1.50 -> private CREAT
   assert.equal(modelCalls,2);
   assert.equal(authExchanges,1);
   assert.ok(actionChecks>=2&&linkChecks===2&&sessionChecks===2);
+  // The same authenticated signed OIDC buyer can withdraw the private
+  // A2A review without creating/capturing a second payment.
+  const countBeforeRevoke=calls.length;
+  await assert.rejects(bridge.revokeReview({
+   hostLoginHandle:{verified:true,actorId:actor}
+  }));
+  const withdrawn=await bridge.revokeReview({hostLoginHandle:login});
+  assert.equal(withdrawn.status,'SYNTHETIC_REVIEW_REVOKED');
+  assert.equal(withdrawn.paymentAuthorized,false);
+  await assert.rejects(bridge.refreshOwnerOrder(issued.serverHandle),{
+   code:'OWNER_PILOT_PRIVATE_A2A_REVIEW_REQUIRED'
+  });
+  assert.equal(calls.length,countBeforeRevoke);
   const count=calls.length;
   assert.equal((await oidc.operator.revokeIdentity({
    subject:'fake-external-buyer'

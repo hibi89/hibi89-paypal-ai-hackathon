@@ -79,6 +79,19 @@ export function createOwnerSandbox150TrustedCheckoutHost({
   alive();
   return bridge.inspect({hostHandle:hostLoginHandle,quoteId:qid});
  }
+ // A verified buyer may withdraw the durable Part1/Part2 review at any time
+ // while the link is active. Withdrawal does NOT cancel a prior capture or
+ // issue any PayPal POST. Future checkout operations recheck this tombstone.
+ async function revokeReview({hostLoginHandle}={}){
+  alive();
+  if(!hostLoginHandle||typeof hostLoginHandle!=='object')
+   fail('OWNER_150_TRUSTED_REVIEW_SCOPE_REQUIRED');
+  const revoked=await bridge.revoke({hostHandle:hostLoginHandle,quoteId:qid});
+  if(revoked?.status!=='SYNTHETIC_REVIEW_REVOKED'||
+     revoked.paymentAuthorized!==false)
+   fail('OWNER_150_REVIEW_REVOKE_NOT_CONFIRMED');
+  return revoked;
+ }
  async function issueCheckout({hostLoginHandle}={}){
   alive();
   // Do not mint a checkout bearer before independently authorized A2A link.
@@ -176,7 +189,7 @@ export function createOwnerSandbox150TrustedCheckoutHost({
   bridge.close();
  }
  return Object.freeze({
-  linkReview,inspectReview,issueCheckout,
+  linkReview,inspectReview,revokeReview,issueCheckout,
   openOwnerOrder:handle=>perform('open',handle),
   refreshOwnerOrder:handle=>perform('refresh',handle),
   captureOwnerOrder:handle=>perform('capture',handle),

@@ -219,6 +219,36 @@ test('host-only A2A review + private checkout requires verified login and separa
   assert.equal(calls.length,prev);
   assert.ok(authCalls>=3);
   assert.equal(modelCalls,2);
+
+  // A real authenticated BUYER can withdraw the saved cross-part review.
+  // Historical capture remains PAID, but no later GET/POST checkout action
+  // may use that link. Withdrawal never changes provider state or re-POSTs.
+  loginActive=true;
+  await assert.rejects(host.revokeReview({hostLoginHandle:badHandle}));
+  const beforeWithdrawalCalls=calls.length;
+  const withdrawn=await host.revokeReview({hostLoginHandle:loginHandle});
+  assert.equal(withdrawn.status,'SYNTHETIC_REVIEW_REVOKED');
+  assert.equal(withdrawn.paymentAuthorized,false);
+  assert.equal(calls.length,beforeWithdrawalCalls);
+  await assert.rejects(host.inspectReview({hostLoginHandle:loginHandle}),{
+   code:'CROSS_PART_LINK_UNAVAILABLE'
+  });
+  await assert.rejects(host.linkReview({
+   hostLoginHandle:loginHandle,consentId:consent.consentId
+  }),{code:'CROSS_PART_LINK_REVOKED'});
+  for(const action of [
+   host.openOwnerOrder,host.refreshOwnerOrder,host.captureOwnerOrder,
+   host.reconcileOwnerCapture
+  ])await assert.rejects(action(handle),{
+   code:'OWNER_PILOT_PRIVATE_A2A_REVIEW_REQUIRED'
+  });
+  assert.equal(calls.length,beforeWithdrawalCalls);
+  assert.equal(orderPosts(),1);
+  assert.equal(capturePosts(),1);
+  assert.equal((await ledger.getAttempt(
+   (await import('../src/payment_contract.mjs')).requestKey(
+    await ledger.get(quoteId),'capture')
+  )).state,'PAID');
  }finally{
   host?.close();sessions?.close();ledger?.close();lab?.close();
   rmSync(root,{recursive:true,force:true});
