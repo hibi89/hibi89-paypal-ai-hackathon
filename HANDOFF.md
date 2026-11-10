@@ -24,11 +24,15 @@ Part 1: freelancer matching, quotes, human approval, roles/contracts/milestones 
 - Step52 closes a race in `src/host_verified_session_store.mjs`: after awaited membership/binding checks, reread the durable session and reject revoked, expired, switched-scope or rotated-CSRF state. Added `tests/host_verified_session_async_revocation.test.mjs` (logout and CSRF rotation interleavings). This is a **security repair**, not real provider proof.
 - Compared stale in-memory lookup (fast but unsafe after async logout) versus a final SQLite row check (selected, no new dependencies or API spend). No existing app behavior intentionally removed.
 
+- Step53: OIDC subject binding lookup now rereads the immutable-subject SQLite row after awaited membership checks; session establishment revalidates the *exact signed external subject* after awaited membership before issuing any cookie. Two deterministic revoke-during-await tests prove both fail closed. Functional code SHA `92f74e8e24179e32225f2fc6753f82ca02bc9651`; verified CI SHA `9b02655e40f95ae96a62de0e7abda0b5fcfadc1a` (required root HANDOFF resume sync marker restored). No live provider calls or schema migration.
+
 ## 3. Exact tests, evidence and limits
 - Tested source commit: `61a3e654debeddb0861cc817105d37bf6d00d753`.
 - GitHub Actions [full contract #42737188749](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42737188749): SUCCESS, Node **1,303/1,303 PASS; 0 FAIL, 0 CANCELLED, 0 SKIPPED**; Windows first-run and offline Chromium journeys SUCCESS. Optional separate Wrangler D1 and default-speed video jobs SKIPPED by CI design.
 - [Offline MVP smoke #42737188702](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42737188702): SUCCESS.
 - Actual real merchant ownership, independent public IdP login, real same-quote Gemini/PayPal Sandbox create/approve/capture/GET, Cloudflare production, public video and Devpost receipt are **UNVERIFIED**.
+
+- Step53 [full payment-contract CI #42739447728](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42739447728): **SUCCESS, Node 1,305/1,305 PASS, 0 FAIL, 0 CANCELLED, 0 SKIPPED**; Windows first-run and Chromium journeys successful. [Offline MVP smoke #42739447684](https://github.com/hibi89/hibi89-paypal-ai-hackathon/actions/runs/42739447684) SUCCESS. Distinct optional D1/video CI jobs skipped by design. This is the *latest validated functional tree* at docs-fix commit `9b02655e40f95ae96a62de0e7abda0b5fcfadc1a`, not external Sandbox/IdP proof.
 
 ## 4. Work states / current stop point
 - DONE: Offline backend implementation/contract tests and Step52 session safety patch.
@@ -38,6 +42,8 @@ Part 1: freelancer matching, quotes, human approval, roles/contracts/milestones 
 
 ## 5. Failure evidence, causes and do-not-repeat
 Step51 first CI had one scanner false alarm for an overly realistic synthetic secret sentinel; corrected at `3dc47191cbe6aee48a821a7e5d6a58878564ea29`, CI 1,301 PASS. Step52 CI passed on first submitted commit. Real Sandbox UNKNOWN/timeout must **never** be auto-rePOSTed. Historical `mvp:operator` uses a different quote/database and cannot prove the new $1.50 linked flow. Do not replace an unknown remote POST with fictional evidence.
+
+- Step53 first full CI at `92f74e8e24179e32225f2fc6753f82ca02bc9651`: Node 1,302 PASS / 3 FAIL exclusively because previously reconstructed root `HANDOFF.md` omitted repository-required verbatim resume phrase, progress marker, and `RESUME_SYNC_CONTRACT.md` reference; both new security tests passed. Corrected **only** HANDOFF.md at `9b02655e40f95ae96a62de0e7abda0b5fcfadc1a`; rerun CI Node 1,305 PASS. Do not repeat an incomplete handoff replacement. No provider/API errors occurred.
 
 ## 6. GitHub trace
 Repository `hibi89/hibi89-paypal-ai-hackathon`; branch `lead/paypal`; tested source SHA `61a3e654debeddb0861cc817105d37bf6d00d753`; previous documentation parent `fad5ceb1b91a72a3561553bd8977a82d3c4a85d9`. Important source: `src/private_oidc_marketplace_host.mjs`, `src/signed_oidc_sandbox150_bridge.mjs`, `src/owner_sandbox_150_trusted_checkout_host.mjs`, `src/owner_sandbox_150_get_recovery.mjs`, `src/host_verified_session_store.mjs`. Tests: `tests/host_verified_session_async_revocation.test.mjs`. Current handoff/status document commit follows the tested source and is not itself the independently tested SHA.
@@ -55,4 +61,4 @@ Previous GitHub commit remains immutable rollback source; before Step52: `fad5ce
 4. Re-evaluate 95% provisional against genuine provider proof. No automatic claim of 100% from CI alone.
 
 ## 10. Currency, verification range and owner scope
-Recorded 2026-11-10 KST after full Actions completion at 10:42 KST. Verified scope: source SHA `61a3e654debeddb0861cc817105d37bf6d00d753`, GitHub Actions and source code; **not** real PayPal, Gemini, IdP, Vercel or Devpost. This handoff is a docs-only follow-on to the tested code commit; inspect actual GitHub HEAD on resumption.
+Updated 2026-11-10 11:02 KST after Step53 full CI completed; Step52 baseline recorded 10:42 KST. Verified scope: source SHA `61a3e654debeddb0861cc817105d37bf6d00d753`, GitHub Actions and source code; **not** real PayPal, Gemini, IdP, Vercel or Devpost. This handoff is a docs-only follow-on to the tested code commit; inspect actual GitHub HEAD on resumption.
