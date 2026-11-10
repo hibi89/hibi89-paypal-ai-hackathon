@@ -1,3 +1,8 @@
+## 2026-11-11 KST — Step65 judge README provenance updated, 95% provisional / RELEASE HOLD
+
+- Verified public GitHub repository / MIT detected license and official contest rules. Corrected README opening to current exact tested app SHA `5c4f0ba5b5cd` and honest private 170s video provenance: genuine **offline** Chromium app scene at 45–75 seconds, not actual provider proof. Preserved current judge branch run instructions and existing code, original media, owner private evidence and `main`.
+- No new CI for docs-only change; latest code CI #42910551828 Node 1,319/1,319, Chromium/Windows SUCCESS. Real OIDC/Gemini/PayPal provider same-quote, production, public video and Devpost remain UNVERIFIED. No external calls/payment/YouTube/Devpost. Next owner-gated release actions only.
+
 ## 2026-11-11 KST — Step64 synced caption review ZIP, no provider/payment/publication, RELEASE HOLD
 
 - Private synced caption owner review ZIP `WORKNOVA_PRIVATE_FILM_SYNCED_EN_KO_REVIEW_20261111.zip` (17,625,799 bytes, SHA-256 `0a364bac57471574aeccf676e1923622a240484448510b85946db0eec44eff50`) produced as **chat-only** download. Source MP4 unchanged SHA `2cd375dde37c914c62f8c92906f09919943c37da055a7cc1793c11471af74dc6`. Added 24 scene-editorial EN/KO captions and below-video synced review area while retaining 15 chapter controls and 8 unchecked checks. Small optional caption-only ZIP SHA `d3bad3542b1c9f513ec05a3005c2673f9b6c8484b7727511b1a57e978233c81f`. Neither ZIP published to GitHub or Library.

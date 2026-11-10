@@ -4,6 +4,13 @@
 > **Final product: 95% provisional; RELEASE HOLD.** Offline tests are not proof of real Google, OIDC or PayPal transactions.
 > This file restores the previously empty root HANDOFF.md. For historical decisions use STATUS.md and docs/WORKNOVA_OWNER_FINAL_BATCH_20261110.md.
 
+## Step65 judge-facing README evidence correction — 2026-11-11 KST
+
+- Checked the official PayPal AI Hackathon submission rules (Nov 12 2026 12:00 PST / Nov 13 05:00 KST), repository API public visibility + detected MIT LICENSE, judge-access instructions and the current `lead/paypal` README. Found README's opening banner still described Nov 9 first-source SHA and 45–75s video section as exclusively editorial reconstruction despite the later private 170s film QC confirming an actual synthetic Chromium capture insert.
+- **Docs-only correction:** the top README now leads with tested source `5c4f0ba5b5cd5042caea99e3853acd7ab692a7a3`, Node 1,319 PASS / Chromium / Windows CI, currently public source + MIT, and accurate private film distinction: real local *offline* browser scene at 45–75s does **not** establish real third-party PayPal/Gemini provider activity. Owner's original video, voice, captions and all app code unchanged; `main` untouched.
+- **Risk disclosure maintained:** 95% provisional / RELEASE HOLD. PayPal+AI genuine same approved quote, independently authenticated buyer/merchant, public YouTube under 3 minutes, reviewable release, and official Devpost submission/receipt require owner account actions and separate approvals. Do not submit or publish automatically. This README/doc-only step is NOT a new app CI result or launch verification. No code, payment, provider API, or deployment action occurred.
+- Next priority is owner-authenticated real provider pilot and final publication review, not additional synthetic demo/CI churn.
+
 ## Step64 synced editorial caption review — 2026-11-11 KST
 
 - **New private candidate:** `WORKNOVA_PRIVATE_FILM_SYNCED_EN_KO_REVIEW_20261111.zip`, 17,625,799 bytes, SHA-256 `0a364bac57471574aeccf676e1923622a240484448510b85946db0eec44eff50`. Original 170.000s MP4 preserved with exact SHA `2cd375dde37c914c62f8c92906f09919943c37da055a7cc1793c11471af74dc6`. Includes separate EN/KO 24-cue time-mapped **editorial summaries**, SRT/VTT drafts, scene CSV/QA, and new HTML below-video bilingual synced text. This is NOT speech transcription. A small caption-only ZIP is also generated; the files are **chat-only downloadable**, not uploaded to public GitHub, private Library, YouTube or Devpost. See `docs/review/WORKNOVA_CAPTION_EDITORIAL_REVIEW_20261111.md`.
