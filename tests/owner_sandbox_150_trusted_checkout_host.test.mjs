@@ -1,3 +1,5 @@
+import {createOwnerSandbox150ReadOnlyA2AStore}
+ from '../src/owner_sandbox150_readonly_a2a_store.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync} from 'node:fs';
@@ -56,7 +58,16 @@ test('host-only A2A review + private checkout requires verified login and separa
    explicitOwnerConsent:true
   });
   ledger=createSqliteLedger({filename});
-  lab=createOwnerPrivateGeminiInnovationLab(options);
+  // Checkout consumes the persisted Gemini A2A proof read-only:
+  // no Gemini key, quota claim or model client is reopened for a payment.
+  lab=createOwnerSandbox150ReadOnlyA2AStore({
+   privateDirectory,quoteScope,part2Filename,budgetFilename,quoteBinding:binding
+  });
+  assert.equal(lab.networkEnabled,false);
+  assert.equal(lab.status().geminiCalls,0);
+  assert.equal(lab.state({actor,merchant}).events.length,1);
+  assert.throws(()=>lab.state({actor:'unrelated',merchant}),
+   {code:'OWNER150_A2A_READONLY_ACTOR_SCOPE_REQUIRED'});
   sessions=createPilotCheckoutSessionStore({filename:join(root,'checkout-session.sqlite')});
   const loginHandle=Object.freeze(Object.create(null));
   const badHandle=Object.freeze(Object.create(null));
@@ -106,7 +117,7 @@ test('host-only A2A review + private checkout requires verified login and separa
   });
   host=createOwnerSandbox150TrustedCheckoutHost({
    ledger,sessionStore:sessions,transport,
-   innovationStore:{state:()=>lab.state()},
+   innovationStore:lab,
    reviewFilename:join(root,'review.sqlite'),
    proposedQuoteBinding:binding,publicOrigin:'https://checkout.example.org',
    resolveTrustedPrincipal:async h=>loginActive?identities.get(h):null,

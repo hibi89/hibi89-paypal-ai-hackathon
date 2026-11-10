@@ -1,3 +1,5 @@
+import {createOwnerSandbox150ReadOnlyA2AStore}
+ from '../src/owner_sandbox150_readonly_a2a_store.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {generateKeyPairSync,randomBytes,sign} from 'node:crypto';
@@ -81,7 +83,12 @@ test('signed OIDC buyer -> injected A2A -> exact approved $1.50 -> private CREAT
   assert.equal(approved.amountMinor,150);
   assert.equal(approved.paypalCreatePerformed,false);
   ledger=createSqliteLedger({filename});
-  lab=createOwnerPrivateGeminiInnovationLab(labConfig);
+  lab=createOwnerSandbox150ReadOnlyA2AStore({
+   privateDirectory:priv,quoteScope,part2Filename,budgetFilename,
+   quoteBinding:binding
+  });
+  assert.equal(lab.status().geminiCalls,0);
+  assert.equal(lab.state({actor,merchant}).consents.length,1);
   sessions=createPilotCheckoutSessionStore({filename:join(root,'checkout.sqlite')});
   const keys=generateKeyPairSync('rsa',{modulusLength:2048});
   const jwk={...keys.publicKey.export({format:'jwk'}),
@@ -175,7 +182,7 @@ test('signed OIDC buyer -> injected A2A -> exact approved $1.50 -> private CREAT
    }
   });
   bridge=createSignedOidcSandbox150Bridge({
-   oidcHost:oidc,ledger,innovationStore:{state:()=>lab.state()},
+   oidcHost:oidc,ledger,innovationStore:lab,
    sessionStore:sessions,transport,reviewFilename:join(root,'linked.sqlite'),
    proposedQuoteBinding:binding,publicOrigin:origin,
    authorizeReviewLink:async detail=>{
