@@ -63,8 +63,10 @@ test('judge-facing WORKNOVA name and private video provenance match portable rev
   assert.match(builder,/worknova-offline-reviewer[.]zip/);
   assert.match(builder,/PREFIX = "worknova-offline-reviewer\/"/);
   assert.match(builder,/# WORKNOVA — private offline reviewer package/);
-  assert.match(devpost,/Two private 170-second WORKNOVA v2 review candidates/);
-  assert.match(devpost,/neither is owner-approved, voice\/subtitle-finalized/);
+  assert.match(devpost,/owner-private \*\*170[.]000-second, 1920×1080\*\* film/);
+  assert.match(devpost,/45–75-second segment shows \*\*actual Chromium interactions with the offline local commerce application\*\*/);
+  assert.match(devpost,/Its source MP4 is unchanged and not public/);
+  assert.match(devpost,/narration listening, caption approval and third-party rights have \*\*not been cleared\*\*/);
   assert.match(devpost,/NOT PUBLISHED/);
   assert.match(devpost,/OWNER APPROVAL IS STILL REQUIRED/);
   assert.match(judgeEvidence,/WORKNOVA — judge evidence classes/);
