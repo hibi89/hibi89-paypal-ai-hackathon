@@ -4,6 +4,19 @@
 > **Final product: 95% provisional; RELEASE HOLD.** Offline tests are not proof of real Google, OIDC or PayPal transactions.
 > This file restores the previously empty root HANDOFF.md. For historical decisions use STATUS.md and docs/WORKNOVA_OWNER_FINAL_BATCH_20261110.md.
 
+## Step72 — owner-selected original audio and 45s narration restoration (2026-11-11 KST)
+
+1. **Goal/requirements/tech:** Final 170s WORKNOVA PayPal AI Hackathon film before Nov13 05:00 KST, fix audible cut near 44–45s without altering original visual content, global loudness, payment code or owner private source. Offline FFmpeg, preserved premium v4q3 narration source.
+2. **Completed:** Original 170s film SHA `2cd375dde37c914c62f8c92906f09919943c37da055a7cc1793c11471af74dc6` retained untouched. 45–75s narration restored from owner Library's prior v4q3 cut with short crossfades, H.264 stream copied. Private review film SHA `d343f76ffed616feb156fc8d96e138a46d6b94d68a363de90a3a449ba72b43b5`; 5-entry ZIP package SHA `59735ca78071b541c3530fdce08e23e3d90acdadb6cf00adf76d746ceb74b035`, not remotely uploaded.
+3. **Verification:** Full FFmpeg decode PASS; video bitstream exact parity, 170.000s/4250 frames/1920x1080, 45.5s RMS -34.19 to -17.96dBFS, ZIP 5/5 CRC+byte checks PASS. English audio subjective intelligibility, narration-to-new-browser-scene consistency and IP rights **NOT TESTED**. Previous GitHub `d6e7f2e33ef09482c6da2460fd9078ae9b2f11e9` full CI SUCCESS; source Node 1,319 PASS, but there is no new runtime code CI for media-only work.
+4. **State:** Video restoration candidate DONE technically, OWNER REVIEW PENDING; no new release-approved final MP4. 95% provisional / RELEASE HOLD; YouTube/Devpost NOT DONE, real same-quote provider integrated proof NOT VERIFIED.
+5. **Error/rationale:** 45–75s replaces speaking voice with music-only on current owner film. Since an earlier preserved owner v4q3 audio exists, recover that voice rather than generate fake English speech or just fade out the interrupted sentence. The earlier soundtrack might not semantically match current actual Chromium scene—STOP if owner finds misalignment, then source-master-specific re-edit.
+6. **Repo/branch/SHA:** `hibi89/hibi89-paypal-ai-hackathon` / `lead/paypal`. Last green app/docs baseline `d6e7f2e33ef09482c6da2460fd9078ae9b2f11e9`; this docs checkpoint will generate a later SHA. New detailed report `docs/review/WORKNOVA_45S_NARRATION_RESTORATION_20261111.md`.
+7. **Production:** No Vercel/Production. Public judge route `npm run demo` and `npm run demo:commerce`; public GitHub `lead/paypal` MIT source. No published YouTube link or Devpost receipt.
+8. **Sources/preservation/secrets:** Original 170s owner ZIP and prior v4q3 private Library source preserved; revised 170s film and Korean editorial SRT only ephemeral current conversation download. Existing SQLite/env/Business/Personal buyer and sandbox secrets untouched, not uploaded to GitHub.
+9. **Next actions:** Owner compare full revised movie and especially 43–47s and 74–77s, verify English narration matches on-screen local demo, select approved final, clear voice/music/brand rights, upload **public** YouTube <180s and submit official Devpost before Nov13 05:00 KST, save receipt. New live Gemini/PayPal is separate, approval gated.
+10. **Updated/verification boundary:** 2026-11-11 KST. Offline FFmpeg/ZIP only; no real provider or external publication. Detailed checksums in Step72 review doc. Release remains HOLD.
+
 ## Step71 — full CI red-to-green provenance-contract recovery (2026-11-11 KST)
 
 1. **Goal/requirements/technology:** Protect PayPal AI Hackathon submission before **2026-11-13 05:00 KST** while preserving WORKNOVA two-part offline marketplace, owner media and security boundaries. Source is public MIT `lead/paypal`, Node/SQLite/Chromium, owner-gated Gemini/PayPal Sandbox/OIDC; no live platform claim.
