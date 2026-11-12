@@ -1,3 +1,9 @@
+> **[KMONG_WORK_TARGET_GATE_20261112 | 사용자 최신 확정 | 필수 작업 규칙]** 이 저장소에서 크몽 상품·육성 후보를 작업하는 모든 AI 담당자는 새 채팅·`ㄱ` 시작 시 이 문구를 읽고 적용한다.
+> - 실제 개발/수정/테스트 착수 즉시 [해총 크몽 최종완성률·후보 상태표](https://github.com/hibi89/hackathon-command-center-2026/blob/kmong-productization/docs/audits/KMONG_16_CURRENT_20261111.md)의 **해당 상품명 옆에 `**[작업중]**`을 표시하고 GitHub 커밋**한다. 확정 단계 목표(예: 95%)와 검증 기준을 제품 STATUS/HANDOFF에 남긴다.
+> - **목표 완성률 달성 전에는 [작업중]을 삭제하지 않는다.** 일시중단·종료·보류·다른 제품 전환·담당 채팅 변경도 삭제 사유가 아니다. 예전 '전환·중단 시 삭제' 지시는 폐기한다.
+> - **검증된 목표치에 도달한 뒤에만** 기능 SHA·PASS/FAIL/SKIP·미검증을 기록하고 자기 표시를 제거·커밋한다. 목표 하향/변경으로 표식 제거 시 사용자 명시 승인 필요. 다른 담당자 표시·기존 수치·RELEASE HOLD 보존.
+> - 표식은 목표 미달 상태를 의미하며 **실시간 실행 증명은 아니다**. 허브 최신 HEAD 확인 후 안전하게 반영, 실패 시 `KMONG_HUB_SYNC_PENDING` 기록. 자동 동기화 없음. 크몽 외 작업에는 표시 불필요.
+
 > **2026-10-28 해총 최종 공통 개발·검증 지시 / 소유자 최신 결정:** [전 프로젝트 공식 운영 정본](https://github.com/hibi89/hackathon-command-center-2026/blob/main/docs/DEV_ACCELERATION_AND_VERIFICATION_20261028.md). **활성 슬롯=KIC(+DL), PayPal, UGREEN, LA 총 4개**, 일반 구현·검증은 GPT-6 **Instant**, 최초 설계/복잡한 고위험 문제·해총 독립 감독만 높은 추론. 기능 목표→구현+집중 테스트→실패 수정→기능 단위 커밋→필요 통합 CI→최소 문서. GitHub 파일별 호출·HEAD 반복·STATUS/HANDOFF 중복·동일 CI 반복 금지. 사용자 로컬 전용 검증은 안전한 한 명령 스크립트/로컬 Codex에 맡기고 **실제 실행 SHA/PASS·FAIL·SKIP**로 보고. `TO_HAECHONG.md` 재작성은 큰 개선이 있을 때만. 기존 설계·비공개 정보·외부 승인·보안·복구/대회 게이트 보존.
 >
 > **PayPal 활성 슬롯:** Instant에서 가장 가까운 최우선 미완료 핵심 기능 1개씩 구현한다. 기존 승인받지 않은 실제 Gemini API·PayPal Sandbox CREATE/Capture·Live 결제·공개 배포·고객 정보 처리 금지. 합성 CI와 실제 결제 실증을 구별해 기록.
